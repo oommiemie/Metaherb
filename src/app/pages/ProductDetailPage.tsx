@@ -9,6 +9,7 @@ import { useRecentlyViewed } from "../store/RecentlyViewedContext";
 import { Star, Heart, Share2, Minus, Plus, ShoppingCart, ChevronLeft, ChevronRight, Store, MessageCircle, Shield, Truck, RotateCcw, Check } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "motion/react";
 import imgProd1 from "figma:asset/9e21f4217f39c8b2aaff50eadcf63d44b0fcf83c.png";
 import imgProd2 from "figma:asset/dff4d147a4f36cd01cc4ab790d8ae3472bff4e15.png";
 import imgProd3 from "figma:asset/75fcd2ce0747a1f740ab8306f0a0a74e93ef9cf8.png";
@@ -190,12 +191,49 @@ export function ProductDetailPage() {
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row gap-3 mt-6 sm:mt-8">
-            <button onClick={handleAddToCart}
-              className={`flex items-center justify-center gap-2 px-6 sm:px-8 py-3 rounded-lg border-2 ${addedToCart ? "border-[#319754] bg-[#319754] text-white" : "border-[#319754] text-[#319754]"} ${font} text-[14px] cursor-pointer hover:bg-[#319754]/5 transition-colors`}>
-              {addedToCart ? <><Check className="size-5" /> เพิ่มแล้ว!</> : <><ShoppingCart className="size-5" /> เพิ่มในรถเข็น</>}
-            </button>
+            <motion.button
+              onClick={handleAddToCart}
+              whileTap={{ scale: 0.92 }}
+              whileHover={{ scale: 1.03 }}
+              animate={addedToCart ? { scale: [1, 1.15, 1], backgroundColor: "#319754", color: "#fff", borderColor: "#319754" } : { scale: 1 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className={`flex items-center justify-center gap-2 px-6 sm:px-8 py-3 rounded-lg border-2 ${addedToCart ? "border-[#319754] bg-[#319754] text-white" : "border-[#319754] text-[#319754]"} ${font} text-[14px] cursor-pointer hover:bg-[#319754]/5 transition-colors relative overflow-hidden`}
+            >
+              <AnimatePresence mode="wait">
+                {addedToCart ? (
+                  <motion.span
+                    key="added"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -20, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex items-center gap-2"
+                  >
+                    <motion.span
+                      initial={{ scale: 0, rotate: -90 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 15 }}
+                    >
+                      <Check className="size-5" />
+                    </motion.span>
+                    เพิ่มแล้ว!
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="add"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -20, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex items-center gap-2"
+                  >
+                    <ShoppingCart className="size-5" /> เพิ่มในรถเข็น
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
             <button onClick={handleBuyNow}
-              className={`flex-1 py-3 rounded-lg bg-[#319754] text-white ${font} text-[14px] cursor-pointer hover:bg-[#267a43]`}>
+              className={`flex-1 px-6 sm:px-8 py-3 rounded-lg bg-[#319754] text-white ${font} text-[14px] cursor-pointer hover:bg-[#267a43]`}>
               ซื้อสินค้า
             </button>
           </div>

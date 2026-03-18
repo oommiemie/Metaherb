@@ -15,20 +15,22 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { toast } from "sonner";
+import { AnimatePresence, motion } from "motion/react";
+import { BannerSkeleton, CategorySkeleton, ProductGridSkeleton, ArticleSkeleton, VideoSkeleton } from "../components/Skeleton";
 import svgPaths from "../../imports/svg-7w99agzzp8";
 import svgArticlePaths from "../../imports/svg-ef1ajdelip";
 import imgBanner from "figma:asset/8733913171c15098e7d05ed46e3984edcb6d5ed1.png";
 
 // Category icons from Figma
-import imgHerb from "figma:asset/58b5803b2004438a222516fd9a07dab9d45a3307.png";
-import imgFood from "figma:asset/2caaf0ad39f7bce86e11f6787de90cfa11fe1c70.png";
-import imgMedical from "figma:asset/4e853dd1de66b2ba78b0fecd9bd277b4aaacee97.png";
-import imgAroma from "figma:asset/dde00ea34a425e520e2b118c0d7f90533f9e9a7d.png";
-import imgCosmetics from "figma:asset/d2341aa9eb9a3b8878a2b307e2660f84e2ff6b4a.png";
-import imgGiftset from "figma:asset/3717eabc058a9792da75d8d45343b7137552b51a.png";
-import imgService from "figma:asset/88b95db7da320f1bfed07e1060cf60eb7ec2da38.png";
-import imgPromotion from "figma:asset/9c29f80797688713827ab60477237b541abb0e01.png";
-import imgCoupon from "figma:asset/2c872a29ff41c63630f00953287b4293d3335ba6.png";
+import imgHerb from "figma:asset/73e2cbf5354624aa57506e53de4958d0acf61e55.png";
+import imgFood from "figma:asset/35f1f2bd409f81e3d72289ecac4b9bc3cc34d7b6.png";
+import imgMedical from "figma:asset/625cc9829942de5a02800999aa5375f3dfbce950.png";
+import imgAroma from "figma:asset/5b19655efb6ef5fd2e60a46a152a5eb5100edc3f.png";
+import imgCosmetics from "figma:asset/6b71d96b7be0711a2b1cc5cd7642df1b6151beb7.png";
+import imgGiftset from "figma:asset/0245085f47577fbc875a74b855a3020b7aa08a5e.png";
+import imgService from "figma:asset/f62932d9a24d6ab415c2398b7417bd6cfd1bd20b.png";
+import imgPromotion from "figma:asset/07ea732e7ecef0dcc2354d93351d751935e677dc.png";
+import imgCoupon from "figma:asset/d6128665f182afeedbe7e125d6ad967a5a403056.png";
 
 import imgBanner2 from "figma:asset/4721591e5972943ca6e23ff8a44bd578469180c5.png";
 import imgBanner3 from "figma:asset/dca3bac6bd59c39ad70423824125bb4ea2fa637f.png";
@@ -346,10 +348,67 @@ function BannerCarousel() {
 export function HomePage() {
   const navigate = useNavigate();
   const { recentIds } = useRecentlyViewed();
+  const [loading, setLoading] = useState(true);
+  const [recPage, setRecPage] = useState(0);
+  const [recDirection, setRecDirection] = useState(0);
+  const [flashPage, setFlashPage] = useState(0);
+  const [flashDirection, setFlashDirection] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
 
   const recentProducts = recentIds
     .map((id) => products.find((p) => p.id === id))
     .filter(Boolean) as typeof products;
+
+  if (loading) {
+    return (
+      <div className="max-w-[1440px] mx-auto">
+        <div className="px-4 sm:px-6 lg:px-[124px] pt-4 sm:pt-6">
+          <BannerSkeleton />
+        </div>
+        <div className="px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
+          <CategorySkeleton />
+        </div>
+        <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+          <div className="bg-white rounded-[16px] p-[16px]">
+            <div className="flex items-center justify-between mb-[16px]">
+              <div className="bg-gray-200 w-[120px] h-[20px] rounded-lg relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent" />
+              <div className="bg-gray-200 w-[80px] h-[14px] rounded-lg" />
+            </div>
+            <ProductGridSkeleton count={6} />
+          </div>
+        </section>
+        <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+          <div className="bg-white rounded-[16px] p-[16px]">
+            <div className="flex items-center justify-between mb-[16px]">
+              <div className="bg-gray-200 w-[160px] h-[20px] rounded-lg relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent" />
+              <div className="bg-gray-200 w-[80px] h-[14px] rounded-lg" />
+            </div>
+            <ProductGridSkeleton count={6} />
+          </div>
+        </section>
+        <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+          <div className="bg-white rounded-[16px] p-[16px]">
+            <div className="flex items-center justify-between mb-[16px]">
+              <div className="bg-gray-200 w-[120px] h-[20px] rounded-lg relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent" />
+            </div>
+            <ArticleSkeleton />
+          </div>
+        </section>
+        <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+          <div className="bg-white rounded-[16px] p-[16px]">
+            <div className="flex items-center justify-between mb-[16px]">
+              <div className="bg-gray-200 w-[120px] h-[20px] rounded-lg relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent" />
+            </div>
+            <VideoSkeleton />
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[1440px] mx-auto">
@@ -400,7 +459,7 @@ export function HomePage() {
               className={`flex flex-col items-center gap-1.5 sm:gap-2 min-w-[64px] sm:min-w-[80px] cursor-pointer group`}
             >
               <div className="size-[56px] sm:size-[72px] rounded-full bg-[#319754]/10 flex items-center justify-center group-hover:bg-[#319754]/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-md group-hover:shadow-[#319754]/20 overflow-hidden p-2">
-                <img src={cat.img} alt={cat.name} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110" />
+                <ImageWithFallback src={cat.img} alt={cat.name} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110" />
               </div>
               <span
                 className={`${font} text-[11px] sm:text-[12px] text-gray-600 whitespace-nowrap transition-colors duration-300 group-hover:text-[#319754]`}
@@ -427,9 +486,24 @@ export function HomePage() {
             </button>
           </div>
           {/* Product Grid */}
-          <div className="relative">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]">
-              {products.filter(p => !p.isFlashSale && (p.isRecommended || p.discountPercent)).slice(0, 6).map((p, i) => {
+          {(() => {
+            const recProducts = products.filter(p => !p.isFlashSale && (p.isRecommended || p.discountPercent));
+            const totalRecPages = Math.ceil(recProducts.length / 6);
+            const pagedProducts = recProducts.slice(recPage * 6, recPage * 6 + 6);
+            return (
+            <div className="relative overflow-hidden">
+            <AnimatePresence mode="wait" initial={false} custom={recDirection}>
+            <motion.div
+              key={recPage}
+              custom={recDirection}
+              initial={{ x: recDirection > 0 ? 300 : -300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: recDirection > 0 ? -300 : 300, opacity: 0 }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]"
+            >
+              {pagedProducts.map((p, i) => {
+                const globalIdx = recPage * 6 + i;
                 const tag = getProductTag(p);
                 return (
                   <div
@@ -438,7 +512,7 @@ export function HomePage() {
                     className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 flex flex-col h-[259px] group"
                   >
                     <div className="flex-1 relative min-h-0 rounded-t-[16px] overflow-hidden">
-                      <img src={productImages[i % productImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      <img src={productImages[globalIdx % productImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                       {/* Single Tag - priority: flashsale > discount > recommended */}
                       {tag === "flashsale" && (
                         <>
@@ -491,22 +565,29 @@ export function HomePage() {
                   </div>
                 );
               })}
-            </div>
+            </motion.div>
+            </AnimatePresence>
             {/* Left Arrow */}
-            <button className="absolute left-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer">
+            {recPage > 0 && (
+            <button onClick={() => { setRecDirection(-1); setRecPage(p => p - 1); }} className="absolute left-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer hover:bg-[rgba(217,217,217,0.8)] transition-colors z-10">
               <svg className="w-[20px] h-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
                 <path d={svgPaths.p31f27600} fill="black" opacity="0" />
                 <path d={svgPaths.p1ec9ac00} fill="#737373" />
               </svg>
             </button>
+            )}
             {/* Right Arrow */}
-            <button className="absolute right-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer">
+            {recPage < totalRecPages - 1 && (
+            <button onClick={() => { setRecDirection(1); setRecPage(p => p + 1); }} className="absolute right-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer hover:bg-[rgba(217,217,217,0.8)] transition-colors z-10">
               <svg className="w-[20px] h-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
                 <path d={svgPaths.p31f27600} fill="black" opacity="0" />
                 <path d={svgPaths.p249d7900} fill="#737373" />
               </svg>
             </button>
+            )}
           </div>
+            );
+          })()}
         </div>
       </section>
 
@@ -528,9 +609,25 @@ export function HomePage() {
             </button>
           </div>
           {/* Flash Sale Grid */}
-          <div className="relative">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]">
-              {products.filter(p => p.isFlashSale).slice(0, 6).map((p, i) => (
+          {(() => {
+            const flashProducts = products.filter(p => p.isFlashSale);
+            const totalFlashPages = Math.ceil(flashProducts.length / 6);
+            const pagedFlash = flashProducts.slice(flashPage * 6, flashPage * 6 + 6);
+            return (
+          <div className="relative overflow-hidden">
+            <AnimatePresence mode="wait" initial={false} custom={flashDirection}>
+            <motion.div
+              key={flashPage}
+              custom={flashDirection}
+              initial={{ x: flashDirection > 0 ? 300 : -300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: flashDirection > 0 ? -300 : 300, opacity: 0 }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]"
+            >
+              {pagedFlash.map((p, i) => {
+                const globalIdx = flashPage * 6 + i;
+                return (
                 <div
                   key={p.id}
                   onClick={() => navigate(`/product/${p.id}`)}
@@ -538,7 +635,7 @@ export function HomePage() {
                 >
                   {/* Image */}
                   <div className="flex-1 relative min-h-0 rounded-t-[16px] overflow-hidden">
-                    <img src={flashSaleImages[i % flashSaleImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <img src={flashSaleImages[globalIdx % flashSaleImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     {/* Discount tag top-right */}
                     <div className="absolute top-0 right-0 p-[8px]">
                       <div className="bg-[#e62e05] px-[16px] py-[4px] rounded-[100px] border border-[#bc1b06]">
@@ -573,23 +670,31 @@ export function HomePage() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+                );
+              })}
+            </motion.div>
+            </AnimatePresence>
             {/* Left Arrow */}
-            <button className="absolute left-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer">
+            {flashPage > 0 && (
+            <button onClick={() => { setFlashDirection(-1); setFlashPage(p => p - 1); }} className="absolute left-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer hover:bg-[rgba(217,217,217,0.8)] transition-colors z-10">
               <svg className="w-[20px] h-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
                 <path d={svgPaths.p31f27600} fill="black" opacity="0" />
                 <path d={svgPaths.p1ec9ac00} fill="#737373" />
               </svg>
             </button>
+            )}
             {/* Right Arrow */}
-            <button className="absolute right-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer">
+            {flashPage < totalFlashPages - 1 && (
+            <button onClick={() => { setFlashDirection(1); setFlashPage(p => p + 1); }} className="absolute right-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer hover:bg-[rgba(217,217,217,0.8)] transition-colors z-10">
               <svg className="w-[20px] h-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
                 <path d={svgPaths.p31f27600} fill="black" opacity="0" />
                 <path d={svgPaths.p249d7900} fill="#737373" />
               </svg>
             </button>
+            )}
           </div>
+            );
+          })()}
         </div>
       </section>
 
@@ -687,7 +792,7 @@ export function HomePage() {
             {[
               { img: imgVideo1, views: "12K", title: "บุกสวนทุเรียนจังหวัดจันทบุรี" },
               { img: imgVideo2, views: "15K", title: "ท่องเที่ยวชมทะเลที่จังหวัดตราด" },
-              { img: imgVideo3, views: "9K", title: "ประเพณีลงแขกเกี่ยวข้าวที่อีสาน" },
+              { img: imgVideo3, views: "9K", title: "ประเพณีลงแขกเกี่ยวข้าวที่���ีสาน" },
               { img: imgVideo4, views: "20K", title: "ทริปปีนเขาดอยอินทนนท์" },
               { img: imgVideo5, views: "25K", title: "เดินป่าชมธรรมชาติที่เขาใหญ่" },
               { img: imgVideo6, views: "30K", title: "สัมผัสวัฒนธรรมพื้นบ้านที่เชียงใหม่" },
