@@ -1,0 +1,185 @@
+import { useState } from "react";
+import { MapPin, Truck, CreditCard, QrCode, Landmark, Banknote, Tag, MoreHorizontal } from "lucide-react";
+import { toast } from "sonner";
+import { useNavigate } from "react-router";
+import { useCart } from "../store/CartContext";
+import { useOrders } from "../store/OrderContext";
+import { useAuth } from "../store/AuthContext";
+import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { AddAddressModal } from "../components/AddAddressModal";
+import { SelectCouponModal } from "../components/SelectCouponModal";
+
+const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
+
+const paymentMethods = [
+  { id: "promptpay", label: "พร้อมเพย์ PromptPay", desc: "แสกน QR Code ชำระเงิน", icon: QrCode },
+  { id: "bank", label: "บัญชีธนาคาร", desc: "โอนเงินผ่านบัญชีธนาคารร้านค้า", icon: Landmark },
+  { id: "credit", label: "บัตรเครดิต/บัตรเดบิต", desc: "ชำระเงินผ่านบัตรเครดิต/บัตรเดบิต", icon: CreditCard },
+  { id: "cod", label: "ชำระเงินปลายทาง", desc: "ชำระเงินเมื่อได้รับสินค้าแล้ว", icon: Banknote },
+];
+
+export function PaymentPage() {
+  const navigate = useNavigate();
+  const { items, total, clearCart } = useCart();
+  const { addOrder } = useOrders();
+  const { user } = useAuth();
+  const [selectedPayment, setSelectedPayment] = useState("promptpay");
+  const [showAddAddress, setShowAddAddress] = useState(false);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<any>(null);
+  const [couponCode, setCouponCode] = useState("");
+
+  const discount = selectedCoupon ? 100 : 0;
+  const vat = (total - discount) * 0.07;
+  const shipping = 0;
+  const grandTotal = total - discount + vat + shipping;
+
+  const handleConfirm = () => {
+    const orderId = addOrder({
+      items,
+      total: grandTotal,
+      status: "pending_payment",
+      shippingAddress: "เลขที่ 2 ชั้นที่ 2 ซอยสุขสวัสดิ์33 แขวงราษฎร์บูรณะ, เขตราษฎร์บูรณะ กรุงเทพมหานคร 10140",
+      paymentMethod: paymentMethods.find((p) => p.id === selectedPayment)?.label || "",
+      shopName: "METAHERB Store",
+    });
+    clearCart();
+    navigate(`/verify-payment/${orderId}`);
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className={`${font} text-gray-400`}>ไม่มีสินค้าในตะกร้า</p>
+        <button onClick={() => navigate("/products")} className={`mt-4 bg-[#319754] text-white px-6 py-2 rounded-lg ${font} cursor-pointer`}>ช้อปเลย</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="bg-[rgba(214,234,221,0.5)] py-4 text-center">
+        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>ชำระเงิน</h1>
+      </div>
+
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6 flex flex-col lg:flex-row gap-6">
+        <div className="flex-1 space-y-6">
+          {/* Address */}
+          <div className="bg-white rounded-xl p-6 border border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className={`${font} text-[16px]`} style={{ fontWeight: 600 }}>
+                <MapPin className="size-5 inline mr-2 text-[#319754]" />ที่อยู่ในการจัดส่ง
+              </h3>
+              <span className={`${font} text-[13px] text-[#319754] cursor-pointer`}>เปลี่ยน</span>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>
+                    {user?.username}
+                    <span className="bg-[#319754] text-white text-[10px] px-2 py-0.5 rounded ml-2">ที่อยู่หลัก</span>
+                  </p>
+                  <p className={`${font} text-[13px] text-gray-600 mt-1`}>{user?.phone || "090-000-000"}</p>
+                  <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>เลขที่ 2 ชั้นที่ 2 ซอยสุขสวัสดิ์33 แขวงราษฎร์บูรณะ, เขตราษฎร์บูรณะ กรุงเทพมหานคร 10140</p>
+                </div>
+                <MoreHorizontal className="size-5 text-gray-400 cursor-pointer" />
+              </div>
+            </div>
+            <button onClick={() => setShowAddAddress(true)} className={`mt-2 text-[13px] text-[#319754] ${font} cursor-pointer hover:underline`}>+ เพิ่มที่อยู่ใหม่</button>
+          </div>
+
+          {/* Shipping */}
+          <div className="bg-white rounded-xl p-6 border border-gray-200">
+            <h3 className={`${font} text-[16px] mb-3`} style={{ fontWeight: 600 }}>
+              <Truck className="size-5 inline mr-2 text-[#319754]" />ตัวเลือกการจัดส่ง
+            </h3>
+            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <div className="size-10 bg-white rounded border flex items-center justify-center text-[10px]" style={{ fontWeight: 700 }}>J&T</div>
+                <div>
+                  <p className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>J&T Express</p>
+                  <p className={`${font} text-[11px] text-gray-400`}>จะได้รับภายใน 18 ก.พ. - 20 ก.พ.</p>
+                </div>
+              </div>
+              <span className={`${font} text-[14px] text-[#319754]`} style={{ fontWeight: 600 }}>฿0.00</span>
+            </div>
+          </div>
+
+          {/* Payment */}
+          <div className="bg-white rounded-xl p-6 border border-gray-200">
+            <h3 className={`${font} text-[16px] mb-3`} style={{ fontWeight: 600 }}>
+              <CreditCard className="size-5 inline mr-2 text-[#319754]" />ช่องชำระเงิน
+            </h3>
+            <div className="space-y-3">
+              {paymentMethods.map((m) => (
+                <div key={m.id} onClick={() => setSelectedPayment(m.id)}
+                  className={`flex items-center gap-4 p-4 rounded-lg cursor-pointer border-2 transition-colors ${
+                    selectedPayment === m.id ? "border-[#319754] bg-[#319754]/5" : "border-gray-200"
+                  }`}>
+                  <m.icon className={`size-6 ${selectedPayment === m.id ? "text-[#319754]" : "text-gray-400"}`} />
+                  <div>
+                    <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{m.label}</p>
+                    <p className={`${font} text-[12px] text-gray-400`}>{m.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Order summary */}
+        <div className="lg:w-[340px]">
+          <div className="bg-white rounded-xl p-6 border border-gray-200 sticky top-[140px]">
+            <h3 className={`${font} text-[16px] mb-4`} style={{ fontWeight: 600 }}>สรุปคำสั่งซื้อ</h3>
+            <div className="space-y-3 mb-4">
+              {items.map((item) => (
+                <div key={item.productId} className="flex gap-3">
+                  <div className="size-[60px] bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                    <ImageWithFallback src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <p className={`${font} text-[13px]`}>{item.name}</p>
+                    <p className={`${font} text-[11px] text-gray-400`}>{item.option}</p>
+                    <p className={`${font} text-[11px] text-gray-400`}>จำนวน {item.quantity} ชิ้น</p>
+                  </div>
+                  <span className={`${font} text-[13px]`}>฿{(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t pt-3 space-y-2">
+              <div className="flex justify-between"><span className={`${font} text-[13px] text-gray-500`}>ยอดรวมสินค้า ({items.length} ชิ้น)</span><span className={`${font} text-[13px]`}>฿{total.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className={`${font} text-[13px] text-gray-500`}>ส่วนลด</span><span className={`${font} text-[13px] text-[#319754]`}>-฿{discount.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className={`${font} text-[13px] text-gray-500`}>VAT 7%</span><span className={`${font} text-[13px]`}>฿{vat.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className={`${font} text-[13px] text-gray-500`}>ค่าจัดส่ง</span><span className={`${font} text-[13px]`}>฿{shipping.toFixed(2)}</span></div>
+              <div className="border-t pt-2 flex justify-between">
+                <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ยอดที่ต้องชำระ</span>
+                <span className={`${font} text-[20px] text-[#319754]`} style={{ fontWeight: 700 }}>฿{grandTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {/* Coupon code */}
+            <div className="mt-3 border-t pt-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Tag className="size-4 text-[#319754]" />
+                <span className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>โค้ดส่วนลด</span>
+              </div>
+              <div className="flex gap-2">
+                <input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="ลด 1.00"
+                  className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 text-[13px] ${font} outline-none`} />
+                <button onClick={() => setShowCouponModal(true)} className={`px-4 py-2 rounded-lg border border-[#319754] text-[#319754] text-[13px] ${font} cursor-pointer hover:bg-[#319754]/5`}>เปลี่ยน</button>
+              </div>
+              {selectedCoupon && (
+                <p className={`${font} text-[11px] text-[#319754] mt-1`}>ใช้คูปอง: {selectedCoupon.title}</p>
+              )}
+            </div>
+
+            <button onClick={handleConfirm} className={`w-full mt-4 py-3 rounded-lg bg-[#319754] text-white text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ยืนยันคำสั่งซื้อ</button>
+          </div>
+        </div>
+      </div>
+
+      <AddAddressModal open={showAddAddress} onClose={() => setShowAddAddress(false)} onSave={() => {}} />
+      <SelectCouponModal open={showCouponModal} onClose={() => setShowCouponModal(false)} onSelect={(c) => setSelectedCoupon(c)} />
+    </div>
+  );
+}
