@@ -1,10 +1,12 @@
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { useAuth } from "../store/AuthContext";
 import { useCart } from "../store/CartContext";
+import type { CartItem } from "../store/CartContext";
 import { useOrders } from "../store/OrderContext";
 import { useNotifications } from "../store/NotificationContext";
+import type { Notification } from "../store/NotificationContext";
 import { useWishlist } from "../store/WishlistContext";
-import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp } from "lucide-react";
+import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, Info } from "lucide-react";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ChatModal } from "./ChatModal";
 import imgLogo from "figma:asset/c494dc0dab30c1bf59f2f6e2c114db61b1755370.png";
@@ -56,7 +58,7 @@ function SearchBar({ className = "" }: { className?: string }) {
 
   return (
     <div ref={ref} className={`relative ${className}`}>
-      <div className="flex items-center bg-white border border-[#d4d4d8] rounded-full pl-4 pr-2 py-2">
+      <div className="flex items-center bg-white border border-[#d4d4d8] rounded-full pl-4 pr-1 py-1 transition-all duration-200 hover:border-[#319754] hover:shadow-[0_0_0_3px_rgba(49,151,84,0.1)]">
         <input
           className={`${font} flex-1 text-[14px] outline-none bg-transparent text-[#404040]`}
           placeholder="ค้นหาสินค้าที่ต้องการ"
@@ -65,8 +67,8 @@ function SearchBar({ className = "" }: { className?: string }) {
           onFocus={() => setFocused(true)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
         />
-        <button onClick={() => handleSearch()} className="bg-[#319754] p-2 rounded-full cursor-pointer shrink-0">
-          <Search className="size-5 lg:size-6 text-white" />
+        <button onClick={() => handleSearch()} className="bg-[#319754] p-2 rounded-full cursor-pointer shrink-0 size-8 flex items-center justify-center transition-colors duration-200 hover:bg-[#267a43]">
+          <Search className="size-4 text-white" />
         </button>
       </div>
 
@@ -120,6 +122,149 @@ function SearchBar({ className = "" }: { className?: string }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ========== NOTIFICATION HOVER PREVIEW ========== */
+const notifIconMap: Record<string, any> = {
+  order: Package,
+  promo: Tag,
+  chat: MessageSquare,
+  system: Info,
+};
+
+function NotificationHoverPreview({ notifications, unreadCount, onViewAll }: { notifications: Notification[]; unreadCount: number; onViewAll: () => void }) {
+  const previewItems = notifications.slice(0, 4);
+
+  return (
+    <div className="absolute right-0 top-full mt-2 bg-white rounded-[12px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.12)] w-[320px] z-50 overflow-hidden border border-gray-100">
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-gray-100">
+        <span className={`${font} text-[13px] text-gray-500`}>การแจ้งเตือน</span>
+        {unreadCount > 0 && (
+          <span className={`${font} text-[11px] text-white bg-[#ff383c] px-2 py-0.5 rounded-full`}>{unreadCount} ใหม่</span>
+        )}
+      </div>
+      {notifications.length === 0 ? (
+        <div className="py-8 text-center">
+          <Bell className="size-10 text-gray-300 mx-auto mb-2" />
+          <p className={`${font} text-[13px] text-gray-400`}>ยังไม่มีการแจ้งเตือน</p>
+        </div>
+      ) : (
+        <>
+          <div className="max-h-[260px] overflow-y-auto">
+            {previewItems.map((n) => {
+              const Icon = notifIconMap[n.type] || Bell;
+              return (
+                <div key={n.id} className={`flex items-start gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors ${!n.read ? "bg-[#319754]/5" : ""}`}>
+                  <div className={`size-[32px] rounded-full flex items-center justify-center shrink-0 ${
+                    n.type === "order" ? "bg-blue-100 text-blue-600" :
+                    n.type === "promo" ? "bg-orange-100 text-orange-600" :
+                    n.type === "chat" ? "bg-green-100 text-green-600" :
+                    "bg-gray-100 text-gray-500"
+                  }`}>
+                    <Icon className="size-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`${font} text-[12px] text-gray-800 truncate`} style={!n.read ? { fontWeight: 500 } : {}}>{n.title}</p>
+                    <p className={`${font} text-[11px] text-gray-400 truncate`}>{n.message}</p>
+                    <p className={`${font} text-[10px] text-gray-300 mt-0.5`}>{n.time}</p>
+                  </div>
+                  {!n.read && <div className="size-2 rounded-full bg-[#319754] shrink-0 mt-1.5" />}
+                </div>
+              );
+            })}
+          </div>
+          <div className="px-4 py-2.5 border-t border-gray-100 bg-gray-50/50 text-center">
+            <button onClick={onViewAll}
+              className={`${font} text-[12px] text-[#319754] cursor-pointer hover:underline`}>
+              ดูการแจ้งเตือนทั้งหมด
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ========== CART HOVER PREVIEW ========== */
+function CartHoverPreview({ items, total, onGoToCart }: { items: CartItem[]; total: number; onGoToCart: () => void }) {
+  const previewItems = items.slice(0, 5);
+  const remaining = items.length - 5;
+
+  return (
+    <div className="absolute right-0 top-full mt-2 bg-white rounded-[12px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.12)] w-[340px] z-50 overflow-hidden border border-gray-100">
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-gray-100">
+        <span className={`${font} text-[13px] text-gray-500`}>สินค้าที่เพิ่มล่าสุด</span>
+        <span className={`${font} text-[12px] text-[#319754]`}>{items.length} ชิ้น</span>
+      </div>
+      {items.length === 0 ? (
+        <div className="py-8 text-center">
+          <ShoppingCart className="size-10 text-gray-300 mx-auto mb-2" />
+          <p className={`${font} text-[13px] text-gray-400`}>ยังไม่มีสินค้าในตะกร้า</p>
+        </div>
+      ) : (
+        <>
+          <div className="max-h-[280px] overflow-y-auto">
+            {previewItems.map((item) => (
+              <div key={item.productId} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                <img src={item.image} className="size-[48px] rounded-[8px] object-cover border border-gray-100 shrink-0" alt="" />
+                <div className="flex-1 min-w-0">
+                  <p className={`${font} text-[12px] text-gray-800 truncate`}>{item.name}</p>
+                  {item.option && <p className={`${font} text-[11px] text-gray-400`}>{item.option}</p>}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`${font} text-[12px] text-[#e62e05]`}>฿{item.price.toFixed(2)}</p>
+                  <p className={`${font} text-[10px] text-gray-400`}>x{item.quantity}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {remaining > 0 && (
+            <div className="px-4 py-1.5 border-t border-gray-50">
+              <p className={`${font} text-[11px] text-gray-400 text-center`}>และอีก {remaining} ชิ้นในตะกร้า</p>
+            </div>
+          )}
+          <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <div>
+              <span className={`${font} text-[11px] text-gray-500`}>รวมทั้งหมด </span>
+              <span className={`${font} text-[14px] text-[#e62e05]`} style={{ fontWeight: 600 }}>฿{total.toFixed(2)}</span>
+            </div>
+            <button onClick={onGoToCart}
+              className={`bg-[#319754] text-white px-4 py-1.5 rounded-full text-[12px] ${font} cursor-pointer hover:bg-[#267a43] transition-colors`}>
+              ดูตะกร้าสินค้า
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ========== PROFILE HOVER PREVIEW ========== */
+function ProfileHoverPreview({ user, onNavigate }: { user: any; onNavigate: (path: string) => void }) {
+  return (
+    <div className="absolute right-0 top-full mt-2 bg-white rounded-[12px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.12)] w-[220px] z-50 overflow-hidden border border-gray-100">
+      <div className="p-3 flex items-center gap-3 bg-[#d6eadd]/40">
+        <img src={imgAvatar} className="size-[36px] rounded-full shrink-0" alt="" />
+        <div className="min-w-0">
+          <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{user?.username}</p>
+          <p className={`${font} text-[11px] text-gray-500 truncate`}>{user?.email}</p>
+        </div>
+      </div>
+      <div className="py-1.5">
+        {[
+          { label: "บัญชีของฉัน", path: "/orders", icon: User },
+          { label: "คำสั่งซื้อ", path: "/orders", icon: ShoppingCart },
+          { label: "สินค้าที่ชอบ", path: "/wishlist", icon: Heart },
+        ].map((item) => (
+          <button key={item.label} onClick={() => onNavigate(item.path)}
+            className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 cursor-pointer text-left transition-colors">
+            <item.icon className="size-3.5 text-gray-400" />
+            <span className={`${font} text-[12px] text-gray-700`}>{item.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -239,8 +384,8 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
 /* ========== LAYOUT ========== */
 export function Layout() {
   const { user, isAuthenticated } = useAuth();
-  const { itemCount } = useCart();
-  const { unreadCount } = useNotifications();
+  const { items: cartItems, itemCount, total: cartTotal } = useCart();
+  const { notifications, unreadCount } = useNotifications();
   const { wishlistCount } = useWishlist();
   const navigate = useNavigate();
   const location = useLocation();
@@ -274,7 +419,7 @@ export function Layout() {
           {/* Logo */}
           <div className="flex items-center gap-2 sm:gap-2.5 cursor-pointer shrink-0" onClick={() => navigate("/")}>
             <img src={imgLogo} className="size-[40px] sm:size-[58px] shrink-0" alt="MetaHerb" />
-            <span className={`${fontBold} text-[18px] sm:text-[24px] whitespace-nowrap`}>
+            <span className={`${fontBold} text-[18px] sm:text-[24px] whitespace-nowrap`} style={{ fontWeight: 700 }}>
               <span className="text-[#ed1c24]">META</span>
               <span className="text-[#f7931d]">HERB</span>
             </span>
@@ -290,77 +435,108 @@ export function Layout() {
               <Search className="size-5 text-gray-600" />
             </button>
 
+            {/* Notifications */}
+            <div className="relative group/notif hidden sm:block">
+              <button onClick={() => { if (isAuthenticated) { setShowNotifications(!showNotifications); setShowProfile(false); } else { navigate("/login"); } }}
+                className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] sm:size-[40px] cursor-pointer relative flex items-center justify-center">
+                <img src={imgBell} className="size-[20px] sm:size-[22px] object-contain" alt="notifications" />
+                {isAuthenticated && unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && isAuthenticated && <NotificationDropdown onClose={() => setShowNotifications(false)} />}
+              {!showNotifications && isAuthenticated && (
+                <div className="hidden group-hover/notif:block">
+                  <NotificationHoverPreview
+                    notifications={notifications}
+                    unreadCount={unreadCount}
+                    onViewAll={() => setShowNotifications(true)}
+                  />
+                </div>
+              )}
+            </div>
+            {/* Notifications - mobile (no hover) */}
+            <div className="relative sm:hidden">
+              <button onClick={() => { if (isAuthenticated) { setShowNotifications(!showNotifications); setShowProfile(false); } else { navigate("/login"); } }}
+                className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] cursor-pointer relative flex items-center justify-center">
+                <img src={imgBell} className="size-[20px] object-contain" alt="notifications" />
+                {isAuthenticated && unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+              {showNotifications && isAuthenticated && <NotificationDropdown onClose={() => setShowNotifications(false)} />}
+            </div>
+
+            {/* Cart */}
+            <div className="relative group/cart hidden sm:block">
+              <button onClick={() => navigate("/cart")}
+                className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] sm:size-[40px] cursor-pointer relative flex items-center justify-center">
+                <img src={imgCart} className="size-[20px] sm:size-[22px] object-contain" alt="cart" />
+                {isAuthenticated && itemCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
+                    {itemCount}
+                  </span>
+                )}
+              </button>
+              {isAuthenticated && (
+                <div className="hidden group-hover/cart:block">
+                  <CartHoverPreview
+                    items={cartItems}
+                    total={cartTotal}
+                    onGoToCart={() => navigate("/cart")}
+                  />
+                </div>
+              )}
+            </div>
+            {/* Cart - mobile (no hover) */}
+            <div className="relative sm:hidden">
+              <button onClick={() => navigate("/cart")}
+                className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] cursor-pointer relative flex items-center justify-center">
+                <img src={imgCart} className="size-[20px] object-contain" alt="cart" />
+                {isAuthenticated && itemCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
+                    {itemCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Profile / Auth buttons */}
             {isAuthenticated ? (
-              <>
-                {/* Wishlist */}
-                <button onClick={() => navigate("/wishlist")}
-                  className="hidden sm:flex backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-full size-[32px] p-1.5 cursor-pointer items-center justify-center relative">
-                  <Heart className="size-5 text-gray-600" />
-                  {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-[#ff383c] text-white text-[8px] px-1.5 py-0.5 rounded-full z-10">{wishlistCount}</span>
-                  )}
+              <div className="relative group/profile">
+                <button onClick={() => { setShowProfile(!showProfile); setShowNotifications(false); }} className="cursor-pointer shrink-0">
+                  <img src={imgAvatar} className="size-[48px] rounded-full" alt="profile" />
                 </button>
-
-                {/* Notifications */}
-                <div className="relative">
-                  <button onClick={() => { setShowNotifications(!showNotifications); setShowProfile(false); }}
-                    className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-full size-[28px] sm:size-[32px] p-1 sm:p-1.5 cursor-pointer overflow-hidden relative">
-                    <img src={imgBell} className="absolute inset-0 w-full h-full object-cover" alt="notifications" />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-[#ff383c] text-white text-[8px] px-1.5 py-0.5 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)]">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </button>
-                  {showNotifications && <NotificationDropdown onClose={() => setShowNotifications(false)} />}
-                </div>
-
-                {/* Cart */}
-                <button onClick={() => navigate("/cart")}
-                  className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-full size-[28px] sm:size-[32px] p-1 sm:p-1.5 cursor-pointer overflow-hidden relative">
-                  <img src={imgCart} className="absolute inset-0 w-full h-full object-cover" alt="cart" />
-                  {itemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-[#ff383c] text-white text-[8px] px-1.5 py-0.5 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)]">
-                      {itemCount}
-                    </span>
-                  )}
-                </button>
-
-                {/* Profile */}
-                <div className="relative">
-                  <button onClick={() => { setShowProfile(!showProfile); setShowNotifications(false); }} className="cursor-pointer shrink-0">
-                    <img src={imgAvatar} className="size-[32px] sm:size-[42px] rounded-full" alt="profile" />
-                  </button>
-                  {showProfile && (
-                    <ProfileDialog
-                      onClose={() => setShowProfile(false)}
-                      onNavigate={(path) => { navigate(path); setShowProfile(false); }}
+                {showProfile && (
+                  <ProfileDialog
+                    onClose={() => setShowProfile(false)}
+                    onNavigate={(path) => { navigate(path); setShowProfile(false); }}
+                  />
+                )}
+                {!showProfile && (
+                  <div className="hidden sm:group-hover/profile:block">
+                    <ProfileHoverPreview
+                      user={user}
+                      onNavigate={(path) => { navigate(path); }}
                     />
-                  )}
-                </div>
-              </>
+                  </div>
+                )}
+              </div>
             ) : (
-              <>
-                <div className="hidden sm:flex items-center gap-2 sm:gap-4">
-                  <button className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-full size-[32px] p-1.5 cursor-pointer overflow-hidden relative">
-                    <img src={imgBell} className="absolute inset-0 w-full h-full object-cover" alt="" />
-                  </button>
-                  <button onClick={() => navigate("/cart")}
-                    className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-full size-[32px] p-1.5 cursor-pointer overflow-hidden relative">
-                    <img src={imgCart} className="absolute inset-0 w-full h-full object-cover" alt="" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-1.5 sm:gap-2.5">
-                  <button onClick={() => navigate("/register")}
-                    className={`border border-[#db8b0a] text-[#db8b0a] h-[40px] px-3 sm:w-[120px] rounded-full text-[12px] sm:text-[14px] ${font} cursor-pointer hover:bg-[#db8b0a]/5`}>
-                    สมัคร<span className="hidden sm:inline">สมาชิก</span>
-                  </button>
-                  <button onClick={() => navigate("/login")}
-                    className={`bg-[#319754] text-white h-[40px] px-3 sm:w-[120px] rounded-full text-[12px] sm:text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>
-                    เข้าสู่ระบบ
-                  </button>
-                </div>
-              </>
+              <div className="flex items-center gap-1.5 sm:gap-2.5">
+                <button onClick={() => navigate("/register")}
+                  className={`border border-[#db8b0a] text-[#db8b0a] h-[40px] px-3 sm:w-[120px] rounded-full text-[12px] sm:text-[14px] ${font} cursor-pointer hover:bg-[#db8b0a]/5`}>
+                  สมัคร<span className="hidden sm:inline">สมาชิก</span>
+                </button>
+                <button onClick={() => navigate("/login")}
+                  className={`bg-[#319754] text-white h-[40px] px-3 sm:w-[120px] rounded-full text-[12px] sm:text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>
+                  เข้าสู่ระบบ
+                </button>
+              </div>
             )}
           </div>
         </div>

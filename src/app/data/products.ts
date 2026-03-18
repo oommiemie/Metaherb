@@ -25,7 +25,7 @@ export interface Product {
   reviews: { user: string; rating: number; date: string; tags: string[]; comment: string; images: string[] }[];
 }
 
-export const categories = ["สมุนไพร", "อาหาร", "กาแมซอ", "เครื่องหอม", "ยา", "เครื่องดื่ม", "บริการ", "โปรโมชั่น"];
+export const categories = ["สมุนไพร", "อาหาร", "ยา", "เครื่องหอม", "ความสวย", "ชุดของขวัญ", "บริการ", "โปรโมชั่น", "คูปอง"];
 
 export const products: Product[] = [
   {

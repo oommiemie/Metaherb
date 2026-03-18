@@ -18,6 +18,18 @@ import { toast } from "sonner";
 import svgPaths from "../../imports/svg-7w99agzzp8";
 import svgArticlePaths from "../../imports/svg-ef1ajdelip";
 import imgBanner from "figma:asset/8733913171c15098e7d05ed46e3984edcb6d5ed1.png";
+
+// Category icons from Figma
+import imgHerb from "figma:asset/58b5803b2004438a222516fd9a07dab9d45a3307.png";
+import imgFood from "figma:asset/2caaf0ad39f7bce86e11f6787de90cfa11fe1c70.png";
+import imgMedical from "figma:asset/4e853dd1de66b2ba78b0fecd9bd277b4aaacee97.png";
+import imgAroma from "figma:asset/dde00ea34a425e520e2b118c0d7f90533f9e9a7d.png";
+import imgCosmetics from "figma:asset/d2341aa9eb9a3b8878a2b307e2660f84e2ff6b4a.png";
+import imgGiftset from "figma:asset/3717eabc058a9792da75d8d45343b7137552b51a.png";
+import imgService from "figma:asset/88b95db7da320f1bfed07e1060cf60eb7ec2da38.png";
+import imgPromotion from "figma:asset/9c29f80797688713827ab60477237b541abb0e01.png";
+import imgCoupon from "figma:asset/2c872a29ff41c63630f00953287b4293d3335ba6.png";
+
 import imgBanner2 from "figma:asset/4721591e5972943ca6e23ff8a44bd578469180c5.png";
 import imgBanner3 from "figma:asset/dca3bac6bd59c39ad70423824125bb4ea2fa637f.png";
 import imgBanner4 from "figma:asset/ca4d3bffba8755731976ce33869784bb158dc884.png";
@@ -369,23 +381,31 @@ export function HomePage() {
       {/* Categories */}
       <div className="px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
         <div className="flex items-center justify-center gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide w-full">
-          {categories.map((cat) => (
+          {([
+            { name: "สมุนไพร", img: imgHerb },
+            { name: "อาหาร", img: imgFood },
+            { name: "ยา", img: imgMedical },
+            { name: "เครื่องหอม", img: imgAroma },
+            { name: "ความสวย", img: imgCosmetics },
+            { name: "ชุดของขวัญ", img: imgGiftset },
+            { name: "บริการ", img: imgService },
+            { name: "โปรโมชั่น", img: imgPromotion },
+            { name: "คูปอง", img: imgCoupon },
+          ]).map((cat) => (
             <button
-              key={cat}
+              key={cat.name}
               onClick={() =>
-                navigate(`/products?category=${cat}`)
+                navigate(cat.name === "คูปอง" ? "/coupons" : `/products?category=${cat.name}`)
               }
               className={`flex flex-col items-center gap-1.5 sm:gap-2 min-w-[64px] sm:min-w-[80px] cursor-pointer group`}
             >
-              <div className="size-[44px] sm:size-[56px] rounded-full bg-[#319754]/10 flex items-center justify-center group-hover:bg-[#319754]/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-md group-hover:shadow-[#319754]/20">
-                <span className="text-[16px] sm:text-[20px] transition-transform duration-300 group-hover:scale-110">
-                  🌿
-                </span>
+              <div className="size-[56px] sm:size-[72px] rounded-full bg-[#319754]/10 flex items-center justify-center group-hover:bg-[#319754]/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-md group-hover:shadow-[#319754]/20 overflow-hidden p-2">
+                <img src={cat.img} alt={cat.name} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110" />
               </div>
               <span
                 className={`${font} text-[11px] sm:text-[12px] text-gray-600 whitespace-nowrap transition-colors duration-300 group-hover:text-[#319754]`}
               >
-                {cat}
+                {cat.name}
               </span>
             </button>
           ))}

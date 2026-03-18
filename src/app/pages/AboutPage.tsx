@@ -34,39 +34,41 @@ export function AboutPage() {
       <section className="relative h-[500px] sm:h-[600px] lg:h-[770px] overflow-hidden">
         {/* Background image */}
         <div className="absolute inset-0">
-          <ImageWithFallback src={imgHerb} alt="Thai herb farm" className="w-full h-full object-cover" />
+          <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+            <source src="/_videos/v1/90927741a2bb60e208bd83fbe90621a697867487" />
+          </video>
           <div className="absolute inset-0 bg-gradient-to-r from-[rgba(13,31,13,0.85)] via-[rgba(13,31,13,0.3)] to-transparent" />
         </div>
 
         {/* Content */}
-        <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-[124px] flex flex-col justify-center h-full">
+        <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 lg:pl-[69px] flex flex-col gap-6 justify-center h-full pt-[111px] lg:pt-0">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-[rgba(125,184,112,0.2)] border border-[rgba(125,184,112,0.4)] rounded-full px-4 py-2 mb-6 w-fit">
+          <div className="inline-flex items-center gap-2 bg-[rgba(125,184,112,0.2)] border border-[rgba(125,184,112,0.4)] rounded-full px-4 py-2 w-fit">
             <Leaf className="size-3.5 text-[#a8d5a0]" />
             <span className="text-[#a8d5a0] text-[12px] tracking-wider uppercase">ยินดีต้อนรับ</span>
           </div>
 
           {/* Heading */}
-          <h1 className={`${fontHeading} text-[40px] sm:text-[56px] lg:text-[80px] leading-[1.1]`}>
+          <h1 className={`${fontHeading} text-[40px] sm:text-[56px] lg:text-[80px] lg:leading-[88px] leading-[1.1]`}>
             <span className="block text-white">จากพืชพรรณ</span>
             <span className="block text-[#a8d5a0]">สู่ผลิตภัณฑ์</span>
             <span className="block text-white">เมต้าเฮิร์บ</span>
           </h1>
 
           {/* Subtitle */}
-          <p className={`${font} text-[16px] sm:text-[20px] text-white/80 mt-4 sm:mt-6 max-w-[500px]`}>
+          <p className={`${font} text-[16px] sm:text-[20px] text-white/80 max-w-[500px]`}>
             แม้เป็นสมุนไพรที่หายากแต่เมต้าเฮิร์บ<br />
             สามารถคัดสรรและจัดหาให้คุณได้
           </p>
 
           {/* CTA buttons */}
-          <div className="flex flex-wrap gap-4 mt-6 sm:mt-8">
+          <div className="flex flex-wrap gap-4 items-center">
             <button onClick={() => navigate("/products")}
-              className={`bg-[#7db870] hover:bg-[#6da760] text-white px-8 sm:px-16 py-3 sm:py-4 rounded-full text-[16px] sm:text-[20px] ${font} cursor-pointer flex items-center gap-4 transition-colors`}>
+              className={`bg-[#7db870] hover:bg-[#6da760] text-white px-8 sm:px-16 py-3 sm:py-6 rounded-full text-[16px] sm:text-[20px] ${font} cursor-pointer flex items-center gap-4 transition-colors`}>
               เลือกซื้อได้ที่ <ArrowRight className="size-5 sm:size-6" />
             </button>
             <button onClick={() => document.getElementById("mission")?.scrollIntoView({ behavior: "smooth" })}
-              className={`bg-white/10 hover:bg-white/20 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-[14px] sm:text-[16px] ${font} cursor-pointer transition-colors`}>
+              className={`bg-white/10 hover:bg-white/20 text-white px-6 sm:px-7 py-3 sm:py-6 rounded-full text-[14px] sm:text-[16px] ${font} cursor-pointer transition-colors`}>
               พันธกิจของเรา
             </button>
           </div>
