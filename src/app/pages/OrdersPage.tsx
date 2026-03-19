@@ -177,44 +177,44 @@ export function OrdersPage() {
                     <div className="flex gap-2 flex-wrap">
                       {/* View detail toggle */}
                       <button onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                        className={`px-3 py-1.5 rounded-lg border border-gray-300 text-gray-500 text-[12px] ${font} cursor-pointer hover:bg-gray-50 flex items-center gap-1`}>
+                        className={`px-3 py-1.5 rounded-full border border-gray-300 text-gray-500 text-[12px] ${font} cursor-pointer hover:bg-gray-50 flex items-center gap-1`}>
                         {isExpanded ? "ซ่อน" : "ดูรายละเอียด"}
                       </button>
 
                       {order.status === "pending_payment" && (
                         <>
                           <button onClick={() => { updateOrderStatus(order.id, "cancelled"); toast("ยกเลิกคำสั่งซื้อแล้ว"); }}
-                            className={`px-4 py-1.5 rounded-lg border border-gray-300 text-gray-500 text-[13px] ${font} cursor-pointer hover:bg-gray-50`}>ยกเลิก</button>
+                            className={`px-4 py-1.5 rounded-full border border-gray-300 text-gray-500 text-[13px] ${font} cursor-pointer hover:bg-gray-50`}>ยกเลิก</button>
                           <button onClick={() => navigate(`/verify-payment/${order.id}`)}
-                            className={`px-4 py-1.5 rounded-lg bg-[#319754] text-white text-[13px] ${font} cursor-pointer hover:bg-[#267a43]`}>ชำระเงิน</button>
+                            className={`px-4 py-1.5 rounded-full bg-[#319754] text-white text-[13px] ${font} cursor-pointer hover:bg-[#267a43]`}>ชำระเงิน</button>
                         </>
                       )}
                       {order.status === "pending_verify" && (
-                        <button className={`px-4 py-1.5 rounded-lg border border-[#319754] text-[#319754] text-[13px] ${font} cursor-pointer`}>แก้ไขข้อมูล</button>
+                        <button className={`px-4 py-1.5 rounded-full border border-[#319754] text-[#319754] text-[13px] ${font} cursor-pointer`}>แก้ไขข้อมูล</button>
                       )}
                       {order.status === "shipped" && (
                         <button onClick={() => { updateOrderStatus(order.id, "delivered"); toast.success("ยืนยันรับสินค้าแล้ว! 📦"); }}
-                          className={`px-4 py-1.5 rounded-lg bg-[#319754] text-white text-[13px] ${font} cursor-pointer hover:bg-[#267a43]`}>ยืนยันรับสินค้า</button>
+                          className={`px-4 py-1.5 rounded-full bg-[#319754] text-white text-[13px] ${font} cursor-pointer hover:bg-[#267a43]`}>ยืนยันรับสินค้า</button>
                       )}
                       {order.status === "delivered" && !order.review && (
                         <>
                           <button onClick={() => setRefundModal(order.id)}
-                            className={`px-3 py-1.5 rounded-lg border border-orange-300 text-orange-500 text-[12px] ${font} cursor-pointer hover:bg-orange-50 flex items-center gap-1`}>
+                            className={`px-3 py-1.5 rounded-full border border-orange-300 text-orange-500 text-[12px] ${font} cursor-pointer hover:bg-orange-50 flex items-center gap-1`}>
                             <RotateCcw className="size-3" /> ขอคืนเงิน
                           </button>
                           <button onClick={() => setReviewModal(order.id)}
-                            className={`px-4 py-1.5 rounded-lg bg-[#f7931d] text-white text-[13px] ${font} cursor-pointer hover:bg-[#e0850f] flex items-center gap-1`}>
+                            className={`px-4 py-1.5 rounded-full bg-[#f7931d] text-white text-[13px] ${font} cursor-pointer hover:bg-[#e0850f] flex items-center gap-1`}>
                             <Star className="size-3" /> รีวิวสินค้า
                           </button>
                         </>
                       )}
                       {order.status === "completed" && order.review && (
                         <button onClick={() => navigate("/products")}
-                          className={`px-4 py-1.5 rounded-lg bg-[#319754] text-white text-[13px] ${font} cursor-pointer hover:bg-[#267a43]`}>ซื้ออีกครั้ง</button>
+                          className={`px-4 py-1.5 rounded-full bg-[#319754] text-white text-[13px] ${font} cursor-pointer hover:bg-[#267a43]`}>ซื้ออีกครั้ง</button>
                       )}
                       {(order.status === "delivered" || order.status === "completed") && (
                         <button onClick={() => openChat("metaherb")}
-                          className={`px-3 py-1.5 rounded-lg border border-[#319754] text-[#319754] text-[12px] ${font} cursor-pointer hover:bg-[#319754]/5 flex items-center gap-1`}>
+                          className={`px-3 py-1.5 rounded-full border border-[#319754] text-[#319754] text-[12px] ${font} cursor-pointer hover:bg-[#319754]/5 flex items-center gap-1`}>
                           <MessageCircle className="size-3" /> ติดต่อร้าน
                         </button>
                       )}
@@ -257,8 +257,8 @@ export function OrdersPage() {
             <textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} placeholder="เขียนรีวิวของคุณ..."
               className={`w-full h-24 border border-gray-300 rounded-lg p-3 text-[14px] ${font} outline-none resize-none focus:border-[#319754]`} />
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setReviewModal(null)} className={`flex-1 py-3 rounded-lg border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer`}>ยกเลิก</button>
-              <button onClick={() => handleReview(reviewModal)} className={`flex-1 py-3 rounded-lg bg-[#319754] text-white text-[14px] ${font} cursor-pointer`}>ส่งรีวิว</button>
+              <button onClick={() => setReviewModal(null)} className={`flex-1 py-3 rounded-full border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer`}>ยกเลิก</button>
+              <button onClick={() => handleReview(reviewModal)} className={`flex-1 py-3 rounded-full bg-[#319754] text-white text-[14px] ${font} cursor-pointer`}>ส่งรีวิว</button>
             </div>
           </div>
         </div>
@@ -285,9 +285,9 @@ export function OrdersPage() {
               className={`w-full h-20 border border-gray-300 rounded-lg p-3 text-[13px] ${font} outline-none resize-none`} />
 
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setRefundModal(null)} className={`flex-1 py-3 rounded-lg border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer`}>ยกเลิก</button>
+              <button onClick={() => setRefundModal(null)} className={`flex-1 py-3 rounded-full border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer`}>ยกเลิก</button>
               <button onClick={() => handleRefund(refundModal)} disabled={!refundReason}
-                className={`flex-1 py-3 rounded-lg text-[14px] ${font} cursor-pointer ${refundReason ? "bg-[#ee4d2d] text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>ส่งคำขอ</button>
+                className={`flex-1 py-3 rounded-full text-[14px] ${font} cursor-pointer ${refundReason ? "bg-[#ee4d2d] text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>ส่งคำขอ</button>
             </div>
           </div>
         </div>

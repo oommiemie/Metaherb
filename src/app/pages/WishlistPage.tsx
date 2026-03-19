@@ -53,7 +53,7 @@ export function WishlistPage() {
             <Heart className="size-16 text-gray-200 mx-auto" />
             <p className={`${font} text-[16px] text-gray-400 mt-4`}>ยังไม่มีสินค้าที่ชอบ</p>
             <button onClick={() => navigate("/products")}
-              className={`mt-4 bg-[#319754] text-white px-6 py-2 rounded-lg text-[14px] ${font} cursor-pointer`}>
+              className={`mt-4 bg-[#319754] text-white px-6 py-2 rounded-full text-[14px] ${font} cursor-pointer`}>
               ไปช้อปปิ้ง
             </button>
           </div>
@@ -90,7 +90,7 @@ export function WishlistPage() {
                     </div>
                     <button
                       onClick={() => handleAddToCart(p, i)}
-                      className={`w-full mt-2 py-1.5 rounded-lg bg-[#319754] text-white text-[12px] ${font} cursor-pointer hover:bg-[#267a43] flex items-center justify-center gap-1`}
+                      className={`w-full mt-2 py-1.5 rounded-full bg-[#319754] text-white text-[12px] ${font} cursor-pointer hover:bg-[#267a43] flex items-center justify-center gap-1`}
                     >
                       <ShoppingCart className="size-3.5" /> เพิ่มลงรถเข็น
                     </button>

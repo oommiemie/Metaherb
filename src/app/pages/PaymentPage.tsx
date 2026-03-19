@@ -51,7 +51,7 @@ export function PaymentPage() {
     return (
       <div className="text-center py-16">
         <p className={`${font} text-gray-400`}>ไม่มีสินค้าในตะกร้า</p>
-        <button onClick={() => navigate("/products")} className={`mt-4 bg-[#319754] text-white px-6 py-2 rounded-lg ${font} cursor-pointer`}>ช้อปเลย</button>
+        <button onClick={() => navigate("/products")} className={`mt-4 bg-[#319754] text-white px-6 py-2 rounded-full ${font} cursor-pointer`}>ช้อปเลย</button>
       </div>
     );
   }
@@ -72,17 +72,20 @@ export function PaymentPage() {
               </h3>
               <span className={`${font} text-[13px] text-[#319754] cursor-pointer`}>เปลี่ยน</span>
             </div>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>
-                    {user?.username}
-                    <span className="bg-[#319754] text-white text-[10px] px-2 py-0.5 rounded ml-2">ที่อยู่หลัก</span>
-                  </p>
-                  <p className={`${font} text-[13px] text-gray-600 mt-1`}>{user?.phone || "090-000-000"}</p>
-                  <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>เลขที่ 2 ชั้นที่ 2 ซอยสุขสวัสดิ์33 แขวงราษฎร์บูรณะ, เขตราษฎร์บูรณะ กรุงเทพมหานคร 10140</p>
+            <div className="backdrop-blur-[8px] bg-[rgba(242,242,247,0.5)] flex flex-col gap-[10px] items-start p-[16px] rounded-[16px] w-full">
+              <div className="flex items-start justify-between w-full">
+                <div className="flex flex-1 gap-[10px] items-center">
+                  <p className={`${font} text-[16px] text-black whitespace-nowrap`} style={{ fontWeight: 500 }}>{user?.username}</p>
+                  <span className={`bg-[#08f] text-white text-[12px] ${font} px-[16px] py-[4px] rounded-full shrink-0`} style={{ fontWeight: 500 }}>ที่อยู่หลัก</span>
                 </div>
-                <MoreHorizontal className="size-5 text-gray-400 cursor-pointer" />
+                <div className="bg-[rgba(120,120,128,0.12)] flex items-center justify-center rounded-full size-[28px] shrink-0 cursor-pointer">
+                  <MoreHorizontal className="size-4 text-[#999]" />
+                </div>
+              </div>
+              <div className="h-px w-full bg-[#D4D4D8]" />
+              <div className={`${font} flex flex-col gap-[4px] text-black w-full`}>
+                <p className="text-[16px]">{user?.phone || "090-000-000"}</p>
+                <p className="text-[14px]">เลขที่ 2 ชั้นที่ 2 ซอยสุขสวัสดิ์33 แขวงราษฎร์บูรณะ, เขตราษฎร์บูรณะ กรุงเทพมหานคร 10140</p>
               </div>
             </div>
             <button onClick={() => setShowAddAddress(true)} className={`mt-2 text-[13px] text-[#319754] ${font} cursor-pointer hover:underline`}>+ เพิ่มที่อยู่ใหม่</button>
@@ -128,52 +131,61 @@ export function PaymentPage() {
         </div>
 
         {/* Order summary */}
-        <div className="lg:w-[340px]">
-          <div className="bg-white rounded-xl p-6 border border-gray-200 sticky top-[140px]">
-            <h3 className={`${font} text-[16px] mb-4`} style={{ fontWeight: 600 }}>สรุปคำสั่งซื้อ</h3>
-            <div className="space-y-3 mb-4">
+        <div className="lg:w-[400px]">
+          <div className="bg-white rounded-[16px] p-4 sticky top-[140px] flex flex-col gap-4">
+            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>สรุปคำสั่งซื้อ</p>
+            <div className="h-px w-full bg-[#D4D4D8]" />
+
+            {/* Product list */}
+            <div className="flex flex-col gap-4">
               {items.map((item) => (
-                <div key={item.productId} className="flex gap-3">
-                  <div className="size-[60px] bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                <div key={item.productId} className="flex gap-[10px] items-start">
+                  <div className="shrink-0 size-[80px] rounded-[16px] overflow-hidden">
                     <ImageWithFallback src={item.image} alt={item.name} className="w-full h-full object-cover" />
                   </div>
-                  <div className="flex-1">
-                    <p className={`${font} text-[13px]`}>{item.name}</p>
-                    <p className={`${font} text-[11px] text-gray-400`}>{item.option}</p>
-                    <p className={`${font} text-[11px] text-gray-400`}>จำนวน {item.quantity} ชิ้น</p>
+                  <div className="flex-1 flex flex-col gap-1 self-stretch">
+                    <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{item.name}</p>
+                    <p className={`${font} text-[12px] text-black`}>{item.option || 'ตัวเลือก 1'}</p>
+                    <div className="flex items-center justify-between pr-4 w-full">
+                      <span className={`bg-[#f2f2f7] rounded-full px-3 py-1 ${font} text-[12px] text-black`}>จำนวน {item.quantity} ชิ้น</span>
+                      <span className={`${font} text-[16px] text-black`} style={{ fontWeight: 500 }}>฿{(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
                   </div>
-                  <span className={`${font} text-[13px]`}>฿{(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
-            <div className="border-t pt-3 space-y-2">
-              <div className="flex justify-between"><span className={`${font} text-[13px] text-gray-500`}>ยอดรวมสินค้า ({items.length} ชิ้น)</span><span className={`${font} text-[13px]`}>฿{total.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className={`${font} text-[13px] text-gray-500`}>ส่วนลด</span><span className={`${font} text-[13px] text-[#319754]`}>-฿{discount.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className={`${font} text-[13px] text-gray-500`}>VAT 7%</span><span className={`${font} text-[13px]`}>฿{vat.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className={`${font} text-[13px] text-gray-500`}>ค่าจัดส่ง</span><span className={`${font} text-[13px]`}>฿{shipping.toFixed(2)}</span></div>
-              <div className="border-t pt-2 flex justify-between">
-                <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ยอดที่ต้องชำระ</span>
-                <span className={`${font} text-[20px] text-[#319754]`} style={{ fontWeight: 700 }}>฿{grandTotal.toFixed(2)}</span>
+
+            <div className="h-px w-full bg-[#D4D4D8]" />
+
+            {/* Coupon */}
+            <div className="bg-[rgba(242,242,247,0.5)] flex items-center justify-between p-4 rounded-[16px] w-full">
+              <div className="flex gap-2 items-center">
+                <Tag className="size-4 text-black" />
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>โค้ดส่วนลด</span>
+              </div>
+              <div className="flex gap-3 items-center">
+                {selectedCoupon && (
+                  <span className={`bg-[rgba(49,151,84,0.1)] rounded-lg px-2 py-1 ${font} text-[10px] text-[#319754]`}>
+                    {selectedCoupon.title}
+                  </span>
+                )}
+                <span onClick={() => setShowCouponModal(true)} className={`${font} text-[14px] text-[#0088ff] cursor-pointer`}>เปลี่ยน</span>
               </div>
             </div>
 
-            {/* Coupon code */}
-            <div className="mt-3 border-t pt-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Tag className="size-4 text-[#319754]" />
-                <span className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>โค้ดส่วนลด</span>
-              </div>
-              <div className="flex gap-2">
-                <input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="ลด 1.00"
-                  className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 text-[13px] ${font} outline-none`} />
-                <button onClick={() => setShowCouponModal(true)} className={`px-4 py-2 rounded-lg border border-[#319754] text-[#319754] text-[13px] ${font} cursor-pointer hover:bg-[#319754]/5`}>เปลี่ยน</button>
-              </div>
-              {selectedCoupon && (
-                <p className={`${font} text-[11px] text-[#319754] mt-1`}>ใช้คูปอง: {selectedCoupon.title}</p>
-              )}
+            {/* Summary rows */}
+            <div className="flex justify-between px-4"><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ยอดรวมสินค้า ({items.length} ชิ้น)</span><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>฿{total.toFixed(2)}</span></div>
+            <div className="flex justify-between px-4"><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ส่วนลด</span><span className={`${font} text-[14px] text-[#34c759]`} style={{ fontWeight: 500 }}>-฿{discount.toFixed(2)}</span></div>
+            <div className="flex justify-between px-4"><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>VAT 7%</span><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>฿{vat.toFixed(2)}</span></div>
+            <div className="flex justify-between px-4"><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ค่าจัดส่ง</span><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>฿{shipping.toFixed(2)}</span></div>
+
+            {/* Grand total */}
+            <div className="flex justify-between items-center px-4">
+              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ยอดที่ต้องชำระ</span>
+              <span className={`${font} text-[20px] text-[#ff383c]`} style={{ fontWeight: 500 }}>฿{grandTotal.toFixed(2)}</span>
             </div>
 
-            <button onClick={handleConfirm} className={`w-full mt-4 py-3 rounded-lg bg-[#319754] text-white text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ยืนยันคำสั่งซื้อ</button>
+            <button onClick={handleConfirm} className={`w-full h-[48px] rounded-full bg-[#319754] text-white text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ยืนยันคำสั่งซื้อ</button>
           </div>
         </div>
       </div>

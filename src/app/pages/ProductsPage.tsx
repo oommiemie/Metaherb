@@ -246,9 +246,9 @@ export function ProductsPage() {
                   <div className="p-[10px] flex flex-col gap-[4px]">
                     <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{p.name}</p>
                     <div className="flex items-center gap-[10px]">
-                      <span className={`font-['IBM_Plex_Sans_Thai',sans-serif] text-[14px] ${p.discountPercent ? 'text-[#e62e05]' : 'text-[#226a3b]'}`} style={{ fontWeight: 600 }}>฿ {p.price.toFixed(2)}</span>
+                      <span className={`font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[14px] ${p.discountPercent ? 'text-[#e62e05]' : 'text-[#226a3b]'}`} style={{ fontWeight: 600 }}>฿ {p.price.toFixed(2)}</span>
                       {p.originalPrice && (
-                        <span className="font-['IBM_Plex_Sans_Thai',sans-serif] text-[10px] text-[#a3a3a3] line-through">฿{p.originalPrice.toFixed(2)}</span>
+                        <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-[#a3a3a3] line-through">฿{p.originalPrice.toFixed(2)}</span>
                       )}
                       {p.hasCoupon && <CouponIcon />}
                     </div>
@@ -258,9 +258,9 @@ export function ProductsPage() {
                           <path d="M14 0H0V14H14V0Z" fill="#F7C42B" opacity="0" />
                           <path d={svgPaths.p1052b000} fill="#F7C42B" />
                         </svg>
-                        <span className="font-['IBM_Plex_Sans_Thai',sans-serif] text-[10px] text-black">{p.rating}/5</span>
+                        <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-black">{p.rating}/5</span>
                       </div>
-                      <span className="font-['IBM_Plex_Sans_Thai',sans-serif] text-[10px] text-black text-right">{p.sold}</span>
+                      <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-black text-right">{p.sold}</span>
                     </div>
                   </div>
                 </div>

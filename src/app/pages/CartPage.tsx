@@ -5,8 +5,18 @@ import { Trash2, Minus, Plus, ChevronLeft, Store, Tag, MessageCircle, ShieldChec
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useChat } from "../store/ChatContext";
 import { toast } from "sonner";
+import { products } from "../data/products";
+import imgShop from "figma:asset/f9c837257a7dc5d10d1ea92a733813c293a76a81.png";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
+
+const shopLogos: Record<string, string> = {
+  "METAHERB Store": imgShop,
+  "สมุนไพรบ้านสวน": "https://images.unsplash.com/photo-1762644085409-305634b2123e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiJTIwZ2FyZGVuJTIwY290dGFnZSUyMHNob3B8ZW58MXx8fHwxNzczODg1NDQ0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  "ร้านป่าหมอก": "https://images.unsplash.com/photo-1713724782271-6670d50322ac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaXN0eSUyMGZvcmVzdCUyMG1vdW50YWluJTIwc2hvcHxlbnwxfHx8fDE3NzM4ODU0NDR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  "Organic Thai Farm": "https://images.unsplash.com/photo-1593701635836-7fd2cd40a35f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvcmdhbmljJTIwZmFybSUyMGdyZWVuJTIwZmllbGR8ZW58MXx8fHwxNzczODg1NDQ1fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  "ธรรมชาติพรีเมียม": "https://images.unsplash.com/photo-1770361515842-cc592571bbd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYXR1cmFsJTIwcHJlbWl1bSUyMGJvdGFuaWNhbHxlbnwxfHx8fDE3NzM4ODU0NDV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+};
 
 export function CartPage() {
   const navigate = useNavigate();
@@ -47,7 +57,7 @@ export function CartPage() {
 
   // Group items by shop
   const groupedItems = items.reduce((acc, item) => {
-    const shop = "METAHERB Store";
+    const shop = item.shopName || products.find(p => p.id === item.productId)?.shopName || "METAHERB Store";
     if (!acc[shop]) acc[shop] = [];
     acc[shop].push(item);
     return acc;
@@ -67,7 +77,7 @@ export function CartPage() {
             </div>
             <p className={`${font} text-[16px] text-gray-400 mt-4`}>รถเข็นว่างเปล่า</p>
             <p className={`${font} text-[13px] text-gray-400 mt-1`}>เพิ่มสินค้าที่คุณชื่นชอบลงในรถเข็น</p>
-            <button onClick={() => navigate("/products")} className={`mt-4 bg-[#319754] text-white px-8 py-2.5 rounded-lg text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ไปช้อปปิ้งเลย</button>
+            <button onClick={() => navigate("/products")} className={`mt-4 bg-[#319754] text-white px-8 py-2.5 rounded-full text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ไปช้อปปิ้งเลย</button>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">
@@ -101,7 +111,7 @@ export function CartPage() {
                           setSelected(next);
                         }}
                         className="accent-[#319754] cursor-pointer size-4" />
-                      <Store className="size-4 text-[#319754]" />
+                      <img src={shopLogos[shopName] || imgShop} alt={shopName} className="size-5 rounded-full object-cover" />
                       <span className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{shopName}</span>
                       <span className="bg-[#319754] text-white text-[9px] px-1.5 py-0.5 rounded">ร้านค้าแนะนำ</span>
                     </div>
@@ -166,13 +176,7 @@ export function CartPage() {
             <div className="lg:w-[340px]">
               <div className="bg-white rounded-xl p-6 border border-gray-200 sticky top-[140px]">
                 {/* Coupon code */}
-                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-gray-100">
-                  <Tag className="size-4 text-[#319754] shrink-0" />
-                  <input value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="กรอกโค้ดส่วนลด"
-                    className={`flex-1 border border-gray-200 rounded-lg px-3 py-2 text-[13px] ${font} outline-none`} />
-                  <button onClick={handleApplyCoupon}
-                    className={`px-3 py-2 rounded-lg bg-[#319754] text-white text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shrink-0`}>ใช้โค้ด</button>
-                </div>
+                
                 {appliedCoupon && (
                   <div className="flex items-center justify-between mb-3 bg-green-50 rounded-lg px-3 py-2">
                     <span className={`${font} text-[12px] text-[#319754]`}>โค้ด: {appliedCoupon}</span>
@@ -211,10 +215,10 @@ export function CartPage() {
                 </div>
 
                 <button onClick={() => selectedCount > 0 && navigate("/payment")}
-                  className={`w-full mt-4 py-3 rounded-lg text-[14px] ${font} cursor-pointer transition-colors ${selectedCount > 0 ? "bg-[#319754] text-white hover:bg-[#267a43]" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>
+                  className={`w-full mt-4 py-3 rounded-full text-[14px] ${font} cursor-pointer transition-colors ${selectedCount > 0 ? "bg-[#319754] text-white hover:bg-[#267a43]" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>
                   สั่งซื้อสินค้า ({selectedCount})
                 </button>
-                <button onClick={() => navigate("/products")} className={`w-full mt-2 py-3 rounded-lg border border-[#319754] text-[#319754] text-[14px] ${font} cursor-pointer hover:bg-[#319754]/5`}>ช้อปปิ้งต่อ</button>
+                <button onClick={() => navigate("/products")} className={`w-full mt-2 py-3 rounded-full border border-[#319754] text-[#319754] text-[14px] ${font} cursor-pointer hover:bg-[#319754]/5`}>ช้อปปิ้งต่อ</button>
               </div>
             </div>
           </div>

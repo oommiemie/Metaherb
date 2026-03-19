@@ -3,7 +3,7 @@ import { Clock, Tag, Ticket, Gift } from "lucide-react";
 import { toast } from "sonner";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
-const fontBold = "font-['IBM_Plex_Sans_Thai',sans-serif]";
+const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
 type CouponType = "all" | "discount" | "free_shipping";
 
@@ -66,10 +66,10 @@ function CouponCard({ coupon, onCollect }: { coupon: Coupon; onCollect: (id: str
 
           {/* Collect button */}
           {coupon.collected ? (
-            <span className={`${font} text-[13px] text-[#999] bg-[#f0f0f0] px-4 py-1.5 rounded-lg`}>เก็บแล้ว</span>
+            <span className={`${font} text-[13px] text-[#999] bg-[#f0f0f0] px-4 py-1.5 rounded-full`}>เก็บแล้ว</span>
           ) : (
             <button onClick={() => onCollect(coupon.id)}
-              className={`${font} text-[13px] text-white bg-[#319754] px-5 py-1.5 rounded-lg cursor-pointer hover:bg-[#267a43]`}>เก็บ</button>
+              className={`${font} text-[13px] text-white bg-[#319754] px-5 py-1.5 rounded-full cursor-pointer hover:bg-[#267a43]`}>เก็บ</button>
           )}
         </div>
       </div>

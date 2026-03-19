@@ -49,9 +49,9 @@ export function VerifyPaymentPage() {
           </div>
 
           <div className="mt-6 space-y-3">
-            <button onClick={() => navigate(`/orders`)} className={`w-full py-3 rounded-lg bg-[#319754] text-white text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ดูรายละเอียดคำสั่งซื้อ</button>
-            <button onClick={() => navigate("/orders")} className={`w-full py-3 rounded-lg border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer hover:bg-gray-50`}>คำสั่งซื้อทั้งหมด</button>
-            <button onClick={() => navigate("/products")} className={`w-full py-3 rounded-lg border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer hover:bg-gray-50`}>ช้อปปิ้งต่อ</button>
+            <button onClick={() => navigate(`/orders`)} className={`w-full py-3 rounded-full bg-[#319754] text-white text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ดูรายละเอียดคำสั่งซื้อ</button>
+            <button onClick={() => navigate("/orders")} className={`w-full py-3 rounded-full border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer hover:bg-gray-50`}>คำสั่งซื้อทั้งหมด</button>
+            <button onClick={() => navigate("/products")} className={`w-full py-3 rounded-full border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer hover:bg-gray-50`}>ช้อปปิ้งต่อ</button>
           </div>
         </div>
       </div>

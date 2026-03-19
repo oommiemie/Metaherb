@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X, Clock, ChevronDown, Check } from "lucide-react";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
-const fontBold = "font-['IBM_Plex_Sans_Thai',sans-serif]";
+const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
 interface CouponOption {
   id: string;

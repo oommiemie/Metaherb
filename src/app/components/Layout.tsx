@@ -6,7 +6,7 @@ import { useOrders } from "../store/OrderContext";
 import { useNotifications } from "../store/NotificationContext";
 import type { Notification } from "../store/NotificationContext";
 import { useWishlist } from "../store/WishlistContext";
-import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, Info } from "lucide-react";
+import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, Info, BarChart3, DollarSign, Users, Image, Settings } from "lucide-react";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ChatModal } from "./ChatModal";
 import imgLogo from "figma:asset/c494dc0dab30c1bf59f2f6e2c114db61b1755370.png";
@@ -20,10 +20,17 @@ import imgOrderVerify from "figma:asset/bc3856a249e9261822188ed229ddd0e2ad6d0b2d
 import imgOrderShip from "figma:asset/6fe3df791a7ffa4eb26dc3d280886d11308e2b73.png";
 import imgOrderDone from "figma:asset/affa7b2c27f58769e6b6bc5c0bac9bbeee21a3ef.png";
 import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { products } from "../data/products";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
-const fontBold = "font-['IBM_Plex_Sans_Thai',sans-serif]";
+const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
+
+const avatarByRole: Record<string, string> = {
+  user: "https://images.unsplash.com/photo-1718307701476-bf46ac964396?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0aGFpJTIwd29tYW4lMjBwb3J0cmFpdCUyMGZyaWVuZGx5fGVufDF8fHx8MTc3Mzg4ODExMnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  owner: "https://images.unsplash.com/photo-1701463387028-3947648f1337?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhc2lhbiUyMG1hbiUyMGJ1c2luZXNzJTIwb3duZXIlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NzM4ODgxMTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  admin: "https://images.unsplash.com/photo-1612190219911-286df0e14656?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhc2lhbiUyMG1hbiUyMHByb2Zlc3Npb25hbCUyMHBvcnRyYWl0JTIwZ2xhc3Nlc3xlbnwxfHx8fDE3NzM4ODgxMTJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+};
 
 /* ========== SEARCH with suggestions ========== */
 function SearchBar({ className = "" }: { className?: string }) {
@@ -246,7 +253,7 @@ function ProfileHoverPreview({ user, onNavigate }: { user: any; onNavigate: (pat
   return (
     <div className="absolute right-0 top-full mt-2 bg-white rounded-[12px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.12)] w-[220px] z-50 overflow-hidden border border-gray-100">
       <div className="p-3 flex items-center gap-3 bg-[#d6eadd]/40">
-        <img src={imgAvatar} className="size-[36px] rounded-full shrink-0" alt="" />
+        <img src={avatarByRole[user?.role || "user"]} className="size-[36px] rounded-full shrink-0 object-cover" alt="" />
         <div className="min-w-0">
           <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{user?.username}</p>
           <p className={`${font} text-[11px] text-gray-500 truncate`}>{user?.email}</p>
@@ -283,6 +290,10 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
     return () => document.removeEventListener("mousedown", handler);
   }, [onClose]);
 
+  const isOwner = user?.role === "owner";
+  const isAdmin = user?.role === "admin";
+  const isUser = user?.role === "user" || (!isOwner && !isAdmin);
+
   const orderStatuses = [
     { label: "รอชำระเงิน", icon: imgOrderPay, count: 2 },
     { label: "รอตรวจสอบ", icon: imgOrderVerify, count: 1 },
@@ -290,69 +301,60 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
     { label: "จัดส่งแล้ว", icon: imgOrderDone, count: 1 },
   ];
 
-  const menuSections = [
-    {
-      items: [
-        { icon: User, label: "บัญชีของฉัน", path: "/orders", color: "text-black" },
-        { icon: MapPin, label: "ที่อยู่จัดส่ง", path: "/orders", color: "text-black" },
-        { icon: Heart, label: "สินค้าที่ชอบ", path: "/wishlist", color: "text-black" },
-        { icon: Ticket, label: "คูปองของฉัน", path: "/coupons", color: "text-black" },
-      ],
-    },
-    {
-      items: [
-        ...(user?.role === "owner" ? [{ icon: Store, label: "ร้านค้าของฉัน", path: "/owner", color: "text-black" }] : []),
-        ...(user?.role === "admin" ? [{ icon: Shield, label: "แผงควบคุม", path: "/admin", color: "text-black" }] : []),
-        { icon: Monitor, label: "ตั้งค่าระบบ", path: "/orders", color: "text-black" },
-      ],
-    },
-  ];
-
   const go = (path: string) => { onNavigate(path); onClose(); };
 
   return (
     <div ref={ref} className="absolute right-0 top-full mt-2 bg-white rounded-[16px] shadow-[2px_4px_24px_0px_rgba(0,0,0,0.1)] w-[90vw] sm:w-[400px] z-50 overflow-hidden">
-      <div className="bg-[#d6eadd] h-[150px] relative overflow-hidden">
+      <div className={`${isOwner ? "bg-[#e8f5e9]" : isAdmin ? "bg-[#e3f2fd]" : "bg-[#d6eadd]"} h-[150px] relative overflow-hidden`}>
         <div className="flex items-end gap-4 p-4 h-full">
-          <img src={imgAvatar} className="size-[60px] rounded-full shrink-0 relative z-10" alt="" />
+          <img src={avatarByRole[user?.role || "user"]} className="size-[60px] rounded-full shrink-0 relative z-10 object-cover" alt="" />
           <div className="relative z-10">
             <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{user?.username}</p>
             <p className={`${font} text-[14px] text-black`}>{user?.email}</p>
+            <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] ${font} ${
+              isOwner ? "bg-[#319754] text-white" : isAdmin ? "bg-[#3b82f6] text-white" : "bg-gray-200 text-gray-600"
+            }`}>
+              {isOwner ? "🏪 เจ้าของร้านค้า" : isAdmin ? "🛡️ ผู้ดูแลระบบ" : "👤 สมาชิก"}
+            </span>
           </div>
         </div>
         <img src={imgGroup41} className="absolute right-0 top-4 w-[259px] h-[207px] object-contain opacity-30 pointer-events-none" alt="" />
       </div>
 
-      <div className="px-4 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>การสั่งซื้อของฉัน</span>
-          <button onClick={() => go("/orders")} className={`flex items-center gap-1.5 ${font} text-[12px] text-black cursor-pointer`}>
-            ดูทั้งหมด <ArrowRight className="size-4" />
-          </button>
-        </div>
-        <div className="flex items-center justify-between">
-          {orderStatuses.map((s) => (
-            <button key={s.label} onClick={() => go("/orders")} className="flex flex-col items-center gap-2.5 w-[90px] cursor-pointer">
-              <div className="bg-[#f5f5f5] rounded-[16px] size-[48px] p-1.5 relative">
-                {s.count > 0 && (
-                  <span className="absolute -top-2.5 -right-2.5 bg-[#ff383c] text-white text-[8px] px-2 py-1 rounded-full shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] z-10">
-                    {s.count}
-                  </span>
-                )}
-                <img src={s.icon} className="w-full h-full object-cover" alt="" />
-              </div>
-              <span className={`${font} text-[12px] text-black text-center`}>{s.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="h-px bg-[#d4d4d8] mx-0" />
-
-      {menuSections.map((section, si) => (
-        <div key={si}>
+      {/* User role: show order statuses */}
+      {isUser && (
+        <>
+          <div className="px-4 py-4">
+            <div className="flex items-center justify-between mb-4">
+              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>การสั่งซื้อของฉัน</span>
+              <button onClick={() => go("/orders")} className={`flex items-center gap-1.5 ${font} text-[12px] text-black cursor-pointer`}>
+                ดูทั้งหมด <ArrowRight className="size-4" />
+              </button>
+            </div>
+            <div className="flex items-center justify-between">
+              {orderStatuses.map((s) => (
+                <button key={s.label} onClick={() => go("/orders")} className="flex flex-col items-center gap-2.5 w-[90px] cursor-pointer">
+                  <div className="bg-[#f5f5f5] rounded-[16px] size-[48px] p-1.5 relative">
+                    {s.count > 0 && (
+                      <span className="absolute -top-2.5 -right-2.5 bg-[#ff383c] text-white text-[8px] px-2 py-1 rounded-full shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] z-10">
+                        {s.count}
+                      </span>
+                    )}
+                    <img src={s.icon} className="w-full h-full object-cover" alt="" />
+                  </div>
+                  <span className={`${font} text-[12px] text-black text-center`}>{s.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="h-px bg-[#d4d4d8] mx-0" />
           <div className="px-4 py-3 space-y-2.5">
-            {section.items.map((item) => (
+            {[
+              { icon: User, label: "บัญชีของฉัน", path: "/orders", color: "text-black" },
+              { icon: MapPin, label: "ที่อยู่จัดส่ง", path: "/orders", color: "text-black" },
+              { icon: Heart, label: "สินค้าที่ชอบ", path: "/wishlist", color: "text-black" },
+              { icon: Ticket, label: "คูปองของฉัน", path: "/my-coupons", color: "text-black" },
+            ].map((item) => (
               <button key={item.label} onClick={() => go(item.path)}
                 className={`flex items-center gap-2.5 cursor-pointer w-full text-left ${item.color}`}>
                 <div className="bg-[#f5f5f5] size-[28px] rounded-full flex items-center justify-center shrink-0">
@@ -362,9 +364,59 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
               </button>
             ))}
           </div>
-          {si < menuSections.length - 1 && <div className="h-px bg-[#d4d4d8]" />}
-        </div>
-      ))}
+        </>
+      )}
+
+      {/* Owner role: shop management menu */}
+      {isOwner && (
+        <>
+          <div className="px-4 py-3 space-y-2.5">
+            <p className={`${font} text-[11px] text-gray-400 uppercase tracking-wider`}>จัดการร้านค้า</p>
+            {[
+              { icon: BarChart3, label: "ภาพรวมร้านค้า", path: "/owner" },
+              { icon: ShoppingCart, label: "คำสั่งซื้อ", path: "/owner" },
+              { icon: Package, label: "จัดการสินค้า", path: "/owner" },
+              { icon: Store, label: "หน้าร้านค้า", path: "/shop/metaherb" },
+              { icon: Ticket, label: "คูปองและโปรโมชั่น", path: "/owner" },
+              { icon: Monitor, label: "ตั้งค่าร้านค้า", path: "/owner" },
+            ].map((item) => (
+              <button key={item.label} onClick={() => go(item.path)}
+                className="flex items-center gap-2.5 cursor-pointer w-full text-left text-black">
+                <div className="bg-[#319754]/10 size-[28px] rounded-full flex items-center justify-center shrink-0">
+                  <item.icon className="size-3 text-[#319754]" />
+                </div>
+                <span className={`${font} text-[14px]`}>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Admin role: admin management menu */}
+      {isAdmin && (
+        <>
+          <div className="px-4 py-3 space-y-2.5">
+            <p className={`${font} text-[11px] text-gray-400 uppercase tracking-wider`}>ระบบหลังบ้าน</p>
+            {[
+              { icon: BarChart3, label: "ภาพรวมระบบ", path: "/admin" },
+              { icon: DollarSign, label: "รายงานยอดขาย", path: "/admin" },
+              { icon: Users, label: "จัดการผู้ใช้", path: "/admin" },
+              { icon: Store, label: "จัดการร้านค้า", path: "/admin" },
+              { icon: Image, label: "จัดการ Banner", path: "/admin" },
+              { icon: Shield, label: "จัดการแอดมิน", path: "/admin" },
+              { icon: Settings, label: "ตั้งค่าระบบ", path: "/admin" },
+            ].map((item) => (
+              <button key={item.label} onClick={() => go(item.path)}
+                className="flex items-center gap-2.5 cursor-pointer w-full text-left text-black">
+                <div className="bg-[#3b82f6]/10 size-[28px] rounded-full flex items-center justify-center shrink-0">
+                  <item.icon className="size-3 text-[#3b82f6]" />
+                </div>
+                <span className={`${font} text-[14px]`}>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="h-px bg-[#d4d4d8]" />
 
@@ -394,17 +446,44 @@ export function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
-  const menuItems = [
+  const isOwner = isAuthenticated && user?.role === "owner";
+  const isAdmin = isAuthenticated && user?.role === "admin";
+  const isStaffRole = isOwner || isAdmin;
+
+  const userMenuItems = [
     { label: "หน้าหลัก", path: "/" },
     { label: "ผลิตภัณท์", path: "/products" },
     { label: "สาระความรู้", path: "/blog" },
   ];
+
+  const ownerMenuItems = [
+    { label: "ภาพรวม", path: "/owner" },
+    { label: "หน้าร้านค้า", path: "/shop/metaherb" },
+  ];
+
+  const adminMenuItems = [
+    { label: "แผงควบคุม", path: "/admin" },
+  ];
+
+  const menuItems = isOwner ? ownerMenuItems : isAdmin ? adminMenuItems : userMenuItems;
 
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
     setMobileSearchOpen(false);
   }, [location.pathname]);
+
+  // Auto-redirect owner/admin to their dashboard on login
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const shoppingPaths = ["/", "/products", "/cart", "/payment", "/orders", "/wishlist", "/coupons", "/my-coupons", "/blog"];
+    const isOnShoppingPage = shoppingPaths.some((p) => location.pathname === p) || location.pathname.startsWith("/product/") || location.pathname.startsWith("/verify-payment/") || location.pathname.startsWith("/blog/");
+    if (isOwner && isOnShoppingPage) {
+      navigate("/owner", { replace: true });
+    } else if (isAdmin && isOnShoppingPage) {
+      navigate("/admin", { replace: true });
+    }
+  }, [isAuthenticated, user?.role, location.pathname]);
 
   return (
     <div className="flex flex-col min-h-screen w-full">
@@ -417,23 +496,39 @@ export function Layout() {
           </button>
 
           {/* Logo */}
-          <div className="flex items-center gap-2 sm:gap-2.5 cursor-pointer shrink-0" onClick={() => navigate("/")}>
+          <div className="flex items-center gap-2 sm:gap-2.5 cursor-pointer shrink-0" onClick={() => navigate(isOwner ? "/owner" : isAdmin ? "/admin" : "/")}>
             <img src={imgLogo} className="size-[40px] sm:size-[58px] shrink-0" alt="MetaHerb" />
             <span className={`${fontBold} text-[18px] sm:text-[24px] whitespace-nowrap`} style={{ fontWeight: 700 }}>
               <span className="text-[#ed1c24]">META</span>
               <span className="text-[#f7931d]">HERB</span>
             </span>
+            {/* Role badge next to logo */}
+            {isOwner && (
+              <span className={`hidden sm:inline-flex items-center gap-1 ml-2 px-2.5 py-1 rounded-full bg-[#319754]/10 text-[#319754] text-[11px] ${font}`}>
+                <Store className="size-3" /> ร้านค้า
+              </span>
+            )}
+            {isAdmin && (
+              <span className={`hidden sm:inline-flex items-center gap-1 ml-2 px-2.5 py-1 rounded-full bg-[#3b82f6]/10 text-[#3b82f6] text-[11px] ${font}`}>
+                <Shield className="size-3" /> แอดมิน
+              </span>
+            )}
           </div>
 
-          {/* Search - desktop */}
-          <SearchBar className="hidden md:block w-[300px] lg:w-[412px] shrink-0 mx-4" />
+          {/* Search - desktop (user only) */}
+          {!isStaffRole && <SearchBar className="hidden md:block w-[300px] lg:w-[412px] shrink-0 mx-4" />}
+
+          {/* Spacer for staff roles */}
+          {isStaffRole && <div className="flex-1" />}
 
           {/* Right */}
           <div className="flex items-center gap-2 sm:gap-4 justify-end">
-            {/* Mobile search toggle */}
-            <button onClick={() => setMobileSearchOpen(!mobileSearchOpen)} className="md:hidden p-1 cursor-pointer">
-              <Search className="size-5 text-gray-600" />
-            </button>
+            {/* Mobile search toggle (user only) */}
+            {!isStaffRole && (
+              <button onClick={() => setMobileSearchOpen(!mobileSearchOpen)} className="md:hidden p-1 cursor-pointer">
+                <Search className="size-5 text-gray-600" />
+              </button>
+            )}
 
             {/* Notifications */}
             <div className="relative group/notif hidden sm:block">
@@ -449,11 +544,7 @@ export function Layout() {
               {showNotifications && isAuthenticated && <NotificationDropdown onClose={() => setShowNotifications(false)} />}
               {!showNotifications && isAuthenticated && (
                 <div className="hidden group-hover/notif:block">
-                  <NotificationHoverPreview
-                    notifications={notifications}
-                    unreadCount={unreadCount}
-                    onViewAll={() => setShowNotifications(true)}
-                  />
+                  <NotificationDropdown onClose={() => setShowNotifications(false)} />
                 </div>
               )}
             </div>
@@ -471,45 +562,49 @@ export function Layout() {
               {showNotifications && isAuthenticated && <NotificationDropdown onClose={() => setShowNotifications(false)} />}
             </div>
 
-            {/* Cart */}
-            <div className="relative group/cart hidden sm:block">
-              <button onClick={() => navigate("/cart")}
-                className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] sm:size-[40px] cursor-pointer relative flex items-center justify-center">
-                <img src={imgCart} className="size-[20px] sm:size-[22px] object-contain" alt="cart" />
-                {isAuthenticated && itemCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
-                    {itemCount}
-                  </span>
-                )}
-              </button>
-              {isAuthenticated && (
-                <div className="hidden group-hover/cart:block">
-                  <CartHoverPreview
-                    items={cartItems}
-                    total={cartTotal}
-                    onGoToCart={() => navigate("/cart")}
-                  />
+            {/* Cart (user only) */}
+            {!isStaffRole && (
+              <>
+                <div className="relative group/cart hidden sm:block">
+                  <button onClick={() => navigate("/cart")}
+                    className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] sm:size-[40px] cursor-pointer relative flex items-center justify-center">
+                    <img src={imgCart} className="size-[20px] sm:size-[22px] object-contain" alt="cart" />
+                    {isAuthenticated && itemCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
+                        {itemCount}
+                      </span>
+                    )}
+                  </button>
+                  {isAuthenticated && (
+                    <div className="hidden group-hover/cart:block">
+                      <CartHoverPreview
+                        items={cartItems}
+                        total={cartTotal}
+                        onGoToCart={() => navigate("/cart")}
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            {/* Cart - mobile (no hover) */}
-            <div className="relative sm:hidden">
-              <button onClick={() => navigate("/cart")}
-                className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] cursor-pointer relative flex items-center justify-center">
-                <img src={imgCart} className="size-[20px] object-contain" alt="cart" />
-                {isAuthenticated && itemCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
-                    {itemCount}
-                  </span>
-                )}
-              </button>
-            </div>
+                {/* Cart - mobile (no hover) */}
+                <div className="relative sm:hidden">
+                  <button onClick={() => navigate("/cart")}
+                    className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] cursor-pointer relative flex items-center justify-center">
+                    <img src={imgCart} className="size-[20px] object-contain" alt="cart" />
+                    {isAuthenticated && itemCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
+                        {itemCount}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
 
             {/* Profile / Auth buttons */}
             {isAuthenticated ? (
               <div className="relative group/profile">
                 <button onClick={() => { setShowProfile(!showProfile); setShowNotifications(false); }} className="cursor-pointer shrink-0">
-                  <img src={imgAvatar} className="size-[48px] rounded-full" alt="profile" />
+                  <img src={avatarByRole[user?.role || "user"]} className="size-[48px] rounded-full object-cover" alt="profile" />
                 </button>
                 {showProfile && (
                   <ProfileDialog
@@ -519,8 +614,8 @@ export function Layout() {
                 )}
                 {!showProfile && (
                   <div className="hidden sm:group-hover/profile:block">
-                    <ProfileHoverPreview
-                      user={user}
+                    <ProfileDialog
+                      onClose={() => setShowProfile(false)}
                       onNavigate={(path) => { navigate(path); }}
                     />
                   </div>
@@ -541,15 +636,15 @@ export function Layout() {
           </div>
         </div>
 
-        {/* Mobile search bar */}
-        {mobileSearchOpen && (
+        {/* Mobile search bar (user only) */}
+        {!isStaffRole && mobileSearchOpen && (
           <div className="md:hidden px-4 pb-3">
             <SearchBar className="w-full" />
           </div>
         )}
 
         {/* Menu Bar - Desktop */}
-        <nav className="bg-[#319754] hidden md:block">
+        <nav className={`${isAdmin ? "bg-[#3b82f6]" : "bg-[#319754]"} hidden md:block`}>
           <div className="max-w-[1440px] mx-auto flex items-center justify-center gap-2 py-2.5 px-6">
             {menuItems.map((item) => (
               <button
@@ -562,9 +657,11 @@ export function Layout() {
                 {item.label}
               </button>
             ))}
-            <button onClick={() => navigate("/about")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer ${location.pathname === "/about" ? "bg-black/15" : "hover:bg-white/10"}`}>
-              เกี่ยวกับเรา
-            </button>
+            {!isStaffRole && (
+              <button onClick={() => navigate("/about")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer ${location.pathname === "/about" ? "bg-black/15" : "hover:bg-white/10"}`}>
+                เกี่ยวกับเรา
+              </button>
+            )}
           </div>
         </nav>
 
@@ -580,25 +677,17 @@ export function Layout() {
                   {item.label}
                 </button>
               ))}
-              <button onClick={() => navigate("/wishlist")}
-                className={`px-6 py-3 text-left text-[14px] ${font} cursor-pointer text-gray-700 hover:bg-gray-50 flex items-center gap-2`}>
-                <Heart className="size-4" /> สินค้าที่ชอบ
-                {wishlistCount > 0 && <span className="bg-[#ff383c] text-white text-[10px] px-1.5 rounded-full">{wishlistCount}</span>}
-              </button>
-              <button onClick={() => { navigate("/about"); setMobileMenuOpen(false); }} className={`px-6 py-3 text-left text-[14px] ${font} cursor-pointer ${location.pathname === "/about" ? "text-[#319754] bg-[#319754]/5" : "text-gray-700 hover:bg-gray-50"}`}>
-                เกี่ยวกับเรา
-              </button>
-              {isAuthenticated && user?.role === "owner" && (
-                <button onClick={() => { navigate("/owner"); setMobileMenuOpen(false); }}
-                  className={`px-6 py-3 text-left text-[14px] ${font} cursor-pointer text-[#319754] border-t border-gray-100`}>
-                  จัดการร้านค้า
-                </button>
-              )}
-              {isAuthenticated && user?.role === "admin" && (
-                <button onClick={() => { navigate("/admin"); setMobileMenuOpen(false); }}
-                  className={`px-6 py-3 text-left text-[14px] ${font} cursor-pointer text-[#319754] border-t border-gray-100`}>
-                  แผงควบคุม
-                </button>
+              {!isStaffRole && (
+                <>
+                  <button onClick={() => navigate("/wishlist")}
+                    className={`px-6 py-3 text-left text-[14px] ${font} cursor-pointer text-gray-700 hover:bg-gray-50 flex items-center gap-2`}>
+                    <Heart className="size-4" /> สินค้าที่ชอบ
+                    {wishlistCount > 0 && <span className="bg-[#ff383c] text-white text-[10px] px-1.5 rounded-full">{wishlistCount}</span>}
+                  </button>
+                  <button onClick={() => { navigate("/about"); setMobileMenuOpen(false); }} className={`px-6 py-3 text-left text-[14px] ${font} cursor-pointer ${location.pathname === "/about" ? "text-[#319754] bg-[#319754]/5" : "text-gray-700 hover:bg-gray-50"}`}>
+                    เกี่ยวกับเรา
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -606,14 +695,25 @@ export function Layout() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 bg-[#fafafa]">
-        <Outlet />
+      <main className="flex-1" style={{ backgroundColor: "#fafafa" }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* Chat Modal - Shopee-style floating chat */}
       {isAuthenticated && <ChatModal />}
 
-      {/* Footer */}
+      {/* Footer (user only) */}
+      {!isStaffRole && (
       <footer>
         <div className="bg-gradient-to-t from-[#226a3b] to-[#5aac76] via-[#319754]">
           <div className="max-w-[1440px] mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 px-4 sm:px-6 lg:px-[124px] py-6 sm:py-8">
@@ -650,6 +750,7 @@ export function Layout() {
           <p className={`${font} text-[14px] text-white`}>© 2026 MetaHerb. สงวนลิขสิทธิ์ทั้งหมด.</p>
         </div>
       </footer>
+      )}
     </div>
   );
 }

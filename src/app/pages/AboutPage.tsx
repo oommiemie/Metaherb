@@ -3,6 +3,9 @@ import { useNavigate } from "react-router";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Phone, Mail, MapPin, ChevronDown, Leaf, Clock, ShieldCheck, Facebook, Send, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
 import imgHerb from "figma:asset/f24d55b139f649587f70c678ab822ead66587d45.png";
 import imgTea from "figma:asset/bbbf823d211a68f6164b9a16d14453e6ebfaa746.png";
@@ -13,7 +16,7 @@ import imgMission from "figma:asset/1d6e138ce0a1c2930909c26a7eede22840f0c150.png
 import imgLogo from "figma:asset/c494dc0dab30c1bf59f2f6e2c114db61b1755370.png";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
-const fontHeading = "font-['IBM_Plex_Sans_Thai',sans-serif]";
+const fontHeading = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
 export function AboutPage() {
   const navigate = useNavigate();
@@ -35,7 +38,7 @@ export function AboutPage() {
         {/* Background image */}
         <div className="absolute inset-0">
           <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-            <source src="/_videos/v1/90927741a2bb60e208bd83fbe90621a697867487" />
+            <source src="https://res.cloudinary.com/dujq74ght/video/upload/ท่องโลกสมุนไพร_EP._6_ตะลุยต่างแดน_ตอน__ชาซีลอน_ศรีลังกา__1_1_xvtgqw.mp4" type="video/mp4" />
           </video>
           <div className="absolute inset-0 bg-gradient-to-r from-[rgba(13,31,13,0.85)] via-[rgba(13,31,13,0.3)] to-transparent" />
         </div>
@@ -76,8 +79,8 @@ export function AboutPage() {
 
         {/* Scroll indicator wave */}
         <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 57" fill="none" className="w-full">
-            <path d="M0 57V25C240 -5 480 -5 720 25C960 55 1200 55 1440 25V57H0Z" fill="#f5f0e8" />
+          <svg viewBox="0 0 1439 56" fill="none" className="w-full block">
+            <path d="M0 55.125C491.333 -18.375 971 -18.375 1439 55.125H0Z" fill="#f5f0e8" />
           </svg>
           <div className="absolute top-[30%] left-1/2 -translate-x-1/2">
             <span className={`text-[#319754] text-[12px] tracking-wider uppercase`}>เลื่อนเพื่อดูเนื้อหา</span>
@@ -154,22 +157,53 @@ export function AboutPage() {
       </section>
 
       {/* ========== TRUST / PRODUCTS SECTION ========== */}
-      <section className="bg-[#1a2e1a] py-16 sm:py-20 lg:py-24 overflow-hidden">
+      <section className="bg-[#1a2e1a] py-16 sm:py-20 lg:py-24 overflow-hidden relative">
+        {/* Decorative circles */}
+        <div className="absolute right-[-30px] lg:right-[140px] top-[-96px] size-[256px] rounded-full bg-[rgba(125,184,112,0.1)]" />
+        <div className="absolute left-[-64px] bottom-[-40px] size-[192px] rounded-full bg-[rgba(125,184,112,0.1)]" />
+
         <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-[68px]">
-          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
-            {/* Product images - stacked/rotated */}
+          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-center">
+            {/* Product images - stacked/rotated with swiper */}
             <div className="w-full lg:w-[520px] shrink-0 relative h-[350px] sm:h-[450px] lg:h-[520px]">
-              <div className="absolute left-0 top-8 sm:top-0 w-[280px] sm:w-[380px] lg:w-[512px] aspect-square rounded-[40px] overflow-hidden border border-white shadow-lg rotate-[7deg] z-10">
+              {/* Back rotated image (decorative) */}
+              <div className="absolute left-[40px] sm:left-[60px] top-0 sm:top-[-20px] w-[260px] sm:w-[360px] lg:w-[512px] aspect-square rounded-[40px] overflow-hidden border border-white shadow-lg z-0" style={{ transform: "rotate(13deg)" }}>
                 <ImageWithFallback src={imgProduct1} alt="ผลิตภัณฑ์" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[rgba(13,31,13,0.8)] via-transparent to-transparent" />
-                <div className="absolute bottom-6 left-6">
-                  <p className="text-white/80 text-[13px]">ผลิตภัณฑ์เด่นของเรา</p>
-                  <p className="text-white text-[18px] sm:text-[21px]" style={{ fontWeight: 700 }}>ชาสมุนไพรเชียงราย</p>
-                  <p className="text-[#a8d5a0] text-[13px]">ผสมจากสมุนไพร 7 ชนิด คัดสรรพิเศษ</p>
-                </div>
               </div>
-              <div className="absolute left-[40px] sm:left-[60px] top-0 sm:top-[-20px] w-[260px] sm:w-[360px] lg:w-[512px] aspect-square rounded-[40px] overflow-hidden border border-white shadow-lg rotate-[13deg] z-0">
+              {/* Middle rotated image (decorative) */}
+              <div className="absolute left-[20px] sm:left-[30px] top-[10px] sm:top-[-10px] w-[270px] sm:w-[370px] lg:w-[512px] aspect-square rounded-[40px] overflow-hidden border border-white shadow-lg z-[1]" style={{ transform: "rotate(7deg)" }}>
                 <ImageWithFallback src={imgProduct2} alt="ผลิตภัณฑ์" className="w-full h-full object-cover" />
+              </div>
+              {/* Front swipeable image */}
+              <div className="absolute left-0 top-[20px] sm:top-[10px] w-[280px] sm:w-[380px] lg:w-[512px] aspect-square rounded-[40px] overflow-hidden border border-white shadow-[0px_0px_4px_rgba(0,0,0,0.25)] z-10">
+                <Slider dots={true} infinite autoplay autoplaySpeed={4000} speed={600} arrows={false} fade
+                  appendDots={(dots: React.ReactNode) => (
+                    <div style={{ position: "absolute", bottom: "16px", width: "100%" }}>
+                      <ul className="flex justify-center gap-2">{dots}</ul>
+                    </div>
+                  )}
+                  customPaging={() => (
+                    <div className="size-2.5 rounded-full bg-white/40 transition-all [.slick-active_&]:bg-white [.slick-active_&]:w-6 [.slick-active_&]:rounded-full" />
+                  )}
+                >
+                  {[
+                    { img: imgProduct3, title: "พิมเสนน้ำอโรมา ตราเมต้าเฮิร์บ", desc: "พิมเสนน้ำอโรม่า ตราเมต้าเฮิร์บ มีชิ้นส่วนสมุนไพร" },
+                    { img: imgProduct1, title: "ชาสมุนไพรเชียงราย", desc: "ผสมจากสมุนไพร 7 ชนิด คัดสรรพิเศษ" },
+                    { img: imgProduct2, title: "น้ำมันสมุนไพร ตราเมต้าเฮิร์บ", desc: "น้ำมันสมุนไพรสกัดจากธรรมชาติ 100%" },
+                  ].map((item, idx) => (
+                    <div key={idx} className="relative">
+                      <div className="w-full aspect-square">
+                        <ImageWithFallback src={item.img} alt={item.title} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[rgba(13,31,13,0.8)] via-transparent to-transparent" />
+                        <div className="absolute bottom-10 left-6 right-6">
+                          <p className="text-white/80 text-[13px]">ผลิตภัณฑ์เด่นของเรา</p>
+                          <p className="text-white text-[18px] sm:text-[21px]" style={{ fontWeight: 700 }}>{item.title}</p>
+                          <p className="text-[#a8d5a0] text-[13px]">{item.desc}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </Slider>
               </div>
             </div>
 
@@ -187,7 +221,7 @@ export function AboutPage() {
                   { tag: "สินค้าใหม่", tagColor: "#7db870", title: "ชาสมุนไพร 7 ชนิด", desc: "ผสมจากตะไคร้ ขิง ขมิ้น กระชาย ใบเตย มะตูม และดอกอัญชัน" },
                   { tag: "ยอดนิยม", tagColor: "#5b8dee", title: "ชาสมุนไพร 7 ชนิด", desc: "ผสมจากตะไคร้ ขิง ขมิ้น กระชาย ใบเตย มะตูม และดอกอัญชัน" },
                 ].map((card, i) => (
-                  <div key={i} className={`bg-white/5 border border-white/10 rounded-2xl p-4 shadow ${i === 2 ? "sm:col-span-1" : ""}`}>
+                  <div key={i} className={`bg-white/5 border border-white/10 rounded-2xl p-4 shadow-[0px_4px_4px_rgba(0,0,0,0.25)] ${i === 2 ? "sm:col-span-1" : ""}`}>
                     <span className="text-white text-[12px] px-3 py-1 rounded-full" style={{ backgroundColor: card.tagColor }}>{card.tag}</span>
                     <h4 className="text-white text-[16px] mt-2" style={{ fontWeight: 600 }}>{card.title}</h4>
                     <p className="text-white/70 text-[14px] mt-1">{card.desc}</p>

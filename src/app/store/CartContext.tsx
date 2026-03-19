@@ -9,6 +9,7 @@ export interface CartItem {
   option: string;
   quantity: number;
   inStock: boolean;
+  shopName?: string;
 }
 
 interface CartContextType {

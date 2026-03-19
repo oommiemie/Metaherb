@@ -501,6 +501,7 @@ export function HomePage() {
               exit={{ x: recDirection > 0 ? -300 : 300, opacity: 0 }}
               transition={{ duration: 0.35, ease: "easeInOut" }}
               className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]"
+              style={{ backgroundColor: "transparent" }}
             >
               {pagedProducts.map((p, i) => {
                 const globalIdx = recPage * 6 + i;
@@ -545,9 +546,9 @@ export function HomePage() {
                     <div className="p-[10px] flex flex-col gap-[4px]">
                       <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{p.name}</p>
                       <div className="flex items-center gap-[10px]">
-                        <span className={`font-['IBM_Plex_Sans_Thai',sans-serif] text-[14px] ${p.discountPercent ? 'text-[#e62e05]' : 'text-[#226a3b]'}`} style={{ fontWeight: 600 }}>฿ {p.price.toFixed(2)}</span>
+                        <span className={`font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[14px] ${p.discountPercent ? 'text-[#e62e05]' : 'text-[#226a3b]'}`} style={{ fontWeight: 600 }}>฿ {p.price.toFixed(2)}</span>
                         {p.originalPrice && (
-                          <span className="font-['IBM_Plex_Sans_Thai',sans-serif] text-[10px] text-[#a3a3a3] line-through">฿{p.originalPrice.toFixed(2)}</span>
+                          <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-[#a3a3a3] line-through">฿{p.originalPrice.toFixed(2)}</span>
                         )}
                         {p.hasCoupon && <CouponIcon />}
                       </div>
@@ -557,9 +558,9 @@ export function HomePage() {
                             <path d="M14 0H0V14H14V0Z" fill="#F7C42B" opacity="0" />
                             <path d={svgPaths.p1052b000} fill="#F7C42B" />
                           </svg>
-                          <span className="font-['IBM_Plex_Sans_Thai',sans-serif] text-[10px] text-black">{p.rating}/5</span>
+                          <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-black">{p.rating}/5</span>
                         </div>
-                        <span className="font-['IBM_Plex_Sans_Thai',sans-serif] text-[10px] text-black text-right">{p.sold}</span>
+                        <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-black text-right">{p.sold}</span>
                       </div>
                     </div>
                   </div>
@@ -624,6 +625,7 @@ export function HomePage() {
               exit={{ x: flashDirection > 0 ? -300 : 300, opacity: 0 }}
               transition={{ duration: 0.35, ease: "easeInOut" }}
               className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]"
+              style={{ backgroundColor: "transparent" }}
             >
               {pagedFlash.map((p, i) => {
                 const globalIdx = flashPage * 6 + i;
@@ -652,9 +654,9 @@ export function HomePage() {
                   <div className="p-[10px] flex flex-col gap-[4px]">
                     <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{p.name}</p>
                     <div className="flex items-center gap-[10px]">
-                      <span className="font-['IBM_Plex_Sans_Thai',sans-serif] text-[14px] text-[#e62e05]" style={{ fontWeight: 600 }}>฿ {p.price.toFixed(2)}</span>
+                      <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[14px] text-[#e62e05]" style={{ fontWeight: 600 }}>฿ {p.price.toFixed(2)}</span>
                       {p.originalPrice && (
-                        <span className="font-['IBM_Plex_Sans_Thai',sans-serif] text-[10px] text-[#a3a3a3] line-through">฿{p.originalPrice.toFixed(2)}</span>
+                        <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-[#a3a3a3] line-through">฿{p.originalPrice.toFixed(2)}</span>
                       )}
                       {p.hasCoupon && <CouponIcon />}
                     </div>
@@ -664,9 +666,9 @@ export function HomePage() {
                           <path d="M14 0H0V14H14V0Z" fill="#F7C42B" opacity="0" />
                           <path d={svgPaths.p1052b000} fill="#F7C42B" />
                         </svg>
-                        <span className="font-['IBM_Plex_Sans_Thai',sans-serif] text-[10px] text-black">{p.rating}/5</span>
+                        <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-black">{p.rating}/5</span>
                       </div>
-                      <span className="font-['IBM_Plex_Sans_Thai',sans-serif] text-[10px] text-black text-right">{p.sold}</span>
+                      <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-black text-right">{p.sold}</span>
                     </div>
                   </div>
                 </div>
@@ -726,12 +728,12 @@ export function HomePage() {
             ].map((a, i) => (
               <div
                 key={i}
-                className="bg-white rounded-[16px] border border-[#d4d4d4] h-[180px] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#af6f08]/40 transition-all duration-300 group"
+                className="bg-white rounded-[16px] border border-[#d4d4d4] h-auto sm:h-[180px] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#af6f08]/40 transition-all duration-300 group"
                 onClick={() => navigate("/blog")}
               >
-                <div className="flex items-start h-full">
+                <div className="flex flex-col sm:flex-row items-start h-full">
                   {/* Image */}
-                  <div className="relative h-full shrink-0 w-[180px] overflow-hidden">
+                  <div className="relative h-[140px] sm:h-full shrink-0 w-full sm:w-[180px] overflow-hidden">
                     <img src={a.img} alt={a.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     <div className="relative flex flex-col items-start justify-between p-[10px] h-full">
                       {/* View Count */}
@@ -792,14 +794,14 @@ export function HomePage() {
             {[
               { img: imgVideo1, views: "12K", title: "บุกสวนทุเรียนจังหวัดจันทบุรี" },
               { img: imgVideo2, views: "15K", title: "ท่องเที่ยวชมทะเลที่จังหวัดตราด" },
-              { img: imgVideo3, views: "9K", title: "ประเพณีลงแขกเกี่ยวข้าวที่���ีสาน" },
+              { img: imgVideo3, views: "9K", title: "ประเพณีลงแขกเกี่ยวข้าวที่ีสาน" },
               { img: imgVideo4, views: "20K", title: "ทริปปีนเขาดอยอินทนนท์" },
               { img: imgVideo5, views: "25K", title: "เดินป่าชมธรรมชาติที่เขาใหญ่" },
               { img: imgVideo6, views: "30K", title: "สัมผัสวัฒนธรรมพื้นบ้านที่เชียงใหม่" },
             ].map((v, i) => (
               <div
                 key={i}
-                className="relative h-[259px] rounded-[16px] overflow-hidden cursor-pointer group hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                className="relative h-[180px] sm:h-[259px] rounded-[16px] overflow-hidden cursor-pointer group hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
               >
                 <img src={v.img} alt={v.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />

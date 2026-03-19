@@ -189,7 +189,7 @@ export function AdminDashboard() {
         <div>
           <div className="flex justify-between items-center mb-4">
             <h3 className={`${font} text-[16px]`} style={{ fontWeight: 600 }}>จัดการ Banner</h3>
-            <button className={`bg-[#319754] text-white px-4 py-2 rounded-lg text-[13px] ${font} cursor-pointer`}>+ เพิ่ม Banner</button>
+            <button className={`bg-[#319754] text-white px-4 py-2 rounded-full text-[13px] ${font} cursor-pointer`}>+ เพิ่ม Banner</button>
           </div>
           <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
             <table className="w-full">
@@ -226,7 +226,7 @@ export function AdminDashboard() {
         <div>
           <div className="flex justify-between items-center mb-4">
             <h3 className={`${font} text-[16px]`} style={{ fontWeight: 600 }}>กำหนดหน้าที่แอดมิน</h3>
-            <button className={`bg-[#319754] text-white px-4 py-2 rounded-lg text-[13px] ${font} cursor-pointer`}>+ เพิ่มแอดมิน</button>
+            <button className={`bg-[#319754] text-white px-4 py-2 rounded-full text-[13px] ${font} cursor-pointer`}>+ เพิ่มแอดมิน</button>
           </div>
           <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
             <table className="w-full">
@@ -289,7 +289,7 @@ export function AdminDashboard() {
               <span className={`${font} text-[13px]`}>โหมดบำรุงรักษา</span>
               <div className="w-10 h-5 bg-gray-300 rounded-full relative cursor-pointer"><div className="absolute left-0.5 top-0.5 size-4 bg-white rounded-full" /></div>
             </div>
-            <button className={`bg-[#319754] text-white px-6 py-2.5 rounded-lg text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>บันทึกการตั้งค่า</button>
+            <button className={`bg-[#319754] text-white px-6 py-2.5 rounded-full text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>บันทึกการตั้งค่า</button>
           </div>
         </div>
       )}
