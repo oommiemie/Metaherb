@@ -22,6 +22,8 @@ import { ComplaintSelectPage } from "./pages/ComplaintSelectPage";
 import { ComplaintFormPage } from "./pages/ComplaintFormPage";
 import { ComplaintStatusPage } from "./pages/ComplaintStatusPage";
 import { AccountPage } from "./pages/AccountPage";
+import { AddressPage } from "./pages/AddressPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { AuthProvider } from "./store/AuthContext";
 import { CartProvider } from "./store/CartContext";
 import { OrderProvider } from "./store/OrderContext";
@@ -80,6 +82,8 @@ export const router = createBrowserRouter([
       { path: "complaint/form/:orderId", Component: ComplaintFormPage },
       { path: "complaint/status/:orderId", Component: ComplaintStatusPage },
       { path: "account", Component: AccountPage },
+      { path: "addresses", Component: AddressPage },
+      { path: "settings", Component: SettingsPage },
       { path: "owner", Component: OwnerDashboard },
       { path: "admin", Component: AdminDashboard },
       { path: "*", Component: () => <div className="text-center py-16 font-['IBM_Plex_Sans_Thai_Looped',sans-serif]">404 - ไม่พบหน้า</div> },

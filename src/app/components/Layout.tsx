@@ -351,7 +351,7 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
           <div className="px-4 py-3 space-y-2.5">
             {[
               { icon: User, label: "บัญชีของฉัน", path: "/account", color: "text-black" },
-              { icon: MapPin, label: "ที่อยู่จัดส่ง", path: "/orders", color: "text-black" },
+              { icon: MapPin, label: "ที่อยู่จัดส่ง", path: "/addresses", color: "text-black" },
               { icon: Heart, label: "สินค้าที่ชอบ", path: "/wishlist", color: "text-black" },
               { icon: Ticket, label: "คูปองของฉัน", path: "/my-coupons", color: "text-black" },
             ].map((item) => (
@@ -671,10 +671,7 @@ export function Layout() {
               </button>
             )}
             {isStaffRole && (
-              <button onClick={() => navigate("/settings")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer transition-colors ${location.pathname === "/settings" ? "bg-black/15" : "hover:bg-white/10"}`}>
-                
-                ตั้งค่าระบบ
-              </button>
+              <button onClick={() => navigate("/settings")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer transition-colors ${location.pathname === "/settings" ? "bg-black/15" : "hover:bg-white/10"}`}>ตั้งค่า</button>
             )}
           </div>
         </nav>

@@ -5,13 +5,17 @@ import { useNavigate } from "react-router";
 import {
   BarChart3, Package, ShoppingCart, Zap, Megaphone, Ticket,
   Settings, ChevronDown, ChevronLeft, Store, Search,
-  Plus, MoreHorizontal, Eye, AlertCircle, X, Check, Clock, ArrowRight, RotateCcw, Wallet
+  Plus, MoreHorizontal, Eye, AlertCircle, X, Check, Clock, ArrowRight, RotateCcw, Wallet,
+  AlertTriangle, Phone, Mail, ChevronRight, Filter
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import imgLogo from "figma:asset/c494dc0dab30c1bf59f2f6e2c114db61b1755370.png";
 import imgSideBar from "figma:asset/9c30b1921f0988e49ef49ac4f89b2dd06b320b33.png";
 import imgProd from "figma:asset/9e21f4217f39c8b2aaff50eadcf63d44b0fcf83c.png";
 import imgFlash from "figma:asset/8effbd2f0b89604dcbe9aeb239cc524667996e66.png";
+import imgEvidence0 from "figma:asset/d0cb417cf99aba1cdf79d5426f5fd585177d3d46.png";
+import imgEvidence1 from "figma:asset/7506073c04064524065ab7d328509bd53de6d2ae.png";
+import imgRefundProduct from "figma:asset/e9fa4baa6fae7a43e086cd2f7372c763ac79e774.png";
 import bankLogoKBANK from "figma:asset/fc3734dca1dc1106a8a9ae04448d90848680e3b4.png";
 import bankLogoSCB from "figma:asset/480398b2a511e7f907960af090b46919e996b2fb.png";
 import bankLogoKTB from "figma:asset/3bc35e854570ff8d031628a1b961ff515af8c04c.png";
@@ -21,6 +25,8 @@ import svgOrderTabs from "../../imports/svg-ht9fbjz0sq";
 import svgBankTabs from "../../imports/svg-q7abbwkyjt";
 import svgChevron from "../../imports/svg-a36cmd0hr3";
 import svgPaths from "../../imports/svg-fmfhn0ojdl";
+import svgComplaint from "../../imports/svg-ysz5k1ajog";
+import svgDetail from "../../imports/svg-4nbwddesrb";
 
 const orderTabSvgs = {
   clipboard1: svgOrderTabs.p16f83e00,
@@ -41,7 +47,7 @@ const orderTabSvgs = {
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
-type OwnerTab = "overview" | "orders" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance";
+type OwnerTab = "overview" | "orders" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "complaints" | "complaint_detail";
 type OrderFilterTab = "all" | "pending_payment" | "pending_verify" | "ready_ship" | "shipping" | "shipped" | "cancelled";
 
 interface SidebarItem {
@@ -52,7 +58,7 @@ interface SidebarItem {
 }
 
 const sidebarItems: SidebarItem[] = [
-  { id: "overview", label: "ภาพรวม", icon: BarChart3 },
+  { id: "overview", label: "Dashboard", icon: BarChart3 },
   { id: "orders", label: "คำสั่งซื้อ", icon: ShoppingCart },
   { id: "products", label: "สินค้า", icon: Package, children: [
     { id: "products", label: "จัดการสินค้า" },
@@ -62,9 +68,7 @@ const sidebarItems: SidebarItem[] = [
   ]},
 ];
 
-const sidebarSettings: SidebarItem[] = [
-  { id: "shop_info", label: "ข้อมูลร้านค้า", icon: Store },
-];
+const sidebarSettings: SidebarItem[] = [];
 
 const orderTabs: { id: OrderFilterTab; label: string; count: number }[] = [
   { id: "all", label: "ทั้งหมด", count: 20 },
@@ -150,30 +154,15 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
   return (
     <aside className={`flex flex-col shrink-0 p-4 transition-all duration-300 ${collapsed ? "w-[80px]" : "w-[282px]"}`}>
       <div className="bg-white rounded-[16px] overflow-hidden flex flex-col h-full">
-        {/* Store header */}
-        <div className={`flex items-center py-4 ${collapsed ? "justify-center px-2" : "gap-2.5 pl-4 pr-0"}`}>
-          <img src={imgSideBar} className={`rounded-full shrink-0 object-cover transition-all duration-300 ${collapsed ? "size-[36px]" : "size-[44px]"}`} alt="" />
+        {/* Header */}
+        <div className={`flex items-center h-[77px] ${collapsed ? "justify-center px-2" : "justify-between pl-4 pr-0"}`}>
           {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <p className={`${font} text-[16px] truncate`} style={{ fontWeight: 500 }}>METAHERB Store</p>
-                <button onClick={onToggle} className="backdrop-blur-[2px] bg-white/50 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.25)] rounded-l-full size-[24px] flex items-center justify-center cursor-pointer shrink-0">
-                  <ChevronLeft className="size-3 text-[#999]" />
-                </button>
-              </div>
-              <p className={`${font} text-[14px] text-black`}>ร้านค้า</p>
-            </div>
+            <p className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>ภาพรวม</p>
           )}
+          <button onClick={onToggle} className="backdrop-blur-[2px] bg-white/50 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.25)] rounded-l-full size-[24px] flex items-center justify-center cursor-pointer shrink-0">
+            <ChevronLeft className={`size-3 text-[#999] ${collapsed ? "rotate-180" : ""}`} />
+          </button>
         </div>
-
-        {/* Expand button (collapsed mode) */}
-        {collapsed && (
-          <div className="flex justify-center pb-2">
-            <button onClick={onToggle} className="backdrop-blur-[2px] bg-white/50 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.25)] rounded-full size-[24px] flex items-center justify-center cursor-pointer">
-              <ChevronLeft className="size-3 text-[#999] rotate-180" />
-            </button>
-          </div>
-        )}
 
         {/* Menu */}
         <nav className={`flex-1 pb-4 space-y-2.5 overflow-y-auto ${collapsed ? "px-2" : "px-4"}`}>
@@ -194,20 +183,11 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
             )
           )}
 
+          {/* Complaints */}
+          <MenuBtn isActive={active === "complaints" || active === "complaint_detail"} icon={AlertTriangle} label="การร้องเรียน" onClick={() => onSelect("complaints")} />
+
           {/* Finance */}
           <MenuBtn isActive={active === "finance"} icon={Wallet} label="การเงิน" onClick={() => onSelect("finance")} />
-
-          {/* Settings */}
-          <div className="space-y-2.5">
-            <MenuBtn icon={Settings} label="ตั้งค่าร้านค้า" onClick={() => toggle("settings")} hasArrow expanded={expandedMenus["settings"]} />
-            {expandedMenus["settings"] && !collapsed && (
-              <div className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
-                {sidebarSettings.map((item) => (
-                  <MenuBtn key={item.id} isActive={active === item.id} icon={item.icon} label={item.label} onClick={() => onSelect(item.id)} />
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Back to main site */}
           
@@ -512,7 +492,7 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: () => void }) {
         <h3 className={`${font} text-[16px] mb-2`} style={{ fontWeight: 600 }}>Flash Sale Event</h3>
         <div className="flex items-center gap-1.5 mb-4">
           <AlertCircle className="size-3.5 text-gray-400" />
-          <span className={`${font} text-[12px] text-gray-400`}>เข้าร่วมกั�� Flash Sale กับทาง METAHERB เพื่อรับข้อเสนอสุดพิ��ศษ</span>
+          <span className={`${font} text-[12px] text-gray-400`}>เข้าร่วมกั�� Flash Sale กับทาง METAHERB เพื่อรับข้อ���สนอสุดพิ��ศษ</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -645,7 +625,7 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: () => void }) {
                 <p style={{ fontWeight: 600 }}>ข้อเสนอสุดพิเศษ</p>
                 <ul className="list-disc ml-5 space-y-1 text-[13px]">
                   <li>รับส่วนลดสูงสุดตามที่บริษัทกำหนดเฉพาะช่วงกิจกรรม Flash Sale</li>
-                  <li>สินค้าที่เข้าร่วมกิจกรรมจะได้รับการโปรโมตผ่านช่องทางของ METAHERB</li>
+                  <li>สินค้าที่เข้าร่วมกิจกรรมจะไ���้รับการโปรโมตผ่านช่องทางของ METAHERB</li>
                   <li>เพิ่มโอกาสในการเข้าถึงลูกค้าใหม่ และกระตุ้นยอดขายในระยะเวลาจำกัด</li>
                 </ul>
                 <p style={{ fontWeight: 600 }}>เงื่อนไขการเข้าร่วม</p>
@@ -987,7 +967,7 @@ function OverviewTab() {
     { name: "พิซซ่าชีส", cat: "ฟาสต์ฟู้ด", sold: 1102, revenue: 154280 },
     { name: "ไก่ทอดเกาหลี", cat: "ฟาสต์ฟู้ด", sold: 987, revenue: 138180 },
     { name: "น้ำส้มคั้นสด", cat: "เครื่องดื่ม", sold: 876, revenue: 43800 },
-    { name: "ผัดไทยกุ้งสด", cat: "อาหารจานเดียว", sold: 812, revenue: 64960 },
+    { name: "ผัดไทยก��้งสด", cat: "อาหารจานเดียว", sold: 812, revenue: 64960 },
     { name: "เค้กช็อกโกแลต", cat: "ขนม", sold: 745, revenue: 111750 },
   ];
 
@@ -1339,7 +1319,7 @@ const financeTransactions = [
   { date: "13 มี.ค. 2569 11:52", type: "ปล่อยยอด", typeColor: "bg-[#319754] text-white", order: "#ORD-20260313-472419-1", amount: "+฿105.64", balance: "฿0.00" },
   { date: "13 มี.ค. 2569 11:44", type: "Escrow", typeColor: "bg-[#007aff] text-white", order: "#ORD-20260313-472419-1", amount: "-฿111.20", balance: "฿0.00" },
   { date: "13 มี.ค. 2569 11:21", type: "ค่าธรรมเนียม GP", typeColor: "bg-[#ff9500] text-white", order: "#ORD-20260313-288830-1", amount: "-฿17.32", balance: "฿0.00" },
-  { date: "13 มี.ค. 2569 11:21", type: "ปล่อยยอด", typeColor: "bg-[#319754] text-white", order: "#ORD-20260313-288830-1", amount: "+฿329.08", balance: "฿0.00" },
+  { date: "13 มี.ค. 2569 11:21", type: "ปล่อยยอด", typeColor: "bg-[#319754] text-white", order: "#ORD-20260313-288830-1", amount: "+���329.08", balance: "฿0.00" },
   { date: "13 มี.ค. 2569 11:18", type: "Escrow", typeColor: "bg-[#007aff] text-white", order: "#ORD-20260313-288830-1", amount: "-฿346.40", balance: "฿0.00" },
   { date: "12 มี.ค. 2569 19:00", type: "Escrow", typeColor: "bg-[#007aff] text-white", order: "#ORD-20260312-108642-1", amount: "-฿160.00", balance: "฿0.00" },
 ];
@@ -1623,11 +1603,564 @@ function BankSettingsTab({ onBack }: { onBack: () => void }) {
   );
 }
 
+/* ========== COMPLAINTS DATA ========== */
+type ComplaintStatus = "pending" | "in_progress" | "approved" | "completed" | "rejected";
+type ComplaintType = "damaged" | "defective" | "return" | "refund" | "wrong_item";
+
+interface Complaint {
+  id: string;
+  orderId: string;
+  customer: string;
+  customerEmail: string;
+  customerPhone: string;
+  type: ComplaintType;
+  status: ComplaintStatus;
+  product: string;
+  description: string;
+  amount: number;
+  refundChannel: string;
+  createdAt: string;
+  items: { name: string; qty: number; price: number; hasImage: boolean }[];
+  timeline: { title: string; desc: string; date: string; done: boolean }[];
+}
+
+const typeLabels: Record<ComplaintType, string> = { damaged: "สินค้าเสียหาย", defective: "สินค้ามีตำหนิ", return: "คืนสินค้า", refund: "ขอเงินคืน", wrong_item: "สินค้าผิดรายการ" };
+const statusLabels: Record<ComplaintStatus, string> = { pending: "รอดำเนินการ", in_progress: "กำลังดำเนินการ", approved: "อนุมัติแล้ว", completed: "เสร็จสิ้น", rejected: "ปฏิเสธ" };
+const statusColors: Record<ComplaintStatus, string> = { pending: "bg-[#ff9500] text-white", in_progress: "bg-[#007aff] text-white", approved: "bg-[#319754] text-white", completed: "bg-gray-500 text-white", rejected: "bg-[#ff3b30] text-white" };
+const typeTextColors: Record<ComplaintType, string> = { damaged: "text-[#ef4444]", defective: "text-[#f97316]", return: "text-[#3b82f6]", refund: "text-[#8b5cf6]", wrong_item: "text-[#eab308]" };
+
+const mockComplaints: Complaint[] = [
+  { id: "CPL-001", orderId: "ORD-20260301-5821", customer: "สมชาย ใจดี", customerEmail: "metaherb@gmail.com", customerPhone: "061-421-3111", type: "damaged", status: "in_progress", product: "ชาสมุนไพรเมต้าเฮิร์บ (กล่อง 30 ซอง)", description: "กล่องสินค้าบุบเสียหายอย่างหนัก ผลิตภัณฑ์ด้านในแตกออกและหกเลอะ ไม่สามารถใช้งานได้", amount: 450, refundChannel: "ธนาคารทหารไทยธนชาต [*1234]", createdAt: "15 มี.ค. 2569", items: [{ name: "ชาอูหลงผสมดอกหอมหมื่นลี้", qty: 1, price: 150, hasImage: true }, { name: "ชาเขียวมัทฉะผสมส้มยูซุ", qty: 1, price: 150, hasImage: false }, { name: "ชาเขียวมัทฉะลาเต้", qty: 1, price: 150, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "15 มี.ค. 2569 09:15", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานกำลังตรวจสอบหลักฐานและข้อมูล", date: "15 มี.ค. 2569 11:30", done: true }, { title: "อนุมัติและดำเนินการ", desc: "อยู่ระหว่างจัดส่งสินค้าทดแทน", date: "16 มี.ค. 2569 14:00", done: true }, { title: "จัดส่งสินค้าทดแทน", desc: "ส่งสินค้าทดแทนให้ลูกค้า", date: "รอดำเนินการ", done: false }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
+  { id: "CPL-002", orderId: "ORD-20260228-015", customer: "วรรณา สุขสบาย", customerEmail: "wanna@email.com", customerPhone: "089-876-5432", type: "wrong_item", status: "pending", product: "ชาสมุนไพรรวม MetaHerb 30 ซอง", description: "สั่งชาสมุนไพรรวม แต่ได้รับชาดอกคาโมมายล์แทน", amount: 350, refundChannel: "ธนาคารไทยพาณิชย์ [*5432]", createdAt: "10 มี.ค. 2569", items: [{ name: "ชาสมุนไพรรวม MetaHerb 30 ซอง", qty: 1, price: 350, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "10 มี.ค. 2569 14:20", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานกำลังตรวจสอบหลักฐานและข้อมูล", date: "รอดำเนินการ", done: false }, { title: "อนุมัติและดำเนินการ", desc: "รอการพิจารณา", date: "รอดำเนินการ", done: false }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
+  { id: "CPL-003", orderId: "ORD-20260225-008", customer: "ปราณี รักสมุนไพร", customerEmail: "pranee@email.com", customerPhone: "062-111-2222", type: "refund", status: "approved", product: "ครีมสมุนไพร MetaHerb 50g", description: "ใช้ผลิตภัณฑ์แล้วเกิดอาการแพ้ ต้องการขอเงินคืนเต็มจำนวน", amount: 890, refundChannel: "ธนาคารกรุงเทพ [*3333]", createdAt: "8 มี.ค. 2569", items: [{ name: "ครีมสมุนไพร MetaHerb 50g", qty: 1, price: 890, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "8 มี.ค. 2569 10:00", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานกำลังตรวจสอบหลักฐานและข้อมูล", date: "9 มี.ค. 2569 09:30", done: true }, { title: "อนุมัติและดำเนินการ", desc: "อนุมัติคืนเงินเรียบร้อย", date: "10 มี.ค. 2569 14:00", done: true }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
+  { id: "CPL-004", orderId: "ORD-20260220-022", customer: "อนุชา ต้นไม้", customerEmail: "anucha@email.com", customerPhone: "095-333-4444", type: "return", status: "completed", product: "เซ็ตสมุนไพรบำรุงผิว MetaHerb", description: "สินค้าที่ได้รับไม่ตรงกับรูปและรายละเอียดที่แสดงบนเว็บไซต์", amount: 1250, refundChannel: "ธนาคารกสิกรไทย [*4444]", createdAt: "5 มี.ค. 2569", items: [{ name: "เซ็ตสมุนไพรบำรุงผิว MetaHerb", qty: 1, price: 1250, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "5 มี.ค. 2569 08:30", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานตรวจสอบเสร็จสิ้น", date: "6 มี.ค. 2569 10:00", done: true }, { title: "อนุมัติและดำเนินการ", desc: "อนุมัติคืนสินค้าเรียบร้อย", date: "7 มี.ค. 2569 11:00", done: true }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียนเรียบร้อย", date: "10 มี.ค. 2569 16:00", done: true }] },
+  { id: "CPL-005", orderId: "ORD-20260218-030", customer: "มานะ ขยันดี", customerEmail: "mana@email.com", customerPhone: "087-555-6666", type: "defective", status: "rejected", product: "น้ำมันไพล MetaHerb 50ml", description: "ฝาขวดปิดไม่สนิท น้ำมันไหลซึมออกมา", amount: 195, refundChannel: "ธนาคารกรุงไทย [*6666]", createdAt: "1 มี.ค. 2569", items: [{ name: "น้ำมันไพล MetaHerb 50ml", qty: 1, price: 195, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "1 มี.ค. 2569 13:00", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานตรวจสอบเสร็จสิ้น", date: "2 มี.ค. 2569 09:00", done: true }, { title: "ปฏิเสธคำร้อง", desc: "ไม่อยู่ในเงื่อนไขการรับประกัน", date: "3 มี.ค. 2569 10:00", done: true }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
+  { id: "CPL-006", orderId: "ORD-20260315-011", customer: "จิราภรณ์ ดอกไม้", customerEmail: "jira@email.com", customerPhone: "063-777-8888", type: "damaged", status: "pending", product: "สบู่สมุนไพร MetaHerb 3 ก้อน", description: "กล่องพัสดุถูกทับจนบุบ สินค้าข้างในเสียรูป", amount: 450, refundChannel: "ธนาคารกสิกรไทย [*8888]", createdAt: "17 มี.ค. 2569", items: [{ name: "สบู่สมุนไพร MetaHerb 3 ก้อน", qty: 1, price: 450, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "17 มี.ค. 2569 10:45", done: true }, { title: "ตรวจสอบข้อมูล", desc: "รอตรวจสอบ", date: "รอดำเนินการ", done: false }, { title: "อนุมัติและดำเนินการ", desc: "รอการพิจารณา", date: "รอดำเนินการ", done: false }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
+  { id: "CPL-007", orderId: "ORD-20260310-005", customer: "กนกวรรณ ใจเย็น", customerEmail: "kanok@email.com", customerPhone: "091-999-0000", type: "refund", status: "in_progress", product: "แชมพูสมุนไพร MetaHerb 300ml", description: "ชำระเงินซ้ำ 2 รอบ ต้องการเงินคืน 1 รายการ", amount: 780, refundChannel: "ธนาคารกรุงไทย [*0000]", createdAt: "12 มี.ค. 2569", items: [{ name: "แชมพูสมุนไพร MetaHerb 300ml", qty: 1, price: 780, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "12 มี.ค. 2569 16:30", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานกำลังตรวจสอบหลักฐานและข้อมูล", date: "14 มี.ค. 2569 09:00", done: true }, { title: "อนุมัติและดำเนินการ", desc: "รอการพิจารณา", date: "รอดำเนินการ", done: false }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
+];
+
+/* ========== COMPLAINTS TAB (List) ========== */
+function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ComplaintStatus | "all">("all");
+  const [typeFilter, setTypeFilter] = useState<ComplaintType | "all">("all");
+
+  const statusTabs: { id: ComplaintStatus | "all"; label: string; count: number }[] = [
+    { id: "all", label: "ทั้งหมด", count: mockComplaints.length },
+    { id: "pending", label: "รอดำเนินการ", count: mockComplaints.filter((c) => c.status === "pending").length },
+    { id: "in_progress", label: "กำลังดำเนินการ", count: mockComplaints.filter((c) => c.status === "in_progress").length },
+    { id: "approved", label: "อนุมัติแล้ว", count: mockComplaints.filter((c) => c.status === "approved").length },
+    { id: "completed", label: "เสร็จสิ้น", count: mockComplaints.filter((c) => c.status === "completed").length },
+    { id: "rejected", label: "ปฏิเสธ", count: mockComplaints.filter((c) => c.status === "rejected").length },
+  ];
+
+  const typeTabs: { id: ComplaintType | "all"; label: string }[] = [
+    { id: "all", label: "ทุกประเภท" },
+    { id: "damaged", label: "สินค้าเสียหาย" },
+    { id: "defective", label: "สินค้ามีตำหนิ" },
+    { id: "return", label: "คืนสินค้า" },
+    { id: "refund", label: "ขอเงินคืน" },
+    { id: "wrong_item", label: "สินค้าผิดรายการ" },
+  ];
+
+  const filtered = mockComplaints.filter((c) => {
+    if (statusFilter !== "all" && c.status !== statusFilter) return false;
+    if (typeFilter !== "all" && c.type !== typeFilter) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      return c.id.toLowerCase().includes(q) || c.customer.toLowerCase().includes(q) || c.orderId.toLowerCase().includes(q) || c.product.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>การร้องเรียน</h2>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-white border border-gray-300 rounded-full pl-4 pr-1.5 py-1.5 w-[320px]">
+            <input className={`${font} flex-1 text-[13px] outline-none bg-transparent`} placeholder="ค้นหาเลขร้องเรียน, ชื่อลูกค้า..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <button className="bg-[#319754] p-1.5 rounded-full cursor-pointer"><Search className="size-4 text-white" /></button>
+          </div>
+        </div>
+      </div>
+
+      {/* Status filter tabs */}
+      <div className="bg-white rounded-[100px] shadow-[0px_0px_6px_0px_rgba(0,0,0,0.1)] flex items-center justify-start gap-1 overflow-x-auto p-2 mb-4">
+        {statusTabs.map((tab) => {
+          const isAct = statusFilter === tab.id;
+          return (
+            <button key={tab.id} onClick={() => setStatusFilter(tab.id)}
+              className={`backdrop-blur-[2px] flex gap-2.5 items-center justify-center pl-3 pr-2 py-1 rounded-[100px] cursor-pointer shrink-0 transition-colors ${isAct ? "bg-[#319754]" : ""}`}>
+              <span className={`${font} text-[14px] whitespace-nowrap ${isAct ? "text-white" : "text-black"}`} style={{ fontWeight: isAct ? 500 : 400 }}>{tab.label}</span>
+              <div className={`flex items-center justify-center px-2 py-1 rounded-[100px] shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] ${isAct ? "bg-white" : "bg-[#ff383c]"}`}>
+                <span className={`${font} text-[8px] ${isAct ? "text-[#ff383c]" : "text-white"}`}>{tab.count}</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Type filter */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <Filter className="size-4 text-gray-400" />
+        {typeTabs.map((tab) => (
+          <button key={tab.id} onClick={() => setTypeFilter(tab.id)}
+            className={`px-3 py-1 rounded-full text-[12px] cursor-pointer transition-colors border ${typeFilter === tab.id ? "border-[#319754] bg-[#319754]/10 text-[#319754]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} ${font}`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Table - Figma style */}
+      <div className="bg-white rounded-[16px] overflow-hidden relative border border-[#e8e8e8]">
+        {/* Header */}
+        <div className="bg-[#fafafa] border-b border-[#e8e8e8] grid grid-cols-[1fr_1fr_0.75fr_0.5fr_0.5fr] items-center px-5 py-3">
+          {["การร้องเรียน","สินค้า / คำสั่งซื้อ","ผู้แจ้ง","ประเภท","สถานะ"].map((h, i) => (
+            <p key={i} className={`${font} text-[12px] text-[#999]`} style={{ fontWeight: 500 }}>{h}</p>
+          ))}
+        </div>
+        {/* Rows */}
+        {filtered.map((c) => {
+          const typeIconConfig: Record<ComplaintType, { bg: string; border: string; color: string }> = {
+            refund: { bg: "bg-[#eef2ff]", border: "border-[#c7d2fe]", color: "#6366F1" },
+            damaged: { bg: "bg-[#fef2f2]", border: "border-[#fecaca]", color: "#EF4444" },
+            return: { bg: "bg-[#f0fdf4]", border: "border-[#bbf7d0]", color: "#319754" },
+            wrong_item: { bg: "bg-[#fffbeb]", border: "border-[#fde68a]", color: "#F59E0B" },
+            defective: { bg: "bg-[#fff7ed]", border: "border-[#fed7aa]", color: "#F97316" },
+          };
+          const typeBadgeConfig: Record<ComplaintType, { bg: string; text: string }> = {
+            refund: { bg: "bg-[#eef2ff]", text: "text-[#6366f1]" },
+            damaged: { bg: "bg-[#fef2f2]", text: "text-[#ef4444]" },
+            return: { bg: "bg-[#f0fdf4]", text: "text-[#319754]" },
+            wrong_item: { bg: "bg-[#fffbeb]", text: "text-[#f59e0b]" },
+            defective: { bg: "bg-[#fff7ed]", text: "text-[#f97316]" },
+          };
+          const statusBadgeConfig: Record<ComplaintStatus, { bg: string; text: string; color: string }> = {
+            pending: { bg: "bg-[#fffbeb]", text: "text-[#f59e0b]", color: "#F59E0B" },
+            in_progress: { bg: "bg-[#eff6ff]", text: "text-[#3b82f6]", color: "#3B82F6" },
+            approved: { bg: "bg-[#f0fdf4]", text: "text-[#319754]", color: "#319754" },
+            completed: { bg: "bg-[#eef2ff]", text: "text-[#6366f1]", color: "#6366F1" },
+            rejected: { bg: "bg-[#fef2f2]", text: "text-[#ef4444]", color: "#EF4444" },
+          };
+          const ti = typeIconConfig[c.type];
+          const tb = typeBadgeConfig[c.type];
+          const sb = statusBadgeConfig[c.status];
+          return (
+            <div key={c.id} className="grid grid-cols-[1fr_1fr_0.75fr_0.5fr_0.5fr] items-center px-5 py-4 border-b border-[#f5f5f5] hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => onViewDetail(c.id)}>
+              {/* Col 1: Icon + ID + Date */}
+              <div className="flex items-center gap-3">
+                <div className={`${ti.bg} border ${ti.border} rounded-lg size-9 shrink-0 flex items-center justify-center`}>
+                  {c.type === "refund" && (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgComplaint.p2949e900} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d={svgComplaint.p22e64900} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></svg>
+                  )}
+                  {c.type === "damaged" && (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgComplaint.p18993c00} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M8 14.6667V8" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d={svgComplaint.p14df0fc0} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M5 2.84667L11 6.28" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></svg>
+                  )}
+                  {c.type === "return" && (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgComplaint.p12949080} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M2 2V5.33333H5.33333" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></svg>
+                  )}
+                  {c.type === "wrong_item" && (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgComplaint.p19987d80} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M14 2V5.33333H10.6667" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d={svgComplaint.p2a3e9c80} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M5.33333 10.6667H2V14" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></svg>
+                  )}
+                  {c.type === "defective" && (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgComplaint.p18993c00} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M8 14.6667V8" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d={svgComplaint.p14df0fc0} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M5 2.84667L11 6.28" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></svg>
+                  )}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{c.id}</p>
+                  <p className={`${font} text-[11px] text-[#999]`}>{c.createdAt}</p>
+                </div>
+              </div>
+              {/* Col 2: Product + Order ID */}
+              <div className="flex flex-col justify-center min-w-0">
+                <p className={`${font} text-[13px] text-black truncate`}>{c.product}</p>
+                <p className={`${font} text-[11px] text-[#999]`}>{c.orderId}</p>
+              </div>
+              {/* Col 3: Email + Phone */}
+              <div className="flex flex-col justify-center min-w-0">
+                <p className={`${font} text-[13px] text-black truncate`}>{c.customerEmail}</p>
+                <p className={`${font} text-[11px] text-[#999]`}>{c.customerPhone}</p>
+              </div>
+              {/* Col 4: Type badge */}
+              <div>
+                <span className={`${font} text-[11px] ${tb.bg} ${tb.text} px-2.5 py-1 rounded-full inline-block`}>{typeLabels[c.type]}</span>
+              </div>
+              {/* Col 5: Status badge with icon */}
+              <div>
+                <span className={`${font} text-[11px] ${sb.bg} ${sb.text} pl-[10px] pr-2.5 py-1 rounded-full inline-flex items-center gap-1`}>
+                  {c.status === "pending" && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M6 3V6L8 7" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  )}
+                  {c.status === "in_progress" && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d={svgComplaint.p3e7757b0} stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M6 4V6" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M6 8H6.005" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  )}
+                  {(c.status === "approved" || c.status === "completed") && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d={svgComplaint.p23551518} stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M4.5 5.5L6 7L11 2" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  )}
+                  {c.status === "rejected" && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d={svgComplaint.p3e7757b0} stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M7.5 4.5L4.5 7.5" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M4.5 4.5L7.5 7.5" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  )}
+                  {statusLabels[c.status]}
+                </span>
+              </div>
+
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className={`${font} text-center py-12 text-[#999] text-[14px]`}>ไม่พบรายการร้องเรียน</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ========== COMPLAINT DETAIL TAB (Figma-matched layout) ========== */
+function ComplaintDetailTab({ complaintId, onBack }: { complaintId: string; onBack: () => void }) {
+  const complaint = mockComplaints.find((c) => c.id === complaintId) || mockComplaints[0];
+  const [selectedStatus, setSelectedStatus] = useState<ComplaintStatus>(complaint.status);
+  const [noteText, setNoteText] = useState("");
+  const [isEditingNote, setIsEditingNote] = useState(false);
+
+  /* --- type icon config for header --- */
+  const typeIconConfig: Record<ComplaintType, { bg: string; border: string; color: string }> = {
+    refund: { bg: "bg-[#eef2ff]", border: "border-[#c7d2fe]", color: "#6366F1" },
+    damaged: { bg: "bg-[#fef2f2]", border: "border-[#fecaca]", color: "#EF4444" },
+    return: { bg: "bg-[#f0fdf4]", border: "border-[#bbf7d0]", color: "#319754" },
+    wrong_item: { bg: "bg-[#fffbeb]", border: "border-[#fde68a]", color: "#F59E0B" },
+    defective: { bg: "bg-[#fff7ed]", border: "border-[#fed7aa]", color: "#F97316" },
+  };
+  const statusBadgeConfig: Record<ComplaintStatus, { bg: string; text: string; borderColor: string; color: string }> = {
+    pending: { bg: "bg-[#fffbeb]", text: "text-[#f59e0b]", borderColor: "rgba(245,158,11,0.38)", color: "#F59E0B" },
+    in_progress: { bg: "bg-[#eff6ff]", text: "text-[#3b82f6]", borderColor: "rgba(59,130,246,0.38)", color: "#3B82F6" },
+    approved: { bg: "bg-[#f0fdf4]", text: "text-[#319754]", borderColor: "rgba(49,151,84,0.38)", color: "#319754" },
+    completed: { bg: "bg-[#eef2ff]", text: "text-[#6366f1]", borderColor: "rgba(99,102,241,0.38)", color: "#6366F1" },
+    rejected: { bg: "bg-[#fef2f2]", text: "text-[#ef4444]", borderColor: "rgba(239,68,68,0.38)", color: "#EF4444" },
+  };
+  const ti = typeIconConfig[complaint.type];
+  const sb = statusBadgeConfig[complaint.status];
+
+  return (
+    <div>
+      {/* Back button */}
+      <div className="mb-6">
+        <button onClick={onBack} className="flex gap-2 items-center bg-[#d4d4d4] rounded-full px-4 py-1 cursor-pointer hover:bg-[#c4c4c4] transition-colors">
+          <ChevronLeft size={14} />
+          <span className={`${font} text-[12px] text-black`}>กลับ</span>
+        </button>
+      </div>
+
+      {/* ===== HEADER: Type icon + Title + Status badge ===== */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className={`${ti.bg} border ${ti.border} rounded-[12px] size-12 shrink-0 flex items-center justify-center`}>
+            {complaint.type === "refund" && (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d={svgDetail.p1cbf6000} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d={svgDetail.p10779400} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+            )}
+            {complaint.type === "damaged" && (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d={svgDetail.p1cbf6000} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d={svgDetail.p10779400} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+            )}
+            {complaint.type === "return" && (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d={svgDetail.p1cbf6000} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d={svgDetail.p10779400} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+            )}
+            {complaint.type === "wrong_item" && (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d={svgDetail.p1cbf6000} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d={svgDetail.p10779400} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+            )}
+            {complaint.type === "defective" && (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d={svgDetail.p1cbf6000} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d={svgDetail.p10779400} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+            )}
+          </div>
+          <div>
+            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{typeLabels[complaint.type]}</p>
+            <p className={`${font} text-[13px] text-[#999]`}>#{complaint.id} · {complaint.createdAt}</p>
+          </div>
+        </div>
+        {/* Status badge */}
+        <div className={`${sb.bg} rounded-full h-[37px] flex items-center gap-2 px-4`} style={{ border: `1px solid ${sb.borderColor}` }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d={svgDetail.p39ee6532} stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+            {complaint.status === "pending" && <path d="M8 4V8L10.6667 9.33333" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />}
+            {complaint.status === "in_progress" && <><path d="M8 5.33333V8" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M8 10.6667H8.00667" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></>}
+            {(complaint.status === "approved" || complaint.status === "completed") && <path d={svgDetail.p1f2c5400} stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />}
+            {complaint.status === "rejected" && <><path d="M10 6L6 10" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M6 6L10 10" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></>}
+          </svg>
+          <p className={`${font} text-[14px] ${sb.text}`} style={{ fontWeight: 500 }}>{statusLabels[complaint.status]}</p>
+        </div>
+      </div>
+
+      {/* ===== TWO-COLUMN LAYOUT ===== */}
+      <div className="flex gap-6 items-start">
+
+        {/* LEFT COLUMN */}
+        <div className="flex-1 min-w-0 flex flex-col gap-5">
+
+          {/* Card: รายละเอียดคำร้องเรียน */}
+          <div className="bg-white rounded-[16px] relative border border-[#e8e8e8]">
+            <div className="flex flex-col gap-4 p-5">
+              {/* Section heading with bottom border */}
+              <div className="pb-3 border-b border-[#e8e8e8]">
+                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>รายละเอียดคำร้องเรียน</p>
+              </div>
+
+              {/* Info rows */}
+              <div className="flex flex-col gap-4">
+                {/* Row 1: เลขที่คำสั่งซื้อ | สินค้า */}
+                <div className="flex gap-4">
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <p className={`${font} text-[11px] text-[#999]`}>เลขที่คำสั่งซื้อ</p>
+                    <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{complaint.orderId}</p>
+                  </div>
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <p className={`${font} text-[11px] text-[#999]`}>สินค้า</p>
+                    <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{complaint.product}</p>
+                  </div>
+                </div>
+                {/* Row 2: อีเมล | เบอร์ติดต่อ */}
+                <div className="flex gap-4">
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <p className={`${font} text-[11px] text-[#999]`}>อีเมล</p>
+                    <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{complaint.customerEmail}</p>
+                  </div>
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <p className={`${font} text-[11px] text-[#999]`}>เบอร์ติดต่อ</p>
+                    <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{complaint.customerPhone}</p>
+                  </div>
+                </div>
+                {/* Row 3: ยอดขอคืนเงิน */}
+                <div className="flex flex-col gap-0.5">
+                  <p className={`${font} text-[11px] text-[#999]`}>ยอดขอคืนเงิน</p>
+                  <p className={`${font} text-[14px] text-[#319754]`} style={{ fontWeight: 500 }}>฿{complaint.amount.toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* รายละเอียดปัญหา */}
+              <div className="flex flex-col gap-1">
+                <p className={`${font} text-[11px] text-[#999]`}>รายละเอียดปัญหา</p>
+                <div className="bg-[#fafafa] rounded-[10px] relative border border-[#e8e8e8] px-[17px] py-[17px]">
+                  <p className={`${font} text-[14px] text-black`}>{complaint.description}</p>
+                </div>
+              </div>
+
+              {/* Evidence images */}
+              <div className="flex gap-3">
+                <div className="rounded-[10px] relative shrink-0 size-[133px] overflow-hidden border border-[#d4d4d8]">
+                  <img src={imgEvidence0} alt="หลักฐาน 1" className="w-full h-full object-cover" />
+                </div>
+                <div className="rounded-[10px] relative shrink-0 size-[133px] overflow-hidden border border-[#d4d4d8]">
+                  <img src={imgEvidence1} alt="หลักฐาน 2" className="w-full h-full object-cover" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: สินค้าที่ต้องการขอคืนเงิน */}
+          <div className="bg-white rounded-[16px] relative border border-[#e8e8e8] overflow-hidden">
+            <div className="flex flex-col gap-4 p-4">
+              <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 500 }}>สินค้าที่ต้องการขอคืนเงิน</p>
+              <div className="h-px bg-[#d4d4d8]" />
+              {complaint.items.map((item, idx) => (
+                <div key={idx} className="bg-white rounded-[12px] relative border border-[#d9d9d9]">
+                  <div className="flex items-center gap-2 p-4">
+                    <div className="rounded-lg shrink-0 size-16 overflow-hidden">
+                      {item.hasImage ? (
+                        <img src={imgRefundProduct} alt="" className="w-full h-full object-cover rounded-lg" />
+                      ) : (
+                        <div className="bg-[#e7e7e7] rounded-lg size-full" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`${font} text-[12px] text-black truncate`} style={{ fontWeight: 500 }}>{item.name}</p>
+                    </div>
+                    <div className="flex flex-col items-end shrink-0">
+                      <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>฿ {item.price.toFixed(2)}</p>
+                      <p className={`${font} text-[10px] text-black`}>จำนวน {item.qty} ชิ้น</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Card: ข้อมูลบัญชีธนาคาร */}
+          <div className="bg-white rounded-[16px] relative border border-[#e8e8e8]">
+            <div className="flex flex-col gap-4 pt-5 px-5 pb-5">
+              {/* Heading with icon */}
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d={svgDetail.p35993080} stroke="#6366F1" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                  <path d="M1.33333 6.66667H14.6667" stroke="#6366F1" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                </svg>
+                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลบัญชีธนาคาร</p>
+              </div>
+
+              {/* Bank info grid */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                <div className="flex flex-col gap-0.5">
+                  <p className={`${font} text-[11px] text-[#999]`}>ธนาคาร</p>
+                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ธนาคารไทยพาณิชย์ (SCB)</p>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <p className={`${font} text-[11px] text-[#999]`}>ชื่อบัญชี</p>
+                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>มาลี สวยงาม</p>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <p className={`${font} text-[11px] text-[#999]`}>เลขบัญชี</p>
+                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>987-6-54321-0</p>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <p className={`${font} text-[11px] text-[#999]`}>ยอดโอน</p>
+                  <p className={`${font} text-[18px] text-[#6366f1]`} style={{ fontWeight: 500 }}>฿{complaint.amount.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: บันทึกของเจ้าหน้าที่ */}
+          <div className="bg-white rounded-[16px] relative border border-[#e8e8e8]">
+            <div className="flex flex-col gap-3 pt-5 px-5 pb-5">
+              {/* Heading row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d={svgDetail.p1bb15080} stroke="#319754" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                  </svg>
+                  <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>บันทึกของเจ้าหน้าที่</p>
+                </div>
+                <button onClick={() => setIsEditingNote(!isEditingNote)} className="flex items-center gap-1 cursor-pointer">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M7 11.6667H12.25" stroke="#319754" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.16667" />
+                    <path d={svgDetail.p3d94d500} stroke="#319754" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.16667" />
+                  </svg>
+                  <span className={`${font} text-[12px] text-[#319754]`} style={{ fontWeight: 500 }}>แก้ไข</span>
+                </button>
+              </div>
+              {/* Note content */}
+              {isEditingNote ? (
+                <div className="flex flex-col gap-2">
+                  <textarea
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    placeholder="เพิ่มบันทึก..."
+                    className={`${font} text-[14px] bg-[#f0fdf4] rounded-[12px] border border-[#bbf7d0] px-[17px] py-[17px] min-h-[57px] resize-none outline-none`}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => setIsEditingNote(false)} className={`${font} text-[12px] text-[#999] px-3 py-1 rounded-full cursor-pointer`}>ยกเลิก</button>
+                    <button onClick={() => setIsEditingNote(false)} className={`${font} text-[12px] text-white bg-[#319754] px-4 py-1 rounded-full cursor-pointer`}>บันทึก</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-[#f0fdf4] rounded-[12px] relative border border-[#bbf7d0] px-[17px] py-[17px]">
+                  <p className={`${font} text-[14px] text-[#999]`}>{noteText || "ยังไม่มีบันทึก"}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="shrink-0 flex flex-col gap-5" style={{ width: 408 }}>
+
+          {/* Card: อัปเดตสถานะ */}
+          <div className="bg-white rounded-[16px] relative border border-[#e8e8e8]">
+            <div className="flex flex-col gap-4 p-5">
+              {/* Section heading */}
+              <div className="pb-3 border-b border-[#e8e8e8]">
+                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>อัปเดตสถานะ</p>
+              </div>
+
+              {/* Status radio buttons */}
+              <div className="flex flex-col gap-2">
+                {(["pending", "in_progress", "approved", "completed", "rejected"] as ComplaintStatus[]).map((status) => {
+                  const isSelected = selectedStatus === status;
+                  const sbc = statusBadgeConfig[status];
+                  return (
+                    <button
+                      key={status}
+                      onClick={() => setSelectedStatus(status)}
+                      className={`relative h-[45.5px] rounded-[12px] flex items-center gap-2 px-[17px] cursor-pointer transition-colors ${
+                        isSelected ? `${sbc.bg}` : "bg-white"
+                      }`}
+                      style={{ border: `1px solid ${isSelected ? sbc.borderColor : "#e8e8e8"}` }}
+                    >
+                      {/* Status icon */}
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        {status === "pending" && (
+                          <>
+                            <path d={svgDetail.p39ee6532} stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                            <path d="M8 4V8L10.6667 9.33333" stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                          </>
+                        )}
+                        {status === "in_progress" && (
+                          <>
+                            <path d={svgDetail.p39ee6532} stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                            <path d="M8 5.33333V8" stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                            <path d="M8 10.6667H8.00667" stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                          </>
+                        )}
+                        {(status === "approved" || status === "completed") && (
+                          <>
+                            <path d={svgDetail.p34e03900} stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                            <path d={svgDetail.p1f2c5400} stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                          </>
+                        )}
+                        {status === "rejected" && (
+                          <>
+                            <path d={svgDetail.p39ee6532} stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                            <path d="M10 6L6 10" stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                            <path d="M6 6L10 10" stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                          </>
+                        )}
+                      </svg>
+                      <p className={`${font} text-[13px] ${isSelected ? sbc.text : "text-[#666]"}`} style={{ fontWeight: 500 }}>{statusLabels[status]}</p>
+                      {/* Active indicator dot */}
+                      {isSelected && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 size-2 rounded-full" style={{ backgroundColor: sbc.color }} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Save button */}
+              <button className="bg-[#319754] h-[45px] rounded-full w-full flex items-center justify-center cursor-pointer hover:bg-[#2a8248] transition-colors">
+                <span className={`${font} text-[14px] text-white`} style={{ fontWeight: 500 }}>บันทึกสถานะ</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex flex-col gap-2">
+            {/* ส่งอีเมลหาลูกค้า */}
+            <button className="bg-[#f0fdf4] h-[41.5px] rounded-full w-full flex items-center justify-center gap-2 border border-[#bbf7d0] cursor-pointer hover:bg-[#dcfce7] transition-colors">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d={svgDetail.p17070980} stroke="#319754" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+                <path d={svgDetail.p120c8200} stroke="#319754" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+              </svg>
+              <span className={`${font} text-[13px] text-[#319754]`}>ส่งอีเมลหาลูกค้า</span>
+            </button>
+            {/* โทรหาลูกค้า */}
+            <button className="bg-[#f5f5f5] h-[41.5px] rounded-full w-full flex items-center justify-center gap-2 border border-[#e8e8e8] cursor-pointer hover:bg-[#ebebeb] transition-colors">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d={svgDetail.p2a44c680} stroke="#555" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
+              </svg>
+              <span className={`${font} text-[13px] text-[#555]`}>โทรหาลูกค้า</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 /* ========== MAIN ========== */
 export function OwnerDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<OwnerTab>("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [selectedComplaintId, setSelectedComplaintId] = useState("CPL-001");
 
   const handleSelect = (tab: OwnerTab) => {
     setActiveTab(tab);
@@ -1664,29 +2197,12 @@ export function OwnerDashboard() {
             <p className={`${font} text-[13px] text-gray-400`}>ยังไม่มีคูปองที่ใช้งานอยู่</p>
           </div>
         )}
+        {activeTab === "complaints" && <ComplaintsTab onViewDetail={(id: string) => { setSelectedComplaintId(id); setActiveTab("complaint_detail"); }} />}
+        {activeTab === "complaint_detail" && <ComplaintDetailTab complaintId={selectedComplaintId} onBack={() => setActiveTab("complaints")} />}
         {activeTab === "finance" && <FinanceTab onBankSettings={() => setActiveTab("bank_settings")} />}
         {activeTab === "bank_settings" && <BankSettingsTab onBack={() => setActiveTab("finance")} />}
 
-        {activeTab === "shop_info" && (
-          <div>
-            <h2 className={`${font} text-[22px] mb-4`} style={{ fontWeight: 600 }}>ข้อมูลร้านค้า</h2>
-            <div className="bg-white rounded-xl border border-gray-100 p-6 max-w-[600px] space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ชื่อร้านค้า</label>
-                <input defaultValue={user?.shopName || "METAHERB Store"} className={`border border-gray-300 rounded-lg px-3 py-2.5 text-[14px] ${font} outline-none`} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>คำอธิบาย</label>
-                <textarea defaultValue="ร้านขายสมุนไพรออร์แกนิคคุณภาพ" className={`border border-gray-300 rounded-lg px-3 py-2.5 text-[14px] ${font} outline-none h-20 resize-none`} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>เบอร์โทรศัพท์</label>
-                <input defaultValue="061-421-3111" className={`border border-gray-300 rounded-lg px-3 py-2.5 text-[14px] ${font} outline-none`} />
-              </div>
-              <button className={`bg-[#319754] text-white px-6 py-2.5 rounded-full text-[14px] ${font} cursor-pointer`}>บันทึกการเปลี่ยนแปลง</button>
-            </div>
-          </div>
-        )}
+
       </main>
     </div>
   );
