@@ -38,13 +38,14 @@ export function AboutPage() {
         {/* Background image */}
         <div className="absolute inset-0">
           <video autoPlay loop muted playsInline className="w-full h-full object-cover">
+            <source src="https://res.cloudinary.com/dujq74ght/video/upload/ท่องโลกสมุนไพร_EP._6_ตะลุยต่างแดน_ตอน__ชาซีลอน_ศรีลังกา__1_1_xvtgqw.webm" type="video/webm" />
             <source src="https://res.cloudinary.com/dujq74ght/video/upload/ท่องโลกสมุนไพร_EP._6_ตะลุยต่างแดน_ตอน__ชาซีลอน_ศรีลังกา__1_1_xvtgqw.mp4" type="video/mp4" />
           </video>
           <div className="absolute inset-0 bg-gradient-to-r from-[rgba(13,31,13,0.85)] via-[rgba(13,31,13,0.3)] to-transparent" />
         </div>
 
         {/* Content */}
-        <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 lg:pl-[69px] flex flex-col gap-6 justify-center h-full pt-[111px] lg:pt-0">
+        <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 lg:pl-[69px] flex flex-col gap-6 justify-end h-full pb-20 pt-[111px] lg:pt-0">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-[rgba(125,184,112,0.2)] border border-[rgba(125,184,112,0.4)] rounded-full px-4 py-2 w-fit">
             <Leaf className="size-3.5 text-[#a8d5a0]" />
@@ -79,10 +80,13 @@ export function AboutPage() {
 
         {/* Scroll indicator wave */}
         <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1439 56" fill="none" className="w-full block">
-            <path d="M0 55.125C491.333 -18.375 971 -18.375 1439 55.125H0Z" fill="#f5f0e8" />
-          </svg>
-          <div className="absolute top-[30%] left-1/2 -translate-x-1/2">
+          <div className="relative">
+            <svg viewBox="0 0 1440 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full block relative z-[1]" preserveAspectRatio="none" style={{ height: "56px" }}>
+              <path d="M0 55.125C491.333 -18.375 971 -18.375 1440 55.125H0Z" fill="#f5f0e8" />
+            </svg>
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#f5f0e8] z-[2]" />
+          </div>
+          <div className="absolute top-[30%] left-1/2 -translate-x-1/2 z-[3]">
             <span className={`text-[#319754] text-[12px] tracking-wider uppercase`}>เลื่อนเพื่อดูเนื้อหา</span>
           </div>
         </div>
@@ -165,7 +169,7 @@ export function AboutPage() {
         <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-[68px]">
           <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-center">
             {/* Product images - stacked/rotated with swiper */}
-            <div className="w-full lg:w-[520px] shrink-0 relative h-[350px] sm:h-[450px] lg:h-[520px]">
+            <div className="w-full lg:w-1/2 shrink-0 relative h-[350px] sm:h-[450px] lg:h-[520px]">
               {/* Back rotated image (decorative) */}
               <div className="absolute left-[40px] sm:left-[60px] top-0 sm:top-[-20px] w-[260px] sm:w-[360px] lg:w-[512px] aspect-square rounded-[40px] overflow-hidden border border-white shadow-lg z-0" style={{ transform: "rotate(13deg)" }}>
                 <ImageWithFallback src={imgProduct1} alt="ผลิตภัณฑ์" className="w-full h-full object-cover" />
@@ -208,7 +212,7 @@ export function AboutPage() {
             </div>
 
             {/* Right side content */}
-            <div className="flex-1 min-w-0">
+            <div className="w-full lg:w-1/2 min-w-0">
               <h2 className={`${fontHeading} text-[28px] sm:text-[36px] lg:text-[40px] leading-tight`}>
                 <span className="text-white block">ความไว้วางใจที่</span>
                 <span className="text-[#7db870] block">สร้างมาจากมาตรฐาน</span>
@@ -217,7 +221,7 @@ export function AboutPage() {
               {/* Product cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
                 {[
-                  { tag: "ขายดีอันดับ 1", tagColor: "#ff8a65", title: "ชาสมุนไพร 7 ชนิด", desc: "ผสมจากตะไคร้ ขิง ขมิ้น กระชาย ใบเตย มะตูม และดอกอัญชัน" },
+                  { tag: "ขายดีอันดับ 1", tagColor: "#ff8a65", title: "ชาสมุนไพร 7 ชนิด", desc: "ผสมจากตะไคร้ ขิง ขม้น กระชาย ใบเตย มะตูม และดอกอัญชัน" },
                   { tag: "สินค้าใหม่", tagColor: "#7db870", title: "ชาสมุนไพร 7 ชนิด", desc: "ผสมจากตะไคร้ ขิง ขมิ้น กระชาย ใบเตย มะตูม และดอกอัญชัน" },
                   { tag: "ยอดนิยม", tagColor: "#5b8dee", title: "ชาสมุนไพร 7 ชนิด", desc: "ผสมจากตะไคร้ ขิง ขมิ้น กระชาย ใบเตย มะตูม และดอกอัญชัน" },
                 ].map((card, i) => (

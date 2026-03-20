@@ -123,7 +123,7 @@ const mockOrders = [
 /* ========== SIDEBAR ========== */
 const childIconMap: Record<string, any> = { products: Package, flash_sale: Zap, promotions: Megaphone, coupons: Ticket };
 
-function Sidebar({ active, onSelect, collapsed }: { active: OwnerTab; onSelect: (t: OwnerTab) => void; collapsed: boolean }) {
+function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; onSelect: (t: OwnerTab) => void; collapsed: boolean; onToggle: () => void }) {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ products: true, settings: false });
   const navigate = useNavigate();
   const toggle = (id: string) => setExpandedMenus((p) => ({ ...p, [id]: !p[id] }));
@@ -133,45 +133,57 @@ function Sidebar({ active, onSelect, collapsed }: { active: OwnerTab; onSelect: 
   const MenuBtn = ({ isActive, icon: Icon, label, onClick, hasArrow, expanded }: any) => (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-between pl-2 ${hasArrow ? "pr-3" : "pr-2"} py-2 rounded-[200px] cursor-pointer transition-colors ${!isActive ? "bg-white hover:bg-gray-50" : ""}`}
+      title={collapsed ? label : undefined}
+      className={`w-full flex items-center ${collapsed ? "justify-center p-2" : `justify-between pl-2 ${hasArrow ? "pr-3" : "pr-2"} py-2`} rounded-[200px] cursor-pointer transition-colors ${!isActive ? "bg-white hover:bg-gray-50" : ""}`}
       style={isActive ? activeStyle : {}}
     >
-      <div className="flex items-center gap-2.5 flex-1 min-w-0">
+      <div className={`flex items-center ${collapsed ? "" : "gap-2.5 flex-1 min-w-0"}`}>
         <div className={`size-[28px] rounded-full flex items-center justify-center shrink-0 ${isActive ? "bg-[#319754]" : "bg-[#f5f5f5]"}`}>
           <Icon className={`size-3 ${isActive ? "text-white" : "text-black/85"}`} />
         </div>
-        <span className={`${font} text-[14px] ${isActive ? "text-[#319754]" : "text-black"}`}>{label}</span>
+        {!collapsed && <span className={`${font} text-[14px] ${isActive ? "text-[#319754]" : "text-black"}`}>{label}</span>}
       </div>
-      {hasArrow && <ChevronDown className={`size-3 text-black transition-transform shrink-0 ${expanded ? "" : "-rotate-90"}`} />}
+      {hasArrow && !collapsed && <ChevronDown className={`size-3 text-black transition-transform shrink-0 ${expanded ? "" : "-rotate-90"}`} />}
     </button>
   );
 
   return (
-    <aside className={`flex flex-col shrink-0 p-4 ${collapsed ? "w-0 overflow-hidden !p-0" : "w-[282px]"} transition-all`}>
+    <aside className={`flex flex-col shrink-0 p-4 transition-all duration-300 ${collapsed ? "w-[80px]" : "w-[282px]"}`}>
       <div className="bg-white rounded-[16px] overflow-hidden flex flex-col h-full">
         {/* Store header */}
-        <div className="flex items-center gap-2.5 pl-4 py-4 pr-0">
-          <img src={imgSideBar} className="size-[44px] rounded-full shrink-0 object-cover" alt="" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <p className={`${font} text-[16px] truncate`} style={{ fontWeight: 500 }}>METAHERB Store</p>
-              <button className="backdrop-blur-[2px] bg-white/50 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.25)] rounded-l-full size-[24px] flex items-center justify-center cursor-pointer shrink-0">
-                <ChevronLeft className="size-3 text-[#999]" />
-              </button>
+        <div className={`flex items-center py-4 ${collapsed ? "justify-center px-2" : "gap-2.5 pl-4 pr-0"}`}>
+          <img src={imgSideBar} className={`rounded-full shrink-0 object-cover transition-all duration-300 ${collapsed ? "size-[36px]" : "size-[44px]"}`} alt="" />
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <p className={`${font} text-[16px] truncate`} style={{ fontWeight: 500 }}>METAHERB Store</p>
+                <button onClick={onToggle} className="backdrop-blur-[2px] bg-white/50 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.25)] rounded-l-full size-[24px] flex items-center justify-center cursor-pointer shrink-0">
+                  <ChevronLeft className="size-3 text-[#999]" />
+                </button>
+              </div>
+              <p className={`${font} text-[14px] text-black`}>ร้านค้า</p>
             </div>
-            <p className={`${font} text-[14px] text-black`}>ร้านค้า</p>
-          </div>
+          )}
         </div>
 
+        {/* Expand button (collapsed mode) */}
+        {collapsed && (
+          <div className="flex justify-center pb-2">
+            <button onClick={onToggle} className="backdrop-blur-[2px] bg-white/50 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.25)] rounded-full size-[24px] flex items-center justify-center cursor-pointer">
+              <ChevronLeft className="size-3 text-[#999] rotate-180" />
+            </button>
+          </div>
+        )}
+
         {/* Menu */}
-        <nav className="flex-1 px-4 pb-4 space-y-2.5 overflow-y-auto">
+        <nav className={`flex-1 pb-4 space-y-2.5 overflow-y-auto ${collapsed ? "px-2" : "px-4"}`}>
           {sidebarItems.map((item) =>
             !item.children ? (
               <MenuBtn key={item.id} isActive={active === item.id} icon={item.icon} label={item.label} onClick={() => onSelect(item.id)} />
             ) : (
               <div key={item.id} className="space-y-2.5">
                 <MenuBtn icon={item.icon} label={item.label} onClick={() => toggle(item.id)} hasArrow expanded={expandedMenus[item.id]} />
-                {expandedMenus[item.id] && (
+                {expandedMenus[item.id] && !collapsed && (
                   <div className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
                     {item.children.map((child) => (
                       <MenuBtn key={child.id + child.label} isActive={active === child.id} icon={childIconMap[child.id] || Package} label={child.label} onClick={() => onSelect(child.id)} />
@@ -188,7 +200,7 @@ function Sidebar({ active, onSelect, collapsed }: { active: OwnerTab; onSelect: 
           {/* Settings */}
           <div className="space-y-2.5">
             <MenuBtn icon={Settings} label="ตั้งค่าร้านค้า" onClick={() => toggle("settings")} hasArrow expanded={expandedMenus["settings"]} />
-            {expandedMenus["settings"] && (
+            {expandedMenus["settings"] && !collapsed && (
               <div className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
                 {sidebarSettings.map((item) => (
                   <MenuBtn key={item.id} isActive={active === item.id} icon={item.icon} label={item.label} onClick={() => onSelect(item.id)} />
@@ -198,13 +210,7 @@ function Sidebar({ active, onSelect, collapsed }: { active: OwnerTab; onSelect: 
           </div>
 
           {/* Back to main site */}
-          <button onClick={() => navigate("/")}
-            className="w-full flex items-center gap-2.5 pl-2 pr-3 py-2 rounded-[200px] cursor-pointer transition-colors hover:bg-red-50 bg-white">
-            <div className="bg-[#f5f5f5] size-[28px] rounded-full flex items-center justify-center shrink-0">
-              <RotateCcw className="size-3 text-[#ff3b30]" />
-            </div>
-            <span className={`${font} text-[14px] text-[#ff3b30]`}>กลับสู่เว็บไซต์หลัก</span>
-          </button>
+          
         </nav>
       </div>
     </aside>
@@ -1629,17 +1635,14 @@ export function OwnerDashboard() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-200px)] relative">
+    <div className="flex h-full overflow-hidden relative">
       {!sidebarCollapsed && (
         <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarCollapsed(true)} />
       )}
 
-      <div className={`${sidebarCollapsed ? "hidden md:block" : "fixed md:relative z-30 md:z-auto"} md:sticky md:top-0 md:self-start md:h-screen md:overflow-y-auto`}>
-        <Sidebar active={activeTab} onSelect={handleSelect} collapsed={false} />
+      <div className={`${sidebarCollapsed ? "hidden md:block" : "fixed md:relative z-30 md:z-auto"} md:h-full md:overflow-y-auto shrink-0 transition-all duration-300`}>
+        <Sidebar active={activeTab} onSelect={handleSelect} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
       </div>
-
-      {/* Toggle */}
-      
 
       {/* Content */}
       <main className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0">

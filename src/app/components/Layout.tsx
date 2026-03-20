@@ -350,7 +350,7 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
           <div className="h-px bg-[#d4d4d8] mx-0" />
           <div className="px-4 py-3 space-y-2.5">
             {[
-              { icon: User, label: "บัญชีของฉัน", path: "/orders", color: "text-black" },
+              { icon: User, label: "บัญชีของฉัน", path: "/account", color: "text-black" },
               { icon: MapPin, label: "ที่อยู่จัดส่ง", path: "/orders", color: "text-black" },
               { icon: Heart, label: "สินค้าที่ชอบ", path: "/wishlist", color: "text-black" },
               { icon: Ticket, label: "คูปองของฉัน", path: "/my-coupons", color: "text-black" },
@@ -388,6 +388,14 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
                 <span className={`${font} text-[14px]`}>{item.label}</span>
               </button>
             ))}
+            <div className="h-px bg-gray-100 my-1" />
+            <button onClick={() => go("/")}
+              className="flex items-center gap-2.5 cursor-pointer w-full text-left text-[#319754]">
+              <div className="bg-[#319754]/10 size-[28px] rounded-full flex items-center justify-center shrink-0">
+                <ArrowRight className="size-3 text-[#319754] rotate-180" />
+              </div>
+              <span className={`${font} text-[14px]`}>กลับสู่เว็บไซต์หลัก</span>
+            </button>
           </div>
         </>
       )}
@@ -486,7 +494,7 @@ export function Layout() {
   }, [isAuthenticated, user?.role, location.pathname]);
 
   return (
-    <div className="flex flex-col min-h-screen w-full">
+    <div className={`flex flex-col w-full ${isStaffRole ? "h-screen overflow-hidden" : "min-h-screen"}`}>
       {/* Header */}
       <header className="backdrop-blur-[8px] bg-[rgba(255,255,255,0.9)] sticky top-0 z-50">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-[124px] py-3 sm:py-4">
@@ -662,6 +670,12 @@ export function Layout() {
                 เกี่ยวกับเรา
               </button>
             )}
+            {isStaffRole && (
+              <button onClick={() => navigate("/settings")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer transition-colors ${location.pathname === "/settings" ? "bg-black/15" : "hover:bg-white/10"}`}>
+                
+                ตั้งค่าระบบ
+              </button>
+            )}
           </div>
         </nav>
 
@@ -695,7 +709,7 @@ export function Layout() {
       </header>
 
       {/* Content */}
-      <main className="flex-1" style={{ backgroundColor: "#fafafa" }}>
+      <main className={`flex-1 ${isStaffRole ? "overflow-auto" : ""}`} style={{ backgroundColor: "#fafafa" }}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -703,6 +717,7 @@ export function Layout() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.25, ease: "easeInOut" }}
+            className={isStaffRole ? "min-h-full" : ""}
           >
             <Outlet />
           </motion.div>
