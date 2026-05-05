@@ -1,7 +1,7 @@
 
   # METAHERB
 
-  This is a code bundle for METAHERB. The original project is available at https://www.figma.com/design/qQ4kWkM3rKHpOG1HM3L7hA/METAHERB.
+  This is a code bundle for METAHERB. The original project is available at https://www.figma.com/design/qQ4kWkM3rKHpOG1HM3L7hA/METAHERB. ,https://oommiemie.github.io/Metaherb
 
   ## Running the code
 
