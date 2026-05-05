@@ -6,15 +6,15 @@ import { products } from "../data/products";
 import { Heart, ShoppingCart, Star, Trash2 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { toast } from "sonner";
-import imgProd1 from "figma:asset/9e21f4217f39c8b2aaff50eadcf63d44b0fcf83c.png";
-import imgProd2 from "figma:asset/dff4d147a4f36cd01cc4ab790d8ae3472bff4e15.png";
-import imgProd3 from "figma:asset/75fcd2ce0747a1f740ab8306f0a0a74e93ef9cf8.png";
-import imgProd4 from "figma:asset/2760a63146309433afbbc9a2171f4189dfd27e07.png";
-import imgProd5 from "figma:asset/623849f160a45efb31fada62d7efbfb3f3bab60f.png";
-import imgProd6 from "figma:asset/b251ac55d2f44764962036699fe6da4d05a98501.png";
-
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
-const productImages = [imgProd1, imgProd2, imgProd3, imgProd4, imgProd5, imgProd6];
+const productImages = [
+  "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80",
+  "https://images.unsplash.com/photo-1559525839-d9acfd03c2cf?w=600&q=80",
+  "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=600&q=80",
+  "https://images.unsplash.com/photo-1546549032-9571cd6b27df?w=600&q=80",
+  "https://images.unsplash.com/photo-1591282017732-207fbba7dfd4?w=600&q=80",
+  "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=600&q=80",
+];
 
 export function WishlistPage() {
   const navigate = useNavigate();

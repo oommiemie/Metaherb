@@ -370,8 +370,8 @@ export function ShopProfilePage() {
                       {tag === "flashsale" && (
                         <>
                           <div className="absolute top-0 right-0 p-[8px]">
-                            <div className="bg-[#e62e05] px-[16px] py-[4px] rounded-[100px] border border-[#bc1b06]">
-                              <span className={`${font} text-[12px] text-white whitespace-nowrap`}>ลด {p.discountPercent}%</span>
+                            <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
+                              <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
                             </div>
                           </div>
                           <div className="absolute bottom-0 left-0 backdrop-blur-[4px] bg-[rgba(230,46,5,0.8)] flex gap-[4px] items-center justify-center px-[8px] py-[4px] rounded-tr-[8px]">
@@ -382,15 +382,15 @@ export function ShopProfilePage() {
                       )}
                       {tag === "discount" && (
                         <div className="absolute top-0 right-0 p-[8px]">
-                          <div className="bg-[#e62e05] px-[16px] py-[4px] rounded-[100px] border border-[#bc1b06]">
-                            <span className={`${font} text-[12px] text-white whitespace-nowrap`}>ลด {p.discountPercent}%</span>
+                          <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
+                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
                           </div>
                         </div>
                       )}
                       {tag === "recommended" && (
                         <div className="absolute top-0 right-0 p-[8px]">
-                          <div className="bg-[#319754] px-[16px] py-[4px] rounded-[100px] border border-[#143c22]">
-                            <span className={`${font} text-[12px] text-white whitespace-nowrap`}>สินค้าแนะนำ</span>
+                          <div className="bg-[#319754] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(49,151,84,0.4)]">
+                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>สินค้าแนะนำ</span>
                           </div>
                         </div>
                       )}

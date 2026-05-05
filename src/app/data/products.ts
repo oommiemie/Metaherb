@@ -29,7 +29,7 @@ export interface Product {
   reviews: { user: string; rating: number; date: string; tags: string[]; comment: string; images: string[] }[];
 }
 
-export const categories = ["สมุนไพร", "อาหาร", "ยา", "เครื่องหอม", "ความสวย", "ชุดของขวัญ", "บริการ", "โปรโมชั่น", "คูปอง"];
+export const categories = ["สมุนไพร", "อาหาร", "ยา", "เครื่องหอม", "ความสวย", "ชุดของขวัญ", "ชาสมุนไพร", "อาหารเสริม", "น้ำมันสกัด"];
 
 export const products: Product[] = [
   {

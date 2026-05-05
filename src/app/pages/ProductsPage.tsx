@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { products, categories } from "../data/products";
-import { Star, ChevronDown, RotateCcw, Heart } from "lucide-react";
+import { Star, ChevronDown, RotateCcw, Heart, ChevronLeft, ChevronRight } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useWishlist } from "../store/WishlistContext";
 import { toast } from "sonner";
 import svgPaths from "../../imports/svg-7w99agzzp8";
 import { FilterSkeleton, ProductGridSkeleton } from "../components/Skeleton";
+import * as SliderPrimitive from "@radix-ui/react-slider";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const productImages = [
@@ -32,8 +33,10 @@ export function ProductsPage() {
   const [productType, setProductType] = useState("ทั้งหมด");
   const [sortBy, setSortBy] = useState("จากมากไปน้อย");
   const [page, setPage] = useState(1);
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
+  const PRICE_MIN = 0;
+  const PRICE_MAX = Math.max(500, ...products.map((p) => p.originalPrice ?? p.price));
+  const [priceRange, setPriceRange] = useState<[number, number]>([PRICE_MIN, PRICE_MAX]);
+  const [minPrice, maxPrice] = priceRange;
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,14 +49,13 @@ export function ProductsPage() {
     .filter((p) => selectedCategory === "ทั้งหมด" || p.category === selectedCategory)
     .filter((p) => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter((p) => {
-      if (productType === "สินค้าโปรโมชัน") return p.isFlashSale || !!p.discountPercent;
-      if (productType === "สินค้าแนะนำ") return p.isRecommended;
+      if (productType === "สินค้า Flash Sale") return !!p.isFlashSale;
+      if (productType === "สินค้าโปรโมชัน") return !!p.discountPercent;
+      if (productType === "สินค้าแนะนำ") return !!p.isRecommended;
       return true;
     })
     .filter((p) => {
-      const min = minPrice ? parseFloat(minPrice) : 0;
-      const max = maxPrice ? parseFloat(maxPrice) : Infinity;
-      return p.price >= min && p.price <= max;
+      return p.price >= minPrice && p.price <= maxPrice;
     })
     .sort((a, b) => {
       if (sortBy === "จากมากไปน้อย") return b.price - a.price;
@@ -68,7 +70,7 @@ export function ProductsPage() {
   // Reset page to 1 when filters change
   const resetPage = () => setPage(1);
 
-  useEffect(() => { setPage(1); }, [selectedCategory, productType, sortBy, minPrice, maxPrice, searchQuery]);
+  useEffect(() => { setPage(1); }, [selectedCategory, productType, sortBy, priceRange, searchQuery]);
 
   if (loading) {
     return (
@@ -107,10 +109,10 @@ export function ProductsPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <span className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>ตัวกรอง</span>
-              <button onClick={() => { setSelectedCategory("ทั้งหมด"); setProductType("ทั้งหมด"); setMinPrice(""); setMaxPrice(""); setSortBy("จากมากไปน้อย"); }} className="cursor-pointer">
-                <svg width="24" height="20" viewBox="0 0 24 20" fill="none">
-                  <path d="M23.2815 8.10389H18.6846C17.9719 8.10389 17.7813 8.58405 18.1727 9.123L20.4209 12.2489C20.7421 12.6899 21.224 12.6996 21.5451 12.2489L23.7934 9.13279C24.1949 8.58405 24.0042 8.10389 23.2815 8.10389ZM1.58162 9.99512C1.58162 15.5121 6.1685 19.9903 11.8193 19.9903C15.2519 19.9903 18.243 18.3538 20.1098 15.8256C20.4511 15.3944 20.3306 14.8359 19.9192 14.5909C19.4976 14.346 19.0258 14.4733 18.7247 14.8751C17.1891 16.9525 14.6798 18.3244 11.8193 18.3244C7.10194 18.3244 3.28789 14.6007 3.28789 9.99512C3.28789 5.38952 7.10194 1.66586 11.8193 1.66586C16.5366 1.66586 20.3507 5.38952 20.3507 9.99512C20.3507 10.4557 20.7421 10.828 21.2039 10.828C21.6656 10.828 22.047 10.4655 22.057 10.0049C22.047 4.4684 17.4701 0 11.8193 0C6.1685 0 1.58162 4.47821 1.58162 9.99512Z" fill="black" fillOpacity="0.85" />
-                </svg>
+              <button onClick={() => { setSelectedCategory("ทั้งหมด"); setProductType("ทั้งหมด"); setPriceRange([PRICE_MIN, PRICE_MAX]); setSortBy("จากมากไปน้อย"); }}
+                title="ล้างตัวกรอง"
+                className="cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
+                <RotateCcw className="size-4" strokeWidth={2} />
               </button>
             </div>
 
@@ -122,11 +124,11 @@ export function ProductsPage() {
               <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>หมวดหมู่</span>
               <div className="relative w-full">
                 <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}
-                  className={`w-full bg-[#fafafa] h-[48px] rounded-full px-6 py-3 text-[14px] ${font} outline-none appearance-none cursor-pointer pr-12`}>
+                  className={`w-full bg-[#fafafa] h-[40px] rounded-full px-4 text-[13px] ${font} outline-none appearance-none cursor-pointer pr-10`}>
                   <option>ทั้งหมด</option>
                   {categories.map((c) => <option key={c}>{c}</option>)}
                 </select>
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                   <svg width="16" height="9" viewBox="0 0 16 9" fill="none">
                     <path d="M7.83767 9C8.06314 9 8.28862 8.91545 8.44194 8.75493L15.4228 2.05352C15.5761 1.90986 15.6663 1.72394 15.6663 1.51268C15.6663 1.07323 15.3145 0.73521 14.8455 0.73521C14.6201 0.73521 14.4127 0.819718 14.2594 0.954933L7.35062 7.57182H8.31568L1.40699 0.954933C1.26269 0.819718 1.05525 0.73521 0.820745 0.73521C0.351748 0.73521 0 1.07323 0 1.51268C0 1.72394 0.0901917 1.90986 0.243518 2.06197L7.22436 8.75493C7.39572 8.91545 7.60316 9 7.83767 9Z" fill="black" fillOpacity="0.85" />
                   </svg>
@@ -137,25 +139,47 @@ export function ProductsPage() {
             {/* ประเภทสินค้า */}
             <div className="flex flex-col gap-2">
               <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ประเภทสินค้า</span>
-              {["ทั้งหมด", "สินค้าโปรโมชัน", "สินค้าแนะนำ"].map((t) => (
-                <button key={t} onClick={() => setProductType(t)} className="flex items-center gap-2 cursor-pointer">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    {productType === t ? (
-                      <path d="M15.5375 15.5375C16.5125 14.5625 17 13.3833 17 12C17 10.6167 16.5125 9.4375 15.5375 8.4625C14.5625 7.4875 13.3833 7 12 7C10.6167 7 9.4375 7.4875 8.4625 8.4625C7.4875 9.4375 7 10.6167 7 12C7 13.3833 7.4875 14.5625 8.4625 15.5375C9.4375 16.5125 10.6167 17 12 17C13.3833 17 14.5625 16.5125 15.5375 15.5375ZM12 22C10.6167 22 9.31667 21.7375 8.1 21.2125C6.88333 20.6875 5.825 19.975 4.925 19.075C4.025 18.175 3.3125 17.1167 2.7875 15.9C2.2625 14.6833 2 13.3833 2 12C2 10.6167 2.2625 9.31667 2.7875 8.1C3.3125 6.88333 4.025 5.825 4.925 4.925C5.825 4.025 6.88333 3.3125 8.1 2.7875C9.31667 2.2625 10.6167 2 12 2C13.3833 2 14.6833 2.2625 15.9 2.7875C17.1167 3.3125 18.175 4.025 19.075 4.925C19.975 5.825 20.6875 6.88333 21.2125 8.1C21.7375 9.31667 22 10.6167 22 12C22 13.3833 21.7375 14.6833 21.2125 15.9C20.6875 17.1167 19.975 18.175 19.075 19.075C18.175 19.975 17.1167 20.6875 15.9 21.2125C14.6833 21.7375 13.3833 22 12 22ZM12 20C14.2333 20 16.125 19.225 17.675 17.675C19.225 16.125 20 14.2333 20 12C20 9.76667 19.225 7.875 17.675 6.325C16.125 4.775 14.2333 4 12 4C9.76667 4 7.875 4.775 6.325 6.325C4.775 7.875 4 9.76667 4 12C4 14.2333 4.775 16.125 6.325 17.675C7.875 19.225 9.76667 20 12 20Z" fill="#46A165" />
-                    ) : (
-                      <path d="M12 22C10.6167 22 9.31667 21.7375 8.1 21.2125C6.88333 20.6875 5.825 19.975 4.925 19.075C4.025 18.175 3.3125 17.1167 2.7875 15.9C2.2625 14.6833 2 13.3833 2 12C2 10.6167 2.2625 9.31667 2.7875 8.1C3.3125 6.88333 4.025 5.825 4.925 4.925C5.825 4.025 6.88333 3.3125 8.1 2.7875C9.31667 2.2625 10.6167 2 12 2C13.3833 2 14.6833 2.2625 15.9 2.7875C17.1167 3.3125 18.175 4.025 19.075 4.925C19.975 5.825 20.6875 6.88333 21.2125 8.1C21.7375 9.31667 22 10.6167 22 12C22 13.3833 21.7375 14.6833 21.2125 15.9C20.6875 17.1167 19.975 18.175 19.075 19.075C18.175 19.975 17.1167 20.6875 15.9 21.2125C14.6833 21.7375 13.3833 22 12 22ZM12 20C14.2333 20 16.125 19.225 17.675 17.675C19.225 16.125 20 14.2333 20 12C20 9.76667 19.225 7.875 17.675 6.325C16.125 4.775 14.2333 4 12 4C9.76667 4 7.875 4.775 6.325 6.325C4.775 7.875 4 9.76667 4 12C4 14.2333 4.775 16.125 6.325 17.675C7.875 19.225 9.76667 20 12 20Z" fill="#1C1B1F" />
-                    )}
-                  </svg>
-                  <span className={`${font} text-[14px] text-black`}>{t}</span>
-                </button>
-              ))}
+              {["ทั้งหมด", "สินค้า Flash Sale", "สินค้าโปรโมชัน", "สินค้าแนะนำ"].map((t) => {
+                const checked = productType === t;
+                return (
+                  <button key={t} onClick={() => setProductType(t)} className="group flex items-center gap-2.5 cursor-pointer py-1">
+                    <span className={`size-[16px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? "border-[#319754]" : "border-gray-300 group-hover:border-gray-400"}`}>
+                      <span className={`rounded-full bg-[#319754] transition-all ${checked ? "size-[8px]" : "size-0"}`} />
+                    </span>
+                    <span className={`${font} text-[13px] transition-colors ${checked ? "text-[#319754]" : "text-gray-700 group-hover:text-black"}`} style={{ fontWeight: checked ? 500 : 400 }}>{t}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* ช่วงราคา */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ช่วงราคา</span>
-              <input type="number" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} placeholder="ราคาต่ำสุด" className={`w-full bg-[#fafafa] h-[48px] rounded-full px-6 py-3 text-[14px] ${font} outline-none placeholder:text-[#a3a3a3]`} />
-              <input type="number" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} placeholder="ราคาสูงสุด" className={`w-full bg-[#fafafa] h-[48px] rounded-full px-6 py-3 text-[14px] ${font} outline-none placeholder:text-[#a3a3a3]`} />
+              {/* Min/Max value text */}
+              <div className={`${font} flex items-center justify-between text-[14px] text-[#319754]`} style={{ fontWeight: 600 }}>
+                <span>฿{minPrice.toLocaleString()}</span>
+                <span className="text-gray-300">—</span>
+                <span>฿{maxPrice.toLocaleString()}</span>
+              </div>
+              {/* Custom Slider */}
+              <SliderPrimitive.Root
+                min={PRICE_MIN}
+                max={PRICE_MAX}
+                step={10}
+                value={priceRange}
+                onValueChange={(v) => setPriceRange(v as [number, number])}
+                className="relative flex w-full touch-none items-center select-none h-5"
+              >
+                <SliderPrimitive.Track className="relative grow h-1.5 rounded-full bg-gray-200">
+                  <SliderPrimitive.Range className="absolute h-full rounded-full bg-gradient-to-r from-[#319754] to-[#46A165]" />
+                </SliderPrimitive.Track>
+                {[0, 1].map((i) => (
+                  <SliderPrimitive.Thumb
+                    key={i}
+                    className="block size-5 rounded-full bg-white border-2 border-[#319754] shadow-[0_2px_6px_rgba(0,0,0,0.15)] hover:border-[#287745] hover:shadow-[0_2px_8px_rgba(49,151,84,0.4)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#319754]/20 transition-all cursor-grab active:cursor-grabbing"
+                  />
+                ))}
+              </SliderPrimitive.Root>
             </div>
 
             {/* เรียงตาม */}
@@ -163,11 +187,11 @@ export function ProductsPage() {
               <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เรียงตาม</span>
               <div className="relative w-full">
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-                  className={`w-full bg-[#fafafa] h-[48px] rounded-full px-6 py-3 text-[14px] ${font} outline-none appearance-none cursor-pointer pr-12`}>
+                  className={`w-full bg-[#fafafa] h-[40px] rounded-full px-4 text-[13px] ${font} outline-none appearance-none cursor-pointer pr-10`}>
                   <option>จากมากไปน้อย</option>
                   <option>จากน้อยไปมาก</option>
                 </select>
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                   <svg width="16" height="9" viewBox="0 0 16 9" fill="none">
                     <path d="M7.83767 9C8.06314 9 8.28862 8.91545 8.44194 8.75493L15.4228 2.05352C15.5761 1.90986 15.6663 1.72394 15.6663 1.51268C15.6663 1.07323 15.3145 0.73521 14.8455 0.73521C14.6201 0.73521 14.4127 0.819718 14.2594 0.954933L7.35062 7.57182H8.31568L1.40699 0.954933C1.26269 0.819718 1.05525 0.73521 0.820745 0.73521C0.351748 0.73521 0 1.07323 0 1.51268C0 1.72394 0.0901917 1.90986 0.243518 2.06197L7.22436 8.75493C7.39572 8.91545 7.60316 9 7.83767 9Z" fill="black" fillOpacity="0.85" />
                   </svg>
@@ -200,15 +224,15 @@ export function ProductsPage() {
                 p.isFlashSale ? "flashsale" : p.discountPercent ? "discount" : p.isRecommended ? "recommended" : null;
               return (
                 <div key={p.id} onClick={() => navigate(`/product/${p.id}`)}
-                  className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 flex flex-col h-[259px] group">
-                  <div className="flex-1 relative min-h-0 rounded-t-[16px] overflow-hidden">
-                    <ImageWithFallback src={productImages[i % productImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                  className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 flex flex-col h-[259px] group/card">
+                  <div className="flex-1 relative min-h-0 overflow-hidden">
+                    <ImageWithFallback src={productImages[i % productImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
                     {/* Single Tag — priority: flashsale > discount > recommended */}
                     {tag === "flashsale" && (
                       <>
                         <div className="absolute top-0 right-0 p-[8px]">
-                          <div className="bg-[#e62e05] px-[16px] py-[4px] rounded-[100px] border border-[#bc1b06]">
-                            <span className={`${font} text-[12px] text-white whitespace-nowrap`}>ลด {p.discountPercent}%</span>
+                          <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
+                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
                           </div>
                         </div>
                         <div className="absolute bottom-0 left-0 backdrop-blur-[4px] bg-[rgba(230,46,5,0.8)] flex gap-[4px] items-center justify-center px-[8px] py-[4px] rounded-tr-[8px]">
@@ -219,15 +243,15 @@ export function ProductsPage() {
                     )}
                     {tag === "discount" && (
                       <div className="absolute top-0 right-0 p-[8px]">
-                        <div className="bg-[#e62e05] px-[16px] py-[4px] rounded-[100px] border border-[#bc1b06]">
-                          <span className={`${font} text-[12px] text-white whitespace-nowrap`}>ลด {p.discountPercent}%</span>
+                        <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
+                          <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
                         </div>
                       </div>
                     )}
                     {tag === "recommended" && (
                       <div className="absolute top-0 right-0 p-[8px]">
-                        <div className="bg-[#319754] px-[16px] py-[4px] rounded-[100px] border border-[#143c22]">
-                          <span className={`${font} text-[12px] text-white whitespace-nowrap`}>สินค้าแนะนำ</span>
+                        <div className="bg-[#319754] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(49,151,84,0.4)]">
+                          <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>สินค้าแนะนำ</span>
                         </div>
                       </div>
                     )}
@@ -275,15 +299,22 @@ export function ProductsPage() {
               <button
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
-                className={`size-8 rounded-full flex items-center justify-center text-[13px] cursor-pointer ${page <= 1 ? "bg-gray-100 text-gray-300 cursor-not-allowed" : "bg-gray-200 text-gray-600 hover:bg-gray-300"}`}>◀</button>
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${page <= 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}
+                aria-label="หน้าก่อน">
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                 <button key={p} onClick={() => setPage(p)}
-                  className={`size-8 rounded-full flex items-center justify-center text-[13px] cursor-pointer ${p === page ? "bg-[#319754] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{p}</button>
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${p === page ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: p === page ? 600 : 400 }}>{p}</button>
               ))}
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage(page + 1)}
-                className={`size-8 rounded-full flex items-center justify-center text-[13px] cursor-pointer ${page >= totalPages ? "bg-gray-100 text-gray-300 cursor-not-allowed" : "bg-gray-200 text-gray-600 hover:bg-gray-300"}`}>▶</button>
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${page >= totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}
+                aria-label="หน้าถัดไป">
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
             </div>
           )}
         </div>

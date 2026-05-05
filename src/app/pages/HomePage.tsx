@@ -12,6 +12,7 @@ import {
   Heart,
   Zap,
   Eye,
+  Leaf, UtensilsCrossed, Pill, Sparkles, Flower2, Gift, Coffee, FlaskConical, Droplets,
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { toast } from "sonner";
@@ -62,23 +63,21 @@ import imgFlash6 from "figma:asset/9633ae9d3c56aaa84d693d60a12798ecff97ff73.png"
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
-const productImages = [
-  imgProd1,
-  imgProd2,
-  imgProd3,
-  imgProd4,
-  imgProd5,
-  imgProd6,
-  imgProd7,
+const SAFE_IMAGES = [
+  "https://images.unsplash.com/photo-1610643625267-aee6dae3ca22?w=600&q=80", // herbal tea
+  "https://images.unsplash.com/photo-1599639932525-213272ff954b?w=600&q=80", // coffee drip
+  "https://images.unsplash.com/photo-1645693091199-77a764e1ea16?w=600&q=80", // honey jar
+  "https://images.unsplash.com/photo-1740592754365-2117f5977528?w=600&q=80", // turmeric capsule
+  "https://images.unsplash.com/photo-1591282017732-207fbba7dfd4?w=600&q=80", // coconut oil
+  "https://images.unsplash.com/photo-1759064716219-ba8c60a7ce07?w=600&q=80", // dried herbs
+  "https://images.unsplash.com/photo-1558429773-0d5084b445aa?w=600&q=80",    // jam
+  "https://images.unsplash.com/photo-1748390359572-8e7a47bf5cb5?w=600&q=80", // aloe vera
+  "https://images.unsplash.com/photo-1765850257647-811b8d3c20ca?w=600&q=80", // olive oil
+  "https://images.unsplash.com/photo-1624454002302-36b824d7bd0a?w=600&q=80", // essential oil
+  "https://images.unsplash.com/photo-1644061923948-f5b918b524c7?w=600&q=80", // amla dried
 ];
-const flashSaleImages = [
-  imgFlash1,
-  imgFlash2,
-  imgFlash3,
-  imgFlash4,
-  imgFlash5,
-  imgFlash6,
-];
+const productImages = SAFE_IMAGES.slice(0, 7);
+const flashSaleImages = SAFE_IMAGES.slice(2, 8);
 
 /* ===== Flash Sale Countdown ===== */
 function FlashSaleCountdown() {
@@ -277,10 +276,10 @@ function ProductCard({
 function BannerCarousel() {
   const [currentBanner, setCurrentBanner] = useState(0);
   const banners = [
-    imgBanner,
-    imgBanner2,
-    imgBanner3,
-    imgBanner4,
+    "https://www.figma.com/api/mcp/asset/6ecb91a6-f03f-4d55-a93e-347438b3c4c3", // Nature's Remedies (Figma)
+    "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=1600&q=80", // herbs in bowl
+    "https://images.unsplash.com/photo-1611073615452-04d76e76e8b2?w=1600&q=80", // herb collection
+    "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=1600&q=80", // chamomile tea
   ];
 
   useEffect(() => {
@@ -291,14 +290,8 @@ function BannerCarousel() {
   }, []);
 
   return (
-    <div className="relative rounded-xl overflow-hidden bg-[#faf8f5]">
-      {/* First image as layout driver */}
-      <ImageWithFallback
-        src={banners[0]}
-        alt="Banner"
-        className="w-full h-auto block invisible"
-      />
-      {/* Overlay all banners */}
+    <div className="group relative rounded-[16px] overflow-hidden w-full h-full bg-[#faf8f5]">
+      {/* Slides */}
       {banners.map((b, i) => (
         <div
           key={i}
@@ -311,34 +304,30 @@ function BannerCarousel() {
           />
         </div>
       ))}
+      {/* Fallback fixed-aspect image to drive height when parent has no aspect */}
+      <div className="invisible aspect-[775/235] w-full" />
       {/* Dots */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+      <div className="absolute bottom-[14px] left-1/2 -translate-x-1/2 flex gap-1.5">
         {banners.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrentBanner(i)}
-            className={`rounded-full cursor-pointer transition-all ${i === currentBanner ? "w-6 h-2 bg-white" : "size-2 bg-white/50"}`}
+            className={`rounded-full cursor-pointer transition-all ${i === currentBanner ? "w-6 h-2 bg-white" : "size-2 bg-white/60"}`}
           />
         ))}
       </div>
-      {/* Arrows */}
+      {/* Arrows — Figma style: 32px circle, light bg, backdrop blur */}
       <button
-        onClick={() =>
-          setCurrentBanner(
-            (p) => (p - 1 + banners.length) % banners.length,
-          )
-        }
-        className="absolute left-2 top-1/2 -translate-y-1/2 size-8 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white cursor-pointer"
+        onClick={() => setCurrentBanner((p) => (p - 1 + banners.length) % banners.length)}
+        className="absolute left-[20px] top-1/2 -translate-y-1/2 size-8 bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] rounded-full flex items-center justify-center text-white cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-200"
       >
-        <ChevronLeft className="size-4" />
+        <ChevronLeft className="size-5" strokeWidth={2.4} />
       </button>
       <button
-        onClick={() =>
-          setCurrentBanner((p) => (p + 1) % banners.length)
-        }
-        className="absolute right-2 top-1/2 -translate-y-1/2 size-8 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center text-white cursor-pointer"
+        onClick={() => setCurrentBanner((p) => (p + 1) % banners.length)}
+        className="absolute right-[20px] top-1/2 -translate-y-1/2 size-8 bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] rounded-full flex items-center justify-center text-white cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-200"
       >
-        <ChevronRight className="size-4" />
+        <ChevronRight className="size-5" strokeWidth={2.4} />
       </button>
     </div>
   );
@@ -415,22 +404,22 @@ export function HomePage() {
       {/* Banner */}
       <div className="px-4 sm:px-6 lg:px-[124px] pt-4 sm:pt-6">
         <div className="flex flex-col lg:flex-row gap-[10px] w-full">
-          <div className="min-w-0 lg:flex-[73_1_0%]">
+          <div className="min-w-0 lg:flex-[775_1_0%] lg:aspect-[775/235]">
             <BannerCarousel />
           </div>
-          <div className="hidden lg:flex flex-col gap-[10px] lg:flex-[27_1_0%] min-w-0">
+          <div className="hidden lg:flex flex-col gap-[10px] lg:flex-[230_1_0%] min-w-0">
             <div className="rounded-[16px] overflow-hidden flex-1 relative min-h-0">
               <ImageWithFallback
-                src={imgBannerSmall1}
-                alt="Promo"
-                className="absolute inset-0 w-full h-full object-fill"
+                src="https://www.figma.com/api/mcp/asset/0f3a054e-37ab-4007-84bb-9cbb2d875abe"
+                alt="Bewell promo"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
             <div className="rounded-[16px] overflow-hidden flex-1 relative min-h-0">
               <ImageWithFallback
-                src={imgBannerSmall2}
-                alt="Promo"
-                className="absolute inset-0 w-full h-full object-fill"
+                src="https://www.figma.com/api/mcp/asset/5f63c3f3-0721-44d3-8df8-e13edff65d77"
+                alt="Beauty promo"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
           </div>
@@ -439,35 +428,36 @@ export function HomePage() {
 
       {/* Categories */}
       <div className="px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
-        <div className="flex items-center justify-center gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-hide w-full">
+        <div className="flex items-center justify-center gap-3 sm:gap-4 overflow-x-auto py-3 scrollbar-hide w-full">
           {([
-            { name: "สมุนไพร", img: imgHerb },
-            { name: "อาหาร", img: imgFood },
-            { name: "ยา", img: imgMedical },
-            { name: "เครื่องหอม", img: imgAroma },
-            { name: "ความสวย", img: imgCosmetics },
-            { name: "ชุดของขวัญ", img: imgGiftset },
-            { name: "บริการ", img: imgService },
-            { name: "โปรโมชั่น", img: imgPromotion },
-            { name: "คูปอง", img: imgCoupon },
-          ]).map((cat) => (
-            <button
-              key={cat.name}
-              onClick={() =>
-                navigate(cat.name === "คูปอง" ? "/coupons" : `/products?category=${cat.name}`)
-              }
-              className={`flex flex-col items-center gap-1.5 sm:gap-2 min-w-[64px] sm:min-w-[80px] cursor-pointer group`}
-            >
-              <div className="size-[56px] sm:size-[72px] rounded-full bg-[#319754]/10 flex items-center justify-center group-hover:bg-[#319754]/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-md group-hover:shadow-[#319754]/20 overflow-hidden p-2">
-                <ImageWithFallback src={cat.img} alt={cat.name} className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-110" />
-              </div>
-              <span
-                className={`${font} text-[11px] sm:text-[12px] text-gray-600 whitespace-nowrap transition-colors duration-300 group-hover:text-[#319754]`}
+            { name: "สมุนไพร", icon: Leaf },
+            { name: "อาหาร", icon: UtensilsCrossed },
+            { name: "ยา", icon: Pill },
+            { name: "เครื่องหอม", icon: Sparkles },
+            { name: "ความสวย", icon: Flower2 },
+            { name: "ชุดของขวัญ", icon: Gift },
+            { name: "ชาสมุนไพร", icon: Coffee },
+            { name: "อาหารเสริม", icon: FlaskConical },
+            { name: "น้ำมันสกัด", icon: Droplets },
+          ]).map((cat) => {
+            const Icon = cat.icon;
+            return (
+              <button
+                key={cat.name}
+                onClick={() => navigate(`/products?category=${cat.name}`)}
+                className={`flex flex-col items-center gap-1.5 sm:gap-2 min-w-[64px] sm:min-w-[80px] cursor-pointer group`}
               >
-                {cat.name}
-              </span>
-            </button>
-          ))}
+                <div className="size-[40px] sm:size-[56px] rounded-full bg-[#319754]/10 flex items-center justify-center group-hover:bg-[#319754]/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-md group-hover:shadow-[#319754]/20">
+                  <Icon className="size-5 text-[#319754]" strokeWidth={1.8} />
+                </div>
+                <span
+                  className={`${font} text-[11px] sm:text-[12px] text-gray-600 whitespace-nowrap transition-colors duration-300 group-hover:text-[#319754]`}
+                >
+                  {cat.name}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -477,12 +467,9 @@ export function HomePage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-[16px]">
             <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>สินค้าแนะนำ</p>
-            <button onClick={() => navigate("/products")} className="flex items-center gap-[10px] cursor-pointer">
-              <span className={`${font} text-[12px] text-black`}>ดูทั้งหมด</span>
-              <svg className="size-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
-                <path d={svgPaths.p31f27600} fill="black" opacity="0" />
-                <path d={svgPaths.p249d7900} fill="black" />
-              </svg>
+            <button onClick={() => navigate("/products")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
+              <span className={`${font} text-[12px]`}>ดูทั้งหมด</span>
+              <ChevronRight className="size-4" />
             </button>
           </div>
           {/* Product Grid */}
@@ -491,7 +478,7 @@ export function HomePage() {
             const totalRecPages = Math.ceil(recProducts.length / 6);
             const pagedProducts = recProducts.slice(recPage * 6, recPage * 6 + 6);
             return (
-            <div className="relative overflow-hidden">
+            <div className="group relative overflow-x-clip py-2 -my-2">
             <AnimatePresence mode="wait" initial={false} custom={recDirection}>
             <motion.div
               key={recPage}
@@ -510,16 +497,16 @@ export function HomePage() {
                   <div
                     key={`rec-${p.id}`}
                     onClick={() => navigate(`/product/${p.id}`)}
-                    className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 flex flex-col h-[259px] group"
+                    className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 flex flex-col h-[259px] group/card"
                   >
-                    <div className="flex-1 relative min-h-0 rounded-t-[16px] overflow-hidden">
-                      <img src={productImages[globalIdx % productImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    <div className="flex-1 relative min-h-0 overflow-hidden">
+                      <img src={productImages[globalIdx % productImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
                       {/* Single Tag - priority: flashsale > discount > recommended */}
                       {tag === "flashsale" && (
                         <>
-                          <div className="absolute top-0 right-0 p-[8px]">
-                            <div className="bg-[#e62e05] px-[16px] py-[4px] rounded-[100px] border border-[#bc1b06]">
-                              <span className={`${font} text-[12px] text-white whitespace-nowrap`}>ลด {p.discountPercent}%</span>
+                          <div className="absolute top-0 right-0 p-[6px]">
+                            <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
+                              <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
                             </div>
                           </div>
                           <div className="absolute bottom-0 left-0 backdrop-blur-[4px] bg-[rgba(230,46,5,0.8)] flex gap-[4px] items-center justify-center px-[8px] py-[4px] rounded-tr-[8px]">
@@ -529,16 +516,16 @@ export function HomePage() {
                         </>
                       )}
                       {tag === "discount" && (
-                        <div className="absolute top-0 right-0 p-[8px]">
-                          <div className="bg-[#e62e05] px-[16px] py-[4px] rounded-[100px] border border-[#bc1b06]">
-                            <span className={`${font} text-[12px] text-white whitespace-nowrap`}>ลด {p.discountPercent}%</span>
+                        <div className="absolute top-0 right-0 p-[6px]">
+                          <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
+                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
                           </div>
                         </div>
                       )}
                       {tag === "recommended" && (
-                        <div className="absolute top-0 right-0 p-[8px]">
-                          <div className="bg-[#319754] px-[16px] py-[4px] rounded-[100px] border border-[#143c22]">
-                            <span className={`${font} text-[12px] text-white whitespace-nowrap`}>สินค้าแนะนำ</span>
+                        <div className="absolute top-0 right-0 p-[6px]">
+                          <div className="bg-[#319754] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(49,151,84,0.4)]">
+                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>สินค้าแนะนำ</span>
                           </div>
                         </div>
                       )}
@@ -570,21 +557,17 @@ export function HomePage() {
             </AnimatePresence>
             {/* Left Arrow */}
             {recPage > 0 && (
-            <button onClick={() => { setRecDirection(-1); setRecPage(p => p - 1); }} className="absolute left-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer hover:bg-[rgba(217,217,217,0.8)] transition-colors z-10">
-              <svg className="w-[20px] h-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
-                <path d={svgPaths.p31f27600} fill="black" opacity="0" />
-                <path d={svgPaths.p1ec9ac00} fill="#737373" />
-              </svg>
-            </button>
+              <button onClick={() => { setRecDirection(-1); setRecPage(p => p - 1); }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10">
+                <ChevronLeft className="size-5" strokeWidth={2.4} />
+              </button>
             )}
             {/* Right Arrow */}
             {recPage < totalRecPages - 1 && (
-            <button onClick={() => { setRecDirection(1); setRecPage(p => p + 1); }} className="absolute right-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer hover:bg-[rgba(217,217,217,0.8)] transition-colors z-10">
-              <svg className="w-[20px] h-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
-                <path d={svgPaths.p31f27600} fill="black" opacity="0" />
-                <path d={svgPaths.p249d7900} fill="#737373" />
-              </svg>
-            </button>
+              <button onClick={() => { setRecDirection(1); setRecPage(p => p + 1); }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10">
+                <ChevronRight className="size-5" strokeWidth={2.4} />
+              </button>
             )}
           </div>
             );
@@ -601,12 +584,9 @@ export function HomePage() {
               <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>Flash Sale</p>
               <FlashSaleCountdown />
             </div>
-            <button onClick={() => navigate("/products")} className="flex items-center gap-[10px] cursor-pointer">
-              <span className={`${font} text-[12px] text-black`}>ดูทั้งหมด</span>
-              <svg className="size-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
-                <path d={svgPaths.p31f27600} fill="black" opacity="0" />
-                <path d={svgPaths.p249d7900} fill="black" />
-              </svg>
+            <button onClick={() => navigate("/products")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
+              <span className={`${font} text-[12px]`}>ดูทั้งหมด</span>
+              <ChevronRight className="size-4" />
             </button>
           </div>
           {/* Flash Sale Grid */}
@@ -615,7 +595,7 @@ export function HomePage() {
             const totalFlashPages = Math.ceil(flashProducts.length / 6);
             const pagedFlash = flashProducts.slice(flashPage * 6, flashPage * 6 + 6);
             return (
-          <div className="relative overflow-hidden">
+          <div className="group relative overflow-x-clip py-2 -my-2">
             <AnimatePresence mode="wait" initial={false} custom={flashDirection}>
             <motion.div
               key={flashPage}
@@ -633,15 +613,15 @@ export function HomePage() {
                 <div
                   key={p.id}
                   onClick={() => navigate(`/product/${p.id}`)}
-                  className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#e62e05]/40 transition-all duration-300 flex flex-col h-[259px] group"
+                  className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#e62e05]/40 transition-all duration-300 flex flex-col h-[259px] group/card"
                 >
                   {/* Image */}
-                  <div className="flex-1 relative min-h-0 rounded-t-[16px] overflow-hidden">
-                    <img src={flashSaleImages[globalIdx % flashSaleImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                  <div className="flex-1 relative min-h-0 overflow-hidden">
+                    <img src={flashSaleImages[globalIdx % flashSaleImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
                     {/* Discount tag top-right */}
-                    <div className="absolute top-0 right-0 p-[8px]">
-                      <div className="bg-[#e62e05] px-[16px] py-[4px] rounded-[100px] border border-[#bc1b06]">
-                        <span className={`${font} text-[12px] text-white whitespace-nowrap`}>ลด {p.discountPercent}%</span>
+                    <div className="absolute top-0 right-0 p-[6px]">
+                      <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
+                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
                       </div>
                     </div>
                     {/* Flash Sale badge bottom-left with countdown */}
@@ -678,21 +658,17 @@ export function HomePage() {
             </AnimatePresence>
             {/* Left Arrow */}
             {flashPage > 0 && (
-            <button onClick={() => { setFlashDirection(-1); setFlashPage(p => p - 1); }} className="absolute left-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer hover:bg-[rgba(217,217,217,0.8)] transition-colors z-10">
-              <svg className="w-[20px] h-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
-                <path d={svgPaths.p31f27600} fill="black" opacity="0" />
-                <path d={svgPaths.p1ec9ac00} fill="#737373" />
-              </svg>
-            </button>
+              <button onClick={() => { setFlashDirection(-1); setFlashPage(p => p - 1); }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10">
+                <ChevronLeft className="size-5" strokeWidth={2.4} />
+              </button>
             )}
             {/* Right Arrow */}
             {flashPage < totalFlashPages - 1 && (
-            <button onClick={() => { setFlashDirection(1); setFlashPage(p => p + 1); }} className="absolute right-0 top-1/2 -translate-y-1/2 size-[32px] rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] flex items-center justify-center cursor-pointer hover:bg-[rgba(217,217,217,0.8)] transition-colors z-10">
-              <svg className="w-[20px] h-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
-                <path d={svgPaths.p31f27600} fill="black" opacity="0" />
-                <path d={svgPaths.p249d7900} fill="#737373" />
-              </svg>
-            </button>
+              <button onClick={() => { setFlashDirection(1); setFlashPage(p => p + 1); }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10">
+                <ChevronRight className="size-5" strokeWidth={2.4} />
+              </button>
             )}
           </div>
             );
@@ -711,27 +687,24 @@ export function HomePage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-[16px]">
             <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>บทความแนะนำ</p>
-            <button onClick={() => navigate("/blog")} className="flex items-center gap-[10px] cursor-pointer">
-              <span className={`${font} text-[12px] text-black`}>ดูทั้งหมด</span>
-              <svg className="size-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
-                <path d={svgArticlePaths.p31f27600} fill="black" opacity="0" />
-                <path d={svgArticlePaths.p249d7900} fill="black" />
-              </svg>
+            <button onClick={() => navigate("/blog")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
+              <span className={`${font} text-[12px]`}>ดูทั้งหมด</span>
+              <ChevronRight className="size-4" />
             </button>
           </div>
           {/* Blog Cards Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-[16px]">
             {[
-              { img: imgArticle1, title: "การใช้สมุนไพร", desc: "วิธีการใช้สมุนไพรเพื่อบรรเทาอาการเจ็บป่วย", views: 2 },
-              { img: imgArticle2, title: "ดูดกัญชากันครับ", desc: "การใช้พืชสมุนไพรในการรักษาและทำอาหาร", views: 3 },
-              { img: imgArticle3, title: "การเก็บเกี่ยวพืชสมุนไพร", desc: "เทคนิคในการเก็บเกี่ยวและรักษาคุณภาพพืชสมุนไพร", views: 4 },
+              { img: SAFE_IMAGES[3], title: "ขมิ้นชัน — ราชาแห่งสมุนไพรไทย ลดอักเสบช่วยตับ", desc: "รวมงานวิจัยล่าสุดเรื่องสาร Curcumin ช่วยลดการอักเสบและฟื้นฟูตับ พร้อมวิธีบริโภคให้ได้ประโยชน์สูงสุด", views: 1248 },
+              { img: SAFE_IMAGES[5], title: "ฟ้าทะลายโจร ทางเลือกธรรมชาติเสริมภูมิต้านทาน", desc: "ข้อมูลทางเภสัชกรรมเรื่อง Andrographolide กับการลดไข้ บรรเทาหวัด พร้อมข้อควรระวัง", views: 892 },
+              { img: SAFE_IMAGES[0], title: "ชาเก๊กฮวยกับการบำรุงสายตาและลดความร้อนในร่างกาย", desc: "วิธีชงชาเก๊กฮวยให้หอม ดื่มในช่วงเวลาที่เหมาะ และคู่กับสมุนไพรอื่นเพื่อสุขภาพตา-ตับ", views: 654 },
             ].map((a, i) => (
               <div
                 key={i}
                 className="bg-white rounded-[16px] border border-[#d4d4d4] h-auto sm:h-[180px] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#af6f08]/40 transition-all duration-300 group"
-                onClick={() => navigate("/blog")}
+                onClick={() => navigate(`/blog/${i + 1}`)}
               >
-                <div className="flex flex-col sm:flex-row items-start h-full">
+                <div className="flex flex-col sm:flex-row items-stretch h-full">
                   {/* Image */}
                   <div className="relative h-[140px] sm:h-full shrink-0 w-full sm:w-[180px] overflow-hidden">
                     <img src={a.img} alt={a.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -754,18 +727,16 @@ export function HomePage() {
                     </div>
                   </div>
                   {/* Content */}
-                  <div className="flex-1 flex flex-col gap-[8px] p-[14px] h-full min-w-0">
-                    <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{a.title}</p>
-                    <p className={`${font} text-[12px] text-[#737373] flex-1 overflow-hidden`} style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as const }}>{a.desc}</p>
+                  <div className="flex-1 flex flex-col gap-[8px] p-[14px] min-w-0">
+                    <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }} title={a.title}>{a.title}</p>
+                    <p className={`${font} text-[12px] text-[#737373] line-clamp-3`}>{a.desc}</p>
                     <button
-                      onClick={(e) => { e.stopPropagation(); navigate("/blog"); }}
-                      className="bg-[#af6f08] flex items-center justify-center gap-[10px] px-[16px] py-[4px] rounded-[100px] w-[120px] cursor-pointer hover:bg-[#946008] transition-colors duration-200"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/blog/${i + 1}`); }}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#af6f08]/10 text-[#af6f08] group-hover:bg-[#af6f08] group-hover:text-white cursor-pointer transition-all duration-200 self-start mt-auto ${font} text-[12px]`}
+                      style={{ fontWeight: 500 }}
                     >
-                      <span className={`${font} text-[12px] text-white`}>อ่านเพิ่มเติม</span>
-                      <svg className="w-[8px] h-[12px] shrink-0" fill="none" viewBox="0 0 8 12">
-                        <path d="M8 0H0V12H8V0Z" fill="white" opacity="0" />
-                        <path d={svgArticlePaths.p1f1a0400} fill="white" />
-                      </svg>
+                      อ่านเพิ่มเติม
+                      <ChevronRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                     </button>
                   </div>
                 </div>
@@ -781,23 +752,20 @@ export function HomePage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-[16px]">
             <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>วีดีโอแนะนำ</p>
-            <button onClick={() => navigate("/blog")} className="flex items-center gap-[10px] cursor-pointer">
-              <span className={`${font} text-[12px] text-black`}>ดูทั้งหมด</span>
-              <svg className="size-[20px]" fill="none" viewBox="0 0 20.2832 19.9316">
-                <path d={svgArticlePaths.p31f27600} fill="black" opacity="0" />
-                <path d={svgArticlePaths.p249d7900} fill="black" />
-              </svg>
+            <button onClick={() => navigate("/blog")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
+              <span className={`${font} text-[12px]`}>ดูทั้งหมด</span>
+              <ChevronRight className="size-4" />
             </button>
           </div>
           {/* Video Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]">
             {[
-              { img: imgVideo1, views: "12K", title: "บุกสวนทุเรียนจังหวัดจันทบุรี" },
-              { img: imgVideo2, views: "15K", title: "ท่องเที่ยวชมทะเลที่จังหวัดตราด" },
-              { img: imgVideo3, views: "9K", title: "ประเพณีลงแขกเกี่ยวข้าวที่ีสาน" },
-              { img: imgVideo4, views: "20K", title: "ทริปปีนเขาดอยอินทนนท์" },
-              { img: imgVideo5, views: "25K", title: "เดินป่าชมธรรมชาติที่เขาใหญ่" },
-              { img: imgVideo6, views: "30K", title: "สัมผัสวัฒนธรรมพื้นบ้านที่เชียงใหม่" },
+              { img: SAFE_IMAGES[9], views: "12K", title: "ทำน้ำมันสมุนไพรทาแก้ปวดเมื่อยจาก 5 สมุนไพรหาง่าย" },
+              { img: SAFE_IMAGES[2], views: "15K", title: "เปิดสวนน้ำผึ้งดอกลำไย จ.ลำพูน บุกถึงต้นรัง" },
+              { img: SAFE_IMAGES[4], views: "9K", title: "วิธีคั้นน้ำขิงสด ดื่มอุ่นๆ บรรเทาหวัด" },
+              { img: SAFE_IMAGES[0], views: "20K", title: "ชาคาโมมายล์ — ชงให้หอม ผ่อนคลาย หลับสนิท" },
+              { img: SAFE_IMAGES[10], views: "25K", title: "5 สูตรน้ำสมุนไพรดื่มแล้วผิวใส" },
+              { img: SAFE_IMAGES[7], views: "30K", title: "ตำรับยาสมุนไพรไทยโบราณ ที่หลวงปู่ส่งต่อกันมา" },
             ].map((v, i) => (
               <div
                 key={i}

@@ -9,8 +9,7 @@ import { useWishlist } from "../store/WishlistContext";
 import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, Info, BarChart3, DollarSign, Users, Image, Settings } from "lucide-react";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ChatModal } from "./ChatModal";
-import imgLogo from "figma:asset/c494dc0dab30c1bf59f2f6e2c114db61b1755370.png";
-import imgSocial from "figma:asset/70017910a949817aa1c11716388ee64b40b2eafa.png";
+import imgLogo from "../../assets/logo.png";
 import imgBell from "figma:asset/bc0647483cfb5a707f778cc18a602a7932c0287f.png";
 import imgCart from "figma:asset/e7332f142579e51e8632e5d3048cd86f0f80158a.png";
 import imgAvatar from "figma:asset/02fc4d2560c804d8d3f2f8e525b1926bf3ef0ac2.png";
@@ -278,7 +277,7 @@ function ProfileHoverPreview({ user, onNavigate }: { user: any; onNavigate: (pat
 
 /* ========== PROFILE DIALOG ========== */
 function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigate: (path: string) => void }) {
-  const { user, logout } = useAuth();
+  const { user, logout, switchRole } = useAuth();
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -426,6 +425,25 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
         </>
       )}
 
+      {/* Quick switch sections — testing helper */}
+      <div className="h-px bg-[#d4d4d8]" />
+      <div className="px-4 py-3 space-y-2.5">
+        <p className={`${font} text-[11px] text-gray-400 uppercase tracking-wider`}>สลับมุมมอง</p>
+        {[
+          { role: "user" as const, label: "ฉัน", icon: User, color: "#319754", path: "/" },
+          { role: "owner" as const, label: "ร้านค้าของฉัน", icon: Store, color: "#319754", path: "/owner" },
+          { role: "admin" as const, label: "ตั้งค่าบนเว็บไซต์", icon: Shield, color: "#3b82f6", path: "/admin" },
+        ].filter((s) => s.role !== user?.role).map((s) => (
+          <button key={s.role} onClick={() => { switchRole(s.role); navigate(s.path); onClose(); }}
+            className="flex items-center gap-2.5 cursor-pointer w-full text-left hover:bg-gray-50 rounded-md -mx-1 px-1 py-1 transition-colors">
+            <div className="size-[28px] rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${s.color}1a` }}>
+              <s.icon className="size-3" style={{ color: s.color }} />
+            </div>
+            <span className={`${font} text-[14px] text-black`}>{s.label}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="h-px bg-[#d4d4d8]" />
 
       <div className="px-4 py-3">
@@ -449,6 +467,14 @@ export function Layout() {
   const { wishlistCount } = useWishlist();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Scroll to top whenever the route (path or search/query) changes.
+  // Skips on hash links so in-page anchors keep working.
+  useEffect(() => {
+    if (location.hash) return;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname, location.search]);
+
   const [showProfile, setShowProfile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -541,8 +567,8 @@ export function Layout() {
             {/* Notifications */}
             <div className="relative group/notif hidden sm:block">
               <button onClick={() => { if (isAuthenticated) { setShowNotifications(!showNotifications); setShowProfile(false); } else { navigate("/login"); } }}
-                className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] sm:size-[40px] cursor-pointer relative flex items-center justify-center">
-                <img src={imgBell} className="size-[20px] sm:size-[22px] object-contain" alt="notifications" />
+                className="group/icon backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] hover:bg-[#319754]/10 rounded-[100px] size-[36px] sm:size-[40px] cursor-pointer relative flex items-center justify-center transition-colors">
+                <Bell className="size-[20px] sm:size-[22px] text-gray-700 group-hover/icon:text-[#287745] transition-colors" strokeWidth={2} />
                 {isAuthenticated && unreadCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
                     {unreadCount}
@@ -559,8 +585,8 @@ export function Layout() {
             {/* Notifications - mobile (no hover) */}
             <div className="relative sm:hidden">
               <button onClick={() => { if (isAuthenticated) { setShowNotifications(!showNotifications); setShowProfile(false); } else { navigate("/login"); } }}
-                className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] cursor-pointer relative flex items-center justify-center">
-                <img src={imgBell} className="size-[20px] object-contain" alt="notifications" />
+                className="group/icon backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] hover:bg-[#319754]/10 rounded-[100px] size-[36px] cursor-pointer relative flex items-center justify-center transition-colors">
+                <Bell className="size-[20px] text-gray-700 group-hover/icon:text-[#287745] transition-colors" strokeWidth={2} />
                 {isAuthenticated && unreadCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
                     {unreadCount}
@@ -575,8 +601,8 @@ export function Layout() {
               <>
                 <div className="relative group/cart hidden sm:block">
                   <button onClick={() => navigate("/cart")}
-                    className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] sm:size-[40px] cursor-pointer relative flex items-center justify-center">
-                    <img src={imgCart} className="size-[20px] sm:size-[22px] object-contain" alt="cart" />
+                    className="group/icon backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] hover:bg-[#319754]/10 rounded-[100px] size-[36px] sm:size-[40px] cursor-pointer relative flex items-center justify-center transition-colors">
+                    <ShoppingCart className="size-[20px] sm:size-[22px] text-gray-700 group-hover/icon:text-[#287745] transition-colors" strokeWidth={2} />
                     {isAuthenticated && itemCount > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
                         {itemCount}
@@ -596,8 +622,8 @@ export function Layout() {
                 {/* Cart - mobile (no hover) */}
                 <div className="relative sm:hidden">
                   <button onClick={() => navigate("/cart")}
-                    className="backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] rounded-[100px] size-[36px] cursor-pointer relative flex items-center justify-center">
-                    <img src={imgCart} className="size-[20px] object-contain" alt="cart" />
+                    className="group/icon backdrop-blur-[2px] bg-[rgba(0,0,0,0.05)] hover:bg-[#319754]/10 rounded-[100px] size-[36px] cursor-pointer relative flex items-center justify-center transition-colors">
+                    <ShoppingCart className="size-[20px] text-gray-700 group-hover/icon:text-[#287745] transition-colors" strokeWidth={2} />
                     {isAuthenticated && itemCount > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full z-10 shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] border-2 border-white">
                         {itemCount}
@@ -658,20 +684,34 @@ export function Layout() {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className={`px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer transition-colors ${
-                  location.pathname === item.path ? "bg-black/15" : "hover:bg-white/10"
+                className={`px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer relative transition-colors ${
+                  location.pathname === item.path ? "" : "hover:bg-white/10"
                 }`}
               >
-                {item.label}
+                {location.pathname === item.path && (
+                  <motion.div layoutId="topnav-bg" className="absolute inset-0 bg-black/15 rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                )}
+                <span className="relative z-10">{item.label}</span>
               </button>
             ))}
             {!isStaffRole && (
-              <button onClick={() => navigate("/about")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer ${location.pathname === "/about" ? "bg-black/15" : "hover:bg-white/10"}`}>
-                เกี่ยวกับเรา
+              <button onClick={() => navigate("/about")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer relative ${location.pathname === "/about" ? "" : "hover:bg-white/10"}`}>
+                {location.pathname === "/about" && (
+                  <motion.div layoutId="topnav-bg" className="absolute inset-0 bg-black/15 rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                )}
+                <span className="relative z-10">เกี่ยวกับเรา</span>
               </button>
             )}
             {isStaffRole && (
-              <button onClick={() => navigate("/settings")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer transition-colors ${location.pathname === "/settings" ? "bg-black/15" : "hover:bg-white/10"}`}>ตั้งค่า</button>
+              <button onClick={() => navigate("/settings")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer relative transition-colors ${location.pathname === "/settings" ? "" : "hover:bg-white/10"}`}>
+                {location.pathname === "/settings" && (
+                  <motion.div layoutId="topnav-bg" className="absolute inset-0 bg-black/15 rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                )}
+                <span className="relative z-10">ตั้งค่า</span>
+              </button>
             )}
           </div>
         </nav>
@@ -727,32 +767,75 @@ export function Layout() {
       {/* Footer (user only) */}
       {!isStaffRole && (
       <footer>
-        <div className="bg-gradient-to-t from-[#226a3b] to-[#5aac76] via-[#319754]">
+        <div className="bg-[#226a3b]">
           <div className="max-w-[1440px] mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 px-4 sm:px-6 lg:px-[124px] py-6 sm:py-8">
             <div className="flex flex-col gap-3 text-white">
               <div className="flex items-center gap-2.5">
                 <img src={imgLogo} className="size-[48px]" alt="" />
                 <span className={`${fontBold} text-[20px]`}>METAHERB</span>
               </div>
+              <p className={`${font} text-[12px]`}>บริษัท เมต้าเฮิร์บ จำกัด</p>
               <p className={`${font} text-[12px] leading-relaxed`}>
-                บริษัทเมต้าเฮิร์บ จำกัด ที่อยู่ : บ้านเลขที่ 459/153 หมู่บ้านนิวไฮบ์<br />
-                สุขสวัสดิ์ ถนนสุขสวัสดิ์แขวงราษฎรบูรณะ เขต ราษฎร์บรณะ<br />
-                จังหวัด กรุงเทพมหานคร 10140
+                ที่อยู่ : 459/153 ถนนสุขสวัสดิ์ แขวงราษฎร์บูรณะ ราษฎร์บูรณะ กรุงเทพมหานคร 10140
               </p>
-              <p className={`${font} text-[12px]`}>เบอร์โทรศัพท์ : 061-421-3111</p>
-              <p className={`${font} text-[12px]`}>อีเมล : Metaherb@gmail.com</p>
+              <p className={`${font} text-[12px]`}>เบอร์โทรศัพท์ : 0614213111</p>
+              <p className={`${font} text-[12px]`}>อีเมล : metaherb.herb@gmail.com</p>
             </div>
             <div className="flex flex-col gap-3 text-white">
               <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>เกี่ยวกับเรา</p>
-              <p className={`${font} text-[12px] cursor-pointer hover:underline`}>นโยบาย</p>
-              <p className={`${font} text-[12px] cursor-pointer hover:underline`}>About me</p>
+              {["นโยบาย", "พันธกิจ", "ข้อมูลติดต่อ", "คูปอง"].map((item) => (
+                <p key={item} className={`${font} text-[12px] cursor-pointer hover:underline`}>{item}</p>
+              ))}
             </div>
             <div className="flex flex-col gap-3 text-white">
               <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ติดตามเรา</p>
-              {["Facebook", "Line", "Instagram", "Tiktok", "Youtube"].map((s) => (
-                <div key={s} className="flex items-center gap-2.5">
-                  <img src={imgSocial} className="size-5 rounded-full" alt="" />
-                  <span className={`${font} text-[12px]`}>{s}</span>
+              {[
+                { name: "Facebook", icon: (
+                  <svg viewBox="0 0 32 32" className="size-[22px]">
+                    <circle cx="16" cy="16" r="16" fill="#1877F2" />
+                    <path d="M20.4 20.6l.7-4.6h-4.4v-3c0-1.3.6-2.5 2.6-2.5h2V6.6s-1.8-.3-3.6-.3c-3.6 0-6 2.2-6 6.2V16H7.6v4.6h4.1V32h5V20.6h3.7z" fill="#fff" />
+                  </svg>
+                ) },
+                { name: "Line", icon: (
+                  <svg viewBox="0 0 32 32" className="size-[22px]">
+                    <circle cx="16" cy="16" r="16" fill="#06C755" />
+                    <path d="M26 14.7c0-4.5-4.5-8.2-10-8.2S6 10.2 6 14.7c0 4 3.6 7.4 8.4 8.1.3.1.7.2.8.5.1.3.1.7 0 1l-.1.8c0 .2-.2 1 .9.5 1.1-.5 5.7-3.4 7.8-5.8 1.4-1.6 2.2-3.3 2.2-5.1zM12.8 17.1c0 .1-.1.2-.2.2H10c-.1 0-.2 0-.2-.1l-.1-.1v-4.4c0-.1.1-.2.2-.2h.7c.1 0 .2.1.2.2v3.5h2c.1 0 .2.1.2.2v.7zm1.7 0c0 .1-.1.2-.2.2h-.7c-.1 0-.2-.1-.2-.2v-4.4c0-.1.1-.2.2-.2h.7c.1 0 .2.1.2.2v4.4zm5 0c0 .1-.1.2-.2.2h-.8s-.1 0-.1-.1l-2-2.7v2.6c0 .1-.1.2-.2.2h-.7c-.1 0-.2-.1-.2-.2v-4.4c0-.1.1-.2.2-.2h.8s.1 0 .1.1l2 2.7v-2.6c0-.1.1-.2.2-.2h.7c.1 0 .2.1.2.2v4.4zm4.1-3.7c0 .1-.1.2-.2.2h-2v.7h2c.1 0 .2.1.2.2v.7c0 .1-.1.2-.2.2h-2v.7h2c.1 0 .2.1.2.2v.7c0 .1-.1.2-.2.2h-2.9c-.1 0-.2-.1-.2-.2v-4.3c0-.1.1-.2.2-.2h2.9c.1 0 .2.1.2.2v.7z" fill="#fff" />
+                  </svg>
+                ) },
+                { name: "Instagram", icon: (
+                  <svg viewBox="0 0 32 32" className="size-[22px]">
+                    <defs>
+                      <radialGradient id="igGrad" cx="0.3" cy="1" r="1.2">
+                        <stop offset="0%" stopColor="#FED576" />
+                        <stop offset="25%" stopColor="#F47133" />
+                        <stop offset="50%" stopColor="#BC3081" />
+                        <stop offset="100%" stopColor="#4F5BD5" />
+                      </radialGradient>
+                    </defs>
+                    <rect width="32" height="32" rx="9" fill="url(#igGrad)" />
+                    <rect x="8" y="8" width="16" height="16" rx="5" fill="none" stroke="#fff" strokeWidth="2" />
+                    <circle cx="16" cy="16" r="4" fill="none" stroke="#fff" strokeWidth="2" />
+                    <circle cx="21.5" cy="10.5" r="1.2" fill="#fff" />
+                  </svg>
+                ) },
+                { name: "Tiktok", icon: (
+                  <svg viewBox="0 0 32 32" className="size-[22px]">
+                    <circle cx="16" cy="16" r="16" fill="#000" />
+                    <path d="M21.5 12.4c-1.6-.3-3-1.4-3.6-2.9h-2.5v9.7c0 1.3-1 2.3-2.3 2.3-1.3 0-2.3-1-2.3-2.3 0-1.3 1-2.3 2.3-2.3.2 0 .5 0 .7.1v-2.6c-.2 0-.5-.1-.7-.1-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9 4.9-2.2 4.9-4.9V14.6c1.1.7 2.4 1.2 3.8 1.2v-2.6c-.1 0-.2 0-.3-.1z" fill="#FF0050" opacity="0.8" />
+                    <path d="M22 12c-1.6-.3-3-1.4-3.6-2.9H16v9.7c0 1.3-1 2.3-2.3 2.3-1.3 0-2.3-1-2.3-2.3 0-1.3 1-2.3 2.3-2.3.2 0 .5 0 .7.1V14c-.2 0-.5-.1-.7-.1-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9 4.9-2.2 4.9-4.9V14.2c1.1.7 2.4 1.2 3.8 1.2v-2.6c-.1 0-.3 0-.4-.1z" fill="#00F2EA" opacity="0.8" />
+                    <path d="M21.7 12.2c-1.6-.3-3-1.4-3.6-2.9h-2.4v9.7c0 1.3-1 2.3-2.3 2.3-1.3 0-2.3-1-2.3-2.3 0-1.3 1-2.3 2.3-2.3.2 0 .5 0 .7.1v-2.6c-.2 0-.5-.1-.7-.1-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9 4.9-2.2 4.9-4.9v-4.6c1.1.7 2.4 1.2 3.8 1.2v-2.6c-.1 0-.2 0-.4 0z" fill="#fff" />
+                  </svg>
+                ) },
+                { name: "Youtube", icon: (
+                  <svg viewBox="0 0 32 32" className="size-[22px]">
+                    <circle cx="16" cy="16" r="16" fill="#FF0000" />
+                    <path d="M13 11l9 5-9 5V11z" fill="#fff" />
+                  </svg>
+                ) },
+              ].map((s) => (
+                <div key={s.name} className="flex items-center gap-2.5">
+                  {s.icon}
+                  <span className={`${font} text-[12px]`}>{s.name}</span>
                 </div>
               ))}
             </div>

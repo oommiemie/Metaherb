@@ -57,6 +57,9 @@ function Providers() {
   );
 }
 
+// Use Vite's BASE_URL so dev ('/') and prod ('/Metaherb/') both work.
+const basename = import.meta.env.BASE_URL.replace(/\/$/, "") || "/";
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -89,4 +92,4 @@ export const router = createBrowserRouter([
       { path: "*", Component: () => <div className="text-center py-16 font-['IBM_Plex_Sans_Thai_Looped',sans-serif]">404 - ไม่พบหน้า</div> },
     ],
   },
-]);
+], { basename });

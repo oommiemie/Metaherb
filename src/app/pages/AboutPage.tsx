@@ -13,7 +13,7 @@ import imgProduct1 from "figma:asset/f1ceefb74e0b735c05a881e21bdc83ccd797fa20.pn
 import imgProduct2 from "figma:asset/7f17e783f1ef7618e9192f2aafe3f9c41a98a922.png";
 import imgProduct3 from "figma:asset/c62bf17009bd747369419c446709fd9ba2080b91.png";
 import imgMission from "figma:asset/1d6e138ce0a1c2930909c26a7eede22840f0c150.png";
-import imgLogo from "figma:asset/c494dc0dab30c1bf59f2f6e2c114db61b1755370.png";
+import imgLogo from "../../assets/logo.png";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontHeading = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";

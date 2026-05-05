@@ -18,6 +18,7 @@ interface AuthContextType {
   register: (data: { username: string; password: string; email: string; phone: string; role: UserRole }) => boolean;
   logout: () => void;
   isAuthenticated: boolean;
+  switchRole: (role: UserRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -55,8 +56,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => setUser(null);
 
+  const switchRole = (role: UserRole) => {
+    if (!user) return;
+    // If switching to a known mock account for that role, swap to it (so role-specific data loads).
+    // Otherwise, just patch the role on the current user.
+    const mock = mockUsers.find((u) => u.role === role);
+    if (mock) {
+      const { password: _, ...userData } = mock;
+      setUser({ ...userData, avatar: user.avatar });
+    } else {
+      setUser({ ...user, role });
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user, switchRole }}>
       {children}
     </AuthContext.Provider>
   );

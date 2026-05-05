@@ -7,7 +7,8 @@ import { useWishlist } from "../store/WishlistContext";
 import { useChat } from "../store/ChatContext";
 import { useRecentlyViewed } from "../store/RecentlyViewedContext";
 import { getShopIdByName } from "../data/shops";
-import { Star, Heart, Share2, ChevronLeft, ChevronRight, Store, MessageCircle, Check, Zap } from "lucide-react";
+import { generateSampleReviews } from "../data/sampleReviews";
+import { Heart, Share2, ChevronLeft, ChevronRight, Store, MessageCircle, Check, Zap } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
@@ -232,10 +233,12 @@ export default function ProductDetailPage() {
   const [reviewFilter, setReviewFilter] = useState<number | "all">("all");
   const [addedToCart, setAddedToCart] = useState(false);
   const [reviewPage, setReviewPage] = useState(1);
+  const [reviewDirection, setReviewDirection] = useState(0);
   const [flyingItem, setFlyingItem] = useState<{ x: number; y: number; targetX: number; targetY: number; img: string } | null>(null);
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const reviewScrollRef = useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [reviewLightbox, setReviewLightbox] = useState<{ images: string[]; index: number } | null>(null);
 
   useEffect(() => {
     if (id) addRecent(id);
@@ -245,7 +248,16 @@ export default function ProductDetailPage() {
 
   const productImages = getProductImages(product.id);
   const wishlisted = isWishlisted(product.id);
-  const filteredReviews = reviewFilter === "all" ? product.reviews : product.reviews.filter((r) => r.rating === reviewFilter);
+  // Augment product reviews with realistic sample data + images.
+  const enrichedReviews = (() => {
+    const base = product.reviews.map((r, idx) => ({
+      ...r,
+      avatar: `https://i.pravatar.cc/120?img=${(parseInt(product.id, 10) * 7 + idx * 3) % 70 + 1}`,
+    }));
+    const samples = generateSampleReviews(product.id, 12, product.options).map((s) => ({ ...s }));
+    return [...base, ...samples];
+  })();
+  const filteredReviews = reviewFilter === "all" ? enrichedReviews : enrichedReviews.filter((r) => r.rating === reviewFilter);
   const REVIEWS_PER_PAGE = 4;
   const reviewTotalPages = Math.ceil(filteredReviews.length / REVIEWS_PER_PAGE);
   const paginatedReviews = filteredReviews.slice((reviewPage - 1) * REVIEWS_PER_PAGE, reviewPage * REVIEWS_PER_PAGE);
@@ -301,40 +313,61 @@ export default function ProductDetailPage() {
 
   return (
     <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
-      {/* Top bar: Back + actions */}
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 bg-[#d4d4d4] px-[16px] py-[4px] rounded-full cursor-pointer hover:bg-[#c4c4c4] transition-colors">
-          <ChevronLeft className="size-3" />
-          <span className={`${font} text-[12px] text-black`}>กลับ</span>
-        </button>
-        <div className="flex items-center gap-[10px]">
-          <button onClick={() => { toggleWishlist(product.id); toast(wishlisted ? "ลบออกจากสินค้าที่ชอบ" : "เพิ่มในสินค้าที่ชอบแล้ว"); }}
-            className="flex items-center gap-[10px] bg-[#f5f5f5] px-[16px] py-[4px] rounded-full cursor-pointer hover:bg-[#e5e5e5] transition-colors">
-            <Heart className={`size-3 ${wishlisted ? "fill-[#ff383c] text-[#ff383c]" : "text-black/85"}`} />
-            <span className={`${font} text-[12px] text-black`}>{wishlisted ? "1" : "0"}</span>
-          </button>
-          <button onClick={() => openChat("metaherb")}
-            className="flex items-center justify-center bg-[#f5f5f5] rounded-full size-[28px] cursor-pointer hover:bg-[#e5e5e5] transition-colors">
-            <MessageCircle className="size-3 text-black/85" />
-          </button>
-          <button onClick={handleShare}
-            className="flex items-center justify-center bg-[#f5f5f5] rounded-full size-[28px] cursor-pointer hover:bg-[#e5e5e5] transition-colors">
-            <Share2 className="size-3 text-black/85" />
-          </button>
-        </div>
-      </div>
-
       {/* Main product section */}
-      <div className="flex flex-col lg:flex-row gap-[24px]">
-        {/* Left: Images */}
-        <div className="flex flex-col gap-[10px] shrink-0">
-          <div className="w-full lg:w-[450px] aspect-square rounded-[16px] overflow-hidden bg-gray-100 relative cursor-pointer" onClick={() => setLightboxOpen(true)}>
+      <div className="flex flex-col lg:flex-row gap-[24px] items-start">
+        {/* Left: Top bar + Images */}
+        <div className="flex flex-col gap-[10px] shrink-0 w-full lg:w-[450px]">
+          {/* Top bar: Back + actions (inside left column, same width as image) */}
+          <div className="flex items-center justify-between w-full">
+            <button onClick={() => navigate(-1)}
+              className="group inline-flex items-center gap-1.5 bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] px-3.5 py-1.5 rounded-full cursor-pointer transition-colors">
+              <ChevronLeft className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" strokeWidth={2.4} />
+              <span className={`${font} text-[12px]`} style={{ fontWeight: 500 }}>กลับ</span>
+            </button>
+            <div className="flex items-center gap-2">
+              {/* Heart — pill with count, turns red when active */}
+              <motion.button
+                onClick={() => { toggleWishlist(product.id); toast(wishlisted ? "ลบออกจากสินค้าที่ชอบ" : "เพิ่มในสินค้าที่ชอบแล้ว"); }}
+                whileTap={{ scale: 0.92 }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-colors ${
+                  wishlisted
+                    ? "bg-[#ff383c]/10 text-[#ff383c]"
+                    : "bg-[#f5f5f5] text-gray-700 hover:bg-[#ff383c]/10 hover:text-[#ff383c]"
+                }`}
+                title={wishlisted ? "ถูกใจแล้ว" : "เพิ่มในสินค้าที่ชอบ"}
+              >
+                <Heart className={`size-3.5 transition-colors ${wishlisted ? "fill-[#ff383c]" : ""}`} strokeWidth={2.2} />
+                <span className={`${font} text-[12px]`} style={{ fontWeight: 500 }}>{wishlisted ? "1" : "0"}</span>
+              </motion.button>
+              {/* Chat */}
+              <motion.button
+                onClick={() => openChat("metaherb")}
+                whileTap={{ scale: 0.92 }}
+                className="inline-flex items-center justify-center bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] rounded-full size-8 cursor-pointer transition-colors"
+                title="แชทกับร้าน"
+              >
+                <MessageCircle className="size-3.5" strokeWidth={2.2} />
+              </motion.button>
+              {/* Share */}
+              <motion.button
+                onClick={handleShare}
+                whileTap={{ scale: 0.92 }}
+                className="inline-flex items-center justify-center bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] rounded-full size-8 cursor-pointer transition-colors"
+                title="แชร์สินค้า"
+              >
+                <Share2 className="size-3.5" strokeWidth={2.2} />
+              </motion.button>
+            </div>
+          </div>
+          {/* Main image */}
+          <div className="w-full aspect-square rounded-[16px] overflow-hidden bg-gray-100 relative cursor-pointer" onClick={() => setLightboxOpen(true)}>
             <ImageWithFallback src={productImages[mainImage % productImages.length]} alt={product.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
           </div>
+          {/* Thumbnails */}
           <div className="flex gap-[10px] overflow-x-auto">
             {productImages.map((img, i) => (
               <div key={i} onClick={() => setMainImage(i)}
-                className={`size-[70px] rounded-[16px] overflow-hidden cursor-pointer shrink-0 relative ${mainImage === i ? "ring-2 ring-[#f8e8ce]" : ""}`}>
+                className={`size-[70px] rounded-[16px] overflow-hidden cursor-pointer shrink-0 relative ${mainImage === i ? "border-2 border-[#f8e8ce]" : ""}`}>
                 <ImageWithFallback src={img} alt="" className="w-full h-full object-cover" />
               </div>
             ))}
@@ -498,77 +531,133 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Shop info */}
-      <div className="bg-white rounded-[16px] p-4 mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <img src={shopLogos[product.shopName] || imgShop} className="size-[48px] rounded-full object-cover" alt="Shop" />
-          <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{product.shopName}</span>
+      <div className="bg-white rounded-[16px] p-[16px] mt-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-[16px]">
+        {/* Left: avatar + info */}
+        <div className="flex items-center gap-[16px]">
+          <img src={shopLogos[product.shopName] || imgShop} className="size-[70px] rounded-full object-cover shrink-0" alt={product.shopName} />
+          <div className="flex flex-col gap-[6px]">
+            <span className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{product.shopName}</span>
+            <div className="flex flex-wrap gap-x-[24px] gap-y-[6px] items-center">
+              <div className="flex items-center gap-[6px]">
+                <svg className="size-[14px]" fill="none" viewBox="0 0 13 14"><path d={svgPaths.p2d3b1d00} fill="black" fillOpacity="0.85" /></svg>
+                <span className={`${font} text-[14px] text-black`}>รายการสินค้า</span>
+                <span className={`${font} text-[14px] text-[#a2845e]`} style={{ fontWeight: 500 }}>100</span>
+                <span className={`${font} text-[14px] text-black`}>รายการ</span>
+              </div>
+              <div className="flex items-center gap-[6px]">
+                <svg className="size-[14px]" fill="none" viewBox="0 0 14 14"><path d={svgPaths.p1052b000} fill="black" /></svg>
+                <span className={`${font} text-[14px] text-black`}>คะแนนร้านค้า</span>
+                <span className={`${font} text-[14px] text-[#a2845e]`} style={{ fontWeight: 500 }}>{product.rating}/5</span>
+                <span className={`${font} text-[14px] text-black`}>การให้คะแนนทั้งหมด 100</span>
+              </div>
+              <div className="flex items-center gap-[6px]">
+                <Heart className="size-[14px] text-black/85" strokeWidth={2} />
+                <span className={`${font} text-[14px] text-black`}>ถูกใจสินค้า</span>
+                <span className={`${font} text-[14px] text-[#a2845e]`} style={{ fontWeight: 500 }}>100</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-[10px]">
-            <svg className="size-[14px]" fill="none" viewBox="0 0 13 14"><path d={svgPaths.p2d3b1d00} fill="black" fillOpacity="0.85" /></svg>
-            <span className={`${font} text-[14px] text-black`}>รายการสินค้า</span>
-            <span className={`${font} text-[14px] text-[#a2845e]`} style={{ fontWeight: 500 }}>100</span>
-            <span className={`${font} text-[14px] text-black`}>รายการ</span>
-          </div>
-          <div className="flex items-center gap-[10px]">
-            <svg className="size-[14px]" fill="none" viewBox="0 0 14 14"><path d={svgPaths.p1052b000} fill="black" /></svg>
-            <span className={`${font} text-[14px] text-black`}>คะแนนร้านค้า</span>
-            <span className={`${font} text-[14px] text-[#a2845e]`} style={{ fontWeight: 500 }}>{product.rating}/5</span>
-            <span className={`${font} text-[14px] text-black`}>การให้คะแนนทั้งหมด 100</span>
-          </div>
-          <div className="flex items-center gap-[10px]">
-            <Heart className="size-3 text-black/85" />
-            <span className={`${font} text-[14px] text-black`}>ถูกใจสินค้า</span>
-            <span className={`${font} text-[14px] text-[#a2845e]`} style={{ fontWeight: 500 }}>100</span>
-          </div>
+        {/* Right: action buttons (icon-only, expand on hover) */}
+        <div className="flex items-center gap-[10px] shrink-0">
           <button onClick={() => { const sid = getShopIdByName(product.shopName); navigate(sid ? `/shop/${sid}` : "/products"); }}
-            className={`flex items-center gap-1.5 border border-[#319754] text-[#319754] px-4 py-1.5 rounded-full text-[12px] ${font} cursor-pointer hover:bg-[#319754]/5`}>
-            <Store className="size-3" /> ดูร้านค้า
+            className={`group/shop flex items-center bg-[#eaf5ee] text-[#319754] h-[40px] rounded-full ${font} cursor-pointer hover:bg-[#d6eadd] transition-all duration-300 overflow-hidden pl-[12px] pr-[12px] hover:pr-[16px]`}>
+            <Store className="size-[16px] shrink-0" strokeWidth={2} />
+            <span className="grid grid-cols-[0fr] group-hover/shop:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out">
+              <span className="overflow-hidden">
+                <span className="block whitespace-nowrap pl-[8px] text-[14px]" style={{ fontWeight: 500 }}>ดูร้านค้า</span>
+              </span>
+            </span>
+          </button>
+          <button onClick={() => openChat("metaherb")}
+            className={`group/ask flex items-center bg-[#eaf5ee] text-[#319754] h-[40px] rounded-full ${font} cursor-pointer hover:bg-[#d6eadd] transition-all duration-300 overflow-hidden pl-[12px] pr-[12px] hover:pr-[16px]`}>
+            <MessageCircle className="size-[16px] shrink-0" strokeWidth={2} />
+            <span className="grid grid-cols-[0fr] group-hover/ask:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out">
+              <span className="overflow-hidden">
+                <span className="block whitespace-nowrap pl-[8px] text-[14px]" style={{ fontWeight: 500 }}>ถามร้านค้า</span>
+              </span>
+            </span>
           </button>
         </div>
       </div>
 
-      <div className="w-full h-px bg-[#D4D4D8] my-6" />
-
       {/* Reviews */}
-      <div className="flex flex-col gap-[10px]">
+      <div className="bg-white rounded-[16px] p-[16px] flex flex-col gap-[16px] overflow-clip mt-6">
         {/* Header + Filters */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3">
-          <h2 className={`${font} text-[20px] text-black shrink-0`} style={{ fontWeight: 500 }}>รีวิวสินค้า</h2>
-          <div className="flex gap-[8px] sm:gap-[10px] items-center flex-wrap">
-            {(["all" as const, 1, 2, 3, 4, 5] as const).map((r) => (
-              <button key={r} onClick={() => { setReviewFilter(r); setReviewPage(1); }}
-                className={`flex items-center gap-[10px] px-[16px] py-[4px] rounded-full text-[12px] ${font} cursor-pointer transition-colors relative ${
-                  reviewFilter === r ? "bg-[#f5f5f5]" : ""
-                }`}>
-                {reviewFilter !== r && <div className="absolute border border-[#d4d4d4] inset-0 pointer-events-none rounded-full" />}
-                <svg className="size-[14px] shrink-0" fill="none" viewBox="0 0 14 14">
-                  <path d="M14 0H0V14H14V0Z" fill="#F7C42B" opacity="0" />
-                  <path d={svgPaths.p1052b000} fill="#F7C42B" />
-                </svg>
-                <span className={`${font} text-[12px] text-black`}>{typeof r === "number" ? r : "ทั้งหมด"}</span>
-              </button>
-            ))}
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between w-full gap-3">
+          <div className="flex items-center gap-[12px] shrink-0">
+            <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>รีวิวสินค้า</h2>
+            {enrichedReviews.length > 0 && (() => {
+              const avg = enrichedReviews.reduce((sum, rv) => sum + rv.rating, 0) / enrichedReviews.length;
+              return (
+                <div className="flex items-center gap-[6px]">
+                  <div className="flex items-center gap-[2px]">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <svg key={j} className="size-[14px] shrink-0" fill="none" viewBox="0 0 14 14">
+                        <path d={svgPaths.p1052b000} fill={j < Math.round(avg) ? "#F7C42B" : "#E5E5E5"} />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className={`${font} text-[14px] text-[#db8b0a]`} style={{ fontWeight: 600 }}>{avg.toFixed(1)}</span>
+                  <span className={`${font} text-[12px] text-[#a3a3a3]`}>({enrichedReviews.length} รีวิว)</span>
+                </div>
+              );
+            })()}
+          </div>
+          <div className="flex gap-[8px] items-center flex-wrap">
+            {(["all" as const, 5, 4, 3, 2, 1] as const).map((r) => {
+              const isActive = reviewFilter === r;
+              const count = r === "all" ? enrichedReviews.length : enrichedReviews.filter((rv) => rv.rating === r).length;
+              return (
+                <motion.button
+                  key={r}
+                  onClick={() => { setReviewFilter(r); setReviewPage(1); }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`group/filter flex items-center gap-[6px] h-[32px] px-[14px] rounded-full text-[12px] ${font} cursor-pointer transition-all duration-200 ${
+                    isActive
+                      ? "bg-[#319754] text-white shadow-[0_2px_8px_rgba(49,151,84,0.25)]"
+                      : "bg-white border border-[#e5e5e5] text-[#525252] hover:border-[#319754] hover:text-[#319754] hover:bg-[#319754]/5"
+                  }`}
+                >
+                  {r !== "all" && (
+                    <svg className="size-[14px] shrink-0" fill="none" viewBox="0 0 14 14">
+                      <path d={svgPaths.p1052b000} fill={isActive ? "#FBE08A" : "#F7C42B"} />
+                    </svg>
+                  )}
+                  <span style={{ fontWeight: isActive ? 600 : 500 }}>{typeof r === "number" ? r : "ทั้งหมด"}</span>
+                  <span className={`text-[10px] tabular-nums ${isActive ? "text-white/80" : "text-[#a3a3a3] group-hover/filter:text-[#319754]/70"}`}>({count})</span>
+                </motion.button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Review cards - horizontal scroll */}
+        {/* Review cards - 4-column grid with side arrows */}
         {paginatedReviews.length === 0 ? (
           <p className={`${font} text-[14px] text-gray-400 text-center py-8`}>ยังไม่มีรีวิว</p>
         ) : (
-          <div className="relative">
-            <div ref={reviewScrollRef} className="flex gap-[10px] overflow-x-auto pb-2 scroll-smooth" style={{ scrollbarWidth: "none" }}>
+          <div className="group relative overflow-x-clip py-2 -my-2">
+            <AnimatePresence mode="wait" initial={false} custom={reviewDirection}>
+            <motion.div
+              key={reviewPage}
+              custom={reviewDirection}
+              initial={{ x: reviewDirection > 0 ? 300 : -300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: reviewDirection > 0 ? -300 : 300, opacity: 0 }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[10px]"
+            >
               {paginatedReviews.map((r, i) => (
-                <div key={i} className="bg-white rounded-[16px] relative shrink-0 w-[calc(25%-8px)] min-w-[240px]" style={{ height: 191 }}>
+                <div key={i} className="bg-white rounded-[16px] relative h-[191px]">
                   <div className="absolute border border-[#e5e5e5] inset-0 pointer-events-none rounded-[16px]" />
                   <div className="flex flex-col gap-[10px] items-start p-[10px] size-full">
                     {/* User row */}
                     <div className="flex gap-[10px] items-start w-full">
-                      <div className="shrink-0 size-[40px]">
-                        <svg className="block size-full" fill="none" viewBox="0 0 40 40">
-                          <circle cx="20" cy="20" fill="#D9D9D9" r="20" />
-                        </svg>
-                      </div>
+                      {(r as any).avatar ? (
+                        <img src={(r as any).avatar} alt={r.user} className="shrink-0 size-[40px] rounded-full object-cover bg-[#D9D9D9]" />
+                      ) : (
+                        <div className="shrink-0 size-[40px] rounded-full bg-[#D9D9D9]" />
+                      )}
                       <div className="flex flex-1 flex-col gap-[2px] justify-center min-w-0">
                         <div className="flex items-center justify-between w-full">
                           <span className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{r.user}</span>
@@ -585,99 +674,124 @@ export default function ProductDetailPage() {
                     </div>
                     {/* Option tag */}
                     {r.tags && r.tags.length > 0 && (
-                      <div className="bg-[#db8b0a] px-[8px] py-[4px] rounded-full shrink-0">
-                        <span className={`${font} text-[10px] text-white truncate`}>ตัวเลือกสินค้า: {product.options[selectedOption] || r.tags[0]}</span>
+                      <div className="bg-[#fdf3e3] px-[8px] py-[4px] rounded-full shrink-0 max-w-full">
+                        <span className={`${font} text-[10px] text-[#a86a05] block truncate`} style={{ fontWeight: 500 }}>ตัวเลือกสินค้า: {r.tags[0]}</span>
                       </div>
                     )}
                     {/* Comment */}
-                    <p className={`${font} text-[10px] text-black overflow-hidden text-ellipsis w-full`} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{r.comment}</p>
-                    {/* Image placeholders */}
-                    <div className="flex gap-[10px] items-start overflow-clip w-full">
-                      {[0, 1, 2, 3, 4].map((j) => (
-                        <div key={j} className="bg-[#d9d9d9] rounded-[16px] shrink-0 size-[40px]" />
+                    <p className={`${font} text-[10px] text-black overflow-hidden text-ellipsis w-full flex-1`} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{r.comment}</p>
+                    {/* Review images (or placeholders) */}
+                    <div className="flex gap-[6px] items-start overflow-clip w-full">
+                      {(r.images && r.images.length > 0 ? r.images : []).slice(0, 5).map((img, j) => (
+                        <button
+                          type="button"
+                          key={j}
+                          onClick={() => setReviewLightbox({ images: r.images, index: j })}
+                          className="relative shrink-0 size-[40px] rounded-[10px] overflow-hidden bg-[#d9d9d9] cursor-pointer hover:opacity-80 transition-opacity"
+                          aria-label="ดูรูปรีวิว"
+                        >
+                          <ImageWithFallback src={img} alt="" className="w-full h-full object-cover" />
+                          {j === 4 && r.images.length > 5 && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
+                              <span className={`${font} text-[10px] text-white`} style={{ fontWeight: 600 }}>+{r.images.length - 5}</span>
+                            </div>
+                          )}
+                        </button>
                       ))}
                     </div>
                   </div>
                 </div>
               ))}
-            </div>
-            {/* Scroll right arrow */}
-            {filteredReviews.length > 4 && (
+            </motion.div>
+            </AnimatePresence>
+            {/* Left arrow */}
+            {reviewPage > 1 && (
               <button
-                onClick={() => {
-                  if (reviewScrollRef.current) reviewScrollRef.current.scrollBy({ left: 300, behavior: "smooth" });
-                }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 border border-[#e5e5e5] rounded-full size-[32px] flex items-center justify-center cursor-pointer shadow-md hover:bg-white z-10"
+                onClick={() => { setReviewDirection(-1); setReviewPage((p) => p - 1); }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10"
+                aria-label="ก่อนหน้า"
               >
-                <ChevronRight className="size-4 text-black" />
+                <ChevronLeft className="size-5" strokeWidth={2.4} />
+              </button>
+            )}
+            {/* Right arrow */}
+            {reviewPage < reviewTotalPages && (
+              <button
+                onClick={() => { setReviewDirection(1); setReviewPage((p) => p + 1); }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10"
+                aria-label="ถัดไป"
+              >
+                <ChevronRight className="size-5" strokeWidth={2.4} />
               </button>
             )}
           </div>
         )}
 
-        {/* Review pagination */}
-        {reviewTotalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-2">
-            {Array.from({ length: reviewTotalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setReviewPage(p)}
-                className={`size-7 rounded-full flex items-center justify-center text-[12px] ${font} cursor-pointer ${p === reviewPage ? "bg-[#319754] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
-                {p}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
-      <div className="w-full h-px bg-[#D4D4D8] my-6" />
-
       {/* Related products */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-[16px] p-[16px] flex flex-col gap-[16px] mt-6">
+        {/* Header */}
+        <div className="flex items-end justify-between w-full">
           <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>สินค้าเหมาะกับคุณ</h2>
-          <button onClick={() => navigate("/products")} className="flex items-center gap-1 cursor-pointer hover:opacity-80">
-            <span className={`${font} text-[12px] text-[#666]`}>ดูทั้งหมด</span>
-            <ChevronRight className="size-4 text-[#666]" />
+          <button onClick={() => navigate("/products")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
+            <span className={`${font} text-[12px]`}>ดูทั้งหมด</span>
+            <ChevronRight className="size-4" />
           </button>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[10px]">
-          {relatedProducts.map((p, i) => {
+        {/* Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]">
+          {relatedProducts.map((p) => {
             const tag = p.isFlashSale ? "flashsale" : p.discountPercent ? "discount" : p.isRecommended ? "recommended" : null;
             return (
-              <div key={p.id} onClick={() => { navigate(`/product/${p.id}`); window.scrollTo(0, 0); }}
-                className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col group">
-                <div className="aspect-square relative overflow-hidden">
-                  <ImageWithFallback src={getProductImages(p.id)[0]} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+              <div
+                key={p.id}
+                onClick={() => { navigate(`/product/${p.id}`); window.scrollTo(0, 0); }}
+                className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 flex flex-col h-[259px] group/card"
+              >
+                <div className="flex-1 relative min-h-0 overflow-hidden">
+                  <ImageWithFallback src={getProductImages(p.id)[0]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
                   {tag === "flashsale" && (
                     <div className="absolute top-0 right-0 p-[6px]">
-                      <div className="bg-[#e62e05] px-[10px] py-[2px] rounded-full border border-[#bc1b06]">
-                        <span className={`${font} text-[10px] text-white`}>ลด {p.discountPercent}%</span>
+                      <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
+                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
                       </div>
                     </div>
                   )}
                   {tag === "discount" && (
                     <div className="absolute top-0 right-0 p-[6px]">
-                      <div className="bg-[#e62e05] px-[10px] py-[2px] rounded-full border border-[#bc1b06]">
-                        <span className={`${font} text-[10px] text-white`}>ลด {p.discountPercent}%</span>
+                      <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
+                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
                       </div>
                     </div>
                   )}
                   {tag === "recommended" && (
                     <div className="absolute top-0 right-0 p-[6px]">
-                      <div className="bg-[#319754] px-[10px] py-[2px] rounded-full border border-[#143c22]">
-                        <span className={`${font} text-[10px] text-white`}>สินค้าแนะนำ</span>
+                      <div className="bg-[#319754] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(49,151,84,0.4)]">
+                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>สินค้าแนะนำ</span>
                       </div>
                     </div>
                   )}
                 </div>
-                <div className="p-[8px] flex flex-col gap-[2px]">
-                  <p className={`${font} text-[12px] text-black truncate`}>{p.name}</p>
-                  <span className={`${font} text-[12px] ${p.discountPercent ? "text-[#e62e05]" : "text-[#226a3b]"}`} style={{ fontWeight: 600 }}>฿ {p.price.toFixed(2)}</span>
+                <div className="p-[10px] flex flex-col gap-[4px]">
+                  <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{p.name}</p>
+                  <div className="flex items-center gap-[10px]">
+                    <span className={`${font} text-[14px] ${p.discountPercent ? "text-[#e62e05]" : "text-[#226a3b]"}`} style={{ fontWeight: 600 }}>฿ {p.price.toFixed(2)}</span>
+                    {p.originalPrice && (
+                      <span className={`${font} text-[10px] text-[#a3a3a3] line-through`}>฿{p.originalPrice.toFixed(2)}</span>
+                    )}
+                    {p.hasCoupon && (
+                      <svg className="w-[14px] h-[15px] shrink-0" fill="none" viewBox="0 0 14 15">
+                        <path d={svgPaths.p1939b280} fill="#DF9723" />
+                      </svg>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <svg className="size-[10px]" fill="none" viewBox="0 0 14 14"><path d={svgPaths.p1052b000} fill="#F7C42B" /></svg>
+                    <div className="flex items-center gap-[8px]">
+                      <svg className="size-[14px] shrink-0" fill="none" viewBox="0 0 14 14"><path d={svgPaths.p1052b000} fill="#F7C42B" /></svg>
                       <span className={`${font} text-[10px] text-black`}>{p.rating}/5</span>
                     </div>
-                    <span className={`${font} text-[10px] text-black`}>{p.sold}</span>
+                    <span className={`${font} text-[10px] text-black text-right`}>{p.sold}</span>
                   </div>
                 </div>
               </div>
@@ -799,6 +913,92 @@ export default function ProductDetailPage() {
                 {(mainImage % productImages.length) + 1} / {productImages.length}
               </span>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Review image lightbox */}
+      <AnimatePresence>
+        {reviewLightbox && (
+          <motion.div
+            key="review-lightbox"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={() => setReviewLightbox(null)}
+          >
+            <button
+              onClick={() => setReviewLightbox(null)}
+              className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 rounded-full size-[40px] flex items-center justify-center cursor-pointer transition-colors z-10"
+              aria-label="ปิด"
+            >
+              <span className="text-white text-[20px]">&times;</span>
+            </button>
+
+            {reviewLightbox.images.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setReviewLightbox((cur) => cur && { ...cur, index: (cur.index - 1 + cur.images.length) % cur.images.length });
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 rounded-full size-[40px] flex items-center justify-center cursor-pointer transition-colors z-10"
+                aria-label="ก่อนหน้า"
+              >
+                <ChevronLeft className="size-5 text-white" />
+              </button>
+            )}
+
+            <motion.div
+              key={reviewLightbox.index}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="max-w-[90vw] max-h-[85vh] rounded-[16px] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ImageWithFallback
+                src={reviewLightbox.images[reviewLightbox.index]}
+                alt=""
+                className="max-w-[90vw] max-h-[85vh] object-contain"
+              />
+            </motion.div>
+
+            {reviewLightbox.images.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setReviewLightbox((cur) => cur && { ...cur, index: (cur.index + 1) % cur.images.length });
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 rounded-full size-[40px] flex items-center justify-center cursor-pointer transition-colors z-10"
+                aria-label="ถัดไป"
+              >
+                <ChevronRight className="size-5 text-white" />
+              </button>
+            )}
+
+            {reviewLightbox.images.length > 1 && (
+              <>
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-[8px]" onClick={(e) => e.stopPropagation()}>
+                  {reviewLightbox.images.map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setReviewLightbox((cur) => cur && { ...cur, index: i })}
+                      className={`size-[56px] rounded-[12px] overflow-hidden cursor-pointer transition-all ${reviewLightbox.index === i ? "ring-2 ring-white scale-110" : "opacity-60 hover:opacity-100"}`}
+                    >
+                      <ImageWithFallback src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+                <div className="absolute top-4 left-1/2 -translate-x-1/2">
+                  <span className={`${font} text-[14px] text-white bg-black/40 px-3 py-1 rounded-full`}>
+                    {reviewLightbox.index + 1} / {reviewLightbox.images.length}
+                  </span>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
