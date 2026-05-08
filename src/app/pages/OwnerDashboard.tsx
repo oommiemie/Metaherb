@@ -46,7 +46,8 @@ import { MessageCircle, Star, Ban, ArrowRightCircle, MapPin, User as UserIcon, P
 import imgLogo from "../../assets/logo.png";
 import imgSideBar from "figma:asset/9c30b1921f0988e49ef49ac4f89b2dd06b320b33.png";
 import imgProd from "figma:asset/9e21f4217f39c8b2aaff50eadcf63d44b0fcf83c.png";
-import imgFlash from "figma:asset/8effbd2f0b89604dcbe9aeb239cc524667996e66.png";
+import imgFlash from "../../assets/flash.png";
+import imgTerms from "../../assets/Terms and conditions.png";
 import imgEvidence0 from "figma:asset/d0cb417cf99aba1cdf79d5426f5fd585177d3d46.png";
 import imgEvidence1 from "figma:asset/7506073c04064524065ab7d328509bd53de6d2ae.png";
 import imgRefundProduct from "figma:asset/e9fa4baa6fae7a43e086cd2f7372c763ac79e774.png";
@@ -110,6 +111,26 @@ const sidebarItems: SidebarItem[] = [
 
 const sidebarSettings: SidebarItem[] = [];
 
+// ตัวเลือกสินค้า (variants) สำหรับสินค้าประเภท "หลายตัวเลือก"
+type ProductVariant = { id: string; name: string; price: number; stock: number };
+const mockVariants: Record<string, ProductVariant[]> = {
+  "4": [
+    { id: "4-1", name: "6 ซอง",   price: 150, stock: 25 },
+    { id: "4-2", name: "12 ซอง",  price: 220, stock: 22 },
+    { id: "4-3", name: "24 ซอง",  price: 280, stock: 15 },
+  ],
+  "7": [
+    { id: "7-1", name: "100 ml",  price: 290, stock: 20 },
+    { id: "7-2", name: "250 ml",  price: 380, stock: 18 },
+    { id: "7-3", name: "500 ml",  price: 520, stock: 10 },
+  ],
+  "10": [
+    { id: "10-1", name: "100 ml", price: 215, stock: 14 },
+    { id: "10-2", name: "250 ml", price: 290, stock: 10 },
+    { id: "10-3", name: "500 ml", price: 380, stock:  8 },
+  ],
+};
+
 const mockProducts = [
   { id: "1",  name: "พิมเสนน้ำอโรมา ตราเมต้าเฮิร์บ",       category: "เครื่องหอม & อโรม่า", type: "ราคาเดียว",   typeColor: "#ff9500", price: "฿ 89.00",          stock: "120 ชิ้น", status: "เปิดขาย", statusColor: "#319754", flash: true, recommended: true,
     image: "https://images.unsplash.com/photo-1624454002302-36b824d7bd0a?w=400&q=80" }, // essential oil bottle (both Flash + Recommended)
@@ -143,19 +164,95 @@ const mockProducts = [
     image: "https://images.unsplash.com/photo-1592479996-0c8a1e8c5d4e?w=400&q=80" }, // tea bags / lemongrass
 ];
 
-const mockFlashEvents = [
-  { id: "1", name: "Flash Sale 2.2", items: 5, date: "00 M.M. 0000 - 00 M.M. 0000", status: "active", countdown: { h: "00", m: "00", s: "00" } },
-  { id: "2", name: "Flash Sale 2.2", items: 5, date: "00 M.M. 0000 - 00 M.M. 0000", status: "pending" },
-  { id: "3", name: "Flash Sale 2.2", items: 0, date: "00 M.M. 0000 - 00 M.M. 0000", status: "join" },
-];
+type FlashEventStatus = "join" | "pending" | "active" | "ended";
+type FlashEvent = {
+  id: string;
+  name: string;
+  items: number;
+  date: string;
+  status: FlashEventStatus;
+  startsAt: string; // ISO — เวลาเริ่มของ event
+  endsAt: string;   // ISO — เวลาสิ้นสุดของ event
+};
+
+const THAI_MONTHS_ABBR = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const THAI_MONTHS_FULL = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+function fmtThaiDateTime(d: Date): string {
+  const day = String(d.getDate()).padStart(2, "0");
+  const mon = THAI_MONTHS_ABBR[d.getMonth()];
+  const yr  = d.getFullYear() + 543;
+  const hr  = String(d.getHours()).padStart(2, "0");
+  const mn  = String(d.getMinutes()).padStart(2, "0");
+  return `${day} ${mon} ${yr}, ${hr}:${mn} น.`;
+}
+
+function getMockFlashEvents(): FlashEvent[] {
+  const now = new Date();
+  const year = now.getFullYear();
+  const range = (s: Date, e: Date) => `${fmtThaiDateTime(s)} - ${fmtThaiDateTime(e)}`;
+
+  // Convention: Flash Sale event เกิดเดือนละ 1 ครั้ง บนวันที่ M.M ของเดือนนั้น (1.1, 2.2, ... 12.12)
+  // เปิดให้ join ก่อน 60 วัน, ภายใน 60 วันจะถือว่า pending รอเวลากิจกรรม
+  const PENDING_WINDOW_DAYS = 60;
+
+  const events: FlashEvent[] = Array.from({ length: 12 }, (_, idx) => {
+    const m = idx + 1; // 1..12
+    const start = new Date(year, m - 1, m, 0, 0, 0, 0);
+    const end   = new Date(year, m - 1, m, 23, 59, 0, 0);
+
+    let status: FlashEventStatus;
+    if (end.getTime() < now.getTime()) {
+      status = "ended";
+    } else if (start.getTime() <= now.getTime() && now.getTime() <= end.getTime()) {
+      status = "active";
+    } else {
+      const daysUntil = (start.getTime() - now.getTime()) / 86400000;
+      status = daysUntil <= PENDING_WINDOW_DAYS ? "pending" : "join";
+    }
+
+    return {
+      id: String(m),
+      name: `Flash Sale ${m}.${m}`,
+      items: status === "join" ? 0 : 3 + ((m * 7) % 8),
+      date: range(start, end),
+      status,
+      startsAt: start.toISOString(),
+      endsAt: end.toISOString(),
+    };
+  });
+
+  // เรียงล่าสุด → เก่าสุด (เดือน 12 อยู่หน้าแรก, เดือน 1 อยู่หน้าสุดท้าย)
+  return events.sort((a, b) => Number(b.id) - Number(a.id));
+}
+
+function useFlashCountdown(endsAt?: string) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!endsAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [endsAt]);
+
+  if (!endsAt) return { h: "00", m: "00", s: "00" };
+  const diff = Math.max(0, new Date(endsAt).getTime() - now);
+  const total = Math.floor(diff / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return {
+    h: String(h).padStart(2, "0"),
+    m: String(m).padStart(2, "0"),
+    s: String(s).padStart(2, "0"),
+  };
+}
 
 const mockFlashProducts = [
-  { id: "1", name: "Product", normalPrice: "฿ 0.00", flashPrice: "฿ 0.00", start: "00 M.M. 0000 - 00:00 น.", end: "00 M.M. 0000 - 00:00 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
-  { id: "2", name: "Product", normalPrice: "฿ 0.00", flashPrice: "฿ 0.00", start: "00 M.M. 0000 - 00:00 น.", end: "00 M.M. 0000 - 00:00 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
-  { id: "3", name: "Product", normalPrice: "฿ 0.00", flashPrice: "฿ 0.00", start: "00 M.M. 0000 - 00:00 น.", end: "00 M.M. 0000 - 00:00 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
-  { id: "4", name: "Product", normalPrice: "฿ 0.00", flashPrice: "฿ 0.00", start: "00 M.M. 0000 - 00:00 น.", end: "00 M.M. 0000 - 00:00 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
-  { id: "5", name: "Product", normalPrice: "฿ 0.00", flashPrice: "฿ 0.00", start: "00 M.M. 0000 - 00:00 น.", end: "00 M.M. 0000 - 00:00 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
-  { id: "6", name: "Product", normalPrice: "฿ 0.00", flashPrice: "฿ 0.00", start: "00 M.M. 0000 - 00:00 น.", end: "00 M.M. 0000 - 00:00 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
+  { id: "1", name: "ขมิ้นชันแคปซูล 60 แคป",       normalPrice: "฿ 220.00", flashPrice: "฿ 149.00", start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
+  { id: "2", name: "น้ำมันเหลือง MetaHerb 20ml",   normalPrice: "฿ 159.00", flashPrice: "฿ 99.00",  start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
+  { id: "3", name: "ชาตะไคร้ใบเตย 30 ซอง",        normalPrice: "฿ 110.00", flashPrice: "฿ 79.00",  start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
+  { id: "4", name: "ใบบัวบกแคปซูล 60 แคป",        normalPrice: "฿ 180.00", flashPrice: "฿ 129.00", start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
+  { id: "5", name: "ยาดมสมุนไพร MetaHerb",        normalPrice: "฿ 89.00",  flashPrice: "฿ 59.00",  start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
+  { id: "6", name: "สเปรย์สมุนไพร MetaHerb 50ml", normalPrice: "฿ 199.00", flashPrice: "฿ 139.00", start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
 ];
 
 type OrderStatus = "pending_payment" | "pending_verify" | "ready_ship" | "shipping" | "shipped" | "cancelled";
@@ -2420,10 +2517,139 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
   );
 }
 
+/* ========== FLASH SALE EVENT CARD ========== */
+function FlashEventCard({
+  event,
+  onJoin,
+  onView,
+}: {
+  event: FlashEvent;
+  onJoin: (event: FlashEvent) => void;
+  onView: (event: FlashEvent) => void;
+}) {
+  const isActive  = event.status === "active";
+  const isPending = event.status === "pending";
+  const isJoin    = event.status === "join";
+  const isEnded   = event.status === "ended";
+
+  const countdown = useFlashCountdown(isActive ? event.endsAt : undefined);
+
+  const cardBg = isEnded
+    ? "linear-gradient(180deg, rgba(115,115,115,0.7) 0%, #525252 100%)"
+    : "linear-gradient(180deg, rgba(230,46,5,0.7) 0%, #e62e05 100%)";
+
+  const handleClick = () => {
+    if (isEnded) return;
+    if (isJoin) { onJoin(event); return; }
+    onView(event);
+  };
+
+  return (
+    <motion.button
+      whileHover={isEnded ? undefined : { y: -3 }}
+      whileTap={isEnded ? undefined : { scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 380, damping: 26 }}
+      onClick={handleClick}
+      disabled={isEnded}
+      className={`group/event relative rounded-2xl overflow-hidden text-left transition-shadow ${
+        isEnded
+          ? "cursor-default shadow-[0_4px_16px_rgba(82,82,82,0.18)]"
+          : "cursor-pointer shadow-[0_4px_16px_rgba(230,46,5,0.18)] hover:shadow-[0_8px_24px_rgba(230,46,5,0.28)]"
+      }`}
+    >
+      <div
+        className="p-4 min-h-[136px] flex flex-col justify-between gap-4 text-white relative overflow-hidden"
+        style={{ background: cardBg }}
+      >
+        <img
+          src={imgFlash}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute right-0 -bottom-px w-[103px] h-[97px] object-contain select-none"
+          style={isEnded ? { filter: "grayscale(1)", opacity: 0.85 } : undefined}
+        />
+
+        <div className="flex items-center justify-between gap-2 relative z-10">
+          <span className={`${font} text-[14px] truncate text-white`} style={{ fontWeight: 500 }}>{event.name}</span>
+
+          {isJoin && (
+            <span
+              className={`${font} inline-flex items-center justify-center bg-white text-[#e62e05] text-[12px] px-5 h-[32px] rounded-full whitespace-nowrap shrink-0 shadow-[0_2px_10px_rgba(255,255,255,0.45),inset_0_1px_0_rgba(255,255,255,0.9)] transition-shadow duration-200 group-hover/event:shadow-[0_4px_14px_rgba(255,255,255,0.6),inset_0_1px_0_rgba(255,255,255,0.9)]`}
+              style={{ fontWeight: 600 }}
+            >
+              เข้าร่วมเลย
+            </span>
+          )}
+
+          {isPending && (
+            <span
+              className={`${font} text-white text-[10px] px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 border border-white/50 bg-white/10 backdrop-blur-[2px]`}
+              style={{ fontWeight: 500 }}
+            >
+              เข้าร่วมแล้วรอเวลากิจกรรม
+            </span>
+          )}
+
+          {isActive && (
+            <div className="flex items-center gap-1 shrink-0">
+              {[countdown.h, countdown.m, countdown.s].map((v, i, arr) => (
+                <Fragment key={i}>
+                  <span
+                    className={`${font} text-white text-[10px] w-[25px] h-[25px] rounded-lg flex items-center justify-center tabular-nums`}
+                    style={{
+                      background:
+                        "linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(180deg, #e62e05 0%, #bc1b06 100%)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {v}
+                  </span>
+                  {i < arr.length - 1 && (
+                    <span className={`${font} text-black text-[16px] leading-none`} style={{ fontWeight: 400 }}>:</span>
+                  )}
+                </Fragment>
+              ))}
+            </div>
+          )}
+
+          {isEnded && (
+            <span
+              className={`${font} text-white text-[10px] px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 border border-white/50 bg-white/10 backdrop-blur-[2px]`}
+              style={{ fontWeight: 500 }}
+            >
+              สิ้นสุดกิจกรรมแล้ว
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1.5 relative z-10">
+          <div className={`${font} flex items-center gap-1.5 text-[10px] text-white`}>
+            <Package className="size-3 shrink-0" strokeWidth={2} />
+            <span>{isJoin ? "คุณยังไม่มีสินค้าเข้าร่วม" : `จำนวน ${event.items} รายการ`}</span>
+          </div>
+          <div className={`${font} flex items-center gap-1.5 text-[10px] text-white`}>
+            <CalendarIcon className="size-3 shrink-0" strokeWidth={2} />
+            <span className="truncate">{event.date}</span>
+          </div>
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
 /* ========== FLASH SALE TAB ========== */
-function FlashSaleTab({ onViewEvent }: { onViewEvent: () => void }) {
+function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?: { isNewJoin?: boolean }) => void }) {
   const [flashFilter, setFlashFilter] = useState("all");
   const [showPopup, setShowPopup] = useState(false);
+  const [popupEvent, setPopupEvent] = useState<FlashEvent | null>(null);
+  const [events] = useState(() => getMockFlashEvents());
+  const [eventPage, setEventPage] = useState(1);
+  const [monthFilter, setMonthFilter] = useState("all"); // "all" | "1".."12"
+  const eventsPerPage = 4;
+  const filteredEvents = monthFilter === "all" ? events : events.filter((e) => e.id === monthFilter);
+  const totalEventPages = Math.max(1, Math.ceil(filteredEvents.length / eventsPerPage));
+  const safeEventPage = Math.min(eventPage, totalEventPages);
+  const pagedEvents = filteredEvents.slice((safeEventPage - 1) * eventsPerPage, safeEventPage * eventsPerPage);
 
   const flashFilterTabs = [
     { id: "all",       label: "ทั้งหมด",          count: 10, Icon: ClipboardList },
@@ -2452,94 +2678,78 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: () => void }) {
 
       {/* Section A: Flash Sale Events */}
       <div className="bg-white rounded-2xl p-5 mb-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="size-10 rounded-xl bg-[#e62e05]/10 flex items-center justify-center shrink-0">
-            <Zap className="size-5 text-[#e62e05]" strokeWidth={2.2} fill="#e62e05" />
+        <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="size-10 rounded-xl bg-[#e62e05]/10 flex items-center justify-center shrink-0">
+              <Zap className="size-5 text-[#e62e05]" strokeWidth={2.2} fill="#e62e05" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>Flash Sale Event</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <AlertCircle className="size-3.5 text-gray-400" />
+                <span className={`${font} text-[12px] text-[#8e8e93]`}>เข้าร่วม Flash Sale กับทาง METAHERB เพื่อรับข้อเสนอสุดพิเศษ</span>
+              </div>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>Flash Sale Event</h3>
-            <div className="flex items-center gap-1.5 mt-1">
-              <AlertCircle className="size-3.5 text-gray-400" />
-              <span className={`${font} text-[12px] text-[#8e8e93]`}>เข้าร่วม Flash Sale กับทาง METAHERB เพื่อรับข้อเสนอสุดพิเศษ</span>
+
+          {/* Filter — กรองตามเดือน (อยู่ขวาสุดของแถวเดียวกับ title) */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative">
+              <select
+                value={monthFilter}
+                onChange={(e) => { setMonthFilter(e.target.value); setEventPage(1); }}
+                className={`${font} text-[13px] appearance-none border border-gray-200 rounded-full pl-4 pr-9 h-[34px] bg-white cursor-pointer focus:outline-none focus:border-[#319754] hover:border-gray-300 transition-colors`}
+              >
+                <option value="all">ทั้งหมด</option>
+                {THAI_MONTHS_FULL.map((name, i) => (
+                  <option key={i + 1} value={String(i + 1)}>{name}</option>
+                ))}
+              </select>
+              <ChevronDown className="size-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
         </div>
         <div className="h-px bg-gray-100 mb-4" />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {mockFlashEvents.map((event) => {
-            const isActive  = event.status === "active";
-            const isPending = event.status === "pending";
-            const isJoin    = event.status === "join";
-            return (
-              <motion.button
+        {filteredEvents.length === 0 ? (
+          <div className={`${font} text-center py-12 text-[13px] text-[#8e8e93]`}>
+            ไม่พบ Flash Sale event ในเดือนที่เลือก
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {pagedEvents.map((event) => (
+              <FlashEventCard
                 key={event.id}
-                whileHover={{ y: -3 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ type: "spring", stiffness: 380, damping: 26 }}
-                onClick={() => isJoin ? setShowPopup(true) : onViewEvent()}
-                className="group/event relative rounded-2xl overflow-hidden text-left cursor-pointer shadow-[0_4px_16px_rgba(230,46,5,0.18)] hover:shadow-[0_8px_24px_rgba(230,46,5,0.28)] transition-shadow"
-              >
-                {/* Gradient bg */}
-                <div className="bg-gradient-to-br from-[#ff6b35] via-[#ff4500] to-[#e62e05] p-4 min-h-[160px] flex flex-col justify-between text-white relative overflow-hidden">
-                  {/* Decorative zap watermark */}
-                  <Zap className="absolute -bottom-4 -right-4 size-32 text-white/10" fill="currentColor" strokeWidth={0} />
+                event={event}
+                onJoin={(ev) => { setPopupEvent(ev); setShowPopup(true); }}
+                onView={(ev) => onViewEvent(ev)}
+              />
+            ))}
+          </div>
+        )}
 
-                  {/* Top: name + status */}
-                  <div className="flex items-start justify-between gap-2 relative z-10">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <Zap className="size-4 text-white shrink-0" fill="white" strokeWidth={0} />
-                      <span className={`${font} text-[16px] truncate`} style={{ fontWeight: 600 }}>{event.name}</span>
-                    </div>
-                    {isPending && (
-                      <span className={`${font} bg-white/25 text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap shrink-0`} style={{ fontWeight: 500 }}>
-                        รอยืนยัน
-                      </span>
-                    )}
-                    {isJoin && (
-                      <span className={`${font} bg-white text-[#e62e05] text-[10px] px-3 py-0.5 rounded-full whitespace-nowrap shrink-0`} style={{ fontWeight: 600 }}>
-                        เข้าร่วมเลย
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Middle: countdown for active */}
-                  {isActive && event.countdown && (
-                    <div className="flex items-center gap-2 relative z-10">
-                      <Clock className="size-3.5 text-white/80" />
-                      <span className={`${font} text-[11px] text-white/80`}>เหลือเวลาอีก</span>
-                      <div className="flex items-center gap-1">
-                        {[event.countdown.h, event.countdown.m, event.countdown.s].map((v, i, arr) => (
-                          <Fragment key={i}>
-                            <span className={`${font} bg-black/30 backdrop-blur-sm text-white text-[12px] px-1.5 py-0.5 rounded tabular-nums`} style={{ fontWeight: 600 }}>{v}</span>
-                            {i < arr.length - 1 && <span className={`${font} text-white/60 text-[12px]`}>:</span>}
-                          </Fragment>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Bottom: items + date */}
-                  <div className="flex flex-col gap-1.5 relative z-10">
-                    <div className="flex items-center gap-1.5 text-[11px] text-white/95">
-                      <Package className="size-3 shrink-0" />
-                      <span>{isJoin ? "คุณยังไม่มีสินค้าเข้าร่วม" : `จำนวน ${event.items} รายการ`}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-white/85">
-                      <Clock className="size-3 shrink-0" />
-                      <span className="truncate">{event.date}</span>
-                    </div>
-                  </div>
-
-                  {/* Hover arrow indicator */}
-                  <div className="absolute top-3 right-3 size-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover/event:opacity-100 transition-opacity">
-                    <ChevronRight className="size-4 text-white" strokeWidth={2.4} />
-                  </div>
-                </div>
-              </motion.button>
-            );
-          })}
-        </div>
+        {/* Pagination — แสดงเสมอเมื่อมี event อย่างน้อย 1 รายการ */}
+        {filteredEvents.length > 0 && (
+          <div className="flex items-center justify-center gap-1 flex-wrap mt-5">
+            <button disabled={safeEventPage === 1} onClick={() => setEventPage(safeEventPage - 1)}
+              aria-label="หน้าก่อน"
+              className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safeEventPage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+              <ChevronLeft className="size-4" strokeWidth={2.4} />
+            </button>
+            {Array.from({ length: totalEventPages }, (_, i) => i + 1).map((p) => (
+              <button key={p} onClick={() => setEventPage(p)}
+                className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safeEventPage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                style={{ fontWeight: safeEventPage === p ? 600 : 400 }}>
+                {p}
+              </button>
+            ))}
+            <button disabled={safeEventPage === totalEventPages} onClick={() => setEventPage(safeEventPage + 1)}
+              aria-label="หน้าถัดไป"
+              className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safeEventPage === totalEventPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+              <ChevronRight className="size-4" strokeWidth={2.4} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Section B: Flash Sale Store */}
@@ -2675,37 +2885,47 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: () => void }) {
       {showPopup && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowPopup(false)}>
           <div className="bg-white rounded-2xl overflow-hidden w-full max-w-[520px] shadow-xl" onClick={(e) => e.stopPropagation()}>
-            {/* Hero */}
-            <div className="bg-gradient-to-b from-[rgba(230,46,5,0.7)] to-[#e62e05] h-[200px] relative flex items-center justify-center">
+            {/* Hero — ภาพใหญ่ ตัดส่วนที่ทะลุล่างด้วย overflow-hidden ของกรอบสีส้ม */}
+            <div className="bg-gradient-to-b from-[rgba(230,46,5,0.7)] to-[#e62e05] h-[220px] relative overflow-hidden">
               <button onClick={() => setShowPopup(false)}
-                className="absolute top-4 right-4 size-7 rounded-full bg-[rgba(120,120,128,0.12)] flex items-center justify-center cursor-pointer">
+                className="absolute top-4 right-4 size-7 rounded-full bg-[rgba(120,120,128,0.12)] flex items-center justify-center cursor-pointer z-20">
                 <X className="size-3.5 text-white" />
               </button>
-              <div className="w-[180px] h-[160px]">
-                <ImageWithFallback src={imgFlash} alt="" className="w-full h-full object-contain" />
-              </div>
+              <img
+                src={imgTerms}
+                alt=""
+                className="absolute left-1/2 -translate-x-1/2 bottom-[-40px] w-[280px] h-[240px] object-contain pointer-events-none select-none z-10"
+              />
             </div>
             {/* Content */}
             <div className="p-4 space-y-4">
-              <h3 className={`${font} text-[20px] text-center`} style={{ fontWeight: 500 }}>เงื่อนไขและข้อเสนอสุดพิเศษ</h3>
-              <div className={`${font} text-[14px] text-black space-y-2`}>
-                <p style={{ fontWeight: 600 }}>ข้อเสนอสุดพิเศษ</p>
-                <ul className="list-disc ml-5 space-y-1 text-[13px]">
-                  <li>รับส่วนลดสูงสุดตามที่บริษัทกำหนดเฉพาะช่วงกิจกรรม Flash Sale</li>
-                  <li>สินค้าที่เข้าร่วมกิจกรรมจะไ���้รับการโปรโมตผ่านช่องทางของ METAHERB</li>
-                  <li>เพิ่มโอกาสในการเข้าถึงลูกค้าใหม่ และกระตุ้นยอดขายในระยะเวลาจำกัด</li>
-                </ul>
-                <p style={{ fontWeight: 600 }}>เงื่อนไขการเข้าร่วม</p>
-                <ul className="list-disc ml-5 space-y-1 text-[13px]">
-                  <li>การเข้าร่วม Flash Sale เป็นไปตามรอบกิจกรรมที่ผู้ดูแลระบบ (Admin) เป็นผู้กำหนด</li>
-                  <li>ร้านค้าต้องเลือกและตั้งค่าสินค้าที่ต้องการเข้าร่วม Flash Sale ภายในระยะเวลาที่กำหนด</li>
-                  <li>ราคาสินค้าและส่วนลดต้องเป็นไปตามเงื่อนไขที่ METAHERB กำหนด</li>
-                  <li>ไม่สามารถยกเลิกหรือเปลี่ยนแปลงสินค้าที่เข้าร่วมได้หลังจากเริ่มกิจกรรมแล้ว</li>
-                </ul>
+              <h3 className={`${font} text-[20px] text-center`} style={{ fontWeight: 500 }}>เงื่อนไขและสิทธิประโยชน์การเข้าร่วม</h3>
+              <div className={`${font} text-[14px] text-black space-y-3`}>
+                <div className="space-y-2">
+                  <p style={{ fontWeight: 600 }}>สิทธิประโยชน์ที่ร้านค้าจะได้รับ</p>
+                  <ul className="list-disc ml-5 space-y-1 text-[13px] text-gray-700">
+                    <li>รับส่วนลดสูงสุดในช่วง Flash Sale ตามอัตราที่ METAHERB กำหนด</li>
+                    <li>สินค้าจะถูกโปรโมตบนหน้าแรกและช่องทางสื่อสารของ METAHERB โดยไม่มีค่าใช้จ่าย</li>
+                    <li>เข้าถึงลูกค้าใหม่ พร้อมกระตุ้นยอดขายในเวลาจำกัด</li>
+                    <li>เสริมความน่าเชื่อถือของร้านด้วยตราสัญลักษณ์ Flash Sale</li>
+                  </ul>
+                </div>
+                <div className="space-y-2">
+                  <p style={{ fontWeight: 600 }}>เงื่อนไขการเข้าร่วม</p>
+                  <ul className="list-disc ml-5 space-y-1 text-[13px] text-gray-700">
+                    <li>รอบกิจกรรม Flash Sale ถูกกำหนดโดยผู้ดูแลระบบ (Admin) ของ METAHERB</li>
+                    <li>ร้านค้าต้องเลือกสินค้าและตั้งราคาส่วนลดให้เสร็จก่อนเวลาเริ่มกิจกรรม</li>
+                    <li>ราคาและส่วนลดต้องเป็นไปตามมาตรฐานที่ METAHERB กำหนด</li>
+                    <li>เมื่อกิจกรรมเริ่มแล้ว ไม่สามารถยกเลิกหรือแก้ไขสินค้าที่เข้าร่วมได้</li>
+                    <li>สินค้าต้องมีสต็อกเพียงพอตลอดระยะเวลาของกิจกรรม</li>
+                  </ul>
+                </div>
               </div>
               <div className="border-t pt-4">
-                <button onClick={() => setShowPopup(false)}
-                  className={`w-full bg-[#008c45] h-[49px] rounded-full text-white text-[14px] ${font} cursor-pointer hover:bg-[#007a3b]`}>เข้าร่วม</button>
+                <button
+                  onClick={() => { setShowPopup(false); if (popupEvent) onViewEvent(popupEvent, { isNewJoin: true }); }}
+                  className={`w-full bg-[#008c45] h-[49px] rounded-full text-white text-[14px] ${font} cursor-pointer hover:bg-[#007a3b]`}
+                >เข้าร่วม</button>
               </div>
             </div>
           </div>
@@ -2715,39 +2935,605 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: () => void }) {
   );
 }
 
+/* ========== ADD FLASH SALE MODAL — 2-step (เลือกสินค้า → กำหนดส่วนลด) ========== */
+type VariantConfig = {
+  variantId: string;
+  selected: boolean;
+  discountType: "percent" | "baht";
+  discountValue: number;
+  quantity: number;
+};
+
+type FlashConfig = {
+  productId: string;
+  startsAt: string; // datetime-local (YYYY-MM-DDTHH:MM)
+  endsAt: string;
+  // single-option:
+  discountType: "percent" | "baht";
+  discountValue: number;
+  quantity: number;
+  // multi-option:
+  variants: VariantConfig[];
+};
+
+function isoToDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+type FlashProductRow = {
+  id: string;
+  name: string;
+  normalPrice: string;
+  flashPrice: string;
+  start: string;
+  end: string;
+  status: string;
+  statusColor: string;
+};
+
+function AddFlashSaleModal({
+  open,
+  onClose,
+  onConfirm,
+  event,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: (products: FlashProductRow[]) => void;
+  event: FlashEvent | null;
+}) {
+  const [step, setStep] = useState<"select" | "configure">("select");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [config, setConfig] = useState<FlashConfig | null>(null);
+  const [search, setSearch] = useState("");
+
+  // Reset เมื่อปิด modal เพื่อเริ่มใหม่ทุกครั้ง
+  useEffect(() => {
+    if (!open) {
+      setStep("select");
+      setSelectedId(null);
+      setConfig(null);
+      setSearch("");
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const availableProducts = mockProducts.filter((p) => p.status === "เปิดขาย");
+  const filteredProducts = availableProducts.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const eventStartLocal = event ? isoToDatetimeLocal(event.startsAt) : "";
+  const eventEndLocal   = event ? isoToDatetimeLocal(event.endsAt)   : "";
+
+  const goToConfigure = () => {
+    if (!selectedId) return;
+    const product = mockProducts.find((p) => p.id === selectedId);
+    if (!product) return;
+    const stockNum = parseInt(product.stock) || 1;
+    const isMulti = product.type === "หลายตัวเลือก";
+    const variants = mockVariants[selectedId] ?? [];
+
+    setConfig({
+      productId: selectedId,
+      startsAt: eventStartLocal,
+      endsAt: eventEndLocal,
+      discountType: "percent",
+      discountValue: 10,
+      quantity: stockNum,
+      variants: isMulti
+        ? variants.map((v) => ({
+            variantId: v.id,
+            selected: true,
+            discountType: "percent",
+            discountValue: 10,
+            quantity: v.stock || 1,
+          }))
+        : [],
+    });
+    setStep("configure");
+  };
+
+  const updateConfig = (patch: Partial<FlashConfig>) => {
+    setConfig((prev) => (prev ? { ...prev, ...patch } : prev));
+  };
+
+  const updateVariant = (variantId: string, patch: Partial<VariantConfig>) => {
+    setConfig((prev) =>
+      prev
+        ? { ...prev, variants: prev.variants.map((v) => (v.variantId === variantId ? { ...v, ...patch } : v)) }
+        : prev,
+    );
+  };
+
+  const getNormalPrice = (priceStr: string): number => {
+    const m = priceStr.match(/[\d.]+/);
+    return m ? parseFloat(m[0]) : 0;
+  };
+
+  const fmtDt = (local: string, fallbackIso?: string): string => {
+    if (local) return fmtThaiDateTime(new Date(local));
+    if (fallbackIso) return fmtThaiDateTime(new Date(fallbackIso));
+    return "—";
+  };
+
+  const computeFromValue = (normal: number, type: "percent" | "baht", value: number): number => {
+    if (type === "percent") return Math.max(0, normal * (1 - value / 100));
+    return Math.max(0, normal - value);
+  };
+
+  const handleSubmit = () => {
+    if (!selectedId || !config) return;
+    const product = mockProducts.find((p) => p.id === selectedId);
+    if (!product) return;
+    const isMulti = product.type === "หลายตัวเลือก";
+    const start = fmtDt(config.startsAt, event?.startsAt);
+    const end   = fmtDt(config.endsAt,   event?.endsAt);
+    const ts = Date.now();
+    const newProducts: FlashProductRow[] = [];
+
+    if (isMulti) {
+      const variants = mockVariants[selectedId] ?? [];
+      config.variants.filter((v) => v.selected).forEach((vc) => {
+        const v = variants.find((x) => x.id === vc.variantId);
+        if (!v) return;
+        const flash = computeFromValue(v.price, vc.discountType, vc.discountValue);
+        newProducts.push({
+          id: `flash-${vc.variantId}-${ts}`,
+          name: `${product.name} (${v.name})`,
+          normalPrice: `฿ ${v.price.toFixed(2)}`,
+          flashPrice: `฿ ${flash.toFixed(2)}`,
+          start, end,
+          status: "กำลังดำเนินการ",
+          statusColor: "#319754",
+        });
+      });
+    } else {
+      const normal = getNormalPrice(product.price);
+      const flash = computeFromValue(normal, config.discountType, config.discountValue);
+      newProducts.push({
+        id: `flash-${selectedId}-${ts}`,
+        name: product.name,
+        normalPrice: product.price,
+        flashPrice: `฿ ${flash.toFixed(2)}`,
+        start, end,
+        status: "กำลังดำเนินการ",
+        statusColor: "#319754",
+      });
+    }
+    onConfirm(newProducts);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl w-full max-w-[640px] h-[640px] max-h-[85vh] flex flex-col shadow-xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            {step === "configure" && (
+              <button
+                onClick={() => setStep("select")}
+                className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer shrink-0 transition-colors"
+                aria-label="ย้อนกลับ"
+              >
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+            )}
+            <div className="min-w-0">
+              <p className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</p>
+              <p className={`${font} text-[11px] text-[#8e8e93]`}>
+                ขั้นตอน {step === "select" ? "1" : "2"} จาก 2 — {step === "select" ? "เลือกสินค้าในร้าน" : "กำหนดส่วนลดและจำนวน"}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="size-7 rounded-full bg-[rgba(120,120,128,0.12)] hover:bg-[rgba(120,120,128,0.2)] flex items-center justify-center cursor-pointer shrink-0 transition-colors">
+            <X className="size-3.5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {step === "select" ? (
+            <div className="flex flex-col gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="ค้นหาสินค้าในร้าน"
+                  className={`${font} w-full pl-9 pr-3 h-10 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[13px] bg-[#fafafa] transition-colors`}
+                />
+              </div>
+
+              {filteredProducts.length === 0 ? (
+                <p className={`${font} text-center py-12 text-[13px] text-[#8e8e93]`}>ไม่พบสินค้า</p>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {filteredProducts.map((p) => {
+                    const isSelected = selectedId === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedId(p.id)}
+                        className={`group/item flex items-center gap-4 p-4 rounded-2xl border bg-white transition-all text-left cursor-pointer ${
+                          isSelected
+                            ? "border-[#319754] shadow-[0_2px_10px_rgba(49,151,84,0.18)]"
+                            : "border-[#d4d4d4]/40 hover:border-[#319754]/40"
+                        }`}
+                      >
+                        {/* Image 80×80 */}
+                        <div className="size-[80px] rounded-2xl overflow-hidden shrink-0 bg-[#d4d4d8]">
+                          <ImageWithFallback src={p.image} alt={p.name} className="w-full h-full object-cover transition-transform duration-300 group-hover/item:scale-105" />
+                        </div>
+
+                        {/* Right side: 2-row layout (justify-between full height) */}
+                        <div className="flex-1 self-stretch flex flex-col justify-between min-w-0 py-1">
+                          {/* Top: name + type pill */}
+                          <div className="flex items-center justify-between gap-3 w-full">
+                            <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>{p.name}</p>
+                            <span
+                              className={`${font} inline-flex items-center gap-2 pl-2 pr-3.5 py-0.5 rounded-full shrink-0 text-[12px]`}
+                              style={{
+                                backgroundColor: `${p.typeColor}1a`,
+                                color: p.typeColor,
+                                fontWeight: 400,
+                              }}
+                            >
+                              <span className="size-3 rounded-full" style={{ backgroundColor: p.typeColor }} />
+                              {p.type}
+                            </span>
+                          </div>
+
+                          {/* Bottom: price + stock */}
+                          <div className="flex items-center justify-between gap-3 w-full">
+                            <span className={`${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 500 }}>{p.price}</span>
+                            <span className={`${font} inline-flex items-center gap-2 text-[12px] text-black`}>
+                              <Boxes className="size-3.5" strokeWidth={2} />
+                              {p.stock}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (() => {
+            if (!selectedId || !config) return null;
+            const product = mockProducts.find((p) => p.id === selectedId);
+            if (!product) return null;
+            const isMulti = product.type === "หลายตัวเลือก";
+            const variants = mockVariants[selectedId] ?? [];
+
+            return (
+              <div className="bg-[#fafafa] rounded-2xl p-4 flex flex-col gap-3">
+                {/* Product header */}
+                <div className="flex items-center gap-3">
+                  <div className="size-14 rounded-lg bg-gray-100 overflow-hidden shrink-0">
+                    <ImageWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>{product.name}</p>
+                    <p className={`${font} text-[12px] text-[#8e8e93] truncate`}>
+                      {isMulti ? `${variants.length} ตัวเลือก · ${product.price}` : `ราคาปกติ ${product.price} · ${product.stock}`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Date-time range */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={`${font} text-[11px] text-gray-600 mb-1.5 block`} style={{ fontWeight: 500 }}>เริ่มกิจกรรม</label>
+                    <input
+                      type="datetime-local"
+                      value={config.startsAt}
+                      onChange={(e) => updateConfig({ startsAt: e.target.value })}
+                      className={`${font} w-full h-10 px-3 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[12px] bg-white transition-colors`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`${font} text-[11px] text-gray-600 mb-1.5 block`} style={{ fontWeight: 500 }}>สิ้นสุดกิจกรรม</label>
+                    <input
+                      type="datetime-local"
+                      value={config.endsAt}
+                      onChange={(e) => updateConfig({ endsAt: e.target.value })}
+                      className={`${font} w-full h-10 px-3 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[12px] bg-white transition-colors`}
+                    />
+                  </div>
+                </div>
+
+                {!isMulti ? (
+                  // ===== Single-option: ส่วนลด + จำนวน =====
+                  <>
+                    <div>
+                      <label className={`${font} text-[11px] text-gray-600 mb-1.5 block`} style={{ fontWeight: 500 }}>ประเภทส่วนลด</label>
+                      <div className="flex bg-white rounded-full p-1 border border-gray-200">
+                        {(["percent", "baht"] as const).map((type) => {
+                          const isAct = config.discountType === type;
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => updateConfig({ discountType: type })}
+                              className={`${font} flex-1 h-8 rounded-full text-[12px] cursor-pointer transition-colors ${
+                                isAct ? "bg-[#319754] text-white" : "text-gray-500 hover:text-gray-700"
+                              }`}
+                              style={{ fontWeight: isAct ? 600 : 400 }}
+                            >
+                              {type === "percent" ? "เปอร์เซ็นต์ (%)" : "บาท (฿)"}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={`${font} text-[11px] text-gray-600 mb-1.5 block`} style={{ fontWeight: 500 }}>มูลค่าส่วนลด</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            value={config.discountValue}
+                            onChange={(e) => updateConfig({ discountValue: Math.max(0, parseFloat(e.target.value) || 0) })}
+                            className={`${font} w-full h-10 pl-3 pr-10 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[13px] bg-white transition-colors`}
+                            min={0}
+                            max={config.discountType === "percent" ? 100 : undefined}
+                          />
+                          <span className={`${font} absolute right-4 top-1/2 -translate-y-1/2 text-[12px] text-gray-400`}>
+                            {config.discountType === "percent" ? "%" : "฿"}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className={`${font} text-[11px] text-gray-600 mb-1.5 block`} style={{ fontWeight: 500 }}>จำนวน (สูงสุด {parseInt(product.stock) || 0})</label>
+                        <input
+                          type="number"
+                          value={config.quantity}
+                          onChange={(e) => {
+                            const max = parseInt(product.stock) || 0;
+                            updateConfig({ quantity: Math.min(max, Math.max(1, parseInt(e.target.value) || 1)) });
+                          }}
+                          className={`${font} w-full h-10 px-3 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[13px] bg-white transition-colors`}
+                          min={1}
+                          max={parseInt(product.stock) || 0}
+                        />
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const normal = getNormalPrice(product.price);
+                      const flash = computeFromValue(normal, config.discountType, config.discountValue);
+                      const pct = normal > 0 ? Math.round(((normal - flash) / normal) * 100) : 0;
+                      return (
+                        <div className="flex items-center justify-between bg-white rounded-xl p-3 border border-gray-100">
+                          <span className={`${font} text-[12px] text-[#8e8e93]`}>ราคา Flash Sale</span>
+                          <div className="flex items-center gap-2">
+                            {pct > 0 && (
+                              <span className={`${font} bg-[#e62e05] text-white text-[11px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>-{pct}%</span>
+                            )}
+                            <span className={`${font} text-[16px] text-[#ff3b30] tabular-nums`} style={{ fontWeight: 700 }}>฿ {flash.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  // ===== Multi-option: list ตัวเลือก พร้อมเลือก + กำหนดส่วนลดต่อตัว =====
+                  <div className="flex flex-col gap-2">
+                    <p className={`${font} text-[11px] text-gray-600`} style={{ fontWeight: 500 }}>ตัวเลือกที่เข้าร่วม Flash Sale</p>
+                    {variants.map((v) => {
+                      const vc = config.variants.find((x) => x.variantId === v.id);
+                      if (!vc) return null;
+                      const flash = computeFromValue(v.price, vc.discountType, vc.discountValue);
+                      const pct = v.price > 0 ? Math.round(((v.price - flash) / v.price) * 100) : 0;
+                      return (
+                        <div key={v.id} className={`bg-white rounded-xl border-2 transition-colors ${vc.selected ? "border-[#319754]/40" : "border-gray-100"}`}>
+                          {/* Variant header — click to toggle */}
+                          <button
+                            onClick={() => updateVariant(v.id, { selected: !vc.selected })}
+                            className="w-full flex items-center gap-3 p-3 cursor-pointer text-left"
+                          >
+                            <div className={`size-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                              vc.selected ? "bg-[#319754] border-[#319754]" : "border-gray-300"
+                            }`}>
+                              {vc.selected && <Check className="size-3 text-white" strokeWidth={3} />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{v.name}</p>
+                              <p className={`${font} text-[11px] text-[#8e8e93]`}>฿ {v.price.toFixed(2)} · คงเหลือ {v.stock} ชิ้น</p>
+                            </div>
+                            {vc.selected && pct > 0 && (
+                              <span className={`${font} bg-[#e62e05] text-white text-[10px] px-2 py-0.5 rounded-full shrink-0`} style={{ fontWeight: 600 }}>-{pct}%</span>
+                            )}
+                          </button>
+
+                          {/* Per-variant controls — แสดงเมื่อเลือก */}
+                          {vc.selected && (
+                            <div className="px-3 pb-3 flex flex-col gap-2.5 border-t border-gray-100 pt-3">
+                              <div className="flex bg-[#fafafa] rounded-full p-1 border border-gray-200">
+                                {(["percent", "baht"] as const).map((type) => {
+                                  const isAct = vc.discountType === type;
+                                  return (
+                                    <button
+                                      key={type}
+                                      onClick={() => updateVariant(v.id, { discountType: type })}
+                                      className={`${font} flex-1 h-7 rounded-full text-[11px] cursor-pointer transition-colors ${
+                                        isAct ? "bg-[#319754] text-white" : "text-gray-500 hover:text-gray-700"
+                                      }`}
+                                      style={{ fontWeight: isAct ? 600 : 400 }}
+                                    >
+                                      {type === "percent" ? "ลด %" : "ลด ฿"}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <div className="grid grid-cols-3 gap-2">
+                                <div className="relative">
+                                  <input
+                                    type="number"
+                                    value={vc.discountValue}
+                                    onChange={(e) => updateVariant(v.id, { discountValue: Math.max(0, parseFloat(e.target.value) || 0) })}
+                                    placeholder="ส่วนลด"
+                                    className={`${font} w-full h-9 pl-3 pr-7 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[12px] bg-white transition-colors`}
+                                    min={0}
+                                    max={vc.discountType === "percent" ? 100 : undefined}
+                                  />
+                                  <span className={`${font} absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400`}>
+                                    {vc.discountType === "percent" ? "%" : "฿"}
+                                  </span>
+                                </div>
+                                <input
+                                  type="number"
+                                  value={vc.quantity}
+                                  onChange={(e) => updateVariant(v.id, { quantity: Math.min(v.stock, Math.max(1, parseInt(e.target.value) || 1)) })}
+                                  placeholder="จำนวน"
+                                  className={`${font} w-full h-9 px-3 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[12px] bg-white transition-colors`}
+                                  min={1}
+                                  max={v.stock}
+                                />
+                                <div className={`${font} h-9 px-3 rounded-full bg-[#ff3b30]/10 text-[#ff3b30] flex items-center justify-end text-[12px] tabular-nums`} style={{ fontWeight: 700 }}>
+                                  ฿ {flash.toFixed(2)}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-100 p-4 shrink-0">
+          {step === "select" ? (
+            <button
+              onClick={goToConfigure}
+              disabled={!selectedId}
+              className={`${font} w-full h-[49px] rounded-full text-white text-[14px] transition-colors ${
+                !selectedId ? "bg-gray-300 cursor-not-allowed" : "bg-[#008c45] hover:bg-[#007a3b] cursor-pointer"
+              }`}
+              style={{ fontWeight: 600 }}
+            >
+              {!selectedId ? "เลือกสินค้าก่อน" : "ถัดไป"}
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              className={`${font} w-full bg-[#008c45] h-[49px] rounded-full text-white text-[14px] cursor-pointer hover:bg-[#007a3b] transition-colors`}
+              style={{ fontWeight: 600 }}
+            >
+              เพิ่มสินค้า Flash Sale
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ========== FLASH EVENT DETAIL ========== */
-function FlashEventDetail({ onBack }: { onBack: () => void }) {
+function FlashEventDetail({ onBack, isNewJoin = false, event }: { onBack: () => void; isNewJoin?: boolean; event: FlashEvent | null }) {
   const [showAddModal, setShowAddModal] = useState(false);
+  // เข้าร่วมใหม่: ยังไม่มีสินค้า → ต้องเพิ่มก่อนถึงจะเห็นตาราง
+  const [products, setProducts] = useState(isNewJoin ? [] : mockFlashProducts);
+
+  // Countdown — เดินจริงเฉพาะ event ที่ active (นับถึง endsAt)
+  // ยังไม่ถึงวันกิจกรรม (join/pending) หรือสิ้นสุดแล้ว (ended) → แสดง 00:00:00
+  const countdown = useFlashCountdown(event?.status === "active" ? event.endsAt : undefined);
+
+  const eventName = event?.name ?? "Flash Sale Event";
+  const eventDateRange = event?.date ?? "00 M.M. 0000 - 00 M.M. 0000";
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className={`flex items-center gap-1 bg-[#d4d4d4] px-3 py-1 rounded-full text-[12px] ${font} cursor-pointer`}>
-            <ChevronLeft className="size-3" /> กลับ
-          </button>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>Flash Sale Event</h2>
-        </div>
-        <button onClick={() => setShowAddModal(true)}
-          className={`flex items-center gap-2 bg-[#319754] text-white px-4 py-2 rounded-full text-[13px] ${font} cursor-pointer`}>
-          <Plus className="size-4" /> เพิ่มสินค้า Flash Sale
+      {/* Top bar: back + date + countdown */}
+      <div className="flex items-center gap-3 mb-3 flex-wrap">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
         </button>
-      </div>
-
-      {/* Date & countdown */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="flex items-center gap-1.5">
-          <Clock className="size-4 text-gray-500" />
-          <span className={`${font} text-[13px] text-gray-500`}>00 M.M. 0000 - 00 M.M. 0000</span>
+        <div className={`${font} flex items-center gap-1.5 text-[12px] text-[#8e8e93]`}>
+          <CalendarIcon className="size-3.5" strokeWidth={2} />
+          <span>{eventDateRange}</span>
         </div>
         <div className="flex items-center gap-1">
-          {["00", "00", "00"].map((v, i) => (
-            <span key={i} className="bg-[#319754] text-white text-[12px] px-2 py-0.5 rounded">{v}</span>
+          {[countdown.h, countdown.m, countdown.s].map((v, i, arr) => (
+            <Fragment key={i}>
+              <span
+                className={`${font} text-white text-[16px] w-[32px] py-1 rounded-lg flex items-center justify-center tabular-nums`}
+                style={{
+                  background: "linear-gradient(180deg, #e62e05 0%, #bc1b06 100%)",
+                  fontWeight: 600,
+                }}
+              >
+                {v}
+              </span>
+              {i < arr.length - 1 && (
+                <span className={`${font} text-black text-[16px] leading-none`} style={{ fontWeight: 400 }}>:</span>
+              )}
+            </Fragment>
           ))}
         </div>
       </div>
 
-      {/* Table */}
+      {/* Title row: event name + add button */}
+      <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+        <h2 className={`${font} text-[22px] text-black`} style={{ fontWeight: 600 }}>{eventName}</h2>
+        <motion.button
+          onClick={() => setShowAddModal(true)}
+          whileTap={{ scale: 0.96 }}
+          whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+        >
+          <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
+            <Plus className="size-[14px]" strokeWidth={2.6} />
+          </span>
+          <span style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
+        </motion.button>
+      </div>
+
+      {/* Empty state — เข้าร่วมใหม่ ยังไม่มีสินค้าเข้าร่วม */}
+      {products.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 px-6 py-16 text-center shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+          <div className="size-20 rounded-full bg-[#319754]/10 flex items-center justify-center mx-auto mb-4">
+            <Package className="size-10 text-[#319754]" strokeWidth={1.6} />
+          </div>
+          <h3 className={`${font} text-[16px] text-black mb-1.5`} style={{ fontWeight: 600 }}>
+            ยังไม่มีสินค้าเข้าร่วม Flash Sale
+          </h3>
+          <p className={`${font} text-[13px] text-[#8e8e93] mb-5 leading-relaxed`}>
+            เลือกสินค้าจากร้านของคุณเข้าร่วมกิจกรรม<br />
+            พร้อมตั้งราคาส่วนลดและจำนวนที่ต้องการขาย
+          </p>
+          <motion.button
+            onClick={() => setShowAddModal(true)}
+            whileTap={{ scale: 0.96 }}
+            whileHover={{ y: -1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`${font} inline-flex items-center gap-2 bg-[#319754] hover:bg-[#267a43] text-white pl-2 pr-5 h-[42px] rounded-full text-[13px] cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+            style={{ fontWeight: 600, transition: "background-color 200ms, box-shadow 200ms" }}
+          >
+            <span className="size-[28px] bg-white/20 rounded-full flex items-center justify-center">
+              <Plus className="size-[15px]" strokeWidth={2.6} />
+            </span>
+            เพิ่มสินค้าเข้าร่วม Flash Sale
+          </motion.button>
+        </div>
+      ) : (
       <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
         <table className="w-full">
           <thead>
@@ -2762,7 +3548,7 @@ function FlashEventDetail({ onBack }: { onBack: () => void }) {
             </tr>
           </thead>
           <tbody>
-            {mockFlashProducts.map((p) => (
+            {products.map((p) => (
               <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-3">
@@ -2798,80 +3584,18 @@ function FlashEventDetail({ onBack }: { onBack: () => void }) {
           <button className="size-7 rounded-full flex items-center justify-center cursor-pointer text-gray-400 rotate-180"><ChevronLeft className="size-4" /></button>
         </div>
       </div>
-
-      {/* Add Product Flash Sale Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-          <div className="bg-white rounded-2xl p-4 w-full max-w-[600px] max-h-[80vh] flex flex-col gap-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <p className={`${font} text-[20px]`} style={{ fontWeight: 500 }}>เพิ่มสินค้า Flash Sale</p>
-              <button onClick={() => setShowAddModal(false)} className="size-7 rounded-full bg-[rgba(120,120,128,0.12)] flex items-center justify-center cursor-pointer">
-                <X className="size-3.5" />
-              </button>
-            </div>
-            <div className="border-t" />
-
-            {/* Add product area */}
-            <button className="border-2 border-dashed border-gray-300 rounded-2xl p-6 flex flex-col items-center gap-2 cursor-pointer hover:border-[#319754]/50">
-              <Plus className="size-10 text-gray-400" />
-              <span className={`${font} text-[14px] text-gray-500`}>เพิ่มเลือกสินค้าเข้าร่วม</span>
-            </button>
-
-            {/* Selected product */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-4">
-              <div className="size-[80px] bg-gray-200 rounded-2xl overflow-hidden shrink-0">
-                <ImageWithFallback src={imgProd} alt="" className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>Product</span>
-                  <span className="bg-[#007aff]/10 text-[#007aff] text-[12px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="size-2 rounded-full bg-[#007aff]" /> หลายตัวเลือก
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mt-2">
-                  <span className={`${font} text-[14px] text-[#319754]`} style={{ fontWeight: 500 }}>฿ 0.00</span>
-                  <span className={`${font} text-[12px] text-gray-500 flex items-center gap-1`}>
-                    <Package className="size-3" /> 0 ชิ้น
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Variants */}
-            <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
-              <span className={`${font} text-[12px]`}>ตัวเเลือกสินค้า</span>
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-2xl p-4 flex items-center gap-4">
-                  <div className="size-[80px] bg-gray-200 rounded-2xl overflow-hidden shrink-0">
-                    <ImageWithFallback src={imgProd} alt="" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>Product</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`${font} text-[12px] text-gray-400`}>เข้าร่วม Flash Sale</span>
-                        <div className="size-4 border border-gray-300 rounded" />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className={`${font} text-[14px] text-[#319754]`} style={{ fontWeight: 500 }}>฿ 0.00</span>
-                      <span className={`${font} text-[12px] text-gray-500 flex items-center gap-1`}>
-                        <Package className="size-3" /> 0 ชิ้น
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t" />
-            <button className={`w-full bg-[#008c45] h-[49px] rounded-full text-white text-[14px] ${font} cursor-pointer hover:bg-[#007a3b]`}>
-              เพิ่มสินค้า Flash Sale
-            </button>
-          </div>
-        </div>
       )}
+
+      {/* Add Product Flash Sale Modal — 2 ขั้นตอน: เลือกสินค้า → กำหนดส่วนลด */}
+      <AddFlashSaleModal
+        open={showAddModal}
+        event={event}
+        onClose={() => setShowAddModal(false)}
+        onConfirm={(newProducts) => {
+          setProducts((prev) => [...prev, ...newProducts]);
+          setShowAddModal(false);
+        }}
+      />
     </div>
   );
 }
@@ -8768,6 +9492,8 @@ export function OwnerDashboard() {
   const [activeTab, setActiveTab] = useState<OwnerTab>("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedComplaintId, setSelectedComplaintId] = useState("CPL-001");
+  const [flashEventIsNewJoin, setFlashEventIsNewJoin] = useState(false);
+  const [selectedFlashEvent, setSelectedFlashEvent] = useState<FlashEvent | null>(null);
   const [ordersInitialFilter, setOrdersInitialFilter] = useState<OrderFilterTab>("all");
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -8823,8 +9549,8 @@ export function OwnerDashboard() {
         {activeTab === "orders" && <OrdersTab initialFilter={ordersInitialFilter} orders={orders} onUpdate={updateOrder} onOpenDetail={openOrderDetail} />}
         {activeTab === "order_detail" && <OrderDetailTab order={orders.find((o) => o.id === selectedOrderId) || null} onBack={() => setActiveTab("orders")} onUpdate={updateOrder} />}
         {activeTab === "products" && <ProductsTab onAddProduct={() => setActiveTab("add_product")} />}
-        {activeTab === "flash_sale" && <FlashSaleTab onViewEvent={() => setActiveTab("flash_event")} />}
-        {activeTab === "flash_event" && <FlashEventDetail onBack={() => setActiveTab("flash_sale")} />}
+        {activeTab === "flash_sale" && <FlashSaleTab onViewEvent={(event, opts) => { setSelectedFlashEvent(event); setFlashEventIsNewJoin(!!opts?.isNewJoin); setActiveTab("flash_event"); }} />}
+        {activeTab === "flash_event" && <FlashEventDetail event={selectedFlashEvent} isNewJoin={flashEventIsNewJoin} onBack={() => setActiveTab("flash_sale")} />}
         {activeTab === "add_product" && <AddProductTab onBack={() => setActiveTab("products")} />}
         {activeTab === "promotions" && (
           <div>
