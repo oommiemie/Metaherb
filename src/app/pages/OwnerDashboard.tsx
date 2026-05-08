@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 import {
   BarChart3, Package, ShoppingCart, Zap, Megaphone, Ticket,
   Settings, ChevronDown, ChevronLeft, Store, Search,
-  Plus, MoreHorizontal, Eye, AlertCircle, X, Check, Clock, ArrowRight, RotateCcw, Wallet,
+  Plus, MoreHorizontal, Eye, AlertCircle, X, Check, Clock, ArrowRight, ArrowUpRight, RotateCcw, Wallet,
   AlertTriangle, Phone, Mail, ChevronRight, Filter,
   FileText, TrendingUp, Users, ShoppingBag, BarChart2, Download, FileSpreadsheet,
   ClipboardList, ScanSearch, Truck, PackageCheck, PackageX, EyeOff
@@ -14,11 +14,35 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from "recharts";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import imgCoin from "../../assets/cion.png";
+import imgBox from "../../assets/box-in-caer.png";
+import imgCoinUp from "../../assets/cion-up.png";
+import imgCost from "../../assets/cost.png";
+import imgNewCustomer from "../../assets/new-customer.png";
+import imgRepeatCustomers from "../../assets/repeat-customers.png";
+import imgGroupCustomer from "../../assets/gourp-customer.png";
+import imgMember from "../../assets/member.png";
+import imgProductsSold from "../../assets/products-sold.png";
+import imgProductsStore from "../../assets/products-store.png";
+import imgStock from "../../assets/stock.png";
+import imgRating from "../../assets/rating.png";
+import imgVisitors from "../../assets/visitors.png";
+import imgBagInCart from "../../assets/bag-in-cart.png";
+import imgConvert from "../../assets/convert.png";
+import imgCoupon from "../../assets/coupon.png";
+import imgSellingProducts from "../../assets/selling-products.png";
+import imgRecommendedProducts from "../../assets/recommended-products.png";
+import imgWalletIllust from "../../assets/wallet-illust.png";
+import imgEscrowIllust from "../../assets/escrow.png";
+import imgAccumIncomeIllust from "../../assets/accumulated-income.png";
 import { Calendar } from "../components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "../components/ui/hover-card";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import type { DateRange } from "react-day-picker";
+import { buildReportData } from "../data/reportMockData";
+import { toast } from "sonner";
+import { MessageCircle, Star, Ban, ArrowRightCircle, MapPin, User as UserIcon, Printer, Pencil, Trash2, Boxes, Heart, Share2 } from "lucide-react";
 import imgLogo from "../../assets/logo.png";
 import imgSideBar from "figma:asset/9c30b1921f0988e49ef49ac4f89b2dd06b320b33.png";
 import imgProd from "figma:asset/9e21f4217f39c8b2aaff50eadcf63d44b0fcf83c.png";
@@ -57,7 +81,7 @@ const orderTabSvgs = {
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
-type OwnerTab = "overview" | "orders" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "complaints" | "complaint_detail" | "reports" | "report_sales" | "report_customers" | "report_products" | "report_market";
+type OwnerTab = "overview" | "orders" | "order_detail" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "complaints" | "complaint_detail" | "reports" | "report_sales" | "report_customers" | "report_products" | "report_market";
 type OrderFilterTab = "all" | "pending_payment" | "pending_verify" | "ready_ship" | "shipping" | "shipped" | "cancelled";
 
 interface SidebarItem {
@@ -86,19 +110,9 @@ const sidebarItems: SidebarItem[] = [
 
 const sidebarSettings: SidebarItem[] = [];
 
-const orderTabs: { id: OrderFilterTab; label: string; count: number }[] = [
-  { id: "all", label: "ทั้งหมด", count: 20 },
-  { id: "pending_payment", label: "รอชำระเงิน", count: 2 },
-  { id: "pending_verify", label: "รอตรวจสอบ", count: 1 },
-  { id: "ready_ship", label: "พร้อมจัดส่ง", count: 1 },
-  { id: "shipping", label: "กำลังจัดส่ง", count: 15 },
-  { id: "shipped", label: "ส่งสำเร็จ", count: 0 },
-  { id: "cancelled", label: "ยกเลิก", count: 1 },
-];
-
 const mockProducts = [
-  { id: "1",  name: "พิมเสนน้ำอโรมา ตราเมต้าเฮิร์บ",       category: "เครื่องหอม & อโรม่า", type: "ราคาเดียว",   typeColor: "#ff9500", price: "฿ 89.00",          stock: "120 ชิ้น", status: "เปิดขาย", statusColor: "#319754", flash: true,
-    image: "https://images.unsplash.com/photo-1624454002302-36b824d7bd0a?w=400&q=80" }, // essential oil bottle
+  { id: "1",  name: "พิมเสนน้ำอโรมา ตราเมต้าเฮิร์บ",       category: "เครื่องหอม & อโรม่า", type: "ราคาเดียว",   typeColor: "#ff9500", price: "฿ 89.00",          stock: "120 ชิ้น", status: "เปิดขาย", statusColor: "#319754", flash: true, recommended: true,
+    image: "https://images.unsplash.com/photo-1624454002302-36b824d7bd0a?w=400&q=80" }, // essential oil bottle (both Flash + Recommended)
   { id: "2",  name: "ขมิ้นชันแคปซูล 60 แคป",                category: "สมุนไพรแคปซูล",       type: "ราคาเดียว",   typeColor: "#ff9500", price: "฿ 220.00",         stock: "85 ชิ้น",  status: "เปิดขาย", statusColor: "#319754", recommended: true,
     image: "https://images.unsplash.com/photo-1740592754365-2117f5977528?w=400&q=80" }, // turmeric capsule
   { id: "3",  name: "ฟ้าทะลายโจรผง 100 g",                  category: "ผงสมุนไพร",           type: "ราคาเดียว",   typeColor: "#ff9500", price: "฿ 145.00",         stock: "40 ชิ้น",  status: "เปิดขาย", statusColor: "#319754",
@@ -115,8 +129,8 @@ const mockProducts = [
     image: "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=400&q=80" }, // tea bags
   { id: "9",  name: "เห็ดหลินจือสกัด 60 แคป",               category: "สมุนไพรสกัด",         type: "ราคาเดียว",   typeColor: "#ff9500", price: "฿ 245.00",         stock: "0 ชิ้น",   status: "สินค้าหมด", statusColor: "#dc2626",
     image: "https://images.unsplash.com/photo-1644061923948-f5b918b524c7?w=400&q=80" }, // mushroom dried
-  { id: "10", name: "น้ำผึ้งดอกลำไย 250 ml",                category: "ผลิตภัณฑ์ออร์แกนิก",   type: "หลายตัวเลือก", typeColor: "#007aff", price: "฿ 215.00 - 380.00", stock: "32 ชิ้น",  status: "เปิดขาย", statusColor: "#319754", flash: true,
-    image: "https://images.unsplash.com/photo-1645693091199-77a764e1ea16?w=400&q=80" }, // honey jar
+  { id: "10", name: "น้ำผึ้งดอกลำไย 250 ml",                category: "ผลิตภัณฑ์ออร์แกนิก",   type: "หลายตัวเลือก", typeColor: "#007aff", price: "฿ 215.00 - 380.00", stock: "32 ชิ้น",  status: "เปิดขาย", statusColor: "#319754", flash: true, recommended: true,
+    image: "https://images.unsplash.com/photo-1645693091199-77a764e1ea16?w=400&q=80" }, // honey jar (both Flash + Recommended)
   { id: "11", name: "ขิงผงออร์แกนิก 100 g",                 category: "ผงสมุนไพร",           type: "ราคาเดียว",   typeColor: "#ff9500", price: "฿ 130.00",         stock: "150 ชิ้น", status: "เปิดขาย", statusColor: "#319754",
     image: "https://images.unsplash.com/photo-1573821663912-6df460f9c684?w=400&q=80" }, // ginger powder
   { id: "12", name: "สบู่สมุนไพรขมิ้น",                      category: "ของใช้ออร์แกนิก",     type: "ราคาเดียว",   typeColor: "#ff9500", price: "฿ 65.00",          stock: "180 ชิ้น", status: "เปิดขาย", statusColor: "#319754", recommended: true,
@@ -144,24 +158,260 @@ const mockFlashProducts = [
   { id: "6", name: "Product", normalPrice: "฿ 0.00", flashPrice: "฿ 0.00", start: "00 M.M. 0000 - 00:00 น.", end: "00 M.M. 0000 - 00:00 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
 ];
 
-const mockOrders = [
-  {
-    id: "ORD-20260218-03571", status: "pending_payment" as const, date: "18 ก.พ. 2569 - 15:00 น.",
-    customer: "username01", phone: "090-000-000",
-    address: "เลขที่ 2 ชั้นที�� 2 ซอยสุขสวัสดิ์33 แขวงราษฎร์บูรณะ, เขตราษฎร์บูรณะ กรุงเทพมหานคร 10140",
-    total: 0, items: [] as any[],
-  },
-  {
-    id: "ORD-20260218-03571", status: "shipping" as const, date: "18 ก.พ. 2569 - 15:00 น.",
-    customer: "username01", phone: "090-000-000",
-    address: "เลขที่ 2 ชั้นที่ 2 ซอยสุขสวัสดิ์33",
-    total: 0,
-    items: [
-      { name: "ชาออร์แกนิก", option: "ตัวเลือก 1", qty: 1, price: 0 },
-      { name: "ชาออร์แกนิก", option: "ตัวเลือก 2", qty: 1, price: 0 },
-      { name: "ชาออร์แกนิก", option: "ตัวเลือก 3", qty: 1, price: 0 },
-    ],
-  },
+type OrderStatus = "pending_payment" | "pending_verify" | "ready_ship" | "shipping" | "shipped" | "cancelled";
+type ShippingMethod = "รับที่ร้าน" | "จัดส่งปกติ" | "จัดส่งด่วน";
+type OrderItem = { name: string; option: string; qty: number; price: number; image: string };
+type PaymentMethod = "พร้อมเพย์ PromptPay" | "บัญชีธนาคาร" | "บัตรเครดิต/บัตรเดบิต" | "ชำระเงินปลายทาง";
+type ItemReview = {
+  itemIndex: number;     // matches order.items[itemIndex]
+  rating: number;        // 1-5
+  comment: string;
+  images: string[];      // review photo URLs
+};
+type OrderReview = {
+  reviewerName: string;
+  reviewerAvatar: string;
+  reviewedAt: string;    // display string e.g. "15 ก.พ. 2569 - 14:30 น."
+  shopRating: number;    // 1-5 overall shop rating
+  itemReviews: ItemReview[];
+};
+type Order = {
+  id: string;
+  status: OrderStatus;
+  date: string;
+  customer: string;
+  phone: string;
+  address: string;
+  total: number;
+  items: OrderItem[];
+  shippingMethod: ShippingMethod;
+  paymentMethod: PaymentMethod;
+  trackingNumber?: string;
+  reviewScore?: number; // overall — kept for quick badge display
+  review?: OrderReview;
+  note?: string;
+  cancelReason?: string;
+  cancelNote?: string;
+  cancelledBy?: "shop" | "customer";
+  cancellationStatus?: "pending" | "approved" | "denied"; // for customer-cancelled orders, requires shop approval
+  previousStatus?: OrderStatus; // saved before cancellation so we can revert if shop denies
+};
+
+const CANCEL_REASONS = [
+  "สินค้าหมดสต็อก",
+  "ลูกค้าให้ที่อยู่ผิด",
+  "ลูกค้าไม่ตอบกลับ",
+  "ปัญหาในการชำระเงิน",
+  "ลูกค้าเปลี่ยนใจ",
+  "อื่นๆ (ระบุในหมายเหตุ)",
+];
+
+const orderProducts = [
+  { name: "ขมิ้นชันแคปซูล",        option: "60 แคปซูล",   price: 220, image: "https://images.unsplash.com/photo-1740592754365-2117f5977528?w=200&q=80" },
+  { name: "ฟ้าทะลายโจร",           option: "50 แคปซูล",   price: 145, image: "https://images.unsplash.com/photo-1759064716219-ba8c60a7ce07?w=200&q=80" },
+  { name: "ชาเก๊กฮวยออร์แกนิก",     option: "20 ซอง",      price: 125, image: "https://images.unsplash.com/photo-1610643625267-aee6dae3ca22?w=200&q=80" },
+  { name: "น้ำผึ้งดอกลำไย",         option: "250 ml",     price: 215, image: "https://images.unsplash.com/photo-1645693091199-77a764e1ea16?w=200&q=80" },
+  { name: "ใบบัวบกแคปซูล",          option: "60 แคปซูล",   price: 180, image: "https://images.unsplash.com/photo-1748390359572-8e7a47bf5cb5?w=200&q=80" },
+  { name: "น้ำมันมะพร้าวสกัดเย็น",  option: "250 ml",     price: 290, image: "https://images.unsplash.com/photo-1591282017732-207fbba7dfd4?w=200&q=80" },
+  { name: "เห็ดหลินจือสกัด",        option: "60 แคปซูล",   price: 245, image: "https://images.unsplash.com/photo-1644061923948-f5b918b524c7?w=200&q=80" },
+  { name: "ชาตะไคร้แห้ง",          option: "30 ซอง",      price: 130, image: "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=200&q=80" },
+  { name: "ขิงผงออร์แกนิก",         option: "100 g",      price: 130, image: "https://images.unsplash.com/photo-1573821663912-6df460f9c684?w=200&q=80" },
+  { name: "สบู่สมุนไพรขมิ้น",        option: "ก้อน 100 g",  price: 65,  image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=200&q=80" },
+];
+
+const orderCustomers = [
+  { name: "somchai01",  phone: "090-111-2233", address: "12/3 ซ.ลาดพร้าว 1 แขวงจอมพล เขตจตุจักร กรุงเทพฯ 10900" },
+  { name: "somying22",  phone: "081-222-3344", address: "456/78 หมู่ 5 ต.บางพูน อ.เมือง จ.ปทุมธานี 12000" },
+  { name: "tantawan",   phone: "062-333-4455", address: "9 ซ.สุขุมวิท 23 แขวงคลองเตยเหนือ เขตวัฒนา กรุงเทพฯ 10110" },
+  { name: "saifon_99",  phone: "095-444-5566", address: "55 ม.7 ต.หางดง อ.หางดง จ.เชียงใหม่ 50230" },
+  { name: "fasai_kk",   phone: "086-555-6677", address: "234 ถ.มิตรภาพ ต.ในเมือง อ.เมือง จ.ขอนแก่น 40000" },
+  { name: "phukao",     phone: "099-666-7788", address: "78/9 ม.3 ต.ป่าตอง อ.กะทู้ จ.ภูเก็ต 83150" },
+  { name: "talay99",    phone: "088-777-8899", address: "100 ซ.พหลโยธิน 11 แขวงสามเสนใน เขตพญาไท กรุงเทพฯ 10400" },
+  { name: "maenam",     phone: "061-888-9900", address: "67 ม.2 ต.บางกระทึก อ.สามพราน จ.นครปฐม 73210" },
+  { name: "prachya_p",  phone: "094-999-0011", address: "32/14 ถ.พระราม 2 แขวงท่าข้าม เขตบางขุนเทียน กรุงเทพฯ 10150" },
+  { name: "chaiya_d",   phone: "089-000-1122", address: "11 ม.6 ต.บ้านดู่ อ.เมือง จ.เชียงราย 57100" },
+];
+
+const reviewerProfiles = [
+  { name: "ปาริชาติ สายลม",   avatar: "https://i.pravatar.cc/100?img=47" },
+  { name: "ณัฐกานต์ ใจดี",     avatar: "https://i.pravatar.cc/100?img=49" },
+  { name: "พิมพ์ชนก รุ่งเรือง", avatar: "https://i.pravatar.cc/100?img=44" },
+  { name: "ธนวัฒน์ พงศ์ไพโรจน์", avatar: "https://i.pravatar.cc/100?img=15" },
+  { name: "วิไลวรรณ ทองสุข",  avatar: "https://i.pravatar.cc/100?img=45" },
+  { name: "ชนินทร์ บุญมี",     avatar: "https://i.pravatar.cc/100?img=68" },
+];
+
+const reviewComments = [
+  "ของดีมากค่ะ ส่งเร็ว แพ็คดี กินแล้วรู้สึกดีจริงๆ จะกลับมาอุดหนุนใหม่แน่นอน",
+  "คุ้มค่ามาก สินค้าแท้ตามรูปเลยค่ะ บรรจุภัณฑ์ดูพรีเมี่ยม ชอบมาก",
+  "พอใช้ได้ ราคาเหมาะสม รสชาติถูกปาก แต่อยากให้แพ็คให้แน่นกว่านี้นิดนึง",
+  "ส่งเร็วมากค่ะ แพ็คเกจสวย ของอยู่ในสภาพสมบูรณ์ ขอบคุณค่ะ",
+  "สินค้าดี รสชาติดี กลิ่นหอม ใช้แล้วนอนหลับสบาย แนะนำเลยครับ",
+  "ของดี ส่งไว ราคาสมเหตุสมผล สั่งซื้อครั้งที่ 3 แล้วค่ะ",
+];
+
+const reviewPhotoBank = [
+  "https://images.unsplash.com/photo-1591628001888-76d51246b8a8?w=400&q=80",
+  "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400&q=80",
+  "https://images.unsplash.com/photo-1556228852-80b6e5eeff06?w=400&q=80",
+  "https://images.unsplash.com/photo-1597301518497-69c4d4d10e7a?w=400&q=80",
+  "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&q=80",
+];
+
+const customerNotes = [
+  "ฝากห่อของขวัญด้วยค่ะ",
+  "กรุณาโทรก่อนมาส่งครับ",
+  "ฝากใส่ถุงดำให้หน่อยนะคะ ของไม่อยากให้คนเห็น",
+  "รบกวนแพ็คดีๆ นะคะ ของกินค่ะ",
+  "ไม่ต้องโทรนะคะ วางหน้าบ้านเลย",
+];
+
+const customerCancelReasons = [
+  "ไม่ต้องการสินค้าแล้ว",
+  "เปลี่ยนใจ ขอยกเลิกค่ะ",
+  "สั่งผิดสินค้า",
+  "ระยะเวลาจัดส่งนานเกินไป",
+];
+const shopCancelReasons = [
+  "สินค้าหมดสต็อก",
+  "ลูกค้าให้ที่อยู่ผิด",
+  "ลูกค้าไม่ตอบกลับ",
+  "ปัญหาในการชำระเงิน",
+];
+
+// Generate orders by status; counts match orderTabs counts so the filter pills always align
+const buildOrders = (): Order[] => {
+  const result: Order[] = [];
+  // Variety + good coverage of all states (incl. shipped with reviews + cancelled with all combos)
+  const distribution: { status: OrderStatus; count: number }[] = [
+    { status: "pending_payment", count: 3 },
+    { status: "pending_verify",  count: 3 },
+    { status: "ready_ship",      count: 2 },
+    { status: "shipping",        count: 6 },
+    { status: "shipped",         count: 4 },
+    { status: "cancelled",       count: 4 }, // mix: customer-pending, customer-approved, shop x2
+  ];
+  let seq = 3500;
+  distribution.forEach(({ status, count }) => {
+    for (let i = 0; i < count; i++) {
+      seq += 1;
+      const seed = (seq * 31 + status.length * 7) >>> 0;
+      const cust = orderCustomers[seed % orderCustomers.length];
+      const itemCount = 1 + (seed % 4); // 1-4 items
+      const items: OrderItem[] = Array.from({ length: itemCount }, (_, k) => {
+        const p = orderProducts[(seed + k * 5) % orderProducts.length];
+        const qty = 1 + ((seed + k) % 3);
+        return { name: p.name, option: p.option, qty, price: p.price * qty, image: p.image };
+      });
+      const total = items.reduce((s, it) => s + it.price, 0);
+      // Spread dates across recent days (1-25 ก.พ. 2569)
+      const day = Math.max(1, Math.min(25, 25 - ((seq + i * 3) % 24)));
+      const hr = String(8 + (seed % 12)).padStart(2, "0");
+      const mn = String((seed * 7) % 60).padStart(2, "0");
+      const shippingOptions: ShippingMethod[] = ["รับที่ร้าน", "จัดส่งปกติ", "จัดส่งด่วน"];
+      const shippingMethod = shippingOptions[seed % shippingOptions.length];
+      const paymentOptions: PaymentMethod[] = ["พร้อมเพย์ PromptPay", "บัญชีธนาคาร", "บัตรเครดิต/บัตรเดบิต", "ชำระเงินปลายทาง"];
+      const paymentMethod = paymentOptions[seed % paymentOptions.length];
+
+      // Cancellation logic — distribute cancelled orders across types for testability:
+      //   index 0 → customer-pending (needs shop approval)
+      //   index 1 → customer-approved (already finalized)
+      //   index 2,3 → shop-cancelled
+      const isCancelled = status === "cancelled";
+      let cancelledBy: "shop" | "customer" | undefined;
+      let cancelReason: string | undefined;
+      let cancelNote: string | undefined;
+      let cancellationStatus: "pending" | "approved" | "denied" | undefined;
+      let previousStatus: OrderStatus | undefined;
+      if (isCancelled) {
+        if (i === 0) {
+          cancelledBy = "customer";
+          cancellationStatus = "pending";
+          cancelReason = customerCancelReasons[seed % customerCancelReasons.length];
+          cancelNote = "ขอโทษนะคะ พึ่งรู้ว่ามีโปรที่อื่น";
+          previousStatus = "pending_verify";
+        } else if (i === 1) {
+          cancelledBy = "customer";
+          cancellationStatus = "approved";
+          cancelReason = customerCancelReasons[(seed + 1) % customerCancelReasons.length];
+          previousStatus = "pending_payment";
+        } else {
+          cancelledBy = "shop";
+          cancellationStatus = "approved";
+          cancelReason = shopCancelReasons[seed % shopCancelReasons.length];
+          cancelNote = i === 2 ? "ทางร้านขออภัยในความไม่สะดวก สินค้านี้กำลังเข้าใหม่" : undefined;
+        }
+      }
+
+      // Reviews: most shipped orders have reviews (with full per-item review data)
+      let reviewScore: number | undefined;
+      let review: OrderReview | undefined;
+      if (status === "shipped" && seed % 4 !== 0) {
+        const reviewer = reviewerProfiles[seed % reviewerProfiles.length];
+        const itemReviews: ItemReview[] = items.map((_, k) => {
+          const r = 3 + ((seed + k * 3) % 3); // 3-5
+          const photoCount = (seed + k) % 3; // 0, 1, or 2 photos
+          return {
+            itemIndex: k,
+            rating: r,
+            comment: reviewComments[(seed + k) % reviewComments.length],
+            images: Array.from({ length: photoCount }, (_, p) => reviewPhotoBank[(seed + k + p * 2) % reviewPhotoBank.length]),
+          };
+        });
+        const shopRating = Math.round(itemReviews.reduce((s, r) => s + r.rating, 0) / itemReviews.length);
+        reviewScore = shopRating; // overall = avg of per-item ratings
+        // Reviewed a few days after shipped
+        const reviewDay = Math.min(28, day + 3);
+        const reviewHr = String(10 + (seed % 9)).padStart(2, "0");
+        const reviewMn = String((seed * 11) % 60).padStart(2, "0");
+        review = {
+          reviewerName: reviewer.name,
+          reviewerAvatar: reviewer.avatar,
+          reviewedAt: `${reviewDay} ก.พ. 2569 - ${reviewHr}:${reviewMn} น.`,
+          shopRating,
+          itemReviews,
+        };
+      }
+
+      result.push({
+        id: `ORD-202602${String(day).padStart(2, "0")}-${String(seq).padStart(5, "0")}`,
+        status,
+        date: `${day} ก.พ. 2569 - ${hr}:${mn} น.`,
+        customer: cust.name,
+        phone: cust.phone,
+        address: cust.address,
+        total,
+        items,
+        shippingMethod,
+        paymentMethod,
+        trackingNumber: status === "shipping" || status === "shipped" ? `TH${seed.toString().padStart(10, "0")}` : undefined,
+        reviewScore,
+        review,
+        note: seed % 4 === 0 ? customerNotes[seed % customerNotes.length] : undefined,
+        cancelledBy,
+        cancelReason,
+        cancelNote,
+        cancellationStatus,
+        previousStatus,
+      });
+    }
+  });
+  return result;
+};
+
+const mockOrders: Order[] = buildOrders();
+
+const countByStatus = (status: OrderFilterTab) =>
+  status === "all" ? mockOrders.length : mockOrders.filter((o) => o.status === status).length;
+
+const orderTabs: { id: OrderFilterTab; label: string; count: number }[] = [
+  { id: "all",             label: "ทั้งหมด",      count: countByStatus("all")             },
+  { id: "pending_payment", label: "รอชำระเงิน",   count: countByStatus("pending_payment") },
+  { id: "pending_verify",  label: "รอตรวจสอบ",   count: countByStatus("pending_verify")  },
+  { id: "ready_ship",      label: "พร้อมจัดส่ง", count: countByStatus("ready_ship")      },
+  { id: "shipping",        label: "กำลังจัดส่ง", count: countByStatus("shipping")        },
+  { id: "shipped",         label: "ส่งสำเร็จ",    count: countByStatus("shipped")         },
+  { id: "cancelled",       label: "ยกเลิก",       count: countByStatus("cancelled")       },
 ];
 
 /* ========== SIDEBAR ========== */
@@ -231,7 +481,7 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
   ) : node;
 
   return (
-    <aside className={`flex flex-col shrink-0 p-4 transition-all duration-300 ${collapsed ? "w-[80px]" : "w-[282px]"}`}>
+    <aside className={`flex flex-col shrink-0 p-4 h-full transition-all duration-300 ${collapsed ? "w-[80px]" : "w-[282px]"}`}>
       <div className="bg-white rounded-[16px] overflow-hidden flex flex-col h-full">
         {/* Header */}
         <div className={`flex items-center h-[77px] pr-0 ${collapsed ? "justify-end pl-2" : "justify-between pl-4"}`}>
@@ -354,18 +604,355 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
 }
 
 /* ========== ORDER TAB CONTENT ========== */
-function OrdersTab() {
-  const [activeFilter, setActiveFilter] = useState<OrderFilterTab>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+// Status visual config — pill bg + status note tag (Figma)
+const statusConfig: Record<OrderStatus, { label: string; pillBg: string; noteText: string; noteColor: string }> = {
+  pending_payment: { label: "รอชำระเงิน",   pillBg: "#ff8d28", noteText: "ยังไม่ชำระเงิน",  noteColor: "#ff9500" },
+  pending_verify:  { label: "รอตรวจสอบ",   pillBg: "#ff9500", noteText: "รอร้านตรวจสอบ",  noteColor: "#ff9500" },
+  ready_ship:      { label: "พร้อมจัดส่ง", pillBg: "#007aff", noteText: "พร้อมส่งให้ลูกค้า", noteColor: "#007aff" },
+  shipping:        { label: "กำลังจัดส่ง", pillBg: "#319754", noteText: "ระหว่างจัดส่ง",   noteColor: "#319754" },
+  shipped:         { label: "ส่งสำเร็จ",    pillBg: "#10b981", noteText: "ส่งสำเร็จแล้ว",    noteColor: "#10b981" },
+  cancelled:       { label: "ยกเลิก",       pillBg: "#ff3b30", noteText: "ยกเลิกแล้ว",       noteColor: "#ff3b30" },
+};
 
-  const statusMap: Record<string, { label: string; color: string }> = {
-    pending_payment: { label: "รอชำระเงิน", color: "bg-[#ff3b30] text-white" },
-    pending_verify: { label: "รอตรวจสอบ", color: "bg-[#ff9500] text-white" },
-    ready_ship: { label: "พร้อมจัดส่ง", color: "bg-[#007aff] text-white" },
-    shipping: { label: "กำลังจัดส่ง", color: "bg-[#319754] text-white" },
-    shipped: { label: "ส่งสำเร็จ", color: "bg-gray-500 text-white" },
-    cancelled: { label: "ยกเลิก", color: "bg-red-600 text-white" },
+function CancelOrderModal({ open, order, onClose, onConfirm }: {
+  open: boolean;
+  order: Order | null;
+  onClose: () => void;
+  onConfirm: (reason: string, note: string) => void;
+}) {
+  const [selectedReason, setSelectedReason] = useState<string>("");
+  const [note, setNote] = useState("");
+
+  // Reset state when opening for a new order
+  useEffect(() => {
+    if (open) { setSelectedReason(""); setNote(""); }
+  }, [open, order?.id]);
+
+  const isOther = selectedReason === "อื่นๆ (ระบุในหมายเหตุ)";
+  const canSubmit = selectedReason && (!isOther || note.trim().length > 0);
+
+  return (
+    <AnimatePresence>
+      {open && order && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={onClose}>
+          <motion.div initial={{ scale: 0.95, y: 20, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 20, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-[480px] max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-gray-100">
+              <div className="flex items-start gap-3">
+                <div className="size-10 rounded-full bg-[#ff3b30]/10 flex items-center justify-center shrink-0">
+                  <AlertCircle className="size-5 text-[#ff3b30]" strokeWidth={2.4} />
+                </div>
+                <div className="flex-1">
+                  <h3 className={`${font} text-[16px]`} style={{ fontWeight: 700 }}>ยกเลิกคำสั่งซื้อ</h3>
+                  <p className={`${font} text-[12px] text-gray-500 mt-0.5`}>{order.id}</p>
+                </div>
+                <button onClick={onClose} className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer shrink-0">
+                  <X className="size-4" />
+                </button>
+              </div>
+            </div>
+            <div className="p-5">
+              <p className={`${font} text-[13px] text-black mb-3`} style={{ fontWeight: 500 }}>เลือกเหตุผลการยกเลิก <span className="text-[#ff3b30]">*</span></p>
+              <div className="flex flex-col gap-2 mb-4">
+                {CANCEL_REASONS.map((reason) => {
+                  const isSelected = selectedReason === reason;
+                  return (
+                    <button key={reason} type="button" onClick={() => setSelectedReason(reason)}
+                      className={`${font} text-left text-[13px] px-4 py-2.5 rounded-xl border transition-colors cursor-pointer flex items-center gap-2.5 ${
+                        isSelected
+                          ? "bg-[#319754]/10 border-[#319754] text-[#319754]"
+                          : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50"
+                      }`}
+                      style={{ fontWeight: isSelected ? 500 : 400 }}>
+                      <span className={`size-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        isSelected ? "border-[#319754] bg-[#319754]" : "border-gray-300"
+                      }`}>
+                        {isSelected && <Check className="size-2.5 text-white" strokeWidth={3.5} />}
+                      </span>
+                      {reason}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className={`${font} text-[13px] text-black mb-2`} style={{ fontWeight: 500 }}>
+                หมายเหตุเพิ่มเติม {isOther && <span className="text-[#ff3b30]">*</span>}
+              </p>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={isOther ? "กรุณาระบุเหตุผล..." : "ระบุรายละเอียดเพิ่มเติม (ไม่บังคับ)"}
+                rows={3}
+                className={`${font} bg-[#fafafa] w-full rounded-2xl px-4 py-3 text-[13px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow resize-none mb-5`}
+              />
+
+              <div className="flex gap-2">
+                <button onClick={onClose}
+                  className={`${font} flex-1 h-11 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer text-[14px] transition-colors`}>
+                  ปิด
+                </button>
+                <button
+                  onClick={() => canSubmit && onConfirm(selectedReason, note.trim())}
+                  disabled={!canSubmit}
+                  className={`${font} flex-1 h-11 rounded-full bg-[#ff3b30] hover:bg-[#dc2626] disabled:bg-gray-300 disabled:cursor-not-allowed text-white cursor-pointer text-[14px] shadow-[0_2px_8px_rgba(255,59,48,0.25)] transition-colors`}
+                  style={{ fontWeight: 600 }}>
+                  ยืนยันยกเลิก
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfirmShip, onRequestCancel }: {
+  order: Order;
+  onUpdate: (id: string, patch: Partial<Order>) => void;
+  onShowDetail: (id: string) => void;
+  onContact: (id: string) => void;
+  onBlock: (id: string) => void;
+  onConfirmShip: (id: string) => void;
+  onRequestCancel: (id: string) => void;
+}) {
+  const cfg = statusConfig[order.status];
+
+  // Status-specific action button row
+  const actions = (() => {
+    const cancelBtn = (
+      <button onClick={(e) => { e.stopPropagation(); onRequestCancel(order.id); }}
+        className={`${font} border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors`}>
+        ยกเลิก
+      </button>
+    );
+    const contactBtn = (
+      <button onClick={(e) => { e.stopPropagation(); onContact(order.id); }}
+        className={`${font} border border-gray-300 text-gray-700 hover:bg-gray-50 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
+        <MessageCircle className="size-3.5" />
+        ติดต่อลูกค้า
+      </button>
+    );
+    switch (order.status) {
+      case "pending_payment":
+        return cancelBtn;
+      case "pending_verify":
+        return (
+          <>
+            {contactBtn}
+            {cancelBtn}
+            <button onClick={(e) => { e.stopPropagation(); onUpdate(order.id, { status: "ready_ship" }); toast.success("เปลี่ยนสถานะเป็นพร้อมจัดส่ง"); }}
+              className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+              พร้อมจัดส่ง
+              <ArrowRightCircle className="size-4" />
+            </button>
+          </>
+        );
+      case "ready_ship":
+        return (
+          <>
+            {contactBtn}
+            <button onClick={(e) => { e.stopPropagation(); onConfirmShip(order.id); }}
+              className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+              <Truck className="size-4" />
+              ยืนยันการจัดส่ง
+            </button>
+          </>
+        );
+      case "shipping":
+        return contactBtn;
+      case "shipped":
+        return (
+          <>
+            {contactBtn}
+            {order.reviewScore && (
+              <button onClick={(e) => { e.stopPropagation(); toast.info(`ลูกค้าให้คะแนน ${order.reviewScore} ดาว`); }}
+                className={`${font} border border-[#f59e0b] text-[#f59e0b] hover:bg-[#f59e0b]/5 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
+                <Star className="size-3.5" fill="#f59e0b" />
+                ดูคะแนน {order.reviewScore}/5
+              </button>
+            )}
+          </>
+        );
+      case "cancelled":
+        return (
+          <button onClick={(e) => { e.stopPropagation(); onBlock(order.id); }}
+            className={`${font} border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
+            <Ban className="size-3.5" />
+            บล็อกลูกค้า
+          </button>
+        );
+    }
+  })();
+
+  return (
+    <div onClick={() => onShowDetail(order.id)}
+      className="group bg-white rounded-2xl border border-gray-100 overflow-hidden cursor-pointer hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:border-gray-200 transition-all">
+      {/* Header: order id + status pill | date + arrow */}
+      <div className="flex flex-col gap-4 px-4 pt-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2.5">
+            <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{order.id}</span>
+            <span className={`${font} text-[12px] text-white px-4 py-1 rounded-full whitespace-nowrap`}
+              style={{ backgroundColor: cfg.pillBg, fontWeight: 500 }}>
+              {cfg.label}
+            </span>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <span className={`${font} text-[12px] text-[#8e8e93]`}>{order.date}</span>
+            <ChevronRight className="size-4 text-[#8e8e93] group-hover:text-[#319754] group-hover:translate-x-0.5 transition-all" strokeWidth={2.4} />
+          </div>
+        </div>
+        <div className="h-px bg-gray-200 w-full" />
+      </div>
+
+      {/* Items list */}
+      <div className="flex flex-col gap-2.5 p-4">
+        {order.items.map((item, i) => (
+          <div key={i} className="flex items-start gap-2.5">
+            <div className="size-[70px] rounded-2xl overflow-hidden shrink-0 bg-gray-100">
+              <ImageWithFallback src={item.image} alt={item.name} className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-1">
+              <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{item.name}</p>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`${font} text-[12px] text-black`}>{item.option}</span>
+                  <span className={`${font} bg-[#f5f5f5] text-[#262626] text-[10px] px-2.5 py-0.5 rounded-full whitespace-nowrap`} style={{ fontWeight: 500 }}>
+                    จำนวน {item.qty} ชิ้น
+                  </span>
+                </div>
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>฿{item.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Shipping info — clean delivery slip layout */}
+      <div className="px-4">
+        <div className="bg-[#fafbfc] border border-gray-100 rounded-2xl overflow-hidden">
+          {/* Top bar: shipping method + tracking */}
+          <div className="flex items-center gap-2 flex-wrap px-4 py-2.5 bg-white/60 border-b border-gray-100">
+            <span className={`${font} bg-[#319754]/10 text-[#319754] text-[11px] pl-2 pr-3 py-1 rounded-full whitespace-nowrap inline-flex items-center gap-1.5`} style={{ fontWeight: 600 }}>
+              {order.shippingMethod === "รับที่ร้าน"
+                ? <Store className="size-3" strokeWidth={2.4} />
+                : <Truck className="size-3" strokeWidth={2.4} />}
+              {order.shippingMethod}
+            </span>
+            {order.trackingNumber && (
+              <span className={`${font} text-[11px] text-gray-500 inline-flex items-center gap-1 ml-auto`}>
+                <Package className="size-3" />
+                <span className="tabular-nums" style={{ fontWeight: 500 }}>{order.trackingNumber}</span>
+              </span>
+            )}
+          </div>
+
+          {/* Body: recipient + address */}
+          <div className="p-4 flex flex-col gap-3">
+            {/* Recipient row */}
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <UserIcon className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>{order.customer}</span>
+                <span className={`${font} text-[12px] text-gray-500 tabular-nums mt-0.5`}>{order.phone}</span>
+              </div>
+            </div>
+
+            {/* Address row */}
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <MapPin className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <p className={`${font} text-[13px] text-gray-700 leading-relaxed flex-1 min-w-0`}>{order.address}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer: total + status note | action buttons */}
+      <div className="flex items-center justify-between flex-wrap gap-3 p-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <span className={`${font} text-[14px] text-[#8e8e93]`} style={{ fontWeight: 500 }}>รวมการสั่งซื้อ:</span>
+            <span className={`${font} text-[20px] text-[#ff383c] tabular-nums`} style={{ fontWeight: 500 }}>
+              ฿{order.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+          <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full text-[12px]`}
+            style={{ backgroundColor: `${cfg.noteColor}1a`, color: cfg.noteColor }}>
+            <AlertCircle className="size-3.5" fill={cfg.noteColor} stroke="white" strokeWidth={2.5} />
+            {cfg.noteText}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {actions}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
+  initialFilter?: OrderFilterTab;
+  orders: Order[];
+  onUpdate: (id: string, patch: Partial<Order>) => void;
+  onOpenDetail: (id: string) => void;
+}) {
+  const [activeFilter, setActiveFilter] = useState<OrderFilterTab>(initialFilter);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [shipModalOrderId, setShipModalOrderId] = useState<string | null>(null);
+  const [shipTrackingInput, setShipTrackingInput] = useState("");
+  const [cancelModalOrderId, setCancelModalOrderId] = useState<string | null>(null);
+
+  const handleConfirmShip = (id: string) => {
+    setShipModalOrderId(id);
+    setShipTrackingInput("");
   };
+
+  const handleRequestCancel = (id: string) => {
+    setCancelModalOrderId(id);
+  };
+
+  const handleConfirmCancel = (reason: string, note: string) => {
+    if (!cancelModalOrderId) return;
+    onUpdate(cancelModalOrderId, { status: "cancelled", cancelReason: reason, cancelNote: note || undefined, cancelledBy: "shop", cancellationStatus: "approved" });
+    toast.success(`ยกเลิกคำสั่งซื้อแล้ว — เหตุผล: ${reason}`);
+    setCancelModalOrderId(null);
+  };
+
+  const submitShip = () => {
+    if (!shipModalOrderId || !shipTrackingInput.trim()) return;
+    onUpdate(shipModalOrderId, { status: "shipping", trackingNumber: shipTrackingInput.trim() });
+    toast.success("อัปเดตสถานะการจัดส่งเรียบร้อย — ลูกค้าจะติดตามพัสดุได้");
+    setShipModalOrderId(null);
+  };
+
+  const handleContact = (id: string) => {
+    const o = orders.find((x) => x.id === id);
+    if (o) toast.info(`เปิดแชทกับ ${o.customer} (${o.phone})`);
+  };
+
+  const handleBlock = (id: string) => {
+    const o = orders.find((x) => x.id === id);
+    if (o && confirm(`บล็อกลูกค้า ${o.customer}? ลูกค้าจะไม่สามารถสั่งซื้อจากร้านได้อีก`)) {
+      toast.success(`บล็อก ${o.customer} เรียบร้อย`);
+    }
+  };
+
+  const shipOrder = orders.find((o) => o.id === shipModalOrderId) || null;
+  const cancelOrder = orders.find((o) => o.id === cancelModalOrderId) || null;
+
+  // Counts derived from current orders state so tabs stay in sync after status updates
+  const liveCounts = (status: OrderFilterTab) =>
+    status === "all" ? orders.length : orders.filter((o) => o.status === status).length;
+  const liveTabs = orderTabs.map((t) => ({ ...t, count: liveCounts(t.id) }));
 
   return (
     <div>
@@ -375,18 +962,24 @@ function OrdersTab() {
       <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
         <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
         {(() => {
-          const tabStyle: Record<string, { Icon: any; color: string; bg: string }> = {
-            all:             { Icon: ClipboardList,  color: "#319754", bg: "#d6eadd" },
-            pending_payment: { Icon: Wallet,         color: "#ff3b30", bg: "#ffe4e3" },
-            pending_verify:  { Icon: ScanSearch,     color: "#ff9500", bg: "#fff1dc" },
-            ready_ship:      { Icon: Package,        color: "#007aff", bg: "#dceafd" },
-            shipping:        { Icon: Truck,          color: "#319754", bg: "#d6eadd" },
-            shipped:         { Icon: PackageCheck,   color: "#737373", bg: "#f0f0f0" },
-            cancelled:       { Icon: PackageX,       color: "#dc2626", bg: "#fde2e2" },
+          // All icons share the brand green; all count badges share red — uniform look across tabs
+          const ICON_COLOR = "#319754";
+          const ICON_BG = "#d6eadd";
+          const BADGE_COLOR = "#ff3b30";
+          const tabStyle: Record<string, { Icon: any }> = {
+            all:             { Icon: ClipboardList },
+            pending_payment: { Icon: Wallet         },
+            pending_verify:  { Icon: ScanSearch     },
+            ready_ship:      { Icon: Package        },
+            shipping:        { Icon: Truck          },
+            shipped:         { Icon: PackageCheck   },
+            cancelled:       { Icon: PackageX       },
           };
-          return orderTabs.map((tab) => {
+          return liveTabs.map((tab) => {
           const isAct = activeFilter === tab.id;
-          const { Icon, color, bg } = tabStyle[tab.id];
+          const { Icon } = tabStyle[tab.id];
+          const color = ICON_COLOR;
+          const bg = ICON_BG;
           return (
             <motion.button
               key={tab.id}
@@ -424,7 +1017,7 @@ function OrdersTab() {
                 layout
                 className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
                 style={{
-                  backgroundColor: isAct ? "rgba(255,255,255,0.25)" : color,
+                  backgroundColor: isAct ? "rgba(255,255,255,0.25)" : BADGE_COLOR,
                   color: "#fff",
                   fontWeight: 600,
                 }}
@@ -456,67 +1049,743 @@ function OrdersTab() {
           </button>
         </div>
       </div>
-      {/* Order cards */}
-      <div className="space-y-4">
-        {mockOrders.map((order, idx) => (
-          <div key={idx} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            {/* Order header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <span className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{order.id}</span>
-                <span className={`${font} text-[11px] px-2.5 py-0.5 rounded-full ${statusMap[order.status]?.color || "bg-gray-200"}`}>
-                  {statusMap[order.status]?.label}
-                </span>
+      {/* Order cards — filtered by active tab + search */}
+      {(() => {
+        const q = searchQuery.trim().toLowerCase();
+        const visible = orders.filter((o) => {
+          if (activeFilter !== "all" && o.status !== activeFilter) return false;
+          if (!q) return true;
+          return (
+            o.id.toLowerCase().includes(q) ||
+            o.customer.toLowerCase().includes(q) ||
+            o.items.some((it) => it.name.toLowerCase().includes(q))
+          );
+        });
+        if (visible.length === 0) {
+          return (
+            <div className="bg-white rounded-xl border border-gray-100 py-16 flex flex-col items-center justify-center gap-2">
+              <ClipboardList className="size-10 text-gray-300" strokeWidth={1.5} />
+              <p className={`${font} text-[14px] text-gray-400`}>ไม่มีคำสั่งซื้อในสถานะนี้</p>
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-4">
+            {visible.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                onUpdate={onUpdate}
+                onShowDetail={onOpenDetail}
+                onContact={handleContact}
+                onBlock={handleBlock}
+                onConfirmShip={handleConfirmShip}
+                onRequestCancel={handleRequestCancel}
+              />
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* Ship-confirm modal */}
+      <AnimatePresence>
+        {shipOrder && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+            onClick={() => setShipModalOrderId(null)}>
+            <motion.div initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 12 }}
+              className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`${font} text-[18px]`} style={{ fontWeight: 700 }}>ยืนยันการจัดส่ง</h3>
+                <button onClick={() => setShipModalOrderId(null)} className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer">
+                  <X className="size-4" />
+                </button>
               </div>
-              <div className="flex items-center gap-3">
-                <span className={`${font} text-[12px] text-gray-400 flex items-center gap-1`}>ดูรายละเอียด <Eye className="size-3.5" /></span>
-                <span className={`${font} text-[12px] text-gray-400`}>{order.date}</span>
+              <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                <p className={`${font} text-[12px] text-gray-500`}>คำสั่งซื้อ</p>
+                <p className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>{shipOrder.id}</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>ผู้รับ</p>
+                <p className={`${font} text-[14px]`}>{shipOrder.customer} · {shipOrder.phone}</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>วิธีจัดส่ง</p>
+                <p className={`${font} text-[14px]`}>{shipOrder.shippingMethod}</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>ที่อยู่</p>
+                <p className={`${font} text-[13px]`}>{shipOrder.address}</p>
               </div>
+              <label className={`${font} text-[13px] text-black block mb-2`} style={{ fontWeight: 500 }}>หมายเลขพัสดุ <span className="text-[#ff3b30]">*</span></label>
+              <input
+                value={shipTrackingInput}
+                onChange={(e) => setShipTrackingInput(e.target.value)}
+                placeholder="เช่น TH1234567890"
+                className={`${font} bg-[#fafafa] h-11 w-full rounded-full px-4 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow mb-4`}
+              />
+              <p className={`${font} text-[11px] text-gray-500 mb-5`}>
+                ลูกค้าจะได้รับแจ้งเตือนเพื่อติดตามพัสดุ และสถานะออเดอร์จะเปลี่ยนเป็น "กำลังจัดส่ง"
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setShipModalOrderId(null)}
+                  className={`${font} flex-1 h-11 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer text-[14px] transition-colors`}>
+                  ยกเลิก
+                </button>
+                <button onClick={submitShip} disabled={!shipTrackingInput.trim()}
+                  className={`${font} flex-1 h-11 rounded-full bg-[#319754] hover:bg-[#287745] disabled:bg-gray-300 disabled:cursor-not-allowed text-white cursor-pointer text-[14px] shadow-[0_2px_8px_rgba(49,151,84,0.25)] transition-colors`}
+                  style={{ fontWeight: 600 }}>
+                  ยืนยันการจัดส่ง
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cancel order modal — reason + note */}
+      <CancelOrderModal
+        open={!!cancelOrder}
+        order={cancelOrder}
+        onClose={() => setCancelModalOrderId(null)}
+        onConfirm={handleConfirmCancel}
+      />
+    </div>
+  );
+}
+
+/* ========== REVIEW MODAL ========== */
+function StarRow({ rating, size = 4 }: { rating: number; size?: 3 | 4 | 5 }) {
+  const sizeClass = size === 3 ? "size-3" : size === 5 ? "size-5" : "size-4";
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => {
+        const filled = n <= rating;
+        return (
+          <Star key={n} className={`${sizeClass} ${filled ? "text-[#f59e0b]" : "text-gray-300"}`}
+            fill={filled ? "#f59e0b" : "transparent"} strokeWidth={1.8} />
+        );
+      })}
+    </div>
+  );
+}
+
+function ReviewModal({ open, order, onClose }: { open: boolean; order: Order | null; onClose: () => void }) {
+  if (!order || !order.review) return null;
+  const review = order.review;
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={onClose}>
+          <motion.div initial={{ scale: 0.95, y: 24, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 24, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-[640px] max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="sticky top-0 bg-white flex items-center justify-between p-5 border-b border-gray-100 z-10">
+              <div>
+                <h3 className={`${font} text-[18px]`} style={{ fontWeight: 700 }}>รีวิวคำสั่งซื้อ</h3>
+                <p className={`${font} text-[12px] text-gray-500 mt-0.5`}>{order.id}</p>
+              </div>
+              <button onClick={onClose} className="size-9 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer">
+                <X className="size-4" />
+              </button>
             </div>
 
-            {/* Order body */}
-            <div className="px-5 py-4">
-              {order.items.length === 0 ? (
-                <>
-                  {/* Customer info for pending payment */}
-                  <div className="bg-gray-50 rounded-lg p-4 mb-3">
-                    <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{order.customer}</p>
-                    <p className={`${font} text-[13px] text-gray-500 mt-1`}>{order.phone}</p>
-                    <p className={`${font} text-[12px] text-gray-400 mt-0.5`}>{order.address}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#ff9500] mb-3">
-                    <AlertCircle className="size-3.5" />
-                    <span className={`${font} text-[12px]`}>ยังไม่ได้อัพโหลดหลักฐานการชำระเงิน</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <span className={`${font} text-[14px]`}>รวมการสั่งซื้อ:</span>
-                      <span className={`${font} text-[18px] text-[#319754]`} style={{ fontWeight: 600 }}>฿{order.total.toFixed(2)}</span>
-                    </div>
-                    <button className={`border border-red-400 text-red-400 px-5 py-1.5 rounded-full text-[13px] ${font} cursor-pointer hover:bg-red-50`}>ยกเลิก</button>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-3">
-                  {order.items.map((item, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <div className="size-[60px] bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                        <ImageWithFallback src={imgProd} alt="" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1">
-                        <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{item.name}</p>
-                        <p className={`${font} text-[12px] text-gray-400`}>{item.option}</p>
-                        <p className={`${font} text-[12px] text-gray-400`}>จำนวน {item.qty} ชิ้น</p>
-                      </div>
-                      <span className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>฿{item.price.toFixed(2)}</span>
-                    </div>
-                  ))}
+            <div className="p-5 flex flex-col gap-4">
+              {/* Reviewer profile + date */}
+              <div className="flex items-center gap-3 bg-gray-50 rounded-2xl p-3">
+                <div className="size-12 rounded-full overflow-hidden bg-gray-200 shrink-0">
+                  <ImageWithFallback src={review.reviewerAvatar} alt={review.reviewerName} className="w-full h-full object-cover" />
                 </div>
-              )}
+                <div className="flex-1 min-w-0">
+                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>{review.reviewerName}</p>
+                  <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>รีวิวเมื่อ {review.reviewedAt}</p>
+                </div>
+              </div>
+
+              {/* Shop rating */}
+              <div className="bg-[#fff7ed] border border-[#fed7aa] rounded-2xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                    <Store className="size-5 text-[#319754]" />
+                  </div>
+                  <div>
+                    <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>คะแนนร้านค้า</p>
+                    <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>โดยรวมจากออเดอร์นี้</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StarRow rating={review.shopRating} size={5} />
+                  <span className={`${font} text-[16px] text-[#f59e0b] tabular-nums`} style={{ fontWeight: 700 }}>{review.shopRating}.0</span>
+                </div>
+              </div>
+
+              {/* Per-item reviews */}
+              <div>
+                <p className={`${font} text-[13px] text-gray-500 mb-2`} style={{ fontWeight: 500 }}>
+                  รีวิวสินค้า ({review.itemReviews.length} รายการ)
+                </p>
+                <div className="flex flex-col gap-3">
+                  {review.itemReviews.map((ir) => {
+                    const item = order.items[ir.itemIndex];
+                    if (!item) return null;
+                    return (
+                      <div key={ir.itemIndex} className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col gap-3">
+                        {/* Product info */}
+                        <div className="flex items-start gap-3">
+                          <div className="size-[60px] rounded-xl overflow-hidden shrink-0 bg-gray-100">
+                            <ImageWithFallback src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{item.name}</p>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className={`${font} text-[12px] text-gray-600`}>{item.option}</span>
+                              <span className={`${font} bg-[#f5f5f5] text-[#262626] text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 500 }}>
+                                จำนวน {item.qty} ชิ้น
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Rating */}
+                        <div className="flex items-center gap-2">
+                          <StarRow rating={ir.rating} size={4} />
+                          <span className={`${font} text-[13px] text-[#f59e0b] tabular-nums`} style={{ fontWeight: 600 }}>{ir.rating}.0</span>
+                        </div>
+
+                        {/* Comment */}
+                        {ir.comment && (
+                          <p className={`${font} text-[13px] text-gray-700 leading-relaxed`}>{ir.comment}</p>
+                        )}
+
+                        {/* Review photos */}
+                        {ir.images.length > 0 && (
+                          <div className="flex gap-2 flex-wrap">
+                            {ir.images.map((img, i) => (
+                              <a key={i} href={img} target="_blank" rel="noopener noreferrer"
+                                className="size-[80px] rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity">
+                                <ImageWithFallback src={img} alt={`review-${i}`} className="w-full h-full object-cover" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ========== ORDER DETAIL TAB (subpage) ========== */
+function OrderDetailTab({ order, onBack, onUpdate }: {
+  order: Order | null;
+  onBack: () => void;
+  onUpdate: (id: string, patch: Partial<Order>) => void;
+}) {
+  const [shipModalOpen, setShipModalOpen] = useState(false);
+  const [shipTrackingInput, setShipTrackingInput] = useState("");
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+
+  if (!order) {
+    return (
+      <div>
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors mb-4`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+        <div className="bg-white rounded-2xl border border-gray-100 py-16 flex flex-col items-center justify-center gap-2">
+          <ClipboardList className="size-10 text-gray-300" strokeWidth={1.5} />
+          <p className={`${font} text-[14px] text-gray-400`}>ไม่พบคำสั่งซื้อ</p>
+        </div>
+      </div>
+    );
+  }
+
+  const cfg = statusConfig[order.status];
+
+  const handleCancel = () => setCancelModalOpen(true);
+  const handleConfirmCancel = (reason: string, note: string) => {
+    onUpdate(order.id, { status: "cancelled", cancelReason: reason, cancelNote: note || undefined, cancelledBy: "shop", cancellationStatus: "approved" });
+    toast.success(`ยกเลิกคำสั่งซื้อแล้ว — เหตุผล: ${reason}`);
+    setCancelModalOpen(false);
+  };
+  const handleApproveCancel = () => {
+    onUpdate(order.id, { cancellationStatus: "approved" });
+    toast.success("ยินยอมการยกเลิก — คำสั่งซื้อถูกยกเลิกเรียบร้อย");
+  };
+  const handleDenyCancel = () => {
+    if (confirm("ไม่ยินยอมให้ลูกค้ายกเลิก? ออเดอร์จะกลับสู่สถานะเดิมและลูกค้าจะไม่สามารถยกเลิกได้อีก")) {
+      const revertTo = order.previousStatus ?? "pending_verify";
+      onUpdate(order.id, {
+        status: revertTo,
+        cancellationStatus: "denied",
+      });
+      toast.success(`ไม่ยินยอม — ออเดอร์กลับสู่สถานะ "${statusConfig[revertTo].label}"`);
+    }
+  };
+  const handleContact = () => toast.info(`เปิดแชทกับ ${order.customer} (${order.phone})`);
+  const handleBlock = () => {
+    if (confirm(`บล็อกลูกค้า ${order.customer}? ลูกค้าจะไม่สามารถสั่งซื้อจากร้านได้อีก`)) {
+      toast.success(`บล็อก ${order.customer} เรียบร้อย`);
+    }
+  };
+  const submitShip = () => {
+    if (!shipTrackingInput.trim()) return;
+    onUpdate(order.id, { status: "shipping", trackingNumber: shipTrackingInput.trim() });
+    toast.success("อัปเดตสถานะการจัดส่งเรียบร้อย — ลูกค้าจะติดตามพัสดุได้");
+    setShipModalOpen(false);
+  };
+
+  // Payment status (derived from order.status)
+  const paymentPaid = order.status !== "pending_payment";
+  const paymentNote = paymentPaid
+    ? { text: "ชำระเงินแล้ว", color: "#319754" }
+    : { text: "ยังไม่ชำระเงิน", color: "#ff9500" };
+
+  return (
+    <div>
+      {/* Top bar: back + date inline */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+        <span className={`${font} text-[12px] text-[#8e8e93]`}>{order.date}</span>
+      </div>
+
+      {/* Title row: order id + status pill */}
+      <div className="flex items-center gap-4 mb-5 flex-wrap">
+        <h2 className={`${font} text-[20px] text-black leading-[30px]`} style={{ fontWeight: 500 }}>{order.id}</h2>
+        <span className={`${font} text-[12px] text-white px-4 py-1 rounded-full whitespace-nowrap`}
+          style={{ backgroundColor: cfg.pillBg, fontWeight: 500 }}>
+          {cfg.label}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2/3: items + payment info */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          {/* Items card with header + divider */}
+          <div className="bg-white rounded-2xl overflow-hidden">
+            <div className="flex flex-col gap-4 pt-4 px-4">
+              <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>รายการสินค้า</h3>
+              <div className="h-px bg-gray-200 w-full" />
+            </div>
+            <div className="flex flex-col gap-2.5 p-4">
+              {order.items.map((it, i) => (
+                <div key={i} className="flex items-start gap-2.5">
+                  <div className="size-[70px] rounded-2xl overflow-hidden shrink-0 bg-gray-100">
+                    <ImageWithFallback src={it.image} alt={it.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-1">
+                    <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{it.name}</p>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`${font} text-[12px] text-black`}>{it.option}</span>
+                        <span className={`${font} bg-[#f5f5f5] text-[#262626] text-[10px] px-2.5 py-0.5 rounded-full whitespace-nowrap`} style={{ fontWeight: 500 }}>
+                          จำนวน {it.qty} ชิ้น
+                        </span>
+                      </div>
+                      <span className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 600 }}>
+                        ฿{it.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between p-4">
+              <span className={`${font} text-[14px] text-[#8e8e93]`} style={{ fontWeight: 500 }}>รวมการสั่งซื้อ:</span>
+              <span className={`${font} text-[20px] text-[#ff383c] tabular-nums`} style={{ fontWeight: 500 }}>
+                ฿{order.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
-        ))}
+
+          {/* Payment info card */}
+          <div className="bg-white rounded-2xl overflow-hidden">
+            <div className="flex flex-col gap-4 pt-4 px-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลการชำระเงิน</h3>
+                <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full text-[12px]`}
+                  style={{ backgroundColor: `${paymentNote.color}1a`, color: paymentNote.color }}>
+                  <AlertCircle className="size-3.5" fill={paymentNote.color} stroke="white" strokeWidth={2.5} />
+                  {paymentNote.text}
+                </span>
+              </div>
+              <div className="h-px bg-gray-200 w-full" />
+            </div>
+            <div className="flex flex-col gap-4 p-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className={`${font} text-[14px] text-black`}>วิธีชำระเงิน:</span>
+                <span className={`${font} text-[16px] text-black`} style={{ fontWeight: 500 }}>{order.paymentMethod}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className={`${font} text-[14px] text-black`}>สถานะการชำระเงิน:</span>
+                <span className={`${font} text-[12px] text-white px-4 py-1 rounded-full whitespace-nowrap`}
+                  style={{ backgroundColor: paymentPaid ? "#319754" : "#ff8d28", fontWeight: 500 }}>
+                  {paymentPaid ? "ชำระแล้ว" : "รอชำระเงิน"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Cancellation card — only when cancelled (replaces stepper) */}
+          {order.status === "cancelled" && (() => {
+            const byCustomer = order.cancelledBy === "customer";
+            const byLabel = byCustomer ? "ลูกค้าเป็นผู้ยกเลิก" : "ร้านค้ายกเลิก";
+            const ByIcon = byCustomer ? UserIcon : Store;
+            const isPending = order.cancellationStatus === "pending";
+            return (
+              <div className="bg-white rounded-2xl overflow-hidden">
+                <div className="flex flex-col gap-4 pt-4 px-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>การยกเลิกคำสั่งซื้อ</h3>
+                    {isPending ? (
+                      <span className={`${font} text-[12px] text-white px-3 py-0.5 rounded-full bg-[#ff9500] inline-flex items-center gap-1.5`} style={{ fontWeight: 500 }}>
+                        <Clock className="size-3" />
+                        รอร้านค้าอนุมัติ
+                      </span>
+                    ) : (
+                      <span className={`${font} text-[12px] text-white px-3 py-0.5 rounded-full bg-[#ff3b30]`} style={{ fontWeight: 500 }}>ยกเลิกแล้ว</span>
+                    )}
+                  </div>
+                  <div className="h-px bg-gray-200 w-full" />
+                </div>
+                <div className="p-4 flex flex-col gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className={`size-10 rounded-full ${isPending ? "bg-[#ff9500]/10" : "bg-[#ff3b30]/10"} flex items-center justify-center shrink-0`}>
+                      {isPending
+                        ? <AlertCircle className="size-5 text-[#ff9500]" strokeWidth={2.4} />
+                        : <X className="size-5 text-[#ff3b30]" strokeWidth={2.6} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`${font} text-[14px] ${isPending ? "text-[#ff9500]" : "text-[#ff3b30]"}`} style={{ fontWeight: 600 }}>
+                        {isPending ? "ลูกค้าขอยกเลิกคำสั่งซื้อ — รอร้านค้าตัดสินใจ" : "คำสั่งซื้อนี้ถูกยกเลิก"}
+                      </p>
+                      <p className={`${font} text-[12px] text-gray-500 mt-0.5`}>{order.date}</p>
+                    </div>
+                  </div>
+
+                  {/* Who cancelled */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`${font} text-[11px] text-[#8e8e93] uppercase tracking-wider`} style={{ fontWeight: 600 }}>ยกเลิกโดย</span>
+                    <span className={`${font} inline-flex items-center gap-1.5 text-[12px] px-3 py-1 rounded-full whitespace-nowrap ${
+                      byCustomer ? "bg-[#3b82f6]/10 text-[#3b82f6]" : "bg-[#ff9500]/10 text-[#ff9500]"
+                    }`} style={{ fontWeight: 600 }}>
+                      <ByIcon className="size-3" strokeWidth={2.4} />
+                      {byLabel}
+                    </span>
+                  </div>
+
+                  <div className={`flex flex-col gap-2 rounded-xl p-3.5 ${
+                    isPending ? "bg-[#fff7ed] border border-[#fed7aa]" : "bg-[#fef2f2] border border-[#fecaca]"
+                  }`}>
+                    <div>
+                      <p className={`${font} text-[11px] text-[#8e8e93] uppercase tracking-wider`} style={{ fontWeight: 600 }}>เหตุผลที่ยกเลิก</p>
+                      <p className={`${font} text-[14px] text-[#101828] mt-1`} style={{ fontWeight: 500 }}>
+                        {order.cancelReason || "—"}
+                      </p>
+                    </div>
+                    {order.cancelNote && (
+                      <div className={`pt-2 border-t ${isPending ? "border-[#fed7aa]" : "border-[#fecaca]"}`}>
+                        <p className={`${font} text-[11px] text-[#8e8e93] uppercase tracking-wider`} style={{ fontWeight: 600 }}>หมายเหตุเพิ่มเติม</p>
+                        <p className={`${font} text-[13px] text-[#101828] mt-1 leading-relaxed`}>{order.cancelNote}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Approve / Deny buttons — only for customer-cancelled, pending state */}
+                  {isPending && (
+                    <div className="flex gap-2 pt-1 justify-end flex-wrap">
+                      <button onClick={handleDenyCancel}
+                        className={`${font} h-9 px-4 rounded-full border border-[#319754] text-[#319754] hover:bg-[#319754]/5 cursor-pointer text-[13px] transition-colors inline-flex items-center justify-center gap-1.5`}
+                        style={{ fontWeight: 500 }}>
+                        <X className="size-3.5" strokeWidth={2.4} />
+                        ไม่ยินยอม
+                      </button>
+                      <button onClick={handleApproveCancel}
+                        className={`${font} h-9 px-4 rounded-full bg-[#ff3b30] hover:bg-[#dc2626] text-white cursor-pointer text-[13px] shadow-[0_2px_8px_rgba(255,59,48,0.25)] transition-colors inline-flex items-center justify-center gap-1.5`}
+                        style={{ fontWeight: 600 }}>
+                        <Check className="size-3.5" strokeWidth={2.6} />
+                        ยินยอมยกเลิก
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Shipping progress — vertical timeline stepper (Figma style) */}
+          {order.status !== "cancelled" && (() => {
+            const steps = [
+              { label: "คำสั่งซื้อ" },
+              { label: "รอการชำระ" },
+              { label: "ตรวจสอบการชำระ" },
+              { label: "กำลังจัดเตรียม" },
+              { label: "กำลังจัดส่ง" },
+              { label: "จัดส่งสำเร็จ" },
+            ];
+            const stepMap: Partial<Record<OrderStatus, number>> = {
+              pending_payment: 1,
+              pending_verify:  2,
+              ready_ship:      3,
+              shipping:        4,
+              shipped:         6, // beyond last → all done
+            };
+            const currentStep = stepMap[order.status] ?? 0;
+            const accent = "#319754";
+
+            return (
+              <div className="bg-white rounded-2xl overflow-hidden">
+                <div className="flex flex-col gap-4 pt-4 px-4">
+                  <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>สถานะการจัดส่ง</h3>
+                  <div className="h-px bg-gray-200 w-full" />
+                </div>
+                <div className="px-6 py-4">
+                  {steps.map((s, i) => {
+                    const done = i < currentStep;
+                    const current = i === currentStep;
+                    const isLast = i === steps.length - 1;
+                    return (
+                      <div key={s.label} className="flex gap-4 items-stretch">
+                        <div className="flex flex-col items-center shrink-0 w-6">
+                          <motion.div
+                            initial={false}
+                            animate={current ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+                            transition={current ? { duration: 1.4, repeat: Infinity, ease: "easeInOut" } : { duration: 0.2 }}
+                            className={`size-6 rounded-full flex items-center justify-center text-[12px] shrink-0 transition-all duration-300 ${
+                              done    ? "bg-[#319754] text-white shadow-[0_2px_6px_rgba(49,151,84,0.25)]"
+                              : current ? `bg-white border-2`
+                              :           "bg-white border-2 border-gray-300 text-gray-400"
+                            }`}
+                            style={current ? { borderColor: accent, color: accent, boxShadow: `0 0 0 4px ${accent}1a` } : {}}
+                          >
+                            <span style={{ fontWeight: 700 }}>{i + 1}</span>
+                          </motion.div>
+                          {!isLast && (
+                            <div className={`flex-1 w-0.5 my-1 transition-colors duration-300 ${
+                              done ? "bg-[#319754]" : "bg-gray-200"
+                            }`} style={{ minHeight: 32 }} />
+                          )}
+                        </div>
+                        <div className={`flex flex-col gap-1 ${isLast ? "pb-0" : "pb-5"} pt-0.5 flex-1 min-w-0`}>
+                          <p className={`${font} text-[14px] transition-colors duration-300 ${
+                            done    ? "text-[#319754]"
+                            : current ? ""
+                            :           "text-gray-700"
+                          }`} style={{ fontWeight: done || current ? 600 : 500, color: current ? accent : undefined }}>
+                            {s.label}
+                          </p>
+                          <p className={`${font} text-[12px] ${done || current ? "text-gray-700" : "text-gray-400"}`}>
+                            {done || current ? order.date : "-"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Review (if exists) */}
+          {order.reviewScore && (
+            <button onClick={() => setReviewModalOpen(true)}
+              className="bg-[#fff7ed] border border-[#fed7aa] rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-[#ffeed4] transition-colors text-left w-full">
+              <Star className="size-6 text-[#f59e0b]" fill="#f59e0b" />
+              <div className="flex-1">
+                <p className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ลูกค้ารีวิวสินค้า {order.reviewScore}/5 ดาว</p>
+                <p className={`${font} text-[12px] text-gray-600 mt-0.5`}>กดเพื่อดูคำวิจารณ์</p>
+              </div>
+              <ChevronRight className="size-4 text-gray-400" />
+            </button>
+          )}
+        </div>
+
+        {/* Right 1/3: shipping info + notes + actions */}
+        <div className="bg-white rounded-2xl overflow-hidden self-start">
+          {/* Header with divider */}
+          <div className="flex flex-col gap-4 pt-4 px-4">
+            <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลการจัดส่ง</h3>
+            <div className="h-px bg-gray-200 w-full" />
+          </div>
+
+          {/* Shipping info — keep existing icon-row layout (user request) */}
+          <div className="flex flex-col gap-3 p-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <UserIcon className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>{order.customer}</p>
+                <p className={`${font} text-[12px] text-gray-500 tabular-nums`}>{order.phone}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                {order.shippingMethod === "รับที่ร้าน" ? <Store className="size-4 text-[#319754]" /> : <Truck className="size-4 text-[#319754]" />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{order.shippingMethod}</p>
+                {order.trackingNumber && (
+                  <p className={`${font} text-[12px] text-[#319754] tabular-nums`} style={{ fontWeight: 500 }}>{order.trackingNumber}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <MapPin className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <p className={`${font} text-[13px] text-gray-700 leading-relaxed flex-1 min-w-0`}>{order.address}</p>
+            </div>
+          </div>
+
+          {/* Customer note (if any) */}
+          {order.note && (
+            <div className="px-4 pb-4">
+              <div className="bg-[rgba(242,242,247,0.7)] rounded-2xl p-4">
+                <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>หมายเหตุจากลูกค้า</p>
+                <p className={`${font} text-[12px] text-black mt-1`}>{order.note}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Action buttons — full width stacked */}
+          <div className="flex flex-col gap-3 p-4">
+            {(order.status === "pending_verify" || order.status === "ready_ship" || order.status === "shipping" || order.status === "shipped") && (
+              <button onClick={handleContact}
+                className={`${font} w-full border border-[#319754] text-[#319754] hover:bg-[#319754]/5 h-10 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center justify-center gap-2`}
+                style={{ fontWeight: 500 }}>
+                <MessageCircle className="size-4" />
+                ติดต่อลูกค้า
+              </button>
+            )}
+            {order.status === "pending_verify" && (
+              <>
+                <button onClick={() => toast.success("กำลังเตรียมพิมพ์ใบปะหน้า...")}
+                  className={`${font} w-full border border-[#319754] text-[#319754] hover:bg-[#319754]/5 h-10 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center justify-center gap-2`}
+                  style={{ fontWeight: 500 }}>
+                  <Printer className="size-4" />
+                  พิมพ์ใบปะหน้า
+                </button>
+                <button onClick={() => { onUpdate(order.id, { status: "ready_ship" }); toast.success("เปลี่ยนสถานะเป็นพร้อมจัดส่ง"); }}
+                  className={`${font} w-full bg-[#319754] hover:bg-[#287745] text-white h-10 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`} style={{ fontWeight: 500 }}>
+                  พร้อมจัดส่ง
+                  <ArrowRightCircle className="size-4" />
+                </button>
+              </>
+            )}
+            {order.status === "ready_ship" && (
+              <button onClick={() => { setShipModalOpen(true); setShipTrackingInput(""); }}
+                className={`${font} w-full bg-[#319754] hover:bg-[#287745] text-white h-10 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`} style={{ fontWeight: 500 }}>
+                <Truck className="size-4" />
+                ยืนยันการจัดส่ง
+              </button>
+            )}
+            {(order.status === "pending_payment" || order.status === "pending_verify") && (
+              <button onClick={handleCancel}
+                className={`${font} w-full border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-10 rounded-full text-[14px] cursor-pointer transition-colors`}
+                style={{ fontWeight: 500 }}>
+                ยกเลิกคำสั่งซื้อ
+              </button>
+            )}
+            {order.status === "cancelled" && (
+              <button onClick={handleBlock}
+                className={`${font} w-full border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-10 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center justify-center gap-2`}
+                style={{ fontWeight: 500 }}>
+                <Ban className="size-4" />
+                บล็อกลูกค้า
+              </button>
+            )}
+            {order.reviewScore && (
+              <button onClick={() => setReviewModalOpen(true)}
+                className={`${font} w-full border border-[#f59e0b] text-[#f59e0b] hover:bg-[#f59e0b]/5 h-10 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center justify-center gap-2`}
+                style={{ fontWeight: 500 }}>
+                <Star className="size-4" fill="#f59e0b" />
+                ดูคะแนน {order.reviewScore}/5
+              </button>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Ship-confirm modal (reused inside detail tab) */}
+      <AnimatePresence>
+        {shipModalOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+            onClick={() => setShipModalOpen(false)}>
+            <motion.div initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 12 }}
+              className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`${font} text-[18px]`} style={{ fontWeight: 700 }}>ยืนยันการจัดส่ง</h3>
+                <button onClick={() => setShipModalOpen(false)} className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer">
+                  <X className="size-4" />
+                </button>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                <p className={`${font} text-[12px] text-gray-500`}>คำสั่งซื้อ</p>
+                <p className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>{order.id}</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>ผู้รับ</p>
+                <p className={`${font} text-[14px]`}>{order.customer} · {order.phone}</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>วิธีจัดส่ง</p>
+                <p className={`${font} text-[14px]`}>{order.shippingMethod}</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>ที่อยู่</p>
+                <p className={`${font} text-[13px]`}>{order.address}</p>
+              </div>
+              <label className={`${font} text-[13px] text-black block mb-2`} style={{ fontWeight: 500 }}>หมายเลขพัสดุ <span className="text-[#ff3b30]">*</span></label>
+              <input
+                value={shipTrackingInput}
+                onChange={(e) => setShipTrackingInput(e.target.value)}
+                placeholder="เช่น TH1234567890"
+                className={`${font} bg-[#fafafa] h-11 w-full rounded-full px-4 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow mb-4`}
+              />
+              <p className={`${font} text-[11px] text-gray-500 mb-5`}>
+                ลูกค้าจะได้รับแจ้งเตือนเพื่อติดตามพัสดุ และสถานะออเดอร์จะเปลี่ยนเป็น "กำลังจัดส่ง"
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setShipModalOpen(false)}
+                  className={`${font} flex-1 h-11 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer text-[14px] transition-colors`}>
+                  ยกเลิก
+                </button>
+                <button onClick={submitShip} disabled={!shipTrackingInput.trim()}
+                  className={`${font} flex-1 h-11 rounded-full bg-[#319754] hover:bg-[#287745] disabled:bg-gray-300 disabled:cursor-not-allowed text-white cursor-pointer text-[14px] shadow-[0_2px_8px_rgba(49,151,84,0.25)] transition-colors`}
+                  style={{ fontWeight: 600 }}>
+                  ยืนยันการจัดส่ง
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cancel order modal */}
+      <CancelOrderModal
+        open={cancelModalOpen}
+        order={order}
+        onClose={() => setCancelModalOpen(false)}
+        onConfirm={handleConfirmCancel}
+      />
+
+      {/* Review modal */}
+      <ReviewModal
+        open={reviewModalOpen}
+        order={order}
+        onClose={() => setReviewModalOpen(false)}
+      />
     </div>
   );
 }
@@ -524,6 +1793,7 @@ function OrdersTab() {
 /* ========== PRODUCTS TAB ========== */
 function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
   const [productFilter, setProductFilter] = useState("all");
+  const [previewProduct, setPreviewProduct] = useState<typeof mockProducts[0] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
@@ -579,15 +1849,21 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
       <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
         <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
           {(() => {
-            const tabStyle: Record<string, { Icon: any; color: string; bg: string }> = {
-              all:      { Icon: Package,       color: "#319754", bg: "#d6eadd" },
-              active:   { Icon: PackageCheck,  color: "#319754", bg: "#d6eadd" },
-              inactive: { Icon: EyeOff,        color: "#737373", bg: "#f0f0f0" },
-              out:      { Icon: AlertTriangle, color: "#dc2626", bg: "#fde2e2" },
+            // All icons share the brand green; all count badges share red — uniform look across tabs
+            const ICON_COLOR = "#319754";
+            const ICON_BG = "#d6eadd";
+            const BADGE_COLOR = "#ff3b30";
+            const tabStyle: Record<string, { Icon: any }> = {
+              all:      { Icon: Package        },
+              active:   { Icon: PackageCheck   },
+              inactive: { Icon: EyeOff         },
+              out:      { Icon: AlertTriangle  },
             };
             return productFilterTabs.map((tab) => {
               const isAct = productFilter === tab.id;
-              const { Icon, color, bg } = tabStyle[tab.id];
+              const { Icon } = tabStyle[tab.id];
+              const color = ICON_COLOR;
+              const bg = ICON_BG;
               return (
                 <motion.button
                   key={tab.id}
@@ -624,7 +1900,7 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
                     layout
                     className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
                     style={{
-                      backgroundColor: isAct ? "rgba(255,255,255,0.25)" : color,
+                      backgroundColor: isAct ? "rgba(255,255,255,0.25)" : BADGE_COLOR,
                       color: "#fff",
                       fontWeight: 600,
                     }}
@@ -660,9 +1936,9 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
         <div>
           <table className="w-full table-fixed">
             <colgroup>
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "26%" }} />
-              <col style={{ width: "11%" }} />
+              <col style={{ width: "72px" }} />
+              <col style={{ width: "auto" }} />
+              <col style={{ width: "12%" }} />
               <col style={{ width: "14%" }} />
               <col style={{ width: "10%" }} />
               <col style={{ width: "10%" }} />
@@ -671,8 +1947,8 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
             </colgroup>
             <thead>
               <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
-                <th className="text-center pb-3 pr-2" style={{ fontWeight: 500 }}>รูปภาพ</th>
-                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>สินค้า</th>
+                <th className="text-left pb-3 pr-0 pl-0" style={{ fontWeight: 500 }}>รูปภาพ</th>
+                <th className="text-left pb-3 pr-4 pl-2" style={{ fontWeight: 500 }}>สินค้า</th>
                 <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>หมวดหมู่</th>
                 <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ประเภท</th>
                 <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>ราคา</th>
@@ -690,36 +1966,65 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
               {pageItems.map((p) => {
                 const stockMatch = p.stock.match(/^(\d[\d,]*)\s*(.*)$/);
                 return (
-                  <tr key={p.id} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50/40 transition-colors">
-                    {/* Image */}
-                    <td className="py-2 pr-2">
-                      <div className="size-[80px] bg-[#d4d4d8] rounded-[16px] overflow-hidden mx-auto">
-                        <ImageWithFallback src={p.image} alt={p.name} className="w-full h-full object-cover" />
-                      </div>
+                  <tr key={p.id} onDoubleClick={() => setPreviewProduct(p)}
+                    title="ดับเบิลคลิกเพื่อดูตัวอย่างสินค้า"
+                    className="group/row border-b border-gray-100 last:border-b-0 hover:bg-gray-50/40 transition-colors cursor-pointer select-none">
+                    {/* Image — zooms on row hover; greyed-out + overlay text for unavailable items */}
+                    <td className="py-2 pr-0 pl-0 align-middle w-[64px]">
+                      {(() => {
+                        const isOut    = p.status === "สินค้าหมด";
+                        const isClosed = p.status === "ปิดขาย";
+                        const overlayText = isOut ? "หมด" : isClosed ? "ปิด" : null;
+                        return (
+                          <div className="relative size-[64px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] group-hover/row:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow">
+                            <ImageWithFallback src={p.image} alt={p.name}
+                              className={`w-full h-full object-cover transition-transform duration-500 ease-out group-hover/row:scale-110 ${overlayText ? "grayscale opacity-60" : ""}`} />
+                            {overlayText && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                                <span className={`${font} text-white text-[14px] tracking-wider`} style={{ fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
+                                  {overlayText}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     {/* Name + Flash/recommended pill below */}
-                    <td className="py-2 pr-4 align-middle">
-                      <div className="flex flex-col gap-2 min-w-0">
+                    <td className="py-2 pl-2 pr-4 align-middle">
+                      <div className="flex flex-col gap-1.5 min-w-0">
                         <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }} title={p.name}>{p.name}</p>
-                        {p.flash && (
-                          <span className={`${font} inline-flex items-center gap-2 bg-[#e62e05] text-white px-3 py-1 rounded-full text-[12px] w-fit`}>
-                            <Zap className="size-3 fill-white" strokeWidth={0} /> Flash Sale
-                          </span>
-                        )}
-                        {p.recommended && !p.flash && (
-                          <span className={`${font} inline-flex items-center gap-2 bg-[#f7931d] text-white px-3 py-1 rounded-full text-[12px] w-fit`}>
-                            ★ แนะนำ
-                          </span>
+                        {(p.flash || p.recommended) && (
+                          <div className="flex flex-wrap gap-1">
+                            {p.flash && (
+                              <span className={`${font} inline-flex items-center gap-1 bg-[#e62e05] text-white pl-1.5 pr-2 py-0.5 rounded-full text-[10px]`} style={{ fontWeight: 500 }}>
+                                <Zap className="size-2.5 fill-white" strokeWidth={0} /> Flash Sale
+                              </span>
+                            )}
+                            {p.recommended && (
+                              <span className={`${font} inline-flex items-center gap-1 bg-[#319754] text-white pl-1.5 pr-2 py-0.5 rounded-full text-[10px]`} style={{ fontWeight: 500 }}>
+                                ★ แนะนำ
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                     </td>
                     {/* Category */}
                     <td className={`py-2 pr-4 align-middle ${font} text-[14px] text-black truncate`} title={p.category}>{p.category}</td>
-                    {/* Type pill (tinted) */}
+                    {/* Type pill (tinted) — 2 overlapping circles for "หลายตัวเลือก" */}
                     <td className="py-2 pr-4 align-middle">
                       <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3.5 py-0.5 rounded-full text-[14px]`}
                         style={{ backgroundColor: `${p.typeColor}1a`, color: p.typeColor }}>
-                        <span className="size-3 rounded-full inline-block" style={{ backgroundColor: p.typeColor }} />
+                        {p.type === "หลายตัวเลือก" ? (
+                          <span className="relative inline-block size-[14px] shrink-0">
+                            <span className="absolute left-0 top-0 size-[10px] rounded-full" style={{ backgroundColor: p.typeColor }} />
+                            <span className="absolute right-0 bottom-0 size-[10px] rounded-full ring-[1.5px]"
+                              style={{ backgroundColor: p.typeColor, '--tw-ring-color': `${p.typeColor}1a` } as React.CSSProperties} />
+                          </span>
+                        ) : (
+                          <span className="size-3 rounded-full inline-block" style={{ backgroundColor: p.typeColor }} />
+                        )}
                         {p.type}
                       </span>
                     </td>
@@ -743,11 +2048,67 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
                         {p.status}
                       </span>
                     </td>
-                    {/* More button (gray round) */}
+                    {/* More menu — button expands into a card on click */}
                     <td className="py-2 text-center align-middle">
-                      <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto">
-                        <MoreHorizontal className="size-4" />
-                      </button>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                            <MoreHorizontal className="size-4" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="end"
+                          sideOffset={6}
+                          className="w-[230px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)]"
+                        >
+                          <motion.div
+                            initial={{ scale: 0.4, opacity: 0, y: -6 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.4, opacity: 0, y: -6 }}
+                            transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                            style={{ transformOrigin: "top right" }}
+                            className="overflow-hidden"
+                          >
+                            {/* เปิดขาย toggle */}
+                            {(() => {
+                              const isOpen = p.status === "เปิดขาย";
+                              return (
+                                <button
+                                  onClick={() => toast.success(isOpen ? `ปิดการแสดง: ${p.name}` : `เปิดการแสดง: ${p.name}`)}
+                                  className={`${font} w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left`}>
+                                  <span className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>เปิดขาย</span>
+                                  <span className={`relative inline-flex items-center w-9 h-5 rounded-full transition-colors ${isOpen ? "bg-[#319754]" : "bg-gray-300"}`}>
+                                    <span className={`absolute size-4 bg-white rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-transform ${isOpen ? "translate-x-[18px]" : "translate-x-[2px]"}`} />
+                                  </span>
+                                </button>
+                              );
+                            })()}
+                            <div className="h-px bg-gray-100 my-1" />
+                            {/* แก้ไข */}
+                            <button
+                              onClick={() => toast.info(`แก้ไขสินค้า: ${p.name}`)}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                              <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>แก้ไข</span>
+                            </button>
+                            {/* จัดการสตอก */}
+                            <button
+                              onClick={() => toast.info(`จัดการสตอก: ${p.name}`)}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                              <Boxes className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>จัดการสตอกสินค้า</span>
+                            </button>
+                            <div className="h-px bg-gray-100 my-1" />
+                            {/* ลบ */}
+                            <button
+                              onClick={() => { if (confirm(`ลบสินค้า "${p.name}"?`)) toast.success(`ลบ: ${p.name}`); }}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
+                              <Trash2 className="size-3.5" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>ลบ</span>
+                            </button>
+                          </motion.div>
+                        </PopoverContent>
+                      </Popover>
                     </td>
                   </tr>
                 );
@@ -793,6 +2154,268 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
           </div>
         </div>
       </div>
+
+      {/* Product preview modal — replicates customer-facing ProductDetailPage layout */}
+      <AnimatePresence>
+        {previewProduct && (() => {
+          // Extract numeric stock + price for the customer-style display
+          const stockNum = parseInt(previewProduct.stock.replace(/[^\d]/g, "")) || 0;
+          const priceText = previewProduct.price; // e.g. "฿ 89.00" or "฿ 150.00 - 280.00"
+          const isMulti = previewProduct.type === "หลายตัวเลือก";
+          const sampleOptions = isMulti
+            ? ["ตัวเลือก 1", "ตัวเลือก 2", "ตัวเลือก 3"]
+            : ["มาตรฐาน"];
+          // Sample additional thumbnails using same image
+          const thumbs = [previewProduct.image, previewProduct.image, previewProduct.image];
+          return (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+              onClick={() => setPreviewProduct(null)}>
+              <motion.div initial={{ scale: 0.95, y: 24, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 24, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                className="bg-[#fafafa] rounded-t-3xl sm:rounded-3xl w-full max-w-[1100px] max-h-[92vh] overflow-y-auto shadow-2xl"
+                onClick={(e) => e.stopPropagation()}>
+
+                {/* Sticky preview header bar */}
+                <div className="sticky top-0 bg-white/90 backdrop-blur-md flex items-center justify-between px-5 py-3 border-b border-gray-100 z-10">
+                  <div className="flex items-center gap-2">
+                    <Eye className="size-4 text-[#319754]" strokeWidth={2.4} />
+                    <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>ตัวอย่างที่ลูกค้าเห็น</h3>
+                    <span className={`${font} text-[11px] text-[#8e8e93] hidden sm:inline`}>· ปุ่มถูกปิดใช้งานในโหมดพรีวิว</span>
+                  </div>
+                  <button onClick={() => setPreviewProduct(null)} className="size-9 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer">
+                    <X className="size-4" />
+                  </button>
+                </div>
+
+                <div className="p-4 sm:p-6 pointer-events-none select-none">
+                  {/* Main product section */}
+                  <div className="flex flex-col lg:flex-row gap-6 items-start">
+                    {/* Left: Images */}
+                    <div className="flex flex-col gap-2.5 shrink-0 w-full lg:w-[420px]">
+                      {/* Action bar — back + heart + chat + share */}
+                      <div className="flex items-center justify-between w-full">
+                        <button onClick={() => toast.info("ปุ่ม 'กลับ' (ดูตัวอย่าง)")}
+                          className={`${font} group inline-flex items-center gap-1.5 bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] px-3.5 py-1.5 rounded-full cursor-pointer transition-colors text-[12px]`} style={{ fontWeight: 500 }}>
+                          <ChevronLeft className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" strokeWidth={2.4} />
+                          กลับ
+                        </button>
+                        <div className="flex items-center gap-2">
+                          <motion.button whileTap={{ scale: 0.92 }}
+                            onClick={() => toast.info("ปุ่ม 'ถูกใจ' (ดูตัวอย่าง)")}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-colors bg-[#f5f5f5] text-gray-700 hover:bg-[#ff383c]/10 hover:text-[#ff383c]">
+                            <Heart className="size-3.5" strokeWidth={2.2} />
+                            <span className={`${font} text-[12px]`} style={{ fontWeight: 500 }}>0</span>
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.92 }}
+                            onClick={() => toast.info("ปุ่ม 'แชทกับร้าน' (ดูตัวอย่าง)")}
+                            className="inline-flex items-center justify-center bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] rounded-full size-8 cursor-pointer transition-colors"
+                            title="แชทกับร้าน">
+                            <MessageCircle className="size-3.5" strokeWidth={2.2} />
+                          </motion.button>
+                          <motion.button whileTap={{ scale: 0.92 }}
+                            onClick={() => toast.info("ปุ่ม 'แชร์' (ดูตัวอย่าง)")}
+                            className="inline-flex items-center justify-center bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] rounded-full size-8 cursor-pointer transition-colors"
+                            title="แชร์สินค้า">
+                            <Share2 className="size-3.5" strokeWidth={2.2} />
+                          </motion.button>
+                        </div>
+                      </div>
+                      {/* Main image */}
+                      <div className="w-full aspect-square rounded-2xl overflow-hidden bg-gray-100 cursor-pointer">
+                        <ImageWithFallback src={previewProduct.image} alt={previewProduct.name}
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                      </div>
+                      {/* Thumbnails */}
+                      <div className="flex gap-2.5 overflow-x-auto">
+                        {thumbs.map((img, i) => (
+                          <div key={i} className={`size-[70px] rounded-2xl overflow-hidden shrink-0 cursor-pointer ${i === 0 ? "border-2 border-[#f8e8ce]" : ""}`}>
+                            <ImageWithFallback src={img} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Right: Details */}
+                    <div className="flex-1 flex flex-col gap-5 min-w-0">
+                      {/* Name + Rating row */}
+                      <div className="flex flex-col gap-2.5">
+                        <h1 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{previewProduct.name}</h1>
+                        <div className="flex gap-4 items-center">
+                          <div className="flex items-center gap-1.5">
+                            <Star className="size-3.5 text-[#F7C42B]" fill="#F7C42B" strokeWidth={0} />
+                            <span className={`${font} text-[12px] text-black`}>4.4/5</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <ShoppingBag className="size-3 text-black/85" strokeWidth={2.2} />
+                            <span className={`${font} text-[12px] text-black`}>ขายได้ 90+</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Flash Sale Banner OR Regular price (with optional discount) */}
+                      {previewProduct.flash ? (
+                        <div className="rounded-2xl overflow-hidden" style={{ background: "#fff4ed" }}>
+                          <div className="bg-[#e62e05] px-2.5 py-1.5 flex items-center gap-2.5">
+                            <Zap className="size-5 text-white fill-white" />
+                            <span className={`${font} text-[20px] text-white`} style={{ fontWeight: 500 }}>Flash Sale</span>
+                            <span className={`${font} ml-auto text-[12px] text-white bg-black/20 px-3 py-1 rounded-full`}>เหลือเวลาอีก 12:13:14</span>
+                          </div>
+                          <div className="px-2.5 py-2.5 flex items-center gap-2.5 flex-wrap">
+                            <span className={`${font} text-[24px] text-[#bc1b06]`} style={{ fontWeight: 500 }}>{priceText}</span>
+                            <div className="bg-[#e62e05] px-4 py-1 rounded-full">
+                              <span className={`${font} text-[12px] text-white`}>ลด 30%</span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-white rounded-2xl p-4 flex flex-col gap-2.5">
+                          <span className={`${font} text-[14px] text-[#666]`}>ราคาสินค้า</span>
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className={`${font} text-[24px] ${previewProduct.recommended ? "text-[#bc1b06]" : "text-[#297a4e]"}`} style={{ fontWeight: 500 }}>{priceText}</span>
+                            {previewProduct.recommended && (
+                              <>
+                                <span className={`${font} text-[16px] text-[#a3a3a3] line-through`} style={{ fontWeight: 500 }}>฿ 120.00</span>
+                                <div className="bg-[#e62e05] px-4 py-1 rounded-full">
+                                  <span className={`${font} text-[12px] text-white`}>ลด 26%</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Options */}
+                      <div className="flex flex-col gap-2.5">
+                        <span className={`${font} text-[14px] text-[#666]`}>ตัวเลือกสินค้า</span>
+                        <div className="flex flex-wrap gap-2.5">
+                          {sampleOptions.map((opt, i) => (
+                            <button key={opt}
+                              onClick={() => toast.info(`เลือก: ${opt}`)}
+                              className={`${font} px-4 py-1 rounded-full text-[12px] border cursor-pointer transition-colors ${
+                                i === 0 ? "border-[#319754] text-[#319754] bg-[#319754]/5" : "border-[#e5e5e5] text-black hover:border-[#319754] hover:text-[#319754]"
+                              }`}>
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Quantity */}
+                      <div className="flex flex-col gap-2.5">
+                        <span className={`${font} text-[14px] text-[#666]`}>จำนวนสินค้า</span>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="bg-[#f5f5f5] flex items-center gap-6 px-4 py-1 rounded-full">
+                            <button onClick={() => toast.info("ลดจำนวน (ดูตัวอย่าง)")} className={`${font} cursor-pointer text-black hover:text-[#319754] text-[18px] transition-colors`} style={{ fontWeight: 600 }}>−</button>
+                            <span className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 500 }}>1</span>
+                            <button onClick={() => toast.info("เพิ่มจำนวน (ดูตัวอย่าง)")} className={`${font} cursor-pointer text-black hover:text-[#319754] text-[18px] transition-colors`} style={{ fontWeight: 600 }}>+</button>
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <Package className="size-4 text-black/85" strokeWidth={2.2} />
+                            <span className={`${font} text-[12px] text-black`}>เหลือเพียง {stockNum} ชิ้น</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2.5 pt-3">
+                        <motion.button whileTap={{ scale: 0.95 }} whileHover={{ scale: 1.02 }}
+                          onClick={() => toast.success("เพิ่มไปยังรถเข็น (ดูตัวอย่าง)")}
+                          className={`${font} flex items-center justify-center gap-2.5 h-12 flex-1 sm:flex-none sm:w-[200px] rounded-full border border-[#db8b0a] text-[#db8b0a] hover:bg-[#db8b0a]/5 cursor-pointer text-[14px] transition-colors`}>
+                          <ShoppingCart className="size-4" />
+                          เพิ่มไปยังรถเข็น
+                        </motion.button>
+                        <button onClick={() => toast.success("ซื้อสินค้า (ดูตัวอย่าง)")}
+                          className={`${font} flex items-center justify-center gap-2.5 h-12 flex-1 sm:flex-none sm:w-[200px] rounded-full bg-[#319754] hover:bg-[#267a43] text-white text-[14px] cursor-pointer transition-colors`} style={{ fontWeight: 500 }}>
+                          <ShoppingBag className="size-4" />
+                          ซื้อสินค้า
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description + Specs card */}
+                  <div className="bg-white rounded-2xl p-4 flex flex-col gap-4 mt-6">
+                    <div className="flex flex-col gap-2.5">
+                      <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>รายละเอียดผลิตภัณฑ์</h2>
+                      <p className={`${font} text-[14px] text-black leading-relaxed`}>
+                        {previewProduct.name} — สินค้าคุณภาพคัดสรรจาก MetaHerb เพื่อสุขภาพที่ดีของคุณ
+                        ผลิตจากวัตถุดิบธรรมชาติแท้ ไม่ผสมสารกันบูด ปลอดภัย ได้มาตรฐานการผลิต
+                      </p>
+                    </div>
+                    <div className="h-px w-full bg-[#D4D4D8]" />
+                    <div className="flex flex-col gap-2.5">
+                      <h3 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลจำเพาะ</h3>
+                      {[
+                        { label: "หมวดหมู่:", value: previewProduct.category },
+                        { label: "ประเภท:", value: previewProduct.type },
+                        { label: "รหัสสินค้า:", value: `META-${previewProduct.id.padStart(3, "0")}` },
+                        { label: "คงเหลือ:", value: previewProduct.stock },
+                      ].map((s) => (
+                        <div key={s.label} className="flex gap-2.5">
+                          <span className={`${font} text-[14px] text-black w-[100px] shrink-0`} style={{ fontWeight: 500 }}>{s.label}</span>
+                          <span className={`${font} text-[14px] text-black`}>{s.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Shop info card */}
+                  <div className="bg-white rounded-2xl p-4 mt-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="size-[70px] rounded-full overflow-hidden shrink-0 bg-[#319754]/10 flex items-center justify-center">
+                        <Store className="size-8 text-[#319754]" />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <span className={`${font} text-[18px] text-black`} style={{ fontWeight: 500 }}>METAHERB Store</span>
+                        <div className="flex flex-wrap gap-x-5 gap-y-1.5 items-center">
+                          <div className="flex items-center gap-1.5">
+                            <Package className="size-3.5 text-black/85" strokeWidth={2} />
+                            <span className={`${font} text-[12px] text-black`}>รายการสินค้า</span>
+                            <span className={`${font} text-[12px] text-[#a2845e]`} style={{ fontWeight: 500 }}>{mockProducts.length}</span>
+                            <span className={`${font} text-[12px] text-black`}>รายการ</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Star className="size-3.5 text-[#F7C42B]" fill="#F7C42B" strokeWidth={0} />
+                            <span className={`${font} text-[12px] text-black`}>คะแนนร้านค้า</span>
+                            <span className={`${font} text-[12px] text-[#a2845e]`} style={{ fontWeight: 500 }}>4.4/5</span>
+                            <span className={`${font} text-[12px] text-black`}>การให้คะแนนทั้งหมด 100</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Heart className="size-3.5 text-black/85" strokeWidth={2} />
+                            <span className={`${font} text-[12px] text-black`}>ถูกใจสินค้า</span>
+                            <span className={`${font} text-[12px] text-[#a2845e]`} style={{ fontWeight: 500 }}>100</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <motion.button whileTap={{ scale: 0.95 }} onClick={() => toast.info("ดูร้านค้า (ดูตัวอย่าง)")}
+                        className={`${font} group/shop flex items-center bg-[#eaf5ee] hover:bg-[#d6eadd] text-[#319754] h-10 rounded-full cursor-pointer transition-all duration-300 overflow-hidden pl-3 pr-3 hover:pr-4 text-[14px]`} style={{ fontWeight: 500 }}>
+                        <Store className="size-4 shrink-0" strokeWidth={2} />
+                        <span className="grid grid-cols-[0fr] group-hover/shop:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out">
+                          <span className="overflow-hidden">
+                            <span className="block whitespace-nowrap pl-2">ดูร้านค้า</span>
+                          </span>
+                        </span>
+                      </motion.button>
+                      <motion.button whileTap={{ scale: 0.95 }} onClick={() => toast.info("แชทกับร้าน (ดูตัวอย่าง)")}
+                        className={`${font} group/chat flex items-center border border-[#319754] text-[#319754] hover:bg-[#319754]/5 h-10 rounded-full cursor-pointer transition-all duration-300 overflow-hidden pl-3 pr-3 hover:pr-4 text-[14px]`} style={{ fontWeight: 500 }}>
+                        <MessageCircle className="size-4 shrink-0" strokeWidth={2} />
+                        <span className="grid grid-cols-[0fr] group-hover/chat:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out">
+                          <span className="overflow-hidden">
+                            <span className="block whitespace-nowrap pl-2">แชท</span>
+                          </span>
+                        </span>
+                      </motion.button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }
@@ -803,127 +2426,246 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: () => void }) {
   const [showPopup, setShowPopup] = useState(false);
 
   const flashFilterTabs = [
-    { id: "all", label: "ทั้งหมด", count: 10 },
-    { id: "active", label: "กำลังดำเนินการ", count: 6 },
-    { id: "scheduled", label: "กำหนดไว้ล่วงหน้า", count: 0 },
+    { id: "all",       label: "ทั้งหมด",          count: 10, Icon: ClipboardList },
+    { id: "active",    label: "กำลังดำเนินการ",   count: 6,  Icon: Zap           },
+    { id: "scheduled", label: "กำหนดไว้ล่วงหน้า", count: 0,  Icon: Clock         },
   ];
 
   return (
     <div>
-      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>Flash Sale</h2>
+      {/* Header — title + add button */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>Flash Sale</h2>
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+        >
+          <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
+            <Plus className="size-[14px]" strokeWidth={2.6} />
+          </span>
+          <span style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
+        </motion.button>
+      </div>
 
-      {/* Flash Sale Events */}
-      <div className="mb-8">
-        <h3 className={`${font} text-[16px] mb-2`} style={{ fontWeight: 600 }}>Flash Sale Event</h3>
-        <div className="flex items-center gap-1.5 mb-4">
-          <AlertCircle className="size-3.5 text-gray-400" />
-          <span className={`${font} text-[12px] text-gray-400`}>เข้าร่วมกั�� Flash Sale กับทาง METAHERB เพื่อรับข้อ���สนอสุดพิ��ศษ</span>
+      {/* Section A: Flash Sale Events */}
+      <div className="bg-white rounded-2xl p-5 mb-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="size-10 rounded-xl bg-[#e62e05]/10 flex items-center justify-center shrink-0">
+            <Zap className="size-5 text-[#e62e05]" strokeWidth={2.2} fill="#e62e05" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>Flash Sale Event</h3>
+            <div className="flex items-center gap-1.5 mt-1">
+              <AlertCircle className="size-3.5 text-gray-400" />
+              <span className={`${font} text-[12px] text-[#8e8e93]`}>เข้าร่วม Flash Sale กับทาง METAHERB เพื่อรับข้อเสนอสุดพิเศษ</span>
+            </div>
+          </div>
         </div>
+        <div className="h-px bg-gray-100 mb-4" />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {mockFlashEvents.map((event) => (
-            <div key={event.id} className="relative rounded-xl overflow-hidden cursor-pointer" onClick={() => event.status === "active" ? onViewEvent() : event.status === "join" ? setShowPopup(true) : onViewEvent()}>
-              <div className="bg-gradient-to-r from-[#ff6b35] to-[#ff4500] p-4 text-white min-h-[120px] flex flex-col justify-between">
-                <div className="flex items-center justify-between">
-                  <span className={`${font} text-[16px]`} style={{ fontWeight: 600 }}>{event.name}</span>
-                  {event.countdown && (
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {[event.countdown.h, event.countdown.m, event.countdown.s].map((v, i) => (
-                        <span key={i} className="bg-[#319754] text-white text-[12px] px-1.5 py-0.5 rounded">{v}</span>
-                      ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {mockFlashEvents.map((event) => {
+            const isActive  = event.status === "active";
+            const isPending = event.status === "pending";
+            const isJoin    = event.status === "join";
+            return (
+              <motion.button
+                key={event.id}
+                whileHover={{ y: -3 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                onClick={() => isJoin ? setShowPopup(true) : onViewEvent()}
+                className="group/event relative rounded-2xl overflow-hidden text-left cursor-pointer shadow-[0_4px_16px_rgba(230,46,5,0.18)] hover:shadow-[0_8px_24px_rgba(230,46,5,0.28)] transition-shadow"
+              >
+                {/* Gradient bg */}
+                <div className="bg-gradient-to-br from-[#ff6b35] via-[#ff4500] to-[#e62e05] p-4 min-h-[160px] flex flex-col justify-between text-white relative overflow-hidden">
+                  {/* Decorative zap watermark */}
+                  <Zap className="absolute -bottom-4 -right-4 size-32 text-white/10" fill="currentColor" strokeWidth={0} />
+
+                  {/* Top: name + status */}
+                  <div className="flex items-start justify-between gap-2 relative z-10">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Zap className="size-4 text-white shrink-0" fill="white" strokeWidth={0} />
+                      <span className={`${font} text-[16px] truncate`} style={{ fontWeight: 600 }}>{event.name}</span>
+                    </div>
+                    {isPending && (
+                      <span className={`${font} bg-white/25 text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap shrink-0`} style={{ fontWeight: 500 }}>
+                        รอยืนยัน
+                      </span>
+                    )}
+                    {isJoin && (
+                      <span className={`${font} bg-white text-[#e62e05] text-[10px] px-3 py-0.5 rounded-full whitespace-nowrap shrink-0`} style={{ fontWeight: 600 }}>
+                        เข้าร่วมเลย
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Middle: countdown for active */}
+                  {isActive && event.countdown && (
+                    <div className="flex items-center gap-2 relative z-10">
+                      <Clock className="size-3.5 text-white/80" />
+                      <span className={`${font} text-[11px] text-white/80`}>เหลือเวลาอีก</span>
+                      <div className="flex items-center gap-1">
+                        {[event.countdown.h, event.countdown.m, event.countdown.s].map((v, i, arr) => (
+                          <Fragment key={i}>
+                            <span className={`${font} bg-black/30 backdrop-blur-sm text-white text-[12px] px-1.5 py-0.5 rounded tabular-nums`} style={{ fontWeight: 600 }}>{v}</span>
+                            {i < arr.length - 1 && <span className={`${font} text-white/60 text-[12px]`}>:</span>}
+                          </Fragment>
+                        ))}
+                      </div>
                     </div>
                   )}
-                  {event.status === "pending" && (
-                    <span className={`bg-white/20 text-white text-[11px] px-2 py-0.5 rounded ${font}`}>เข้าร่วมแล้วรอยืนยากจากทางร้าน</span>
-                  )}
-                  {event.status === "join" && (
-                    <span className={`bg-white text-[#ff4500] text-[11px] px-3 py-0.5 rounded ${font}`}>เข้าร่วมเลย</span>
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5 text-[11px]">
-                    <Package className="size-3" />
-                    <span>{event.status === "join" ? "คุณยังไม่มีสินค้าเข้าร่วม" : `จำนวน ${event.items} รายการ`}</span>
+
+                  {/* Bottom: items + date */}
+                  <div className="flex flex-col gap-1.5 relative z-10">
+                    <div className="flex items-center gap-1.5 text-[11px] text-white/95">
+                      <Package className="size-3 shrink-0" />
+                      <span>{isJoin ? "คุณยังไม่มีสินค้าเข้าร่วม" : `จำนวน ${event.items} รายการ`}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-white/85">
+                      <Clock className="size-3 shrink-0" />
+                      <span className="truncate">{event.date}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] mt-1">
-                    <Clock className="size-3" />
-                    <span>{event.date}</span>
+
+                  {/* Hover arrow indicator */}
+                  <div className="absolute top-3 right-3 size-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover/event:opacity-100 transition-opacity">
+                    <ChevronRight className="size-4 text-white" strokeWidth={2.4} />
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </motion.button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Flash Sale Store */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className={`${font} text-[16px]`} style={{ fontWeight: 600 }}>Flash Sale Store</h3>
+      {/* Section B: Flash Sale Store */}
+      <div className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+        <div className="flex items-start gap-3 mb-4">
+          <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+            <Store className="size-5 text-[#319754]" strokeWidth={2.2} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>Flash Sale Store</h3>
             <div className="flex items-center gap-1.5 mt-1">
               <AlertCircle className="size-3.5 text-gray-400" />
-              <span className={`${font} text-[12px] text-gray-400`}>เข้าร่วมกับ Flash Sale กับทาง METAHERB เพื่อรับข้อเสนอสุดพิเศษ</span>
+              <span className={`${font} text-[12px] text-[#8e8e93]`}>สินค้าในร้านที่เข้าร่วม Flash Sale</span>
             </div>
           </div>
-          <button className={`flex items-center gap-2 bg-[#319754] text-white px-4 py-2 rounded-full text-[13px] ${font} cursor-pointer`}>
-            <Plus className="size-4" /> เพิ่มสินค้า Flash Sale
-          </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-4">
-          {flashFilterTabs.map((tab) => (
-            <button key={tab.id} onClick={() => setFlashFilter(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] ${font} cursor-pointer whitespace-nowrap border ${
-                flashFilter === tab.id ? "bg-[#319754]/10 border-[#319754] text-[#319754]" : "bg-white border-gray-200 text-gray-500"
-              }`}>
-              {tab.label}
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${flashFilter === tab.id ? "bg-[#319754] text-white" : "bg-gray-200 text-gray-600"}`}>{tab.count}</span>
-            </button>
-          ))}
+        {/* Filter tabs (unified style: green icons + red badges) */}
+        <div className="bg-[#fafbfc] rounded-full p-2 mb-4 flex items-center gap-2 flex-wrap">
+          {flashFilterTabs.map((tab) => {
+            const isAct = flashFilter === tab.id;
+            return (
+              <motion.button
+                key={tab.id}
+                onClick={() => setFlashFilter(tab.id)}
+                whileTap={{ scale: 0.94 }}
+                whileHover={!isAct ? { scale: 1.04 } : undefined}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${
+                  !isAct ? "hover:bg-white" : ""
+                }`}
+              >
+                {isAct && (
+                  <motion.span
+                    layoutId="flashTabActivePill"
+                    className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <motion.span layout
+                  className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
+                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
+                </motion.span>
+                <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
+                  style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
+                  {tab.label}
+                </span>
+                <motion.span layout
+                  className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
+                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
+                  <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
+                    {tab.count}
+                  </motion.span>
+                </motion.span>
+              </motion.button>
+            );
+          })}
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div className="border border-gray-100 rounded-2xl overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className={`${font} text-[12px] text-gray-500 border-b bg-gray-50`}>
-                <th className="text-left py-3 px-4">สินค้า</th>
-                <th className="text-left py-3 px-4">ราคาปกติ</th>
-                <th className="text-left py-3 px-4">Flash Sale</th>
-                <th className="text-left py-3 px-4">เวลาเริ่ม</th>
-                <th className="text-left py-3 px-4">เวลาสิ้นสุด</th>
-                <th className="text-left py-3 px-4">สถานะ</th>
-                <th className="text-center py-3 px-4">เพิ่มเติม</th>
+              <tr className={`${font} text-[12px] text-[#8e8e93] bg-[#fafbfc] border-b border-gray-100`}>
+                <th className="text-left py-3 px-4" style={{ fontWeight: 500 }}>สินค้า</th>
+                <th className="text-right py-3 px-4" style={{ fontWeight: 500 }}>ราคาปกติ</th>
+                <th className="text-right py-3 px-4" style={{ fontWeight: 500 }}>ราคา Flash Sale</th>
+                <th className="text-center py-3 px-4" style={{ fontWeight: 500 }}>ส่วนลด</th>
+                <th className="text-left py-3 px-4" style={{ fontWeight: 500 }}>เวลาเริ่ม</th>
+                <th className="text-left py-3 px-4" style={{ fontWeight: 500 }}>เวลาสิ้นสุด</th>
+                <th className="text-center py-3 px-4" style={{ fontWeight: 500 }}>สถานะ</th>
+                <th className="text-center py-3 px-4" style={{ fontWeight: 500 }}>จัดการ</th>
               </tr>
             </thead>
             <tbody>
-              {mockFlashProducts.map((p) => (
-                <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <div className="size-[50px] bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                        <ImageWithFallback src={imgProd} alt="" className="w-full h-full object-cover" />
+              {mockFlashProducts.map((p) => {
+                const normal = parseFloat(String(p.normalPrice).replace(/[^\d.]/g, "")) || 0;
+                const flash  = parseFloat(String(p.flashPrice).replace(/[^\d.]/g, ""))  || 0;
+                const discountPct = normal > 0 && flash > 0 ? Math.round(((normal - flash) / normal) * 100) : 0;
+                return (
+                  <tr key={p.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors group/row">
+                    {/* Product */}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="size-[56px] rounded-xl overflow-hidden shrink-0 bg-gray-100 border border-gray-200 group-hover/row:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow">
+                          <ImageWithFallback src={imgProd} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover/row:scale-110" />
+                        </div>
+                        <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{p.name}</span>
                       </div>
-                      <span className={`${font} text-[13px]`}>{p.name}</span>
-                    </div>
-                  </td>
-                  <td className={`${font} text-[13px] py-3 px-4`}>{p.normalPrice}</td>
-                  <td className={`${font} text-[13px] py-3 px-4 text-[#ff3b30]`} style={{ fontWeight: 500 }}>{p.flashPrice}</td>
-                  <td className={`${font} text-[12px] py-3 px-4 text-gray-500`}>{p.start}</td>
-                  <td className={`${font} text-[12px] py-3 px-4 text-gray-500`}>{p.end}</td>
-                  <td className="py-3 px-4">
-                    <span className={`${font} text-[12px] flex items-center gap-1`} style={{ color: p.statusColor }}>
-                      <span className="size-2 rounded-full" style={{ backgroundColor: p.statusColor }} />
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <button className="cursor-pointer"><MoreHorizontal className="size-5 text-gray-400" /></button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    {/* Normal price */}
+                    <td className={`${font} text-[13px] text-gray-500 line-through text-right py-3 px-4 tabular-nums`}>{p.normalPrice}</td>
+                    {/* Flash price */}
+                    <td className={`${font} text-[14px] text-[#ff3b30] text-right py-3 px-4 tabular-nums`} style={{ fontWeight: 600 }}>{p.flashPrice}</td>
+                    {/* Discount badge */}
+                    <td className="py-3 px-4 text-center">
+                      {discountPct > 0 && (
+                        <span className={`${font} bg-[#e62e05] text-white text-[11px] px-2.5 py-0.5 rounded-full inline-block`} style={{ fontWeight: 600 }}>
+                          -{discountPct}%
+                        </span>
+                      )}
+                    </td>
+                    {/* Start */}
+                    <td className={`${font} text-[12px] text-gray-500 py-3 px-4`}>{p.start}</td>
+                    {/* End */}
+                    <td className={`${font} text-[12px] text-gray-500 py-3 px-4`}>{p.end}</td>
+                    {/* Status */}
+                    <td className="py-3 px-4 text-center">
+                      <span className={`${font} inline-flex items-center gap-1.5 text-[12px] px-3 py-0.5 rounded-full`}
+                        style={{ backgroundColor: `${p.statusColor}1a`, color: p.statusColor, fontWeight: 500 }}>
+                        <span className="size-1.5 rounded-full" style={{ backgroundColor: p.statusColor }} />
+                        {p.status}
+                      </span>
+                    </td>
+                    {/* Action */}
+                    <td className="py-3 px-4 text-center">
+                      <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto">
+                        <MoreHorizontal className="size-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1134,102 +2876,623 @@ function FlashEventDetail({ onBack }: { onBack: () => void }) {
   );
 }
 
-/* ========== ADD PRODUCT ========== */
+/* ========== ADD PRODUCT (Figma redesign) ========== */
+function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <button type="button" onClick={onChange}
+      className={`relative inline-flex items-center w-[52px] h-7 rounded-full transition-colors cursor-pointer shrink-0 ${
+        checked ? "bg-[#34c759]" : "bg-gray-300"
+      }`}>
+      <span className={`absolute size-6 bg-white rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.18)] transition-transform ${
+        checked ? "translate-x-[26px]" : "translate-x-[2px]"
+      }`} />
+    </button>
+  );
+}
+
+function NumberStepper({ value, onChange, min = 0, step = 1 }: { value: number; onChange: (v: number) => void; min?: number; step?: number }) {
+  const atMin = value <= min;
+  const spring = { type: "spring" as const, stiffness: 500, damping: 22 };
+  return (
+    <div className="flex items-center h-8 rounded-full bg-[rgba(116,116,128,0.08)] overflow-hidden shrink-0">
+      <motion.button
+        type="button"
+        onClick={() => onChange(Math.max(min, value - step))}
+        disabled={atMin}
+        whileHover={!atMin ? { backgroundColor: "rgba(0,0,0,0.06)" } : undefined}
+        whileTap={!atMin ? { scale: 0.82 } : undefined}
+        transition={spring}
+        className={`${font} w-[38px] h-full flex items-center justify-center text-[18px] ${atMin ? "text-gray-300 cursor-not-allowed" : "text-black cursor-pointer"}`}
+        style={{ fontWeight: 600 }}>
+        <motion.span key={`m-${value}`} initial={{ scale: 0.6, opacity: 0.4 }} animate={{ scale: 1, opacity: 1 }} transition={spring} className="inline-block">−</motion.span>
+      </motion.button>
+      <div className="w-px h-3.5 bg-gray-300/60" />
+      <motion.button
+        type="button"
+        onClick={() => onChange(value + step)}
+        whileHover={{ backgroundColor: "rgba(49,151,84,0.12)" }}
+        whileTap={{ scale: 0.82 }}
+        transition={spring}
+        className={`${font} w-[38px] h-full flex items-center justify-center text-[18px] text-black cursor-pointer`}
+        style={{ fontWeight: 600 }}>
+        <motion.span key={`p-${value}`} initial={{ scale: 0.6, opacity: 0.4 }} animate={{ scale: 1, opacity: 1 }} transition={spring} className="inline-block">+</motion.span>
+      </motion.button>
+    </div>
+  );
+}
+
 function AddProductTab({ onBack }: { onBack: () => void }) {
   const [activeStep, setActiveStep] = useState(0);
-  const steps = ["รูปภาพสินค้า", "ข้อมูลสินค้า", "ตัวเลือกสินค้า", "ตั้งค่า SEO", "ตั้งค่าสินค้า"];
+  const [maxVisitedStep, setMaxVisitedStep] = useState(0); // furthest step the user has visited (clicked or scrolled past)
+  const [hasVariants, setHasVariants] = useState(false);
+  const [seoEnabled, setSeoEnabled] = useState(false);
+  const [recommended, setRecommended] = useState(false);
+  const [openForSale, setOpenForSale] = useState(true);
+  const [price, setPrice] = useState(0);
+  const [stock, setStock] = useState(0);
+  const [weight, setWeight] = useState(0);
+  const [productName, setProductName] = useState("");
+  const [category, setCategory] = useState("");
+  const [sku, setSku] = useState("");
+  const [productImages] = useState<string[]>([]); // demo only — not actually uploaded
+  type VariantRow = { id: string; image: string | null; name: string; price: number; stock: number; weight: number };
+  const [variantRows, setVariantRows] = useState<VariantRow[]>([
+    { id: "v1", image: null, name: "", price: 0, stock: 0, weight: 0 },
+  ]);
+  const updateRow = (id: string, patch: Partial<VariantRow>) =>
+    setVariantRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const addRow = () =>
+    setVariantRows((prev) => [...prev, { id: `v${Date.now()}`, image: null, name: "", price: 0, stock: 0, weight: 0 }]);
+  const removeRow = (id: string) =>
+    setVariantRows((prev) => prev.filter((r) => r.id !== id));
+
+  // Validation per section
+  const infoValid = productName.trim().length > 0 && category.length > 0 && sku.trim().length > 0;
+  const imagesValid = productImages.length > 0;
+  const variantsValid = hasVariants
+    ? variantRows.every((r) => r.name.trim().length > 0 && r.price > 0 && r.stock > 0 && r.weight > 0)
+    : price > 0 && stock > 0 && weight > 0;
+
+  const sections: { id: string; label: string; required: boolean; valid: boolean }[] = [
+    { id: "images",   label: "รูปภาพสินค้า",   required: true,  valid: imagesValid    },
+    { id: "info",     label: "ข้อมูลสินค้า",   required: true,  valid: infoValid      },
+    { id: "variants", label: "ตัวเลือกสินค้า", required: true,  valid: variantsValid  },
+    { id: "seo",      label: "ตั้งค่า SEO",    required: false, valid: !seoEnabled || true },
+    { id: "settings", label: "ตั้งค่าสินค้า",  required: false, valid: true           },
+  ];
+
+  const scrollToSection = (id: string, idx: number) => {
+    setActiveStep(idx);
+    setMaxVisitedStep((prev) => Math.max(prev, idx));
+    document.getElementById(`addprod-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // Track scroll position to update activeStep + maxVisitedStep when user scrolls
+  useEffect(() => {
+    const sectionIds = ["images", "info", "variants", "seo", "settings"];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the section that's currently most visible from the top
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) {
+          const id = visible[0].target.id.replace("addprod-", "");
+          const idx = sectionIds.indexOf(id);
+          if (idx >= 0) {
+            setActiveStep(idx);
+            setMaxVisitedStep((prev) => Math.max(prev, idx));
+          }
+        }
+      },
+      { rootMargin: "-20% 0px -60% 0px", threshold: 0 }
+    );
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(`addprod-${id}`);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>เพิ่มสินค้าใหม่</h2>
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className={`border border-gray-300 px-6 py-2 rounded-full text-[13px] ${font} cursor-pointer hover:bg-gray-50`}>ยกเลิก</button>
-          <button className={`bg-[#319754] text-white px-6 py-2 rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43]`}>เพิ่มสินค้า</button>
-        </div>
-      </div>
-
-      <div className="flex gap-6">
-        {/* Left steps */}
-        <div className="w-[180px] shrink-0 space-y-2">
-          {steps.map((step, i) => (
-            <button key={i} onClick={() => setActiveStep(i)}
-              className={`flex items-center gap-2 w-full px-3 py-2 rounded-full text-[13px] ${font} cursor-pointer ${
-                activeStep === i ? "text-[#319754]" : "text-gray-400"
-              }`}>
-              <span className={`size-2 rounded-full ${activeStep === i ? "bg-[#319754]" : "bg-gray-300"}`} />
-              {step}
-            </button>
-          ))}
+    <div className="flex items-start gap-4">
+      {/* Left content */}
+      <div className="flex-1 min-w-0">
+        {/* Top bar: back button (matches OrderDetail header style) */}
+        <div className="flex items-center gap-3 mb-5 flex-wrap">
+          <button onClick={onBack}
+            className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+            กลับ
+          </button>
         </div>
 
-        {/* Right content */}
-        <div className="flex-1 space-y-6">
-          {/* Image upload */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
-            <h3 className={`${font} text-[16px] mb-2`} style={{ fontWeight: 600 }}>รูปภาพสินค้า</h3>
-            <div className="flex items-center gap-1.5 mb-4">
-              <AlertCircle className="size-3.5 text-gray-400" />
-              <span className={`${font} text-[12px] text-gray-400`}>อัปโหลดได้สูงสุด 3 รูป รองรับไฟล์ (JPG, PNG, WebP) ขนาดไม่เกิน 2MB</span>
+        {/* Title row */}
+        <div className="flex items-center gap-4 mb-5 flex-wrap">
+          <h2 className={`${font} text-[20px] text-black leading-[30px]`} style={{ fontWeight: 500 }}>เพิ่มสินค้าใหม่</h2>
+        </div>
+
+        {/* Sections — equal spacing via space-y */}
+        <div className="space-y-4">
+
+        {/* Section: รูปภาพสินค้า */}
+        <section id="addprod-images" onMouseEnter={() => { setActiveStep(0); setMaxVisitedStep((p) => Math.max(p, 0)); }}
+          className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <Package className="size-5 text-[#319754]" strokeWidth={2.2} />
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              {["รูปปกสินค้า(รูปหลัก)", "รูป 2", "รูป3"].map((label, i) => (
-                <button key={i} className="border-2 border-dashed border-gray-300 rounded-2xl h-[160px] flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#319754]/50">
-                  <Package className="size-10 text-gray-300" />
-                  <span className={`${font} text-[12px] text-gray-400`}>{label}</span>
-                </button>
-              ))}
+            <div className="flex-1">
+              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>รูปภาพสินค้า</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <AlertCircle className="size-3.5 text-gray-400" />
+                <span className={`${font} text-[12px] text-[#8e8e93]`}>อัปโหลดได้สูงสุด 3 รูป (JPG, PNG, WebP) ขนาดไม่เกิน 2MB</span>
+              </div>
             </div>
           </div>
+          <div className="h-px bg-gray-100 mb-4" />
+          <div className="flex flex-wrap gap-3">
+            {[
+              { label: "รูปปกสินค้า", sub: "รูปหลัก", primary: true },
+              { label: "รูป 2", sub: "เพิ่มเติม", primary: false },
+              { label: "รูป 3", sub: "เพิ่มเติม", primary: false },
+            ].map((item) => (
+              <motion.button key={item.label} type="button"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                className={`group/upload relative bg-gradient-to-br from-gray-50 to-gray-100/60 border-2 border-dashed rounded-2xl size-[150px] flex flex-col items-center justify-center gap-2 cursor-pointer transition-all shrink-0 overflow-hidden ${
+                  item.primary
+                    ? "border-[#319754]/40 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
+                    : "border-gray-300 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
+                }`}>
+                {item.primary && (
+                  <span className={`${font} absolute top-2 right-2 text-[9px] bg-[#319754] text-white px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>
+                    หลัก
+                  </span>
+                )}
+                <div className="size-10 rounded-full bg-white border border-gray-200 flex items-center justify-center transition-transform group-hover/upload:scale-110 group-hover/upload:rotate-90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
+                  <Plus className="size-4 text-gray-500 group-hover/upload:text-[#319754] transition-colors" strokeWidth={2.4} />
+                </div>
+                <div className="text-center px-2">
+                  <p className={`${font} text-[12px] text-black`} style={{ fontWeight: 500 }}>{item.label}</p>
+                  <p className={`${font} text-[10px] text-gray-400 mt-0.5`}>{item.sub}</p>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </section>
 
-          {/* Product info */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6">
-            <h3 className={`${font} text-[16px] mb-4`} style={{ fontWeight: 600 }}>ข้อมูลสินค้า</h3>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ชื่อสินค้า <span className="text-red-500">*</span></label>
-                <input placeholder="เช่น: ขมิ้นชันบง" className={`border border-gray-300 rounded-lg px-3 py-2.5 text-[13px] ${font} outline-none`} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>หมวดหมู่ <span className="text-red-500">*</span></label>
-                <select className={`border border-gray-300 rounded-lg px-3 py-2.5 text-[13px] ${font} outline-none appearance-none`}>
-                  <option>เลือกหมวดหมู่</option>
-                  <option>สมุนไพร</option>
-                  <option>อาหารเสริม</option>
+        {/* Section: ข้อมูลสินค้า */}
+        <section id="addprod-info" onMouseEnter={() => { setActiveStep(1); setMaxVisitedStep((p) => Math.max(p, 1)); }}
+          className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <ClipboardList className="size-5 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <h3 className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>ข้อมูลสินค้า</h3>
+          </div>
+          <div className="h-px bg-gray-100" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Row 1 */}
+            <div className="flex flex-col gap-2">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ชื่อสินค้า <span className="text-[#ff3b30]">*</span></label>
+              <input value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="เช่น: ขมิ้นชันผง"
+                className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>หมวดหมู่ <span className="text-[#ff3b30]">*</span></label>
+              <div className="relative">
+                <select value={category} onChange={(e) => setCategory(e.target.value)}
+                  className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-6 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
+                  <option value="">เลือกหมวดหมู่</option>
+                  <option value="herb_capsule">สมุนไพรแคปซูล</option>
+                  <option value="herbal_tea">ชาสมุนไพร</option>
+                  <option value="herb_powder">ผงสมุนไพร</option>
+                  <option value="herbal_oil">น้ำมันสมุนไพร</option>
                 </select>
+                <ChevronDown className="size-4 text-gray-400 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>หน่วย</label>
-                <select className={`border border-gray-300 rounded-lg px-3 py-2.5 text-[13px] ${font} outline-none appearance-none`}>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>หน่วย</label>
+              <div className="relative">
+                <select className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-6 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
                   <option>ชิ้น</option>
                   <option>กล่อง</option>
                   <option>ซอง</option>
+                  <option>ขวด</option>
                 </select>
+                <ChevronDown className="size-4 text-gray-400 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>รหัสสินค้า (SKU) <span className="text-red-500">*</span></label>
-                <input placeholder="เช่น: META-001" className={`border border-gray-300 rounded-lg px-3 py-2.5 text-[13px] ${font} outline-none`} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>รูปแบบสินค้า</label>
-                <input placeholder="เช่น: ใบชาอบแห้ง, แคปซูล, ผง" className={`border border-gray-300 rounded-lg px-3 py-2.5 text-[13px] ${font} outline-none`} />
-              </div>
+            {/* Row 2 */}
+            <div className="flex flex-col gap-2">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>รหัสสินค้า (SKU) <span className="text-[#ff3b30]">*</span></label>
+              <input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="เช่น: META-001"
+                className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>รายละเอียดสินค้า</label>
-              <textarea placeholder="อธิบายรายละเอียดสินค้า..." className={`border border-gray-300 rounded-lg px-3 py-2.5 text-[13px] ${font} outline-none h-24 resize-none`} />
+            <div className="flex flex-col gap-2">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>รูปแบบสินค้า</label>
+              <input placeholder="เช่น: ใบชาอบแห้ง, แคปซูล, ผง"
+                className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ยี่ห้อ / แบรนด์</label>
+              <input placeholder="เช่น: MetaHerb"
+                className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+            </div>
+            {/* Row 3 — Description spans all 3 columns */}
+            <div className="flex flex-col gap-2 md:col-span-3">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>รายละเอียดสินค้า</label>
+              <textarea rows={4} placeholder="อธิบายรายละเอียด คุณสมบัติ และประโยชน์ของสินค้า"
+                className={`${font} bg-[#fafafa] w-full rounded-2xl px-6 py-3 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3] resize-none`} />
             </div>
           </div>
+        </section>
+
+        {/* Section: ตัวเลือกสินค้า */}
+        <section id="addprod-variants" onMouseEnter={() => { setActiveStep(2); setMaxVisitedStep((p) => Math.max(p, 2)); }}
+          className="rounded-2xl overflow-hidden border border-[#319754]/10 shadow-[0_1px_4px_rgba(49,151,84,0.06)]"
+          style={{ background: "linear-gradient(135deg, rgba(49,151,84,0.08) 0%, rgba(49,151,84,0.04) 100%)" }}>
+          <div className="p-4">
+            <div className="flex items-start gap-3">
+              <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Boxes className="size-5 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตัวเลือกสินค้า</h3>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <AlertCircle className="size-3.5 text-gray-400" />
+                  <span className={`${font} text-[12px] text-[#8e8e93]`}>เปิดใช้งานหากสินค้าของคุณมีหลายตัวเลือก เช่น ขนาด, สี</span>
+                </div>
+              </div>
+              <ToggleSwitch checked={hasVariants} onChange={() => setHasVariants((v) => !v)} />
+            </div>
+          </div>
+          {!hasVariants && (
+            <div className="bg-white rounded-2xl p-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* ราคา */}
+                <div className="flex flex-col gap-2">
+                  <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ราคา <span className="text-[#ff3b30]">*</span></label>
+                  <div className={`${font} bg-[#fafafa] h-12 rounded-full pl-5 pr-2 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow`}>
+                    <span className={`${font} text-[14px] text-[#8e8e93] shrink-0`}>฿</span>
+                    <input
+                      type="number"
+                      value={price === 0 ? "" : price}
+                      onChange={(e) => setPrice(Math.max(0, Number(e.target.value) || 0))}
+                      placeholder="0.00"
+                      className={`${font} flex-1 min-w-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#a3a3a3] tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0`}
+                    />
+                    <NumberStepper value={price} onChange={setPrice} step={1} />
+                  </div>
+                </div>
+                {/* จำนวนคงเหลือ */}
+                <div className="flex flex-col gap-2">
+                  <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>จำนวนสินค้าคงเหลือ <span className="text-[#ff3b30]">*</span></label>
+                  <div className={`${font} bg-[#fafafa] h-12 rounded-full pl-5 pr-2 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow`}>
+                    <input
+                      type="number"
+                      value={stock === 0 ? "" : stock}
+                      onChange={(e) => setStock(Math.max(0, Number(e.target.value) || 0))}
+                      placeholder="0"
+                      className={`${font} flex-1 min-w-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#a3a3a3] tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0`}
+                    />
+                    <NumberStepper value={stock} onChange={setStock} step={1} />
+                  </div>
+                </div>
+                {/* น้ำหนัก */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>น้ำหนักสินค้า (กรัม) <span className="text-[#ff3b30]">*</span></label>
+                    <span className={`${font} text-[12px] text-[#8e8e93]`}>จำเป็นสำหรับคำนวณค่าส่ง</span>
+                  </div>
+                  <div className={`${font} bg-[#fafafa] h-12 rounded-full pl-5 pr-2 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow`}>
+                    <input
+                      type="number"
+                      value={weight === 0 ? "" : weight}
+                      onChange={(e) => setWeight(Math.max(0, Number(e.target.value) || 0))}
+                      placeholder="0"
+                      className={`${font} flex-1 min-w-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#a3a3a3] tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0`}
+                    />
+                    <span className={`${font} text-[12px] text-[#8e8e93] shrink-0 pr-1`}>g</span>
+                    <NumberStepper value={weight} onChange={setWeight} step={10} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {hasVariants && (
+            <div className="bg-white rounded-2xl p-4 flex flex-col gap-3">
+              {variantRows.map((row) => (
+                <div key={row.id} className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center gap-4 relative group/row">
+                  {/* Image upload — 200x200, styled like รูปภาพสินค้า */}
+                  <motion.button type="button"
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="group/upload relative bg-gradient-to-br from-gray-50 to-gray-100/60 border-2 border-dashed border-gray-300 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10 rounded-2xl size-[200px] shrink-0 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden">
+                    <div className="size-12 rounded-full bg-white border border-gray-200 flex items-center justify-center transition-transform group-hover/upload:scale-110 group-hover/upload:rotate-90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
+                      <Plus className="size-5 text-gray-500 group-hover/upload:text-[#319754] transition-colors" strokeWidth={2.4} />
+                    </div>
+                    <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เพิ่มรูป</span>
+                  </motion.button>
+
+                  {/* Right side fields */}
+                  <div className="flex-1 min-w-0 flex flex-col gap-4 self-stretch p-2.5">
+                    {/* ชื่อตัวเลือก — full width */}
+                    <div className="flex flex-col gap-2">
+                      <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ชื่อตัวเลือก <span className="text-[#ff3b30]">*</span></label>
+                      <input value={row.name} onChange={(e) => updateRow(row.id, { name: e.target.value })}
+                        placeholder="เช่น: 30 เม็ด, ขนาด L, สีแดง"
+                        className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+                    </div>
+                    {/* 3-col: ราคา / คงเหลือ / น้ำหนัก */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* ราคา */}
+                      <div className="flex flex-col gap-2">
+                        <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ราคา <span className="text-[#ff3b30]">*</span></label>
+                        <div className={`${font} bg-[#fafafa] h-12 rounded-full pl-5 pr-2 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow`}>
+                          <span className={`${font} text-[14px] text-[#8e8e93] shrink-0`}>฿</span>
+                          <input type="number" value={row.price === 0 ? "" : row.price}
+                            onChange={(e) => updateRow(row.id, { price: Math.max(0, Number(e.target.value) || 0) })}
+                            placeholder="0.00"
+                            className={`${font} flex-1 min-w-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#a3a3a3] tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0`} />
+                          <NumberStepper value={row.price} onChange={(v) => updateRow(row.id, { price: v })} step={1} />
+                        </div>
+                      </div>
+                      {/* คงเหลือ */}
+                      <div className="flex flex-col gap-2">
+                        <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>จำนวนสินค้าคงเหลือ <span className="text-[#ff3b30]">*</span></label>
+                        <div className={`${font} bg-[#fafafa] h-12 rounded-full pl-5 pr-2 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow`}>
+                          <input type="number" value={row.stock === 0 ? "" : row.stock}
+                            onChange={(e) => updateRow(row.id, { stock: Math.max(0, Number(e.target.value) || 0) })}
+                            placeholder="0"
+                            className={`${font} flex-1 min-w-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#a3a3a3] tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0`} />
+                          <NumberStepper value={row.stock} onChange={(v) => updateRow(row.id, { stock: v })} step={1} />
+                        </div>
+                      </div>
+                      {/* น้ำหนัก */}
+                      <div className="flex flex-col gap-2">
+                        <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>น้ำหนักสินค้า (กรัม) <span className="text-[#ff3b30]">*</span></label>
+                        <div className={`${font} bg-[#fafafa] h-12 rounded-full pl-5 pr-2 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow`}>
+                          <input type="number" value={row.weight === 0 ? "" : row.weight}
+                            onChange={(e) => updateRow(row.id, { weight: Math.max(0, Number(e.target.value) || 0) })}
+                            placeholder="0"
+                            className={`${font} flex-1 min-w-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#a3a3a3] tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0`} />
+                          <span className={`${font} text-[12px] text-[#8e8e93] shrink-0 pr-1`}>g</span>
+                          <NumberStepper value={row.weight} onChange={(v) => updateRow(row.id, { weight: v })} step={10} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delete button — top-right corner, shows on hover */}
+                  {variantRows.length > 1 && (
+                    <button type="button" onClick={() => removeRow(row.id)}
+                      className="absolute top-3 right-3 size-8 rounded-full bg-white border border-gray-200 hover:border-[#ff3b30] hover:bg-[#ff3b30]/5 hover:text-[#ff3b30] text-gray-500 inline-flex items-center justify-center cursor-pointer transition-all shrink-0 opacity-0 group-hover/row:opacity-100"
+                      title="ลบตัวเลือก">
+                      <Trash2 className="size-3.5" strokeWidth={2.2} />
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              {/* Add row button */}
+              <button type="button" onClick={addRow}
+                className={`${font} flex items-center justify-center gap-2 h-12 rounded-2xl border-2 border-dashed border-gray-300 hover:border-[#319754] hover:bg-[#319754]/5 text-gray-600 hover:text-[#319754] cursor-pointer transition-colors text-[14px]`}
+                style={{ fontWeight: 500 }}>
+                <Plus className="size-4" strokeWidth={2.4} />
+                เพิ่มตัวเลือกสินค้า
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Section: ตั้งค่า SEO */}
+        <section id="addprod-seo" onMouseEnter={() => { setActiveStep(3); setMaxVisitedStep((p) => Math.max(p, 3)); }}
+          className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+          <div className="flex items-start gap-3">
+            <div className="size-10 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+              <Search className="size-5 text-[#3b82f6]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตั้งค่า SEO</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <AlertCircle className="size-3.5 text-gray-400" />
+                <span className={`${font} text-[12px] text-[#8e8e93]`}>เปิดตั้งค่า SEO เพื่อช่วยให้สินค้าติดอันดับใน Google ได้ดีขึ้น</span>
+              </div>
+            </div>
+            <ToggleSwitch checked={seoEnabled} onChange={() => setSeoEnabled((v) => !v)} />
+          </div>
+          {seoEnabled && (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>SEO Title</label>
+                <input placeholder="เช่น: ขมิ้นชันผง 100% ออร์แกนิก"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>SEO Keywords</label>
+                <input placeholder="คั่นด้วยเครื่องหมายจุลภาค (,)"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Section: ตั้งค่าสินค้า */}
+        <section id="addprod-settings" onMouseEnter={() => { setActiveStep(4); setMaxVisitedStep((p) => Math.max(p, 4)); }}
+          className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-[#f59e0b]/10 flex items-center justify-center shrink-0">
+              <Settings className="size-5 text-[#f59e0b]" strokeWidth={2.2} />
+            </div>
+            <h3 className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>ตั้งค่าสินค้า</h3>
+          </div>
+          <div className="h-px bg-gray-100" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* เปิดขาย */}
+            <div className={`group/card rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden border transition-colors ${
+              openForSale ? "border-[#319754]/20" : "border-gray-100"
+            }`}
+              style={openForSale
+                ? { background: "linear-gradient(135deg, rgba(49,151,84,0.08) 0%, rgba(49,151,84,0.03) 100%)" }
+                : { backgroundColor: "#fafafa" }}>
+              <div className="flex items-center justify-between gap-3 relative z-10">
+                <div className="flex items-center gap-2.5">
+                  <div className={`size-9 rounded-full flex items-center justify-center transition-colors ${
+                    openForSale ? "bg-[#319754]/15" : "bg-gray-200/60"
+                  }`}>
+                    <Eye className={`size-4 transition-colors ${openForSale ? "text-[#319754]" : "text-gray-500"}`} strokeWidth={2.2} />
+                  </div>
+                  <span className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>เปิดขาย</span>
+                </div>
+                <ToggleSwitch checked={openForSale} onChange={() => setOpenForSale((v) => !v)} />
+              </div>
+              <div className="flex items-start gap-1.5 relative z-10">
+                <AlertCircle className="size-3.5 text-gray-400 mt-0.5 shrink-0" />
+                <span className={`${font} text-[12px] text-[#8e8e93] leading-relaxed`}>แสดงสินค้านี้บนหน้าร้านค้าให้ลูกค้ามองเห็นและสั่งซื้อได้</span>
+              </div>
+              <motion.img
+                src={imgSellingProducts}
+                alt=""
+                className="absolute -bottom-2 -right-2 size-[90px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover/card:scale-110 group-hover/card:-rotate-3"
+                style={{
+                  maskImage: "linear-gradient(to bottom, black 50%, rgba(0,0,0,0.45) 80%, transparent 100%)",
+                  WebkitMaskImage: "linear-gradient(to bottom, black 50%, rgba(0,0,0,0.45) 80%, transparent 100%)",
+                  opacity: openForSale ? 1 : 0.5,
+                }}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: openForSale ? 1 : 0.5 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                aria-hidden
+              />
+            </div>
+            {/* สินค้าแนะนำ */}
+            <div className={`group/card rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden border transition-colors ${
+              recommended ? "border-[#f7931d]/20" : "border-gray-100"
+            }`}
+              style={recommended
+                ? { background: "linear-gradient(135deg, rgba(247,147,29,0.08) 0%, rgba(247,147,29,0.03) 100%)" }
+                : { backgroundColor: "#fafafa" }}>
+              <div className="flex items-center justify-between gap-3 relative z-10">
+                <div className="flex items-center gap-2.5">
+                  <div className={`size-9 rounded-full flex items-center justify-center transition-colors ${
+                    recommended ? "bg-[#f7931d]/15" : "bg-gray-200/60"
+                  }`}>
+                    <Star className={`size-4 transition-colors ${recommended ? "text-[#f7931d]" : "text-gray-500"}`}
+                      fill={recommended ? "#f7931d" : "transparent"} strokeWidth={2.2} />
+                  </div>
+                  <span className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>สินค้าแนะนำ</span>
+                </div>
+                <ToggleSwitch checked={recommended} onChange={() => setRecommended((v) => !v)} />
+              </div>
+              <div className="flex items-start gap-1.5 relative z-10">
+                <AlertCircle className="size-3.5 text-gray-400 mt-0.5 shrink-0" />
+                <span className={`${font} text-[12px] text-[#8e8e93] leading-relaxed`}>ตั้งค่าเป็นสินค้าแนะนำเพื่อโปรโมทบนหน้าหลักของร้าน</span>
+              </div>
+              <motion.img
+                src={imgRecommendedProducts}
+                alt=""
+                className="absolute -bottom-2 -right-2 size-[90px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover/card:scale-110 group-hover/card:-rotate-3"
+                style={{
+                  maskImage: "linear-gradient(to bottom, black 50%, rgba(0,0,0,0.45) 80%, transparent 100%)",
+                  WebkitMaskImage: "linear-gradient(to bottom, black 50%, rgba(0,0,0,0.45) 80%, transparent 100%)",
+                  opacity: recommended ? 1 : 0.5,
+                }}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: recommended ? 1 : 0.5 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                aria-hidden
+              />
+            </div>
+          </div>
+        </section>
         </div>
       </div>
+
+      {/* Right sidebar — sticky scroll-spy with progress + action buttons */}
+      <aside className="w-[240px] shrink-0 sticky top-0">
+        <div className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col">
+          <p className={`${font} text-[11px] text-[#8e8e93] uppercase tracking-wider mb-4`} style={{ fontWeight: 600 }}>ขั้นตอนการเพิ่มสินค้า</p>
+          {sections.map((s, i) => {
+            const isActive = activeStep === i;
+            const isLast = i === sections.length - 1;
+            const isVisited = i <= maxVisitedStep; // user has scrolled past or clicked
+            // Status logic:
+            //   active → focused (no error tint)
+            //   filled (valid) → green check
+            //   required + empty + visited (and not active) → RED + !  (only after user passes by)
+            //   optional / not yet visited → normal gray
+            const showError = !isActive && isVisited && s.required && !s.valid;
+            const showDone  = !isActive && isVisited && s.valid;
+            return (
+              <div key={s.id}>
+                <motion.button onClick={() => scrollToSection(s.id, i)}
+                  whileTap={{ scale: 0.98 }}
+                  className={`${font} relative flex items-center gap-3 text-[14px] cursor-pointer w-full text-left rounded-xl px-2.5 py-2 transition-colors ${
+                    isActive ? "" : "hover:bg-gray-50"
+                  }`}>
+                  {isActive && (
+                    <motion.span layoutId="addprod-step-pill"
+                      className="absolute inset-0 bg-[#319754]/10 rounded-xl"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }} />
+                  )}
+                  <motion.span
+                    initial={false}
+                    animate={isActive ? { scale: [1, 1.1, 1] } : { scale: 1 }}
+                    transition={isActive ? { duration: 1.4, repeat: Infinity, ease: "easeInOut" } : { duration: 0.2 }}
+                    className={`relative size-5 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                      showDone   ? "bg-[#319754] shadow-[0_2px_4px_rgba(49,151,84,0.25)]"
+                      : showError ? "bg-[#ff3b30] shadow-[0_2px_4px_rgba(255,59,48,0.25)]"
+                      : isActive  ? "bg-white border-2 border-[#319754] shadow-[0_0_0_3px_rgba(49,151,84,0.15)]"
+                      :             "bg-white border-2 border-gray-300"
+                    }`}>
+                    {showDone   ? <Check className="size-3 text-white" strokeWidth={3} />
+                    : showError ? <AlertCircle className="size-3 text-white" strokeWidth={3} fill="transparent" />
+                    : isActive  ? <span className="size-1.5 rounded-full bg-[#319754]" />
+                    : null}
+                  </motion.span>
+                  <span className={`relative ${
+                    isActive  ? "text-[#319754]"
+                    : showDone  ? "text-gray-700"
+                    : showError ? "text-[#ff3b30]"
+                    :             "text-[#8e8e93]"
+                  }`} style={{ fontWeight: isActive ? 600 : (showDone || showError) ? 500 : 400 }}>
+                    {s.label}
+                  </span>
+                </motion.button>
+                {!isLast && (
+                  <div className={`ml-[18px] my-0.5 w-0.5 h-3 rounded-full transition-colors ${
+                    showDone ? "bg-[#319754]" : "bg-gray-200"
+                  }`} />
+                )}
+              </div>
+            );
+          })}
+
+          {/* Action buttons */}
+          <div className="h-px bg-gray-100 my-4" />
+          <div className="flex flex-col gap-2">
+            <button onClick={() => toast.success("เพิ่มสินค้าเรียบร้อย")}
+              className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-10 w-full rounded-full text-[14px] cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+              style={{ fontWeight: 500 }}>
+              เพิ่มสินค้า
+            </button>
+            <button onClick={onBack}
+              className={`${font} border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-10 w-full rounded-full text-[14px] cursor-pointer transition-colors`}>
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
 
 /* ========== OVERVIEW ========== */
-function OverviewTab() {
+function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab) => void }) {
   const [selectedDate, setSelectedDate] = useState(16);
   const [currentMonth, setCurrentMonth] = useState(0);
   const [currentYear, setCurrentYear] = useState(2026);
@@ -1427,31 +3690,99 @@ function OverviewTab() {
     <div>
       <h2 className={`${font} text-[24px] mb-6`} style={{ fontWeight: 500 }}>Dashboard</h2>
 
-      {/* Wallet */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5 mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="size-8 rounded-full bg-[#319754]/10 flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#319754" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-          </div>
-          <h3 className={`${font} text-[18px]`} style={{ fontWeight: 700 }}>กระเป๋าเงิน</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2 border-t border-gray-100">
-          <div className="pt-4">
-            <p className={`${font} text-[13px] text-gray-400`}>ยอดพร้อมถอน</p>
-            <p className={`${font} text-[24px] text-[#319754] mt-2`} style={{ fontWeight: 700 }}>฿2,775.21</p>
-          </div>
-          <div className="pt-4 md:border-l md:border-gray-100 md:pl-6">
-            <p className={`${font} text-[13px] text-gray-400 flex items-center gap-1`}>
-              ยอด Escrow
-              <span className="inline-flex items-center justify-center size-4 rounded-full border border-gray-300 text-[10px] text-gray-400">i</span>
+      {/* Wallet (left) + Order tracking (right) — side by side on xl */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5 items-stretch">
+      {/* Wallet — brand-green card with wallet illustration center-bottom overlapping right cards */}
+      <div className="group bg-[#319754] rounded-2xl flex items-stretch overflow-hidden shadow-[0px_4px_16px_rgba(49,151,84,0.22)] min-h-[220px] relative">
+        {/* Wallet illustration positioned on outer card, center-bottom, extending below */}
+        <motion.img
+          src={imgWalletIllust}
+          alt=""
+          className="absolute bottom-[-40px] left-[calc(50%-29px)] -translate-x-1/2 size-[178px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 z-0"
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+          aria-hidden
+        />
+        {/* Left: hero — กระเป๋าตังค์ + ยอดพร้อมถอน */}
+        <div className="flex-1 flex flex-col items-start justify-between p-4 relative min-w-0 z-10">
+          <p className={`${font} text-[14px] text-white whitespace-nowrap`} style={{ fontWeight: 700 }}>กระเป๋าตังค์</p>
+          <div className="flex flex-col gap-[10px] items-start">
+            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>ยอดพร้อมถอน</p>
+            <p className={`${font} text-[24px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
+              <AnimatedValue value="฿2,775.21" />
             </p>
-            <p className={`${font} text-[24px] text-[#1a1a1a] mt-2`} style={{ fontWeight: 700 }}>฿1,370.6</p>
-          </div>
-          <div className="pt-4 md:border-l md:border-gray-100 md:pl-6">
-            <p className={`${font} text-[13px] text-gray-400`}>รายได้สะสม</p>
-            <p className={`${font} text-[24px] text-[#3b82f6] mt-2`} style={{ fontWeight: 700 }}>฿2,775.21</p>
+            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>+12.5% เทียบเดือนก่อน</p>
+            <button className={`${font} bg-white hover:bg-gray-50 text-[#287745] h-10 w-[110px] rounded-full text-[13px] inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)]`}
+              style={{ fontWeight: 600 }}>
+              <Wallet className="size-3.5" />
+              ถอนเงิน
+            </button>
           </div>
         </div>
+
+        {/* Right: stacked Escrow + รายได้สะสม cards (overlap wallet image) */}
+        <div className="flex-1 flex flex-col gap-[10px] p-[10px] min-w-0 relative z-10">
+          {/* ยอด Escrow */}
+          <div className="bg-white/15 backdrop-blur-[10px] rounded-2xl flex-1 flex flex-col gap-2 items-start p-4 overflow-hidden">
+            <div className={`flex items-center gap-1.5`}>
+              <p className={`${font} text-[10px] text-white whitespace-nowrap`}>ยอด Escrow</p>
+              <span className="inline-flex items-center justify-center size-2.5 rounded-full border border-white/50 text-[7px] text-white/80">i</span>
+            </div>
+            <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
+              <AnimatedValue value="฿1,370.6" />
+            </p>
+            <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>8 ออเดอร์รอ</p>
+          </div>
+          {/* รายได้สะสม */}
+          <div className="bg-white/15 backdrop-blur-[10px] rounded-2xl flex-1 flex flex-col gap-2 items-start p-4 overflow-hidden">
+            <p className={`${font} text-[10px] text-white whitespace-nowrap`}>รายได้สะสม</p>
+            <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
+              <AnimatedValue value="฿2,775.21" />
+            </p>
+            <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>+18.2% MTD</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Order tracking — quick status overview */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-[0px_1px_4px_rgba(0,0,0,0.04)] flex flex-col">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h3 className={`${font} text-[14px] text-[#101828]`} style={{ fontWeight: 700 }}>ติดตามคำสั่งซื้อ</h3>
+            <span className={`${font} text-[11px] text-gray-400`}>ทั้งหมด</span>
+          </div>
+          <button onClick={() => onViewOrders?.()}
+            className={`${font} text-[11px] inline-flex items-center gap-0.5 text-[#319754] hover:text-[#287745] cursor-pointer transition-colors`}
+            style={{ fontWeight: 600 }}>
+            ดูทั้งหมด
+            <ChevronRight className="size-3" />
+          </button>
+        </div>
+        <div className="grid grid-cols-3 gap-2 flex-1">
+          {[
+            { id: "pending_payment" as OrderFilterTab, label: "รอชำระเงิน", count: countByStatus("pending_payment"), accent: "#ff3b30", Icon: Wallet },
+            { id: "pending_verify" as OrderFilterTab, label: "รอตรวจสอบ", count: countByStatus("pending_verify"), accent: "#f59e0b", Icon: ScanSearch },
+            { id: "ready_ship" as OrderFilterTab, label: "พร้อมจัดส่ง", count: countByStatus("ready_ship"), accent: "#3b82f6", Icon: PackageCheck },
+            { id: "shipping" as OrderFilterTab, label: "กำลังจัดส่ง", count: countByStatus("shipping"), accent: "#319754", Icon: Truck },
+            { id: "shipped" as OrderFilterTab, label: "ส่งสำเร็จ", count: countByStatus("shipped"), accent: "#10b981", Icon: Check },
+            { id: "cancelled" as OrderFilterTab, label: "ยกเลิก", count: countByStatus("cancelled"), accent: "#6b7280", Icon: PackageX },
+          ].map((s) => (
+            <button key={s.id} onClick={() => onViewOrders?.(s.id)}
+              className="group bg-[#fafbfc] hover:bg-[#e8f7ed] border border-transparent hover:border-[#319754] rounded-2xl p-4 text-left transition-all cursor-pointer flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-1.5">
+                <p className={`${font} text-[10px] text-[#101828] truncate`}>{s.label}</p>
+                <div className="size-[25px] rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shrink-0" style={{ backgroundColor: `${s.accent}1a` }}>
+                  <s.Icon className="size-3.5" style={{ color: s.accent }} />
+                </div>
+              </div>
+              <p className={`${font} text-[22px] text-[#101828] tabular-nums leading-none`} style={{ fontWeight: 700 }}>
+                <AnimatedValue value={String(s.count)} />
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
       </div>
 
       {/* Top section: Calendar + Stats */}
@@ -1562,25 +3893,25 @@ function OverviewTab() {
 
         {/* Right stats */}
         <div className="flex flex-col gap-3 flex-1 xl:basis-1/2">
-          {/* Row 1: sales — highlight card */}
-          <div className="bg-gradient-to-r from-[#319754] to-[#46A165] rounded-2xl p-5 shadow-[0px_2px_12px_rgba(49,151,84,0.25)]">
+          {/* Row 1: sales — light green highlight card */}
+          <div className="bg-gradient-to-br from-white to-[#f0faf3] rounded-2xl p-5 border border-[#e0f0e5] shadow-[0px_1px_4px_rgba(0,0,0,0.04)] hover:shadow-[0px_2px_12px_rgba(49,151,84,0.1)] transition-shadow">
             <div className="flex items-center justify-between">
-              <p className={`${font} text-[12px] text-white/70`}>{viewMode === "yearly" ? "ยอดขายรายปี" : "ยอดขายรายเดือน"}</p>
-              <div className="size-8 rounded-full bg-white/20 flex items-center justify-center">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              <p className={`${font} text-[12px] text-[#3d7d52]`} style={{ fontWeight: 500 }}>{viewMode === "yearly" ? "ยอดขายรายปี" : "ยอดขายรายเดือน"}</p>
+              <div className="size-8 rounded-full bg-[#319754]/15 flex items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#287745" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
               </div>
             </div>
             <div className="flex items-baseline gap-1.5 mt-3">
-              <span className={`${font} text-[28px] text-white`} style={{ fontWeight: 700 }}>{fmt(viewMode === "yearly" ? yearlySales : monthlySalesData[currentMonth])}</span>
-              <span className={`${font} text-[13px] text-white/70`}>บาท</span>
+              <span className={`${font} text-[28px] text-[#287745] tabular-nums`} style={{ fontWeight: 700 }}><AnimatedValue value={fmt(viewMode === "yearly" ? yearlySales : monthlySalesData[currentMonth])} /></span>
+              <span className={`${font} text-[13px] text-[#3d7d52]/80`}>บาท</span>
             </div>
             <div className="flex items-center justify-between gap-2 mt-2">
               <div className="flex items-center gap-1 min-w-0">
                 {(viewMode === "yearly" ? 15 : monthSalesChg) >= 0 ? <UpArrow /> : <DownArrow />}
-                <span className={`${font} text-[11px] text-white/90 truncate`}>~{Math.abs(viewMode === "yearly" ? 15 : monthSalesChg)}% <span className="text-white/60">% เปลี่ยนแปลงจาก{viewMode === "yearly" ? "ปีก่อน" : "เดือนก่อน"}</span></span>
+                <span className={`${font} text-[11px] text-[#3d7d52] truncate`}>~{Math.abs(viewMode === "yearly" ? 15 : monthSalesChg)}% <span className="text-[#3d7d52]/65">% เปลี่ยนแปลงจาก{viewMode === "yearly" ? "ปีก่อน" : "เดือนก่อน"}</span></span>
               </div>
               <button onClick={() => setSalesPopupScope(viewMode === "yearly" ? "year" : "month")}
-                className={`${font} text-[11px] inline-flex items-center justify-center gap-1 bg-white/20 hover:bg-white/30 text-white px-3 rounded-full cursor-pointer transition-colors shrink-0 h-8`}
+                className={`${font} text-[11px] inline-flex items-center justify-center gap-1 bg-white hover:bg-gray-50 text-gray-600 px-3 rounded-full cursor-pointer transition-colors shrink-0 h-8`}
                 style={{ fontWeight: 600 }}>
                 <Eye className="size-3" />
                 ดูรายละเอียด
@@ -1590,7 +3921,7 @@ function OverviewTab() {
 
           {/* Row 2: visits + orders */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gradient-to-br from-white to-[#f0faf3] rounded-2xl border border-[#e0f0e5] p-5 shadow-[0px_1px_4px_rgba(0,0,0,0.04)] hover:shadow-[0px_2px_12px_rgba(49,151,84,0.1)] transition-shadow">
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-[0px_1px_4px_rgba(0,0,0,0.04)] hover:shadow-[0px_2px_12px_rgba(0,0,0,0.06)] transition-shadow">
               <div className="flex items-center justify-between">
                 <p className={`${font} text-[12px] text-gray-400`}>{viewMode === "yearly" ? "ยอดเข้าชมรายปี" : "ยอดเข้าชมรายเดือน"}</p>
                 <div className="size-8 rounded-full bg-[#319754]/10 flex items-center justify-center">
@@ -1598,12 +3929,12 @@ function OverviewTab() {
                 </div>
               </div>
               <div className="flex items-baseline gap-1.5 mt-3">
-                <span className={`${font} text-[26px] text-[#1a1a1a]`} style={{ fontWeight: 700 }}>{fmt(viewMode === "yearly" ? yearlyVisits : monthlyVisits[currentMonth])}</span>
+                <span className={`${font} text-[26px] text-[#1a1a1a] tabular-nums`} style={{ fontWeight: 700 }}><AnimatedValue value={fmt(viewMode === "yearly" ? yearlyVisits : monthlyVisits[currentMonth])} /></span>
                 <span className={`${font} text-[13px] text-gray-400`}>ครั้ง</span>
               </div>
               <ChgRow value={viewMode === "yearly" ? 12 : monthVisitChg} label={viewMode === "yearly" ? "ปีก่อน" : "เดือนก่อน"} />
             </div>
-            <div className="bg-gradient-to-br from-white to-[#f0faf3] rounded-2xl border border-[#e0f0e5] p-5 shadow-[0px_1px_4px_rgba(0,0,0,0.04)] hover:shadow-[0px_2px_12px_rgba(49,151,84,0.1)] transition-shadow">
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-[0px_1px_4px_rgba(0,0,0,0.04)] hover:shadow-[0px_2px_12px_rgba(0,0,0,0.06)] transition-shadow">
               <div className="flex items-center justify-between">
                 <p className={`${font} text-[12px] text-gray-400`}>{viewMode === "yearly" ? "คำสั่งซื้อรายปี" : "คำสั่งซื้อรายเดือน"}</p>
                 <div className="size-8 rounded-full bg-[#3b82f6]/10 flex items-center justify-center">
@@ -1611,7 +3942,7 @@ function OverviewTab() {
                 </div>
               </div>
               <div className="flex items-baseline gap-1.5 mt-3">
-                <span className={`${font} text-[26px] text-[#1a1a1a]`} style={{ fontWeight: 700 }}>{fmt(viewMode === "yearly" ? yearlyOrders : monthlyOrders[currentMonth])}</span>
+                <span className={`${font} text-[26px] text-[#1a1a1a] tabular-nums`} style={{ fontWeight: 700 }}><AnimatedValue value={fmt(viewMode === "yearly" ? yearlyOrders : monthlyOrders[currentMonth])} /></span>
                 <span className={`${font} text-[13px] text-gray-400`}>รายการ</span>
               </div>
               <ChgRow value={viewMode === "yearly" ? 8 : monthOrderChg} label={viewMode === "yearly" ? "ปีก่อน" : "เดือนก่อน"} />
@@ -1628,7 +3959,7 @@ function OverviewTab() {
                 </div>
               </div>
               <div className="flex items-baseline gap-1.5 mt-3">
-                <span className={`${font} text-[26px] text-[#1a1a1a]`} style={{ fontWeight: 700 }}>{fmt(viewMode === "yearly" ? monthlyVisits[currentMonth] : dailyVisits(selectedDate))}</span>
+                <span className={`${font} text-[26px] text-[#1a1a1a] tabular-nums`} style={{ fontWeight: 700 }}><AnimatedValue value={fmt(viewMode === "yearly" ? monthlyVisits[currentMonth] : dailyVisits(selectedDate))} /></span>
                 <span className={`${font} text-[13px] text-gray-400`}>ครั้ง</span>
               </div>
               <ChgRow value={viewMode === "yearly" ? monthVisitChg : dayVisitChg} label={viewMode === "yearly" ? "เดือนก่อน" : "วันก่อน"} />
@@ -1641,7 +3972,7 @@ function OverviewTab() {
                 </div>
               </div>
               <div className="flex items-baseline gap-1.5 mt-3">
-                <span className={`${font} text-[26px] text-[#1a1a1a]`} style={{ fontWeight: 700 }}>{fmt(viewMode === "yearly" ? monthlyOrders[currentMonth] : dailyOrders(selectedDate))}</span>
+                <span className={`${font} text-[26px] text-[#1a1a1a] tabular-nums`} style={{ fontWeight: 700 }}><AnimatedValue value={fmt(viewMode === "yearly" ? monthlyOrders[currentMonth] : dailyOrders(selectedDate))} /></span>
                 <span className={`${font} text-[13px] text-gray-400`}>รายการ</span>
               </div>
               <ChgRow value={viewMode === "yearly" ? monthOrderChg : dayOrderChg} label={viewMode === "yearly" ? "เดือนก่อน" : "วันก่อน"} />
@@ -2715,6 +5046,34 @@ function ComplaintDetailTab({ complaintId, onBack }: { complaintId: string; onBa
 }
 
 /* ========== REPORT — SALES ========== */
+// Animated counter — keeps prefix (฿) and suffix text, animates the numeric part 0 → target
+function AnimatedValue({ value, duration = 1000 }: { value: string; duration?: number }) {
+  const match = value.match(/^([฿]?\s*)([\d,]+(?:\.\d+)?)(.*)$/);
+  const target = match ? parseFloat(match[2].replace(/,/g, "")) : 0;
+  const decimals = match && match[2].includes(".") ? (match[2].split(".")[1] || "").length : 0;
+  const prefix = match ? match[1] : "";
+  const suffix = match ? match[3] : "";
+  const [current, setCurrent] = useState(0);
+  useEffect(() => {
+    if (!match) return;
+    const startTime = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      setCurrent(target * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  if (!match) return <>{value}</>;
+  const formatted = decimals > 0
+    ? current.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    : Math.round(current).toLocaleString();
+  return <>{prefix}{formatted}{suffix}</>;
+}
+
 function ReportSalesTab() {
   const [chartType, setChartType] = useState<"line" | "bar" | "pie">("line");
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly" | "yearly" | "custom">("daily");
@@ -2794,52 +5153,37 @@ function ReportSalesTab() {
     }
   };
 
-  const dataByPeriod = {
-    daily: [
-      { label: "00:00", sales: 0, orders: 0, visits: 12, newCust: 0, repeatCust: 0, discount: 0, topProduct: "-" },
-      { label: "04:00", sales: 120, orders: 1, visits: 18, newCust: 1, repeatCust: 0, discount: 0, topProduct: "ใบบัวบกแคปซูล" },
-      { label: "08:00", sales: 480, orders: 3, visits: 65, newCust: 2, repeatCust: 1, discount: 40, topProduct: "ขมิ้นชันแคปซูล" },
-      { label: "12:00", sales: 920, orders: 6, visits: 142, newCust: 3, repeatCust: 3, discount: 80, topProduct: "ฟ้าทะลายโจร" },
-      { label: "16:00", sales: 1340, orders: 9, visits: 198, newCust: 4, repeatCust: 5, discount: 120, topProduct: "น้ำผึ้งดอกลำไย" },
-      { label: "20:00", sales: 641, orders: 4, visits: 88, newCust: 1, repeatCust: 3, discount: 50, topProduct: "ชาเก๊กฮวยออร์แกนิก" },
-    ],
-    weekly: [
-      { label: "สัปดาห์ที่ 1", sales: 6420, orders: 38, visits: 1180, newCust: 12, repeatCust: 18, discount: 480, topProduct: "ขมิ้นชันแคปซูล" },
-      { label: "สัปดาห์ที่ 2", sales: 8950, orders: 54, visits: 1620, newCust: 18, repeatCust: 26, discount: 720, topProduct: "ฟ้าทะลายโจร" },
-      { label: "สัปดาห์ที่ 3", sales: 11240, orders: 68, visits: 1985, newCust: 22, repeatCust: 34, discount: 920, topProduct: "น้ำผึ้งดอกลำไย" },
-      { label: "สัปดาห์ที่ 4", sales: 9780, orders: 59, visits: 1745, newCust: 19, repeatCust: 30, discount: 810, topProduct: "ชาเก๊กฮวยออร์แกนิก" },
-      { label: "สัปดาห์ที่ 5", sales: 4380, orders: 26, visits: 820, newCust: 9, repeatCust: 12, discount: 320, topProduct: "น้ำมันมะพร้าวสกัดเย็น" },
-    ],
-    monthly: Array.from({ length: 31 }, (_, i) => {
-      const day = i + 1;
-      const samples: Record<number, any> = {
-        1: { sales: 145, orders: 1, visits: 32, newCust: 1, repeatCust: 0, discount: 0, topProduct: "ขมิ้นชันแคปซูล" },
-        2: { sales: 320, orders: 2, visits: 65, newCust: 1, repeatCust: 1, discount: 30, topProduct: "ฟ้าทะลายโจร" },
-        4: { sales: 180, orders: 1, visits: 48, newCust: 0, repeatCust: 1, discount: 0, topProduct: "ใบบัวบกแคปซูล" },
-        5: { sales: 91, orders: 1, visits: 52, newCust: 1, repeatCust: 0, discount: 10, topProduct: "ชาเก๊กฮวยออร์แกนิก" },
-      };
-      const d = samples[day] ?? { sales: 0, orders: 0, visits: 0, newCust: 0, repeatCust: 0, discount: 0, topProduct: "-" };
-      return { label: String(day), ...d };
-    }),
-    yearly: [
-      { label: "2565", sales: 124800, orders: 845, visits: 18420, newCust: 285, repeatCust: 412, discount: 8200, topProduct: "ขมิ้นชันแคปซูล" },
-      { label: "2566", sales: 168450, orders: 1124, visits: 24680, newCust: 342, repeatCust: 568, discount: 11200, topProduct: "น้ำผึ้งดอกลำไย" },
-      { label: "2567", sales: 215300, orders: 1486, visits: 32150, newCust: 458, repeatCust: 742, discount: 14800, topProduct: "ฟ้าทะลายโจร" },
-      { label: "2568", sales: 248920, orders: 1672, visits: 38240, newCust: 524, repeatCust: 868, discount: 17500, topProduct: "ขมิ้นชันแคปซูล" },
-      { label: "2569", sales: 86420, orders: 542, visits: 12180, newCust: 184, repeatCust: 268, discount: 5840, topProduct: "ชาเก๊กฮวยออร์แกนิก" },
-    ],
-    custom: [
-      { label: "ธ.ค.", sales: 0, orders: 0, visits: 250, newCust: 0, repeatCust: 0, discount: 0, topProduct: "-" },
-      { label: "ม.ค.", sales: 0, orders: 0, visits: 320, newCust: 0, repeatCust: 0, discount: 0, topProduct: "-" },
-      { label: "ก.พ.", sales: 0, orders: 0, visits: 410, newCust: 0, repeatCust: 0, discount: 0, topProduct: "-" },
-      { label: "มี.ค.", sales: 3680, orders: 15, visits: 680, newCust: 9, repeatCust: 6, discount: 320, topProduct: "ขมิ้นชันแคปซูล" },
-      { label: "เม.ย.", sales: 0, orders: 0, visits: 280, newCust: 0, repeatCust: 0, discount: 0, topProduct: "-" },
-      { label: "พ.ค.", sales: 641, orders: 4, visits: 195, newCust: 3, repeatCust: 1, discount: 60, topProduct: "ฟ้าทะลายโจร" },
-    ],
-  };
-  const data = dataByPeriod[period];
+  // All 4 report tabs share a single source of truth (src/app/data/reportMockData.ts)
+  // so the same date filter always produces matching numbers across the dashboard.
+  const data = buildReportData({ period, dailyRange, selectedDate, monthRange, yearRange, today });
 
   const PIE_COLORS = ["#319754", "#46A165", "#7bc290", "#aedab8", "#f7931d", "#fbbf24"];
+
+  // Shade a hex color by ±percent (positive = lighter, negative = darker)
+  const shade = (hex: string, percent: number) => {
+    const n = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+    const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
+    return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+  };
+
+  // Custom 3D bar shape (top face lighter + right face darker, drawn behind front rect)
+  const Bar3D = (props: any) => {
+    const { x, y, width, height, fill } = props;
+    if (!height || height <= 0 || !width) return null;
+    const depth = Math.min(Math.max(width * 0.28, 5), 9);
+    const top = shade(fill, 12);
+    const right = shade(fill, -18);
+    return (
+      <g>
+        <path d={`M${x + width},${y} L${x + width + depth},${y - depth} L${x + width + depth},${y + height - depth} L${x + width},${y + height} Z`} fill={right} />
+        <path d={`M${x},${y} L${x + depth},${y - depth} L${x + width + depth},${y - depth} L${x + width},${y} Z`} fill={top} />
+        <rect x={x} y={y} width={width} height={height} fill={fill} />
+      </g>
+    );
+  };
 
   // Mock products / customers for the orders popup
   const baseProducts = [
@@ -2912,9 +5256,51 @@ function ReportSalesTab() {
     });
   };
 
-  const todayRev = 641;
-  const monthRev = 641;
-  const yearRev = 4282.4;
+  // KPI cards — 4 different metrics, all filtered by the active period + date selection.
+  // Default (period=daily, today) → everything shows today's totals.
+  const kpi = (() => {
+    const sumKey = (k: string) => data.reduce((s, d) => s + ((d as any)[k] || 0), 0);
+    const sales = sumKey("sales");
+    const orders = sumKey("orders");
+    // Derived metrics — qty estimated from orders, cost ~55% of sales (typical for herbal goods)
+    const qty = orders * 3;
+    const cost = Math.round(sales * 0.55);
+    const profit = sales - cost;
+
+    let scope = "วันนี้";
+    if (period === "daily") {
+      const from = dailyRange?.from ?? today;
+      const to = dailyRange?.to ?? today;
+      const isRange = !!(from && to && to.getTime() !== from.getTime());
+      if (isRange) {
+        scope = `${fmtDate(from)} – ${fmtDate(to)}`;
+      } else if (from.toDateString() === today.toDateString()) {
+        scope = "วันนี้";
+      } else {
+        scope = `วันที่ ${from.getDate()} ${thaiMonthsFull[from.getMonth()]} ${from.getFullYear() + 543}`;
+      }
+    } else if (period === "weekly") {
+      scope = `เดือน${thaiMonthsFull[selectedDate.getMonth()]} ${selectedDate.getFullYear() + 543}`;
+    } else if (period === "monthly") {
+      const yr = monthRange.year + 543;
+      scope = monthRange.from === monthRange.to
+        ? `เดือน${thaiMonthsFull[monthRange.from]} ${yr}`
+        : `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+    } else if (period === "yearly") {
+      const a = Math.min(yearRange.from, yearRange.to) + 543;
+      const b = Math.max(yearRange.from, yearRange.to) + 543;
+      scope = a === b ? `ปี ${a}` : `ปี ${a} – ${b}`;
+    }
+    // Useful sub-stats per card (replaces redundant "scope" badge)
+    const days = Math.max(1, data.length);
+    const avgSales = Math.round(sales / days);
+    const avgOrders = Math.max(1, Math.round(orders / days));
+    const aov = orders > 0 ? Math.round(sales / orders) : 0; // average order value
+    const costRatio = sales > 0 ? Math.round((cost / sales) * 100) : 0;
+    const margin = sales > 0 ? ((profit / sales) * 100) : 0;
+
+    return { scope, sales, orders, cost, profit, avgSales, avgOrders, aov, costRatio, margin };
+  })();
   const fmt = (n: number) => "฿" + n.toLocaleString(undefined, { maximumFractionDigits: 1 });
 
   const periodTabs: { id: typeof period; label: string }[] = [
@@ -2932,209 +5318,295 @@ function ReportSalesTab() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-3">
         <h2 className={`${font} text-[24px]`} style={{ fontWeight: 500 }}>รายงานผลยอดขาย</h2>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white px-5 py-2 rounded-full cursor-pointer`}>
-              <Download className="size-4" />
-              ส่งออกรายงาน
-              <ChevronDown className="size-3.5" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-44 p-1">
-            <button onClick={() => console.log("export excel")}
-              className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
-              <FileSpreadsheet className="size-4 text-[#0f7a3a]" />
-              <span>Excel (.xlsx)</span>
-            </button>
-            <button onClick={() => console.log("export pdf")}
-              className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
-              <FileText className="size-4 text-[#dc2626]" />
-              <span>PDF (.pdf)</span>
-            </button>
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          {[
-            {
-              label: "รายได้วันนี้", value: fmt(todayRev), change: "+12%", positive: true,
-              accent: "#10b981",
-              icon: (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-              ),
-            },
-            {
-              label: "รายได้เดือนนี้", value: fmt(monthRev), change: "+8%", positive: true,
-              accent: "#6366f1",
-              icon: (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              ),
-            },
-            {
-              label: "รายได้ปีนี้", value: fmt(yearRev), change: "+24%", positive: true,
-              accent: "#f59e0b",
-              icon: (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-              ),
-            },
-          ].map((s) => (
-            <div key={s.label} className="rounded-2xl border p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)]"
-              style={{ backgroundColor: `${s.accent}0d`, borderColor: `${s.accent}26` }}>
-              <div className="flex items-center justify-between">
-                <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
-                <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
-                  {s.icon}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Date picker */}
+          <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                aria-label="เปลี่ยนวันที่"
+              >
+                <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
+                <span style={{ fontWeight: 500 }}>{datasetLabel}</span>
+                <ChevronDown className="size-3.5 text-gray-400 group-hover:text-[#319754]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              {(period === "daily" || period === "custom") && (
+                <>
+                  <Calendar
+                    mode="range"
+                    numberOfMonths={2}
+                    selected={period === "daily" ? dailyRange : range}
+                    onSelect={period === "daily" ? setDailyRange : setRange}
+                    defaultMonth={(period === "daily" ? dailyRange?.from : range?.from) ?? today}
+                  />
+                  <div className="flex items-center justify-between gap-2 p-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิกเลือกวันเดียว หรือคลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => { period === "daily" ? setDailyRange({ from: today, to: today }) : setRange(undefined); }}
+                        className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ล้าง</button>
+                      <button onClick={() => setDatasetCalOpen(false)}
+                        className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
+                    </div>
+                  </div>
+                </>
+              )}
+              {period === "weekly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronLeft className="size-4 text-gray-600" />
+                    </button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {selectedDate.getFullYear() + 543}</span>
+                    <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronRight className="size-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const isActive = selectedDate.getMonth() === i;
+                      return (
+                        <button key={m} onClick={() => { setSelectedDate(new Date(selectedDate.getFullYear(), i, 1)); setDatasetCalOpen(false); }}
+                          className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isActive ? "bg-[#319754] text-white" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isActive ? 600 : 500 }}>
+                          {m}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-3 mt-3 border-t">
+                    <button onClick={() => { setSelectedDate(today); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
+                  </div>
                 </div>
-              </div>
-              <p className={`${font} text-[28px] mt-3 tracking-tight`} style={{ fontWeight: 700, color: s.accent }}>{s.value}</p>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className={`${font} inline-flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-md`}
-                  style={{ backgroundColor: s.positive ? "#dcfce7" : "#fee2e2", color: s.positive ? "#15803d" : "#b91c1c", fontWeight: 600 }}>
-                  {s.positive
-                    ? <svg width="9" height="9" viewBox="0 0 13 5" fill="none"><path d="M1 4.5L6.5 1L12 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    : <svg width="9" height="9" viewBox="0 0 13 5" fill="none"><path d="M1 0.5L6.5 4L12 0.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  {s.change}
-                </span>
-                <span className={`${font} text-[11px] text-gray-400`}>เทียบช่วงก่อนหน้า</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-5">
-          <div>
-            <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>รายงานผลยอดขาย</h3>
-            <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  className={`${font} text-[12px] text-gray-500 mt-1 inline-flex items-center gap-1.5 hover:text-[#319754] transition-colors cursor-pointer group`}
-                  aria-label="เปลี่ยนวันที่"
-                >
-                  <CalendarIcon className="size-3.5 text-gray-400 group-hover:text-[#319754]" />
-                  <span>ข้อมูลของ <span className="underline decoration-dotted underline-offset-2" style={{ fontWeight: 500 }}>{datasetLabel}</span></span>
-                  <ChevronDown className="size-3 text-gray-400 group-hover:text-[#319754]" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                {(period === "daily" || period === "custom") && (
-                  <>
-                    <Calendar
-                      mode="range"
-                      numberOfMonths={2}
-                      selected={period === "daily" ? dailyRange : range}
-                      onSelect={period === "daily" ? setDailyRange : setRange}
-                      defaultMonth={(period === "daily" ? dailyRange?.from : range?.from) ?? today}
-                    />
-                    <div className="flex items-center justify-between gap-2 p-3 border-t">
-                      <span className={`${font} text-[11px] text-gray-400`}>คลิกเลือกวันเดียว หรือคลิก 2 ครั้งเพื่อเลือกช่วง</span>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => { period === "daily" ? setDailyRange({ from: today, to: today }) : setRange(undefined); }}
-                          className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ล้าง</button>
-                        <button onClick={() => setDatasetCalOpen(false)}
-                          className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {period === "weekly" && (
-                  <>
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={(d) => { if (d) { setSelectedDate(d); setDatasetCalOpen(false); } }}
-                      defaultMonth={selectedDate}
-                    />
-                    <div className="flex items-center justify-end gap-2 p-3 border-t">
-                      <button onClick={() => { setSelectedDate(today); setDatasetCalOpen(false); }}
-                        className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>วันนี้</button>
-                    </div>
-                  </>
-                )}
-
-                {period === "monthly" && (
-                  <div className="p-3 w-[280px]">
-                    {/* Year nav */}
-                    <div className="flex items-center justify-between mb-3">
-                      <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year - 1 }))}
-                        className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
-                        <ChevronLeft className="size-4 text-gray-600" />
-                      </button>
-                      <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {monthRange.year + 543}</span>
-                      <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year + 1 }))}
-                        className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
-                        <ChevronRight className="size-4 text-gray-600" />
-                      </button>
-                    </div>
-                    {/* Month grid */}
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {thaiMonthsShort.map((m, i) => {
-                        const inRange = i >= Math.min(monthRange.from, monthRange.to) && i <= Math.max(monthRange.from, monthRange.to);
-                        const isEdge = i === monthRange.from || i === monthRange.to;
-                        return (
-                          <button key={m} onClick={() => handleMonthClick(i)}
-                            className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${
-                              isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"
-                            }`}
-                            style={{ fontWeight: isEdge ? 600 : 500 }}>
-                            {m}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
-                      <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
-                      <button onClick={() => { setMonthRange({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() }); setMonthClickPhase(0); setDatasetCalOpen(false); }}
-                        className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
-                    </div>
+              )}
+              {period === "monthly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year - 1 }))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronLeft className="size-4 text-gray-600" />
+                    </button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {monthRange.year + 543}</span>
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year + 1 }))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronRight className="size-4 text-gray-600" />
+                    </button>
                   </div>
-                )}
-
-                {period === "yearly" && (
-                  <div className="p-3 w-[200px]">
-                    <p className={`${font} text-[11px] text-gray-400 mb-2`}>ย้อนหลังได้ถึง 5 ปี</p>
-                    <div className="flex flex-col gap-1">
-                      {availableYears.map((y) => {
-                        const inRange = y >= Math.min(yearRange.from, yearRange.to) && y <= Math.max(yearRange.from, yearRange.to);
-                        const isEdge = y === yearRange.from || y === yearRange.to;
-                        return (
-                          <button key={y} onClick={() => handleYearClick(y)}
-                            className={`${font} text-[13px] py-2 px-3 rounded-lg cursor-pointer transition-colors text-left ${
-                              isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"
-                            }`}
-                            style={{ fontWeight: isEdge ? 600 : 500 }}>
-                            ปี {y + 543}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
-                      <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
-                      <button onClick={() => { setYearRange({ from: today.getFullYear(), to: today.getFullYear() }); setYearClickPhase(0); setDatasetCalOpen(false); }}
-                        className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ปีนี้</button>
-                    </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const inRange = i >= Math.min(monthRange.from, monthRange.to) && i <= Math.max(monthRange.from, monthRange.to);
+                      const isEdge = i === monthRange.from || i === monthRange.to;
+                      return (
+                        <button key={m} onClick={() => handleMonthClick(i)}
+                          className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isEdge ? 600 : 500 }}>
+                          {m}
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="inline-flex items-center bg-gray-50 rounded-full p-1 self-start md:self-auto overflow-x-auto max-w-full">
+                  <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <button onClick={() => { setMonthRange({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() }); setMonthClickPhase(0); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
+                  </div>
+                </div>
+              )}
+              {period === "yearly" && (
+                <div className="p-3 w-[200px]">
+                  <p className={`${font} text-[11px] text-gray-400 mb-2`}>ย้อนหลังได้ถึง 5 ปี</p>
+                  <div className="flex flex-col gap-1">
+                    {availableYears.map((y) => {
+                      const inRange = y >= Math.min(yearRange.from, yearRange.to) && y <= Math.max(yearRange.from, yearRange.to);
+                      const isEdge = y === yearRange.from || y === yearRange.to;
+                      return (
+                        <button key={y} onClick={() => handleYearClick(y)}
+                          className={`${font} text-[13px] py-2 px-3 rounded-lg cursor-pointer transition-colors text-left ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isEdge ? 600 : 500 }}>
+                          ปี {y + 543}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <button onClick={() => { setYearRange({ from: today.getFullYear(), to: today.getFullYear() }); setYearClickPhase(0); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ปีนี้</button>
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          {/* Period tabs */}
+          <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
                 className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
-                  <motion.div layoutId="report-period-bg" className="absolute inset-0 bg-[#319754] rounded-full"
+                  <motion.div layoutId="report-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                 )}
                 <span className="relative z-10">{t.label}</span>
               </button>
             ))}
           </div>
+          {/* Export button */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+                <Download className="size-4" />
+                ส่งออก
+                <ChevronDown className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-44 p-1">
+              <button onClick={() => console.log("export excel")}
+                className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileSpreadsheet className="size-4 text-[#0f7a3a]" />
+                <span>Excel (.xlsx)</span>
+              </button>
+              <button onClick={() => console.log("export pdf")}
+                className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileText className="size-4 text-[#dc2626]" />
+                <span>PDF (.pdf)</span>
+              </button>
+            </PopoverContent>
+          </Popover>
         </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[
+            {
+              label: `รายได้ ${kpi.scope}`, value: fmt(kpi.sales),
+              subLabel: `เฉลี่ย ${fmt(kpi.avgSales)}/วัน`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+              accent: "#10b981",
+              icon: (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              ),
+              bgArt: (
+                <motion.img
+                  src={imgCoin}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: `จำนวนคำสั่งซื้อ ${kpi.scope}`, value: kpi.orders.toLocaleString() + " ออเดอร์",
+              subLabel: `เฉลี่ย ฿${kpi.aov.toLocaleString()}/ออเดอร์`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+              accent: "#0ea5e9",
+              icon: (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+              ),
+              bgArt: (
+                <motion.img
+                  src={imgBox}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: `ต้นทุน ${kpi.scope}`, value: fmt(kpi.cost),
+              subLabel: `${kpi.costRatio}% ของรายได้`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>,
+              accent: "#6366f1",
+              icon: (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              ),
+              bgArt: (
+                <motion.img
+                  src={imgCost}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: `กำไร ${kpi.scope}`, value: fmt(kpi.profit),
+              subLabel: `มาร์จิ้น ${kpi.margin.toFixed(1)}%`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+              accent: "#f59e0b",
+              icon: (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              ),
+              bgArt: (
+                <motion.img
+                  src={imgCoinUp}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.45 }}
+                  aria-hidden
+                />
+              ),
+            },
+          ].map((s: any) => (
+            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+              style={{ backgroundColor: `${s.accent}0d` }}>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                    {s.icon}
+                  </div>
+                </div>
+                <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                  <AnimatedValue value={s.value} />
+                </p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                    style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                    {s.subIcon}
+                    {s.subLabel}
+                  </span>
+                </div>
+              </div>
+              {s.bgArt}
+            </div>
+          ))}
+        </div>
+
+        <h3 className={`${font} text-[18px] mb-5`} style={{ fontWeight: 600 }}>รายงานผลยอดขาย</h3>
 
         {period === "custom" && (
           <div className="flex flex-wrap items-center gap-2 mb-5">
@@ -3165,64 +5637,222 @@ function ReportSalesTab() {
           </div>
         )}
 
-        <ResponsiveContainer width="100%" height={320}>
+        <ResponsiveContainer width="100%" height={340}>
           {chartType === "line" ? (
-            <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-              onClick={(state: any) => {
-                const i = state?.activeTooltipIndex;
-                if (typeof i === "number" && data[i]) { setFocusedLabel(data[i].label); setProductPage(1); }
-              }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
-              <YAxis yAxisId="left" tick={{ fontSize: 12, fill: "#319754" }} axisLine={false} tickLine={false} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: "#f7931d" }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Legend iconType="circle" />
-              <Line yAxisId="left" type="monotone" dataKey="sales" stroke="#319754" strokeWidth={2.5} name="ยอดขาย (฿)"
-                dot={(props: any) => {
-                  const isActive = data[props.index]?.label === focusedLabel;
-                  return <circle key={props.index} cx={props.cx} cy={props.cy} r={isActive ? 6 : 4} fill="#319754" stroke={isActive ? "#fff" : "none"} strokeWidth={isActive ? 2 : 0} />;
-                }} />
-              <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#f7931d" strokeWidth={2.5} name="จำนวนคำสั่งซื้อ"
-                dot={(props: any) => {
-                  const isActive = data[props.index]?.label === focusedLabel;
-                  return <circle key={props.index} cx={props.cx} cy={props.cy} r={isActive ? 6 : 4} fill="#f7931d" stroke={isActive ? "#fff" : "none"} strokeWidth={isActive ? 2 : 0} />;
-                }} />
-            </LineChart>
+            <ComposedChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+              <defs>
+                <filter id="glowGreen" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter id="glowOrange" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                cursor={{ stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4 4" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload || !payload.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {payload.map((p: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                              <span className="text-gray-600">{p.name}</span>
+                            </span>
+                            <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>
+                              {p.dataKey === "sales" ? `฿${p.value.toLocaleString()}` : p.value.toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }}
+              />
+              <Legend
+                wrapperStyle={{ paddingTop: 20 }}
+                content={({ payload }: any) => (
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    {payload?.map((entry: any, i: number) => (
+                      <div
+                        key={i}
+                        className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] transition-shadow cursor-default`}
+                        style={{
+                          backgroundColor: `${entry.color}10`,
+                          color: entry.color,
+                          fontWeight: 600,
+                          boxShadow: `0 1px 3px ${entry.color}1a`,
+                        }}
+                      >
+                        <span
+                          className="block rounded-full"
+                          style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }}
+                        />
+                        <span>{entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+              <Line yAxisId="left" type="monotone" dataKey="sales" stroke="#319754" strokeWidth={3} name="ยอดขาย (฿)"
+                style={{ filter: "url(#glowGreen)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#319754", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#319754", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(49,151,84,0.35))" } }}
+                animationDuration={800}
+              />
+              <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#f7931d" strokeWidth={3} name="จำนวนคำสั่งซื้อ"
+                style={{ filter: "url(#glowOrange)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#f7931d", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#f7931d", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(247,147,29,0.35))" } }}
+                animationDuration={800}
+              />
+            </ComposedChart>
           ) : chartType === "bar" ? (
-            <BarChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-              onClick={(state: any) => {
-                const i = state?.activeTooltipIndex;
-                if (typeof i === "number" && data[i]) { setFocusedLabel(data[i].label); setProductPage(1); }
-              }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
-              <YAxis yAxisId="left" tick={{ fontSize: 12, fill: "#319754" }} axisLine={false} tickLine={false} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: "#f7931d" }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Legend iconType="circle" />
-              <Bar yAxisId="left" dataKey="sales" name="ยอดขาย (฿)" radius={[6, 6, 0, 0]}>
-                {data.map((d, i) => <Cell key={i} fill="#319754" fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.35 : 1} />)}
-              </Bar>
-              <Bar yAxisId="right" dataKey="orders" name="จำนวนคำสั่งซื้อ" radius={[6, 6, 0, 0]}>
-                {data.map((d, i) => <Cell key={i} fill="#f7931d" fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.35 : 1} />)}
-              </Bar>
+            <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 10 }} barCategoryGap="22%" barGap={6}>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                cursor={{ fill: "rgba(148,163,184,0.08)" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload || !payload.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {payload.map((p: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                              <span className="text-gray-600">{p.name}</span>
+                            </span>
+                            <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>
+                              {p.dataKey === "sales" ? `฿${p.value.toLocaleString()}` : p.value.toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }}
+              />
+              <Legend
+                wrapperStyle={{ paddingTop: 20 }}
+                content={({ payload }: any) => (
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    {payload?.map((entry: any, i: number) => (
+                      <div
+                        key={i}
+                        className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                        style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}
+                      >
+                        <span className="block rounded-full"
+                          style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                        <span>{entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+              <Bar yAxisId="left" dataKey="sales" name="ยอดขาย (฿)" fill="#319754" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+              <Bar yAxisId="right" dataKey="orders" name="จำนวนคำสั่งซื้อ" fill="#f7931d" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
             </BarChart>
           ) : (
-            <PieChart>
-              <Pie data={data.filter((d) => d.sales > 0)} cx="50%" cy="50%" innerRadius={60} outerRadius={120}
-                dataKey="sales" nameKey="label" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                onClick={(entry: any) => { if (entry?.label) { setFocusedLabel(entry.label); setProductPage(1); } }}>
-                {data.filter((d) => d.sales > 0).map((d, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]}
-                    stroke={d.label === focusedLabel ? "#1a1a1a" : "#fff"}
-                    strokeWidth={d.label === focusedLabel ? 3 : 1}
-                    fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.4 : 1} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend iconType="circle" />
-            </PieChart>
+            (() => {
+              const pieData = data.filter((d) => (d as any).sales > 0);
+              const pieTotal = pieData.reduce((s, d) => s + ((d as any).sales || 0), 0);
+              return (
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%" cy="50%"
+                    innerRadius={72} outerRadius={120}
+                    paddingAngle={2}
+                    dataKey="sales" nameKey="label"
+                    labelLine={false}
+                    label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }: any) => {
+                      if (percent < 0.06) return null;
+                      const RADIAN = Math.PI / 180;
+                      const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                      return (
+                        <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central"
+                          style={{ fontSize: 12, fontWeight: 600, pointerEvents: "none" }}>
+                          {(percent * 100).toFixed(0)}%
+                        </text>
+                      );
+                    }}
+                    isAnimationActive
+                    animationDuration={700}
+                  >
+                    {pieData.map((d, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="#fff" strokeWidth={3} />
+                    ))}
+                  </Pie>
+                  {/* Center text — uses 42% to compensate for Legend area at bottom */}
+                  <text x="50%" y="38%" textAnchor="middle" dominantBaseline="middle"
+                    style={{ fontSize: 11, fill: "#9ca3af" }}>ยอดขายรวม</text>
+                  <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle"
+                    style={{ fontSize: 20, fill: "#1a1a1a", fontWeight: 700 }}>
+                    ฿{pieTotal.toLocaleString()}
+                  </text>
+                  <Tooltip
+                    content={({ active, payload }: any) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const p = payload[0];
+                      const pct = pieTotal > 0 ? ((p.value / pieTotal) * 100).toFixed(1) : "0";
+                      return (
+                        <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[160px]`}>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.payload.fill || PIE_COLORS[0] }} />
+                            <span className="text-[12px] text-gray-600" style={{ fontWeight: 500 }}>{p.name}</span>
+                          </div>
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span className="text-[16px] tabular-nums" style={{ fontWeight: 700, color: p.payload.fill || PIE_COLORS[0] }}>฿{p.value.toLocaleString()}</span>
+                            <span className="text-[11px] text-gray-400 tabular-nums">{pct}%</span>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{ paddingTop: 20 }}
+                    content={({ payload }: any) => (
+                      <div className="flex items-center justify-center gap-2 flex-wrap max-w-full px-4">
+                        {payload?.map((entry: any, i: number) => (
+                          <div key={i}
+                            className={`${font} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px]`}
+                            style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                            <span className="block rounded-full"
+                              style={{ width: 8, height: 8, backgroundColor: entry.color, boxShadow: `0 0 0 2.5px ${entry.color}25` }} />
+                            <span>{entry.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  />
+                </PieChart>
+              );
+            })()
           )}
         </ResponsiveContainer>
 
@@ -3323,16 +5953,78 @@ function ReportSalesTab() {
           }
         });
 
-        const totalPages = Math.max(1, Math.ceil(sorted.length / productPerPage));
+        // The table uses its own bucketing (per-DAY, not per-hour), so the daily-single-day
+        // case shows one group with the date label instead of 6 hourly buckets.
+        const tableBuckets: { label: string }[] = (() => {
+          const fmt = (d: Date) => `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear() + 543}`;
+          if (period === "daily") {
+            const from = dailyRange?.from ?? today;
+            const to = dailyRange?.to ?? today;
+            const isRange = from && to && to.getTime() !== from.getTime();
+            if (!isRange) return [{ label: fmt(from) }];
+            const out: { label: string }[] = [];
+            let cur = new Date(from);
+            let i = 0;
+            while (cur.getTime() <= to.getTime() && i < 92) {
+              out.push({ label: fmt(cur) });
+              cur.setDate(cur.getDate() + 1);
+              i++;
+            }
+            return out;
+          }
+          // For other periods, reuse chart bucket labels (already correct per current selection).
+          return data.map((d) => ({ label: d.label }));
+        })();
+
+        // Build date groups for the table — show what was sold on each bucket.
+        // Each bucket gets 3-5 products picked from the period product pool with small per-bucket qty.
+        const dateGroups = tableBuckets.map((bucket, bucketIdx) => {
+          const seed = ((bucketIdx * 37 + 1234) >>> 0);
+          const numItems = 3 + (seed % 3); // 3..5 products
+          const items: { name: string; sku: string; qty: number; sales: number; cost: number }[] = [];
+          for (let i = 0; i < numItems && sorted.length > 0; i++) {
+            const productIdx = (seed + i * 13) % sorted.length;
+            const p = sorted[productIdx];
+            const itemSeed = ((seed + i * 47) >>> 0);
+            const qty = 1 + (itemSeed % 8);
+            const unitPrice = Math.max(1, Math.round(p.sales / Math.max(p.qty, 1)));
+            const salesAmt = qty * unitPrice;
+            const costRatio = p.sales > 0 ? p.cost / p.sales : 0.5;
+            const costAmt = Math.round(salesAmt * costRatio);
+            items.push({ name: p.name, sku: p.sku, qty, sales: salesAmt, cost: costAmt });
+          }
+          // Sort items within group using same productSort key
+          items.sort((a, b) => {
+            switch (productSort) {
+              case "sales_desc": return b.sales - a.sales;
+              case "sales_asc": return a.sales - b.sales;
+              case "qty_desc": return b.qty - a.qty;
+              case "margin_desc": {
+                const ma = a.sales > 0 ? (a.sales - a.cost) / a.sales : 0;
+                const mb = b.sales > 0 ? (b.sales - b.cost) / b.sales : 0;
+                return mb - ma;
+              }
+              default: return b.sales - a.sales;
+            }
+          });
+          const totalQty = items.reduce((s, it) => s + it.qty, 0);
+          const totalSales = items.reduce((s, it) => s + it.sales, 0);
+          const totalCost = items.reduce((s, it) => s + it.cost, 0);
+          return { label: bucket.label, items, totalQty, totalSales, totalCost };
+        });
+
+        // Paginate by groups
+        const totalPages = Math.max(1, Math.ceil(dateGroups.length / productPerPage));
         const safePage = Math.min(productPage, totalPages);
         const pageStart = (safePage - 1) * productPerPage;
-        const pageItems = sorted.slice(pageStart, pageStart + productPerPage);
+        const pageGroups = dateGroups.slice(pageStart, pageStart + productPerPage);
 
-        const pageTotalQty = pageItems.reduce((s, p) => s + p.qty, 0);
-        const pageTotalSales = pageItems.reduce((s, p) => s + p.sales, 0);
-        const pageTotalCost = pageItems.reduce((s, p) => s + p.cost, 0);
+        const pageTotalQty = pageGroups.reduce((s, g) => s + g.totalQty, 0);
+        const pageTotalSales = pageGroups.reduce((s, g) => s + g.totalSales, 0);
+        const pageTotalCost = pageGroups.reduce((s, g) => s + g.totalCost, 0);
         const pageTotalProfit = pageTotalSales - pageTotalCost;
         const pageMargin = pageTotalSales > 0 ? (pageTotalProfit / pageTotalSales) * 100 : 0;
+        const totalRows = pageGroups.reduce((s, g) => s + g.items.length, 0);
 
         const Sparkline = ({ values }: { values: number[] }) => {
           if (values.every((v) => v === 0)) return <div className="h-6 border-t border-dashed border-gray-300 mt-2.5 w-16 mx-auto" />;
@@ -3356,10 +6048,6 @@ function ReportSalesTab() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>รายงานการขายสินค้า</h3>
-                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#f0faf3] text-[#319754]`} style={{ fontWeight: 600 }}>
-                    <span className="size-1.5 rounded-full bg-[#319754]" />
-                    {periodLabelMap[period]}
-                  </span>
                   {focusedLabel && (
                     <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#fff7ed] text-[#c2410c]`} style={{ fontWeight: 600 }}>
                       <span className="size-1.5 rounded-full bg-[#c2410c]" />
@@ -3370,19 +6058,19 @@ function ReportSalesTab() {
                     </span>
                   )}
                 </div>
-                <p className={`${font} text-[12px] text-gray-400 mt-0.5`}>
-                  แสดง {sorted.length === 0 ? 0 : pageStart + 1}–{pageStart + pageItems.length} จากทั้งหมด {sorted.length} รายการ
+                <p className={`${font} text-[12px] text-gray-400 mt-1 inline-flex items-center gap-1.5`}>
+                  <CalendarIcon className="size-3.5" />
+                  <span>ข้อมูลของ <span className="text-gray-600" style={{ fontWeight: 500 }}>{datasetLabel}</span> · {dateGroups.length} กลุ่ม ({totalRows} รายการ) · แสดง {dateGroups.length === 0 ? 0 : pageStart + 1}–{pageStart + pageGroups.length}</span>
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="relative">
                   <select value={productSort} onChange={(e) => setProductSort(e.target.value as any)}
-                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-lg pl-3 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
-                    <option value="sales_desc">เรียง: ยอดขายสูงสุด</option>
-                    <option value="sales_asc">เรียง: ยอดขายต่ำสุด</option>
-                    <option value="qty_desc">เรียง: จำนวนขายสูงสุด</option>
-                    <option value="margin_desc">เรียง: มาร์จิ้นสูงสุด</option>
-                    <option value="stock_asc">เรียง: สต็อกน้อยสุด</option>
+                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                    <option value="sales_desc">เรียงในกลุ่ม: ยอดขายสูงสุด</option>
+                    <option value="sales_asc">เรียงในกลุ่ม: ยอดขายต่ำสุด</option>
+                    <option value="qty_desc">เรียงในกลุ่ม: จำนวนขายสูงสุด</option>
+                    <option value="margin_desc">เรียงในกลุ่ม: มาร์จิ้นสูงสุด</option>
                   </select>
                   <ChevronDown className="size-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
@@ -3392,77 +6080,91 @@ function ReportSalesTab() {
             <div>
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: "30%" }} />
+                  <col style={{ width: "16%" }} />
+                  <col style={{ width: "32%" }} />
                   <col style={{ width: "11%" }} />
                   <col style={{ width: "13%" }} />
                   <col style={{ width: "12%" }} />
-                  <col style={{ width: "15%" }} />
-                  <col style={{ width: "11%" }} />
-                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "16%" }} />
                 </colgroup>
                 <thead>
                   <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
-                    <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>สินค้า</th>
+                    <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>วันที่</th>
+                    <th className="text-left pb-3 pr-3 pl-5" style={{ fontWeight: 500 }}>สินค้า</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>จำนวนขาย</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดขาย</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ต้นทุน</th>
-                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>กำไร / มาร์จิ้น</th>
-                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>เทรนด์ 6 ด.</th>
-                    <th className="text-right pb-3" style={{ fontWeight: 500 }}>สต็อก</th>
+                    <th className="text-right pb-3" style={{ fontWeight: 500 }}>กำไร / มาร์จิ้น</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pageItems.map((p, i) => {
-                    const profit = p.sales - p.cost;
-                    const margin = p.sales > 0 ? (profit / p.sales) * 100 : 0;
-                    const profitDown = margin < 55 && profit > 0;
+                  {pageGroups.map((group, gi) => {
+                    const groupProfit = group.totalSales - group.totalCost;
+                    const groupMargin = group.totalSales > 0 ? (groupProfit / group.totalSales) * 100 : 0;
                     return (
-                      <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                        <td className="py-3 pr-3">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="size-10 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                              <ImageWithFallback src={`https://picsum.photos/seed/${encodeURIComponent(p.name)}/120`} alt={p.name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className={`${font} text-[13px] text-[#1a1a1a] truncate`} style={{ fontWeight: 500 }} title={p.name}>{p.name}</p>
-                              <p className={`${font} text-[11px] text-gray-400 truncate`}>SKU: {p.sku}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
-                          {p.qty} <span className="text-gray-400 text-[11px]">ชิ้น</span>
-                        </td>
-                        <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
-                        <td className={`py-3 pr-3 text-right ${font} text-[13px] text-gray-600`}>฿{p.cost.toLocaleString()}</td>
-                        <td className="py-3 pr-3 text-right">
-                          <p className={`${font} text-[14px]`} style={{ fontWeight: 700, color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
-                            ฿{profit.toLocaleString()}
-                          </p>
-                          <p className={`${font} text-[11px]`} style={{ color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
-                            {p.sales > 0 ? `${margin.toFixed(1)}%` : "-"}
-                          </p>
-                        </td>
-                        <td className="py-3 pr-3 text-right"><div className="inline-block"><Sparkline values={p.trend} /></div></td>
-                        <td className={`py-3 text-right ${font} text-[14px]`} style={{ fontWeight: 700, color: stockColor(p.stock) }}>{p.stock}</td>
-                      </tr>
+                      <Fragment key={gi}>
+                        {group.items.map((p, i) => {
+                          const profit = p.sales - p.cost;
+                          const margin = p.sales > 0 ? (profit / p.sales) * 100 : 0;
+                          const profitDown = margin < 55 && profit > 0;
+                          const isFirst = i === 0;
+                          const isLast = i === group.items.length - 1;
+                          return (
+                            <tr key={i} className={`hover:bg-gray-50/50 transition-colors ${isLast ? "border-b-2 border-gray-100" : "border-b border-gray-50"}`}>
+                              {isFirst && (
+                                <td rowSpan={group.items.length} className="py-3 pr-3 align-top bg-[#f0faf3]/50 border-r border-gray-100">
+                                  <div className="flex flex-col gap-1.5 px-2 py-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <CalendarIcon className="size-3.5 text-[#319754] shrink-0" />
+                                      <span className={`${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>{group.label}</span>
+                                    </div>
+                                    <div className={`${font} text-[10px] text-gray-500 flex flex-col gap-0.5 pl-5`}>
+                                      <span>{group.items.length} รายการ · {group.totalQty} ชิ้น</span>
+                                      <span className="text-[#319754]" style={{ fontWeight: 600 }}>฿{group.totalSales.toLocaleString()}</span>
+                                      <span className={groupProfit >= 0 ? "text-[#15803d]" : "text-[#dc2626]"}>กำไร {groupMargin.toFixed(1)}%</span>
+                                    </div>
+                                  </div>
+                                </td>
+                              )}
+                              <td className="py-3 pr-3 pl-5">
+                                <p className={`${font} text-[13px] text-[#1a1a1a] truncate`} style={{ fontWeight: 500 }} title={p.name}>{p.name}</p>
+                                <p className={`${font} text-[11px] text-gray-400 truncate`}>SKU: {p.sku}</p>
+                              </td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
+                                {p.qty} <span className="text-gray-400 text-[11px]">ชิ้น</span>
+                              </td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-gray-600`}>฿{p.cost.toLocaleString()}</td>
+                              <td className="py-3 text-right">
+                                <p className={`${font} text-[14px]`} style={{ fontWeight: 700, color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
+                                  ฿{profit.toLocaleString()}
+                                </p>
+                                <p className={`${font} text-[11px]`} style={{ color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
+                                  {p.sales > 0 ? `${margin.toFixed(1)}%` : "-"}
+                                </p>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </Fragment>
                     );
                   })}
-                  {pageItems.length === 0 && (
-                    <tr><td colSpan={7} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบสินค้าที่ตรงกับเงื่อนไข</td></tr>
+                  {pageGroups.length === 0 && (
+                    <tr><td colSpan={6} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</td></tr>
                   )}
                 </tbody>
-                {pageItems.length > 0 && (
+                {pageGroups.length > 0 && (
                   <tfoot>
                     <tr className="border-t-2 border-gray-100">
-                      <td className={`pt-3 pr-3 ${font} text-[12px] truncate`} style={{ fontWeight: 600 }} title={`รวม ${pageItems.length} รายการที่แสดง`}>รวม ({pageItems.length} รายการ)</td>
+                      <td className={`pt-3 pr-3 ${font} text-[12px]`} style={{ fontWeight: 600 }}>{pageGroups.length} กลุ่ม</td>
+                      <td className={`pt-3 pr-3 pl-5 ${font} text-[12px]`} style={{ fontWeight: 600 }}>รวม {totalRows} รายการ</td>
                       <td className={`pt-3 pr-3 text-right ${font} text-[13px]`} style={{ fontWeight: 700 }}>{pageTotalQty} <span className="text-gray-400 text-[11px]">ชิ้น</span></td>
                       <td className={`pt-3 pr-3 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>฿{pageTotalSales.toLocaleString()}</td>
                       <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-gray-600`} style={{ fontWeight: 600 }}>฿{pageTotalCost.toLocaleString()}</td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[14px] text-[#15803d]`} style={{ fontWeight: 700 }}>
+                      <td className={`pt-3 text-right ${font} text-[14px] text-[#15803d]`} style={{ fontWeight: 700 }}>
                         ฿{pageTotalProfit.toLocaleString()}
                         <span className={`${font} text-[11px] block`} style={{ fontWeight: 500 }}>{pageMargin.toFixed(1)}%</span>
                       </td>
-                      <td colSpan={2} />
                     </tr>
                   </tfoot>
                 )}
@@ -3475,12 +6177,12 @@ function ReportSalesTab() {
                 <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
                 <div className="relative">
                   <select value={productPerPage} onChange={(e) => { setProductPerPage(Number(e.target.value)); setProductPage(1); }}
-                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-md pl-2 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
                     {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
                   </select>
                   <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
-                <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า</span>
+                <span className={`${font} text-[12px] text-gray-500`}>กลุ่มต่อหน้า</span>
               </div>
               <div className="flex items-center gap-1 flex-wrap">
                 <button disabled={safePage === 1} onClick={() => setProductPage(safePage - 1)}
@@ -3520,7 +6222,14 @@ function ReportCustomersTab() {
   const [custPerPage, setCustPerPage] = useState(10);
   const today = new Date();
   const [range, setRange] = useState<DateRange | undefined>({ from: today, to: today });
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [dailyRange, setDailyRange] = useState<DateRange | undefined>({ from: today, to: today });
+  const [monthRange, setMonthRange] = useState<{ from: number; to: number; year: number }>({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() });
+  const [monthClickPhase, setMonthClickPhase] = useState<0 | 1>(0);
+  const [yearRange, setYearRange] = useState<{ from: number; to: number }>({ from: today.getFullYear(), to: today.getFullYear() });
+  const [yearClickPhase, setYearClickPhase] = useState<0 | 1>(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [datasetCalOpen, setDatasetCalOpen] = useState(false);
   const fmtDate = (d?: Date) => d ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear() + 543}` : "";
   const rangeLabel = range?.from
     ? range.to && range.to.getTime() !== range.from.getTime()
@@ -3528,54 +6237,123 @@ function ReportCustomersTab() {
       : fmtDate(range.from)
     : "เลือกช่วงวันที่";
 
-  const dataByPeriod = {
-    daily: [
-      { label: "00:00", newCust: 0, repeat: 0 },
-      { label: "04:00", newCust: 1, repeat: 0 },
-      { label: "08:00", newCust: 2, repeat: 1 },
-      { label: "12:00", newCust: 3, repeat: 2 },
-      { label: "16:00", newCust: 2, repeat: 1 },
-      { label: "20:00", newCust: 3, repeat: 2 },
-    ],
-    weekly: [
-      { label: "สัปดาห์ที่ 1", newCust: 14, repeat: 9 },
-      { label: "สัปดาห์ที่ 2", newCust: 22, repeat: 16 },
-      { label: "สัปดาห์ที่ 3", newCust: 28, repeat: 21 },
-      { label: "สัปดาห์ที่ 4", newCust: 19, repeat: 18 },
-      { label: "สัปดาห์ที่ 5", newCust: 8, repeat: 6 },
-    ],
-    monthly: Array.from({ length: 31 }, (_, i) => {
-      const day = i + 1;
-      const samples: Record<number, { newCust: number; repeat: number }> = {
-        1: { newCust: 1, repeat: 0 }, 2: { newCust: 1, repeat: 1 }, 4: { newCust: 0, repeat: 1 }, 5: { newCust: 1, repeat: 0 },
-      };
-      return { label: String(day), ...(samples[day] ?? { newCust: 0, repeat: 0 }) };
-    }),
-    yearly: [
-      { label: "2565", newCust: 285, repeat: 412 },
-      { label: "2566", newCust: 342, repeat: 568 },
-      { label: "2567", newCust: 458, repeat: 742 },
-      { label: "2568", newCust: 524, repeat: 868 },
-      { label: "2569", newCust: 184, repeat: 268 },
-    ],
-    custom: [
-      { label: "ธ.ค.", newCust: 0, repeat: 0 },
-      { label: "ม.ค.", newCust: 0, repeat: 0 },
-      { label: "ก.พ.", newCust: 0, repeat: 0 },
-      { label: "มี.ค.", newCust: 9, repeat: 5 },
-      { label: "เม.ย.", newCust: 0, repeat: 0 },
-      { label: "พ.ค.", newCust: 3, repeat: 1 },
-    ],
+  const thaiMonthsFull = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  const thaiMonthsShort = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const availableYears = Array.from({ length: 5 }, (_, i) => today.getFullYear() - i);
+
+  const datasetLabel = (() => {
+    switch (period) {
+      case "daily": {
+        if (dailyRange?.from && dailyRange.to && dailyRange.to.getTime() !== dailyRange.from.getTime()) {
+          return `${fmtDate(dailyRange.from)} - ${fmtDate(dailyRange.to)}`;
+        }
+        const d = dailyRange?.from ?? today;
+        return `วันที่ ${d.getDate()} ${thaiMonthsFull[d.getMonth()]} ${d.getFullYear() + 543}`;
+      }
+      case "weekly":
+        return `เดือน${thaiMonthsFull[selectedDate.getMonth()]} ${selectedDate.getFullYear() + 543}`;
+      case "monthly": {
+        const yr = monthRange.year + 543;
+        if (monthRange.from === monthRange.to) return `เดือน${thaiMonthsFull[monthRange.from]} ${yr}`;
+        return `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+      }
+      case "yearly": {
+        if (yearRange.from === yearRange.to) return `ปี ${yearRange.from + 543}`;
+        const a = Math.min(yearRange.from, yearRange.to);
+        const b = Math.max(yearRange.from, yearRange.to);
+        return `ปี ${a + 543} – ${b + 543}`;
+      }
+      case "custom":
+        return rangeLabel;
+    }
+  })();
+
+  const handleMonthClick = (m: number) => {
+    if (monthClickPhase === 0) {
+      setMonthRange((cur) => ({ ...cur, from: m, to: m }));
+      setMonthClickPhase(1);
+    } else {
+      setMonthRange((cur) => ({ ...cur, from: Math.min(cur.from, m), to: Math.max(cur.from, m) }));
+      setMonthClickPhase(0);
+      setDatasetCalOpen(false);
+    }
   };
-  const data = dataByPeriod[period];
+  const handleYearClick = (y: number) => {
+    if (yearClickPhase === 0) {
+      setYearRange({ from: y, to: y });
+      setYearClickPhase(1);
+    } else {
+      setYearRange((cur) => ({ from: Math.min(cur.from, y), to: Math.max(cur.from, y) }));
+      setYearClickPhase(0);
+      setDatasetCalOpen(false);
+    }
+  };
 
-  const PIE_COLORS = ["#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe", "#1e40af", "#6366f1"];
+  const data = buildReportData({ period, dailyRange, selectedDate, monthRange, yearRange, today });
 
-  const newToday = 3;
-  const repeatBuyers = 4;
-  const avgOrder = 252;
-  const repeatRate = 33.33;
+  // Blue + green palette (alternating shades) for the donut slices
+  const PIE_COLORS = ["#3b82f6", "#319754", "#0ea5e9", "#10b981", "#1d4ed8", "#15803d"];
+
   const fmt = (n: number) => n.toLocaleString();
+
+  // KPI cards — 4 metrics filtered by date selection (matches Sales pattern)
+  const kpi = (() => {
+    const sumKey = (k: string) => data.reduce((s, d) => s + ((d as any)[k] || 0), 0);
+    const newCust = sumKey("newCust");
+    const repeat = sumKey("repeat");
+    const total = newCust + repeat;
+    const days = Math.max(1, data.length);
+    const avgNew = Math.round(newCust / days);
+    const avgRepeat = Math.round(repeat / days);
+    const avgTotal = Math.round(total / days);
+    const repeatRate = total > 0 ? ((repeat / total) * 100) : 0;
+
+    let scope = "วันนี้";
+    if (period === "daily") {
+      const from = dailyRange?.from ?? today;
+      const to = dailyRange?.to ?? today;
+      const isRange = !!(from && to && to.getTime() !== from.getTime());
+      if (isRange) scope = `${fmtDate(from)} – ${fmtDate(to)}`;
+      else if (from.toDateString() === today.toDateString()) scope = "วันนี้";
+      else scope = `วันที่ ${from.getDate()} ${thaiMonthsFull[from.getMonth()]} ${from.getFullYear() + 543}`;
+    } else if (period === "weekly") {
+      scope = `เดือน${thaiMonthsFull[selectedDate.getMonth()]} ${selectedDate.getFullYear() + 543}`;
+    } else if (period === "monthly") {
+      const yr = monthRange.year + 543;
+      scope = monthRange.from === monthRange.to
+        ? `เดือน${thaiMonthsFull[monthRange.from]} ${yr}`
+        : `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+    } else if (period === "yearly") {
+      const a = Math.min(yearRange.from, yearRange.to) + 543;
+      const b = Math.max(yearRange.from, yearRange.to) + 543;
+      scope = a === b ? `ปี ${a}` : `ปี ${a} – ${b}`;
+    }
+    return { scope, newCust, repeat, total, avgNew, avgRepeat, avgTotal, repeatRate };
+  })();
+
+  // 3D bar shape helper (matches Sales)
+  const shade = (hex: string, percent: number) => {
+    const n = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+    const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
+    return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+  };
+  const Bar3D = (props: any) => {
+    const { x, y, width, height, fill } = props;
+    if (!height || height <= 0 || !width) return null;
+    const depth = Math.min(Math.max(width * 0.28, 5), 9);
+    const top = shade(fill, 12);
+    const right = shade(fill, -18);
+    return (
+      <g>
+        <path d={`M${x + width},${y} L${x + width + depth},${y - depth} L${x + width + depth},${y + height - depth} L${x + width},${y + height} Z`} fill={right} />
+        <path d={`M${x},${y} L${x + depth},${y - depth} L${x + width + depth},${y - depth} L${x + width},${y} Z`} fill={top} />
+        <rect x={x} y={y} width={width} height={height} fill={fill} />
+      </g>
+    );
+  };
 
   const periodTabs: { id: typeof period; label: string }[] = [
     { id: "daily", label: "รายวัน" },
@@ -3592,169 +6370,438 @@ function ReportCustomersTab() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-3">
         <h2 className={`${font} text-[24px]`} style={{ fontWeight: 500 }}>รายงานข้อมูลลูกค้า</h2>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white px-5 py-2 rounded-full cursor-pointer`}>
-              <Download className="size-4" />
-              ส่งออกรายงาน
-              <ChevronDown className="size-3.5" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-44 p-1">
-            <button onClick={() => console.log("export excel")}
-              className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
-              <FileSpreadsheet className="size-4 text-[#0f7a3a]" />
-              <span>Excel (.xlsx)</span>
-            </button>
-            <button onClick={() => console.log("export pdf")}
-              className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
-              <FileText className="size-4 text-[#dc2626]" />
-              <span>PDF (.pdf)</span>
-            </button>
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {[
-            {
-              key: "new" as const, label: "ลูกค้าใหม่วันนี้", value: fmt(newToday), suffix: "คน", change: "+12%",
-              accent: "#3b82f6",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
-            },
-            {
-              key: "repeat" as const, label: "ลูกค้าซื้อซ้ำ", value: fmt(repeatBuyers), suffix: "คน", change: "+8%",
-              accent: "#6366f1",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>,
-            },
-            {
-              key: "highAov" as const, label: "มูลค่าเฉลี่ย/ออเดอร์", value: `฿${fmt(avgOrder)}`, suffix: "", change: "+5%",
-              accent: "#10b981",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
-            },
-            {
-              key: "retention" as const, label: "อัตราซื้อซ้ำ", value: `${repeatRate}%`, suffix: "", change: "+3%",
-              accent: "#f59e0b",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
-            },
-          ].map((s) => (
-            <div key={s.label} className="rounded-2xl border p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)]"
-              style={{ backgroundColor: `${s.accent}0d`, borderColor: `${s.accent}26` }}>
-              <div className="flex items-center justify-between">
-                <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
-                <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>{s.icon}</div>
-              </div>
-              <p className={`${font} text-[26px] mt-3 tracking-tight`} style={{ fontWeight: 700, color: s.accent }}>
-                {s.value}{s.suffix && <span className="text-[14px] text-gray-400 ml-1" style={{ fontWeight: 500 }}>{s.suffix}</span>}
-              </p>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className={`${font} inline-flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-md`}
-                  style={{ backgroundColor: "#dcfce7", color: "#15803d", fontWeight: 600 }}>
-                  <svg width="9" height="9" viewBox="0 0 13 5" fill="none"><path d="M1 4.5L6.5 1L12 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {s.change}
-                </span>
-                <span className={`${font} text-[11px] text-gray-400`}>เทียบช่วงก่อนหน้า</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
-          <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>รายงานข้อมูลลูกค้า</h3>
-          <div className="inline-flex items-center bg-gray-50 rounded-full p-1 self-start md:self-auto overflow-x-auto max-w-full">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                aria-label="เปลี่ยนวันที่"
+              >
+                <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
+                <span style={{ fontWeight: 500 }}>{datasetLabel}</span>
+                <ChevronDown className="size-3.5 text-gray-400 group-hover:text-[#319754]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              {(period === "daily" || period === "custom") && (
+                <>
+                  <Calendar mode="range" numberOfMonths={2} selected={period === "daily" ? dailyRange : range}
+                    onSelect={period === "daily" ? setDailyRange : setRange}
+                    defaultMonth={(period === "daily" ? dailyRange?.from : range?.from) ?? today} />
+                  <div className="flex items-center justify-between gap-2 p-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 1 วัน หรือ 2 ครั้งสำหรับช่วง</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => { period === "daily" ? setDailyRange({ from: today, to: today }) : setRange(undefined); }}
+                        className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ล้าง</button>
+                      <button onClick={() => setDatasetCalOpen(false)}
+                        className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
+                    </div>
+                  </div>
+                </>
+              )}
+              {period === "weekly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronLeft className="size-4 text-gray-600" />
+                    </button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {selectedDate.getFullYear() + 543}</span>
+                    <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronRight className="size-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const isActive = selectedDate.getMonth() === i;
+                      return (
+                        <button key={m} onClick={() => { setSelectedDate(new Date(selectedDate.getFullYear(), i, 1)); setDatasetCalOpen(false); }}
+                          className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isActive ? "bg-[#319754] text-white" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isActive ? 600 : 500 }}>{m}</button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-3 mt-3 border-t">
+                    <button onClick={() => { setSelectedDate(today); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
+                  </div>
+                </div>
+              )}
+              {period === "monthly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year - 1 }))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronLeft className="size-4 text-gray-600" />
+                    </button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {monthRange.year + 543}</span>
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year + 1 }))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronRight className="size-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const inRange = i >= Math.min(monthRange.from, monthRange.to) && i <= Math.max(monthRange.from, monthRange.to);
+                      const isEdge = i === monthRange.from || i === monthRange.to;
+                      return (
+                        <button key={m} onClick={() => handleMonthClick(i)}
+                          className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isEdge ? 600 : 500 }}>{m}</button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <button onClick={() => { setMonthRange({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() }); setMonthClickPhase(0); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
+                  </div>
+                </div>
+              )}
+              {period === "yearly" && (
+                <div className="p-3 w-[200px]">
+                  <p className={`${font} text-[11px] text-gray-400 mb-2`}>ย้อนหลังได้ถึง 5 ปี</p>
+                  <div className="flex flex-col gap-1">
+                    {availableYears.map((y) => {
+                      const inRange = y >= Math.min(yearRange.from, yearRange.to) && y <= Math.max(yearRange.from, yearRange.to);
+                      const isEdge = y === yearRange.from || y === yearRange.to;
+                      return (
+                        <button key={y} onClick={() => handleYearClick(y)}
+                          className={`${font} text-[13px] py-2 px-3 rounded-lg cursor-pointer transition-colors text-left ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isEdge ? 600 : 500 }}>ปี {y + 543}</button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <button onClick={() => { setYearRange({ from: today.getFullYear(), to: today.getFullYear() }); setYearClickPhase(0); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ปีนี้</button>
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
                 className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
-                  <motion.div layoutId="report-cust-period-bg" className="absolute inset-0 bg-[#3b82f6] rounded-full"
+                  <motion.div layoutId="report-cust-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                 )}
                 <span className="relative z-10">{t.label}</span>
               </button>
             ))}
           </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+                <Download className="size-4" />
+                ส่งออก
+                <ChevronDown className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-44 p-1">
+              <button onClick={() => console.log("export excel")}
+                className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileSpreadsheet className="size-4 text-[#0f7a3a]" />
+                <span>Excel (.xlsx)</span>
+              </button>
+              <button onClick={() => console.log("export pdf")}
+                className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileText className="size-4 text-[#dc2626]" />
+                <span>PDF (.pdf)</span>
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            {
+              label: `ลูกค้าใหม่ ${kpi.scope}`, value: fmt(kpi.newCust) + " คน",
+              subLabel: `เฉลี่ย ${kpi.avgNew.toLocaleString()} คน/วัน`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+              accent: "#3b82f6",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgNewCustomer}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: `ลูกค้าซื้อซ้ำ ${kpi.scope}`, value: fmt(kpi.repeat) + " คน",
+              subLabel: `เฉลี่ย ${kpi.avgRepeat.toLocaleString()} คน/วัน`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+              accent: "#319754",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#319754" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgRepeatCustomers}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: `ลูกค้าทั้งหมด ${kpi.scope}`, value: fmt(kpi.total) + " คน",
+              subLabel: `เฉลี่ย ${kpi.avgTotal.toLocaleString()} คน/วัน`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg>,
+              accent: "#0ea5e9",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgGroupCustomer}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: `ลูกค้าทั้งหมดในร้าน`, value: fmt(1247) + " คน",
+              subLabel: `+${fmt(kpi.newCust)} คนใหม่ ${kpi.scope}`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+              accent: "#10b981",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgMember}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.45 }}
+                  aria-hidden
+                />
+              ),
+            },
+          ].map((s: any) => (
+            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+              style={{ backgroundColor: `${s.accent}0d` }}>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>{s.icon}</div>
+                </div>
+                <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}><AnimatedValue value={s.value} /></p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                    style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                    {s.subIcon}
+                    {s.subLabel}
+                  </span>
+                </div>
+              </div>
+              {s.bgArt}
+            </div>
+          ))}
         </div>
 
-        {period === "custom" && (
-          <div className="flex flex-wrap items-center gap-2 mb-5">
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <button className={`${font} text-[13px] inline-flex items-center gap-2 border border-gray-200 rounded-full px-4 py-1.5 hover:border-[#3b82f6] focus:outline-none focus:border-[#3b82f6] cursor-pointer min-w-[230px]`}>
-                  <CalendarIcon className="size-4 text-gray-500" />
-                  <span className={range?.from ? "text-[#1a1a1a]" : "text-gray-400"}>{rangeLabel}</span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="range" numberOfMonths={2} selected={range} onSelect={setRange} defaultMonth={range?.from} />
-                <div className="flex items-center justify-end gap-2 p-3 border-t">
-                  <button onClick={() => setRange(undefined)} className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ล้าง</button>
-                  <button onClick={() => setCalendarOpen(false)} className={`${font} text-[13px] bg-[#3b82f6] hover:bg-[#2563eb] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
-                </div>
-              </PopoverContent>
-            </Popover>
-            <button className={`${font} text-[13px] bg-[#3b82f6] hover:bg-[#2563eb] text-white px-5 py-1.5 rounded-full cursor-pointer`}>ค้นหา</button>
-          </div>
-        )}
+        <h3 className={`${font} text-[18px] mb-5`} style={{ fontWeight: 600 }}>รายงานข้อมูลลูกค้า</h3>
 
-        <ResponsiveContainer width="100%" height={320}>
+        <ResponsiveContainer width="100%" height={340}>
           {chartType === "line" ? (
-            <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-              onClick={(state: any) => {
-                const i = state?.activeTooltipIndex;
-                if (typeof i === "number" && data[i]) { setFocusedLabel(data[i].label); setCustPage(1); }
-              }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#3b82f6" }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Legend iconType="circle" />
-              <Line type="monotone" dataKey="newCust" stroke="#3b82f6" strokeWidth={2.5} name="ลูกค้าใหม่ (คน)"
-                dot={(props: any) => {
-                  const isActive = data[props.index]?.label === focusedLabel;
-                  return <circle key={props.index} cx={props.cx} cy={props.cy} r={isActive ? 6 : 4} fill="#3b82f6" stroke={isActive ? "#fff" : "none"} strokeWidth={isActive ? 2 : 0} />;
-                }} />
-              <Line type="monotone" dataKey="repeat" stroke="#6366f1" strokeWidth={2.5} name="ซื้อซ้ำ (คน)"
-                dot={(props: any) => {
-                  const isActive = data[props.index]?.label === focusedLabel;
-                  return <circle key={props.index} cx={props.cx} cy={props.cy} r={isActive ? 6 : 4} fill="#6366f1" stroke={isActive ? "#fff" : "none"} strokeWidth={isActive ? 2 : 0} />;
-                }} />
-            </LineChart>
+            <ComposedChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+              <defs>
+                <filter id="custGlowBlue" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="custGlowGreen" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                cursor={{ stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4 4" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {payload.map((p: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                              <span className="text-gray-600">{p.name}</span>
+                            </span>
+                            <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.value.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }}
+              />
+              <Legend
+                wrapperStyle={{ paddingTop: 20 }}
+                content={({ payload }: any) => (
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    {payload?.map((entry: any, i: number) => (
+                      <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                        style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                        <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                        <span>{entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+              <Line type="monotone" dataKey="newCust" stroke="#3b82f6" strokeWidth={3} name="ลูกค้าใหม่ (คน)"
+                style={{ filter: "url(#custGlowBlue)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#3b82f6", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#3b82f6", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(59,130,246,0.35))" } }}
+                animationDuration={800}
+              />
+              <Line type="monotone" dataKey="repeat" stroke="#319754" strokeWidth={3} name="ซื้อซ้ำ (คน)"
+                style={{ filter: "url(#custGlowGreen)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#319754", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#319754", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(49,151,84,0.35))" } }}
+                animationDuration={800}
+              />
+            </ComposedChart>
           ) : chartType === "bar" ? (
-            <BarChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-              onClick={(state: any) => {
-                const i = state?.activeTooltipIndex;
-                if (typeof i === "number" && data[i]) { setFocusedLabel(data[i].label); setCustPage(1); }
-              }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#3b82f6" }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Legend iconType="circle" />
-              <Bar dataKey="newCust" name="ลูกค้าใหม่ (คน)" radius={[6, 6, 0, 0]}>
-                {data.map((d, i) => <Cell key={i} fill="#3b82f6" fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.35 : 1} />)}
-              </Bar>
-              <Bar dataKey="repeat" name="ซื้อซ้ำ (คน)" radius={[6, 6, 0, 0]}>
-                {data.map((d, i) => <Cell key={i} fill="#6366f1" fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.35 : 1} />)}
-              </Bar>
+            <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 10 }} barCategoryGap="22%" barGap={6}>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                cursor={{ fill: "rgba(148,163,184,0.08)" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {payload.map((p: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                              <span className="text-gray-600">{p.name}</span>
+                            </span>
+                            <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.value.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }}
+              />
+              <Legend
+                wrapperStyle={{ paddingTop: 20 }}
+                content={({ payload }: any) => (
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    {payload?.map((entry: any, i: number) => (
+                      <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                        style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                        <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                        <span>{entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+              <Bar dataKey="newCust" name="ลูกค้าใหม่ (คน)" fill="#3b82f6" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+              <Bar dataKey="repeat" name="ซื้อซ้ำ (คน)" fill="#319754" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
             </BarChart>
           ) : (
-            <PieChart>
-              <Pie data={data.filter((d) => d.newCust > 0)} cx="50%" cy="50%" innerRadius={60} outerRadius={120}
-                dataKey="newCust" nameKey="label" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                onClick={(entry: any) => { if (entry?.label) { setFocusedLabel(entry.label); setCustPage(1); } }}>
-                {data.filter((d) => d.newCust > 0).map((d, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]}
-                    stroke={d.label === focusedLabel ? "#1a1a1a" : "#fff"}
-                    strokeWidth={d.label === focusedLabel ? 3 : 1}
-                    fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.4 : 1} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend iconType="circle" />
-            </PieChart>
+            (() => {
+              const pieData = data.filter((d) => (d as any).newCust > 0);
+              const pieTotal = pieData.reduce((s, d) => s + ((d as any).newCust || 0), 0);
+              return (
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={72} outerRadius={120} paddingAngle={2}
+                    dataKey="newCust" nameKey="label" labelLine={false}
+                    label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }: any) => {
+                      if (percent < 0.06) return null;
+                      const RADIAN = Math.PI / 180;
+                      const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                      return (<text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 600, pointerEvents: "none" }}>{(percent * 100).toFixed(0)}%</text>);
+                    }}
+                    isAnimationActive animationDuration={700}
+                  >
+                    {pieData.map((d, i) => (<Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="#fff" strokeWidth={3} />))}
+                  </Pie>
+                  <text x="50%" y="38%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 11, fill: "#9ca3af" }}>ลูกค้าใหม่รวม</text>
+                  <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 20, fill: "#1a1a1a", fontWeight: 700 }}>{pieTotal.toLocaleString()} คน</text>
+                  <Tooltip
+                    content={({ active, payload }: any) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0];
+                      const pct = pieTotal > 0 ? ((p.value / pieTotal) * 100).toFixed(1) : "0";
+                      return (
+                        <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[160px]`}>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.payload.fill || PIE_COLORS[0] }} />
+                            <span className="text-[12px] text-gray-600" style={{ fontWeight: 500 }}>{p.name}</span>
+                          </div>
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span className="text-[16px] tabular-nums" style={{ fontWeight: 700, color: p.payload.fill || PIE_COLORS[0] }}>{p.value.toLocaleString()} คน</span>
+                            <span className="text-[11px] text-gray-400 tabular-nums">{pct}%</span>
+                          </div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{ paddingTop: 20 }}
+                    content={({ payload }: any) => (
+                      <div className="flex items-center justify-center gap-2 flex-wrap max-w-full px-4">
+                        {payload?.map((entry: any, i: number) => (
+                          <div key={i} className={`${font} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px]`}
+                            style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                            <span className="block rounded-full" style={{ width: 8, height: 8, backgroundColor: entry.color, boxShadow: `0 0 0 2.5px ${entry.color}25` }} />
+                            <span>{entry.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  />
+                </PieChart>
+              );
+            })()
           )}
         </ResponsiveContainer>
 
@@ -3764,7 +6811,7 @@ function ReportCustomersTab() {
               <button key={t.id} onClick={() => setChartType(t.id)}
                 className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${chartType === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {chartType === t.id && (
-                  <motion.div layoutId="report-cust-chart-bg" className="absolute inset-0 bg-[#3b82f6] rounded-full"
+                  <motion.div layoutId="report-cust-chart-bg" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                 )}
                 <span className="relative z-10">{t.label}</span>
@@ -3848,10 +6895,6 @@ function ReportCustomersTab() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>ลูกค้าที่มียอดซื้อสูงสุด</h3>
-                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#eff6ff] text-[#1e40af]`} style={{ fontWeight: 600 }}>
-                    <span className="size-1.5 rounded-full bg-[#3b82f6]" />
-                    {periodLabelMap[period]}
-                  </span>
                   {focusedLabel && (
                     <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#fff7ed] text-[#c2410c]`} style={{ fontWeight: 600 }}>
                       <span className="size-1.5 rounded-full bg-[#c2410c]" />
@@ -3862,14 +6905,15 @@ function ReportCustomersTab() {
                     </span>
                   )}
                 </div>
-                <p className={`${font} text-[12px] text-gray-400 mt-0.5`}>
-                  แสดง {sorted.length === 0 ? 0 : pageStart + 1}–{pageStart + pageItems.length} จาก {sorted.length} คน
+                <p className={`${font} text-[12px] text-gray-400 mt-1 inline-flex items-center gap-1.5`}>
+                  <CalendarIcon className="size-3.5" />
+                  <span>ข้อมูลของ <span className="text-gray-600" style={{ fontWeight: 500 }}>{datasetLabel}</span> · แสดง {sorted.length === 0 ? 0 : pageStart + 1}–{pageStart + pageItems.length} จาก {sorted.length} คน</span>
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="relative">
                   <select value={custSort} onChange={(e) => setCustSort(e.target.value as any)}
-                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-lg pl-3 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#3b82f6]`}>
+                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
                     <option value="total_desc">เรียง: ยอดซื้อรวม</option>
                     <option value="total_asc">เรียง: ยอดซื้อต่ำสุด</option>
                     <option value="orders_desc">เรียง: ออเดอร์มากสุด</option>
@@ -3884,13 +6928,14 @@ function ReportCustomersTab() {
             <div>
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: "7%" }} />
-                  <col style={{ width: "25%" }} />
+                  <col style={{ width: "6%" }} />
+                  <col style={{ width: "22%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "13%" }} />
                   <col style={{ width: "11%" }} />
-                  <col style={{ width: "14%" }} />
-                  <col style={{ width: "11%" }} />
-                  <col style={{ width: "14%" }} />
-                  <col style={{ width: "18%" }} />
+                  <col style={{ width: "17%" }} />
                 </colgroup>
                 <thead>
                   <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
@@ -3899,6 +6944,7 @@ function ReportCustomersTab() {
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ออเดอร์</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดรวม</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>AOV</th>
+                    <th className="text-center pb-3 pr-3" style={{ fontWeight: 500 }}>อัตราซื้อซ้ำ</th>
                     <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ซื้อล่าสุด</th>
                     <th className="text-left pb-3" style={{ fontWeight: 500 }}>สินค้าที่ชอบ</th>
                   </tr>
@@ -3910,6 +6956,9 @@ function ReportCustomersTab() {
                     const rank = pageStart + i;
                     const rankBg = rank === 0 ? "#facc15" : rank === 1 ? "#94a3b8" : rank === 2 ? "#f97316" : "transparent";
                     const rankFg = rank < 3 ? "white" : "#9ca3af";
+                    const repeatRate = c.orders > 1 ? Math.round(((c.orders - 1) / c.orders) * 100) : 0;
+                    const rrColor = repeatRate >= 70 ? "#15803d" : repeatRate >= 40 ? "#319754" : repeatRate > 0 ? "#0ea5e9" : "#9ca3af";
+                    const rrBg = repeatRate >= 70 ? "#dcfce7" : repeatRate >= 40 ? "#d6eadd" : repeatRate > 0 ? "#dbeafe" : "#f3f4f6";
                     return (
                       <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                         <td className="py-3 pr-2">
@@ -3925,25 +6974,39 @@ function ReportCustomersTab() {
                         <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>{c.orders}</td>
                         <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>฿{c.total.toLocaleString()}</td>
                         <td className={`py-3 pr-3 text-right ${font} text-[13px] text-gray-600`}>฿{aov.toLocaleString()}</td>
+                        <td className="py-3 pr-3 text-center">
+                          <span className={`${font} inline-flex items-center justify-center text-[11px] px-2 py-0.5 rounded-full tabular-nums`}
+                            style={{ backgroundColor: rrBg, color: rrColor, fontWeight: 600 }}>
+                            {repeatRate}%
+                          </span>
+                        </td>
                         <td className={`py-3 pr-3 ${font} text-[12px] truncate`} style={{ color: stale ? "#dc2626" : "#374151", fontWeight: stale ? 600 : 400 }} title={c.lastBuy}>{c.lastBuy}</td>
                         <td className={`py-3 ${font} text-[12px] text-[#1a1a1a] truncate`} title={c.fav}>{c.fav}</td>
                       </tr>
                     );
                   })}
                   {pageItems.length === 0 && (
-                    <tr><td colSpan={7} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบลูกค้าที่ตรงกับเงื่อนไข</td></tr>
+                    <tr><td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบลูกค้าที่ตรงกับเงื่อนไข</td></tr>
                   )}
                 </tbody>
                 {pageItems.length > 0 && (
                   <tfoot>
-                    <tr className="border-t-2 border-gray-100">
-                      <td />
-                      <td className={`pt-3 pr-3 ${font} text-[12px] truncate`} style={{ fontWeight: 600 }}>รวม ({pageItems.length} คนที่แสดง)</td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[13px]`} style={{ fontWeight: 700 }}>{pageOrders}</td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>฿{pageTotal.toLocaleString()}</td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-gray-700`} style={{ fontWeight: 700 }}>฿{pageAovAvg.toLocaleString()}</td>
-                      <td colSpan={2} />
-                    </tr>
+                    {(() => {
+                      const totalOrders = pageItems.reduce((s, c) => s + c.orders, 0);
+                      const repeatOrders = pageItems.reduce((s, c) => s + Math.max(0, c.orders - 1), 0);
+                      const avgRepeatRate = totalOrders > 0 ? Math.round((repeatOrders / totalOrders) * 100) : 0;
+                      return (
+                        <tr className="border-t-2 border-gray-100">
+                          <td />
+                          <td className={`pt-3 pr-3 ${font} text-[12px] truncate`} style={{ fontWeight: 600 }}>รวม ({pageItems.length} คนที่แสดง)</td>
+                          <td className={`pt-3 pr-3 text-right ${font} text-[13px]`} style={{ fontWeight: 700 }}>{pageOrders}</td>
+                          <td className={`pt-3 pr-3 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>฿{pageTotal.toLocaleString()}</td>
+                          <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-gray-700`} style={{ fontWeight: 700 }}>฿{pageAovAvg.toLocaleString()}</td>
+                          <td className={`pt-3 pr-3 text-center ${font} text-[13px] text-[#319754]`} style={{ fontWeight: 700 }}>{avgRepeatRate}%</td>
+                          <td colSpan={2} />
+                        </tr>
+                      );
+                    })()}
                   </tfoot>
                 )}
               </table>
@@ -3955,7 +7018,7 @@ function ReportCustomersTab() {
                 <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
                 <div className="relative">
                   <select value={custPerPage} onChange={(e) => { setCustPerPage(Number(e.target.value)); setCustPage(1); }}
-                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-md pl-2 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#3b82f6]`}>
+                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
                     {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
                   </select>
                   <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -3970,7 +7033,7 @@ function ReportCustomersTab() {
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                   <button key={p} onClick={() => setCustPage(p)}
-                    className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safePage === p ? "bg-[#3b82f6] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safePage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
                     style={{ fontWeight: safePage === p ? 600 : 400 }}>
                     {p}
                   </button>
@@ -4002,7 +7065,14 @@ function ReportProductsTab() {
   const [ratingPerPage, setRatingPerPage] = useState(10);
   const today = new Date();
   const [range, setRange] = useState<DateRange | undefined>({ from: today, to: today });
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [dailyRange, setDailyRange] = useState<DateRange | undefined>({ from: today, to: today });
+  const [monthRange, setMonthRange] = useState<{ from: number; to: number; year: number }>({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() });
+  const [monthClickPhase, setMonthClickPhase] = useState<0 | 1>(0);
+  const [yearRange, setYearRange] = useState<{ from: number; to: number }>({ from: today.getFullYear(), to: today.getFullYear() });
+  const [yearClickPhase, setYearClickPhase] = useState<0 | 1>(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [datasetCalOpen, setDatasetCalOpen] = useState(false);
   const fmtDate = (d?: Date) => d ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear() + 543}` : "";
   const rangeLabel = range?.from
     ? range.to && range.to.getTime() !== range.from.getTime()
@@ -4010,46 +7080,88 @@ function ReportProductsTab() {
       : fmtDate(range.from)
     : "เลือกช่วงวันที่";
 
-  const dataByPeriod = {
-    daily: [
-      { label: "00:00", units: 0 },
-      { label: "04:00", units: 2 },
-      { label: "08:00", units: 8 },
-      { label: "12:00", units: 14 },
-      { label: "16:00", units: 22 },
-      { label: "20:00", units: 11 },
-    ],
-    weekly: [
-      { label: "สัปดาห์ที่ 1", units: 42 },
-      { label: "สัปดาห์ที่ 2", units: 68 },
-      { label: "สัปดาห์ที่ 3", units: 95 },
-      { label: "สัปดาห์ที่ 4", units: 81 },
-      { label: "สัปดาห์ที่ 5", units: 28 },
-    ],
-    monthly: Array.from({ length: 31 }, (_, i) => {
-      const day = i + 1;
-      const samples: Record<number, number> = { 1: 2, 2: 5, 4: 3, 5: 1 };
-      return { label: String(day), units: samples[day] ?? 0 };
-    }),
-    yearly: [
-      { label: "2565", units: 685 },
-      { label: "2566", units: 924 },
-      { label: "2567", units: 1248 },
-      { label: "2568", units: 1492 },
-      { label: "2569", units: 542 },
-    ],
-    custom: [
-      { label: "ธ.ค.", units: 0 },
-      { label: "ม.ค.", units: 0 },
-      { label: "ก.พ.", units: 0 },
-      { label: "มี.ค.", units: 36 },
-      { label: "เม.ย.", units: 0 },
-      { label: "พ.ค.", units: 6 },
-    ],
+  const thaiMonthsFull = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  const thaiMonthsShort = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const availableYears = Array.from({ length: 5 }, (_, i) => today.getFullYear() - i);
+
+  const datasetLabel = (() => {
+    switch (period) {
+      case "daily": {
+        if (dailyRange?.from && dailyRange.to && dailyRange.to.getTime() !== dailyRange.from.getTime()) return `${fmtDate(dailyRange.from)} - ${fmtDate(dailyRange.to)}`;
+        const d = dailyRange?.from ?? today;
+        return `วันที่ ${d.getDate()} ${thaiMonthsFull[d.getMonth()]} ${d.getFullYear() + 543}`;
+      }
+      case "weekly": return `เดือน${thaiMonthsFull[selectedDate.getMonth()]} ${selectedDate.getFullYear() + 543}`;
+      case "monthly": {
+        const yr = monthRange.year + 543;
+        if (monthRange.from === monthRange.to) return `เดือน${thaiMonthsFull[monthRange.from]} ${yr}`;
+        return `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+      }
+      case "yearly": {
+        if (yearRange.from === yearRange.to) return `ปี ${yearRange.from + 543}`;
+        const a = Math.min(yearRange.from, yearRange.to);
+        const b = Math.max(yearRange.from, yearRange.to);
+        return `ปี ${a + 543} – ${b + 543}`;
+      }
+      case "custom": return rangeLabel;
+    }
+  })();
+
+  const handleMonthClick = (m: number) => {
+    if (monthClickPhase === 0) { setMonthRange((cur) => ({ ...cur, from: m, to: m })); setMonthClickPhase(1); }
+    else { setMonthRange((cur) => ({ ...cur, from: Math.min(cur.from, m), to: Math.max(cur.from, m) })); setMonthClickPhase(0); setDatasetCalOpen(false); }
   };
-  const data = dataByPeriod[period];
+  const handleYearClick = (y: number) => {
+    if (yearClickPhase === 0) { setYearRange({ from: y, to: y }); setYearClickPhase(1); }
+    else { setYearRange((cur) => ({ from: Math.min(cur.from, y), to: Math.max(cur.from, y) })); setYearClickPhase(0); setDatasetCalOpen(false); }
+  };
+
+  const shade = (hex: string, percent: number) => {
+    const n = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+    const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
+    return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+  };
+  const Bar3D = (props: any) => {
+    const { x, y, width, height, fill } = props;
+    if (!height || height <= 0 || !width) return null;
+    const depth = Math.min(Math.max(width * 0.28, 5), 9);
+    return (<g>
+      <path d={`M${x + width},${y} L${x + width + depth},${y - depth} L${x + width + depth},${y + height - depth} L${x + width},${y + height} Z`} fill={shade(fill, -18)} />
+      <path d={`M${x},${y} L${x + depth},${y - depth} L${x + width + depth},${y - depth} L${x + width},${y} Z`} fill={shade(fill, 12)} />
+      <rect x={x} y={y} width={width} height={height} fill={fill} />
+    </g>);
+  };
+
+  const data = buildReportData({ period, dailyRange, selectedDate, monthRange, yearRange, today });
 
   const PIE_COLORS = ["#319754", "#46A165", "#7bc290", "#aedab8", "#10b981", "#34d399"];
+
+  // KPI scope for filtered cards
+  const kpi = (() => {
+    const sumKey = (k: string) => data.reduce((s, d) => s + ((d as any)[k] || 0), 0);
+    const units = sumKey("units");
+    const days = Math.max(1, data.length);
+    const avgUnits = Math.round(units / days);
+    let scope = "วันนี้";
+    if (period === "daily") {
+      const from = dailyRange?.from ?? today; const to = dailyRange?.to ?? today;
+      const isRange = !!(from && to && to.getTime() !== from.getTime());
+      if (isRange) scope = `${fmtDate(from)} – ${fmtDate(to)}`;
+      else if (from.toDateString() === today.toDateString()) scope = "วันนี้";
+      else scope = `วันที่ ${from.getDate()} ${thaiMonthsFull[from.getMonth()]} ${from.getFullYear() + 543}`;
+    } else if (period === "weekly") scope = `เดือน${thaiMonthsFull[selectedDate.getMonth()]} ${selectedDate.getFullYear() + 543}`;
+    else if (period === "monthly") {
+      const yr = monthRange.year + 543;
+      scope = monthRange.from === monthRange.to ? `เดือน${thaiMonthsFull[monthRange.from]} ${yr}` : `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+    } else if (period === "yearly") {
+      const a = Math.min(yearRange.from, yearRange.to) + 543; const b = Math.max(yearRange.from, yearRange.to) + 543;
+      scope = a === b ? `ปี ${a}` : `ปี ${a} – ${b}`;
+    }
+    return { scope, units, avgUnits };
+  })();
 
   const periodTabs: { id: typeof period; label: string }[] = [
     { id: "daily", label: "รายวัน" },
@@ -4068,150 +7180,397 @@ function ReportProductsTab() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-3">
         <h2 className={`${font} text-[24px]`} style={{ fontWeight: 500 }}>รายงานข้อมูลสินค้า</h2>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white px-5 py-2 rounded-full cursor-pointer`}>
-              <Download className="size-4" />
-              ส่งออกรายงาน
-              <ChevronDown className="size-3.5" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-44 p-1">
-            <button className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
-              <FileSpreadsheet className="size-4 text-[#0f7a3a]" />
-              <span>Excel (.xlsx)</span>
-            </button>
-            <button className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
-              <FileText className="size-4 text-[#dc2626]" />
-              <span>PDF (.pdf)</span>
-            </button>
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {[
-            {
-              label: "สินค้าขายดี", value: "พิมเสนน้ำอโรมา", subValue: "ตราเมต้าเฮิร์บ",
-              accent: "#319754",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#319754" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5H6"/><path d="M18 9h1.5a2.5 2.5 0 000-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>,
-            },
-            {
-              label: "สต็อกต่ำ", value: "4", subValue: "รายการ",
-              accent: "#dc2626",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
-            },
-            {
-              label: "หมวดหมู่ยอดนิยม", value: "ผลิตภัณฑ์สมุนไพร", subValue: "8 หมวด",
-              accent: "#6366f1",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>,
-            },
-            {
-              label: "รีวิวเฉลี่ย", value: "5.0", subValue: "★★★★★",
-              accent: "#f59e0b",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-            },
-          ].map((s) => (
-            <div key={s.label} className="rounded-2xl border p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)]"
-              style={{ backgroundColor: `${s.accent}0d`, borderColor: `${s.accent}26` }}>
-              <div className="flex items-center justify-between">
-                <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
-                <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>{s.icon}</div>
-              </div>
-              <p className={`${font} text-[20px] mt-3 tracking-tight truncate`} style={{ fontWeight: 700, color: s.accent }} title={s.value}>{s.value}</p>
-              <p className={`${font} text-[11px] text-gray-400 mt-1 truncate`}>{s.subValue}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
-          <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>รายงานข้อมูลสินค้า</h3>
-          <div className="inline-flex items-center bg-gray-50 rounded-full p-1 self-start md:self-auto overflow-x-auto max-w-full">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                aria-label="เปลี่ยนวันที่"
+              >
+                <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
+                <span style={{ fontWeight: 500 }}>{datasetLabel}</span>
+                <ChevronDown className="size-3.5 text-gray-400 group-hover:text-[#319754]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              {(period === "daily" || period === "custom") && (
+                <>
+                  <Calendar mode="range" numberOfMonths={2} selected={period === "daily" ? dailyRange : range}
+                    onSelect={period === "daily" ? setDailyRange : setRange}
+                    defaultMonth={(period === "daily" ? dailyRange?.from : range?.from) ?? today} />
+                  <div className="flex items-center justify-between gap-2 p-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 1 วัน หรือ 2 ครั้งสำหรับช่วง</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => { period === "daily" ? setDailyRange({ from: today, to: today }) : setRange(undefined); }}
+                        className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ล้าง</button>
+                      <button onClick={() => setDatasetCalOpen(false)}
+                        className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
+                    </div>
+                  </div>
+                </>
+              )}
+              {period === "weekly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronLeft className="size-4 text-gray-600" /></button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {selectedDate.getFullYear() + 543}</span>
+                    <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronRight className="size-4 text-gray-600" /></button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const isActive = selectedDate.getMonth() === i;
+                      return (<button key={m} onClick={() => { setSelectedDate(new Date(selectedDate.getFullYear(), i, 1)); setDatasetCalOpen(false); }}
+                        className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isActive ? "bg-[#319754] text-white" : "hover:bg-gray-100 text-gray-700"}`}
+                        style={{ fontWeight: isActive ? 600 : 500 }}>{m}</button>);
+                    })}
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-3 mt-3 border-t">
+                    <button onClick={() => { setSelectedDate(today); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
+                  </div>
+                </div>
+              )}
+              {period === "monthly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year - 1 }))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronLeft className="size-4 text-gray-600" /></button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {monthRange.year + 543}</span>
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year + 1 }))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronRight className="size-4 text-gray-600" /></button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const inRange = i >= Math.min(monthRange.from, monthRange.to) && i <= Math.max(monthRange.from, monthRange.to);
+                      const isEdge = i === monthRange.from || i === monthRange.to;
+                      return (<button key={m} onClick={() => handleMonthClick(i)}
+                        className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                        style={{ fontWeight: isEdge ? 600 : 500 }}>{m}</button>);
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <button onClick={() => { setMonthRange({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() }); setMonthClickPhase(0); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
+                  </div>
+                </div>
+              )}
+              {period === "yearly" && (
+                <div className="p-3 w-[200px]">
+                  <p className={`${font} text-[11px] text-gray-400 mb-2`}>ย้อนหลังได้ถึง 5 ปี</p>
+                  <div className="flex flex-col gap-1">
+                    {availableYears.map((y) => {
+                      const inRange = y >= Math.min(yearRange.from, yearRange.to) && y <= Math.max(yearRange.from, yearRange.to);
+                      const isEdge = y === yearRange.from || y === yearRange.to;
+                      return (<button key={y} onClick={() => handleYearClick(y)}
+                        className={`${font} text-[13px] py-2 px-3 rounded-lg cursor-pointer transition-colors text-left ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                        style={{ fontWeight: isEdge ? 600 : 500 }}>ปี {y + 543}</button>);
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <button onClick={() => { setYearRange({ from: today.getFullYear(), to: today.getFullYear() }); setYearClickPhase(0); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ปีนี้</button>
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
                 className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
-                  <motion.div layoutId="report-prod-period-bg" className="absolute inset-0 bg-[#319754] rounded-full"
+                  <motion.div layoutId="report-prod-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                 )}
                 <span className="relative z-10">{t.label}</span>
               </button>
             ))}
           </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+                <Download className="size-4" />
+                ส่งออก
+                <ChevronDown className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-44 p-1">
+              <button className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileSpreadsheet className="size-4 text-[#0f7a3a]" />
+                <span>Excel (.xlsx)</span>
+              </button>
+              <button className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileText className="size-4 text-[#dc2626]" />
+                <span>PDF (.pdf)</span>
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            {
+              label: `จำนวนขาย ${kpi.scope}`, value: kpi.units.toLocaleString() + " ชิ้น",
+              subLabel: `เฉลี่ย ${kpi.avgUnits.toLocaleString()} ชิ้น/วัน`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+              accent: "#319754",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#319754" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgProductsSold}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: "สินค้าทั้งหมดในร้าน", value: "247 รายการ",
+              subLabel: "9 หมวดหมู่",
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>,
+              accent: "#0ea5e9",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8 21 13l-5 5"/><path d="M21 13H8a4 4 0 00-4 4v3"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgProductsStore}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: "สต็อกต่ำ / หมด", value: "4 รายการ",
+              subLabel: "1 รายการสินค้าหมด",
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+              accent: "#dc2626",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgStock}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: "รีวิวเฉลี่ยร้าน", value: "4.6 ★",
+              subLabel: "1,247 รีวิวรวม",
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+              accent: "#f59e0b",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgRating}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.45 }}
+                  aria-hidden
+                />
+              ),
+            },
+          ].map((s: any) => (
+            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+              style={{ backgroundColor: `${s.accent}0d` }}>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>{s.icon}</div>
+                </div>
+                <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}><AnimatedValue value={s.value} /></p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                    style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                    {s.subIcon}{s.subLabel}
+                  </span>
+                </div>
+              </div>
+              {s.bgArt}
+            </div>
+          ))}
         </div>
 
-        {period === "custom" && (
-          <div className="flex flex-wrap items-center gap-2 mb-5">
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <button className={`${font} text-[13px] inline-flex items-center gap-2 border border-gray-200 rounded-full px-4 py-1.5 hover:border-[#319754] focus:outline-none focus:border-[#319754] cursor-pointer min-w-[230px]`}>
-                  <CalendarIcon className="size-4 text-gray-500" />
-                  <span className={range?.from ? "text-[#1a1a1a]" : "text-gray-400"}>{rangeLabel}</span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="range" numberOfMonths={2} selected={range} onSelect={setRange} defaultMonth={range?.from} />
-                <div className="flex items-center justify-end gap-2 p-3 border-t">
-                  <button onClick={() => setRange(undefined)} className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ล้าง</button>
-                  <button onClick={() => setCalendarOpen(false)} className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
-                </div>
-              </PopoverContent>
-            </Popover>
-            <button className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-5 py-1.5 rounded-full cursor-pointer`}>ค้นหา</button>
-          </div>
-        )}
+        <h3 className={`${font} text-[18px] mb-5`} style={{ fontWeight: 600 }}>รายงานข้อมูลสินค้า</h3>
 
-        <ResponsiveContainer width="100%" height={320}>
+        <ResponsiveContainer width="100%" height={340}>
           {chartType === "line" ? (
-            <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-              onClick={(state: any) => {
-                const i = state?.activeTooltipIndex;
-                if (typeof i === "number" && data[i]) { setFocusedLabel(data[i].label); setProductPage(1); }
-              }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#319754" }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Legend iconType="circle" />
-              <Line type="monotone" dataKey="units" stroke="#319754" strokeWidth={2.5} name="จำนวนสินค้าที่ขายได้ (ชิ้น)"
-                dot={(props: any) => {
-                  const isActive = data[props.index]?.label === focusedLabel;
-                  return <circle key={props.index} cx={props.cx} cy={props.cy} r={isActive ? 6 : 4} fill="#319754" stroke={isActive ? "#fff" : "none"} strokeWidth={isActive ? 2 : 0} />;
-                }} />
-            </LineChart>
+            <ComposedChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+              <defs>
+                <filter id="prodGlowGreen" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="prodGlowPink" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()} />
+              <Tooltip
+                cursor={{ stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4 4" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (<div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                    <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                    <div className="flex flex-col gap-1.5">{payload.map((p: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                        <span className="flex items-center gap-1.5"><span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} /><span className="text-gray-600">{p.name}</span></span>
+                        <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.dataKey === "revenue" ? `฿${p.value.toLocaleString()}` : p.value.toLocaleString()}</span>
+                      </div>
+                    ))}</div>
+                  </div>);
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: 20 }}
+                content={({ payload }: any) => (
+                  <div className="flex items-center justify-center gap-3 flex-wrap">{payload?.map((entry: any, i: number) => (
+                    <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                      <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}</div>
+                )}
+              />
+              <Line yAxisId="left" type="monotone" dataKey="units" stroke="#319754" strokeWidth={3} name="จำนวนขาย (ชิ้น)"
+                style={{ filter: "url(#prodGlowGreen)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#319754", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#319754", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(49,151,84,0.35))" } }}
+                animationDuration={800}
+              />
+              <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="#ec4899" strokeWidth={3} name="รายได้ (฿)"
+                style={{ filter: "url(#prodGlowPink)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#ec4899", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#ec4899", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(236,72,153,0.35))" } }}
+                animationDuration={800}
+              />
+            </ComposedChart>
           ) : chartType === "bar" ? (
-            <BarChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-              onClick={(state: any) => {
-                const i = state?.activeTooltipIndex;
-                if (typeof i === "number" && data[i]) { setFocusedLabel(data[i].label); setProductPage(1); }
-              }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#319754" }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Legend iconType="circle" />
-              <Bar dataKey="units" name="จำนวนสินค้าที่ขายได้ (ชิ้น)" radius={[6, 6, 0, 0]}>
-                {data.map((d, i) => <Cell key={i} fill="#319754" fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.35 : 1} />)}
-              </Bar>
+            <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 10 }} barCategoryGap="22%" barGap={6}>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()} />
+              <Tooltip cursor={{ fill: "rgba(148,163,184,0.08)" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (<div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                    <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                    <div className="flex flex-col gap-1.5">{payload.map((p: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                        <span className="flex items-center gap-1.5"><span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} /><span className="text-gray-600">{p.name}</span></span>
+                        <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.dataKey === "revenue" ? `฿${p.value.toLocaleString()}` : p.value.toLocaleString()}</span>
+                      </div>
+                    ))}</div>
+                  </div>);
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: 20 }}
+                content={({ payload }: any) => (
+                  <div className="flex items-center justify-center gap-3 flex-wrap">{payload?.map((entry: any, i: number) => (
+                    <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                      <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}</div>
+                )}
+              />
+              <Bar yAxisId="left" dataKey="units" name="จำนวนขาย (ชิ้น)" fill="#319754" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+              <Bar yAxisId="right" dataKey="revenue" name="รายได้ (฿)" fill="#ec4899" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
             </BarChart>
           ) : (
-            <PieChart>
-              <Pie data={data.filter((d) => d.units > 0)} cx="50%" cy="50%" innerRadius={60} outerRadius={120}
-                dataKey="units" nameKey="label" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                onClick={(entry: any) => { if (entry?.label) { setFocusedLabel(entry.label); setProductPage(1); } }}>
-                {data.filter((d) => d.units > 0).map((d, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]}
-                    stroke={d.label === focusedLabel ? "#1a1a1a" : "#fff"}
-                    strokeWidth={d.label === focusedLabel ? 3 : 1}
-                    fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.4 : 1} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend iconType="circle" />
-            </PieChart>
+            (() => {
+              const pieData = data.filter((d) => (d as any).units > 0);
+              const pieTotal = pieData.reduce((s, d) => s + ((d as any).units || 0), 0);
+              return (<PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={72} outerRadius={120} paddingAngle={2}
+                  dataKey="units" nameKey="label" labelLine={false}
+                  label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }: any) => {
+                    if (percent < 0.06) return null;
+                    const RADIAN = Math.PI / 180;
+                    const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                    return (<text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 600, pointerEvents: "none" }}>{(percent * 100).toFixed(0)}%</text>);
+                  }}
+                  isAnimationActive animationDuration={700}
+                >
+                  {pieData.map((d, i) => (<Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="#fff" strokeWidth={3} />))}
+                </Pie>
+                <text x="50%" y="38%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 11, fill: "#9ca3af" }}>ขายรวม</text>
+                <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 20, fill: "#1a1a1a", fontWeight: 700 }}>{pieTotal.toLocaleString()} ชิ้น</text>
+                <Tooltip
+                  content={({ active, payload }: any) => {
+                    if (!active || !payload?.length) return null;
+                    const p = payload[0];
+                    const pct = pieTotal > 0 ? ((p.value / pieTotal) * 100).toFixed(1) : "0";
+                    return (<div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[160px]`}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.payload.fill || PIE_COLORS[0] }} />
+                        <span className="text-[12px] text-gray-600" style={{ fontWeight: 500 }}>{p.name}</span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-[16px] tabular-nums" style={{ fontWeight: 700, color: p.payload.fill || PIE_COLORS[0] }}>{p.value.toLocaleString()} ชิ้น</span>
+                        <span className="text-[11px] text-gray-400 tabular-nums">{pct}%</span>
+                      </div>
+                    </div>);
+                  }}
+                />
+                <Legend wrapperStyle={{ paddingTop: 20 }}
+                  content={({ payload }: any) => (
+                    <div className="flex items-center justify-center gap-2 flex-wrap max-w-full px-4">{payload?.map((entry: any, i: number) => (
+                      <div key={i} className={`${font} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px]`}
+                        style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                        <span className="block rounded-full" style={{ width: 8, height: 8, backgroundColor: entry.color, boxShadow: `0 0 0 2.5px ${entry.color}25` }} />
+                        <span>{entry.value}</span>
+                      </div>
+                    ))}</div>
+                  )}
+                />
+              </PieChart>);
+            })()
           )}
         </ResponsiveContainer>
 
@@ -4251,11 +7610,27 @@ function ReportProductsTab() {
           { name: "ชามะรุม 30 ซอง", category: "ชาสมุนไพร", sold: 5, revenue: 650 },
         ];
 
-        // Period filtering
-        const periodHash = period.length * 13 + (range?.from?.getMonth() ?? new Date().getMonth()) * 5;
-        const periodScale = period === "daily" ? 0.35 : period === "weekly" ? 0.7 : period === "yearly" ? 12 : 1;
+        // Period + date selection filtering — rotates products + scales by selection
+        const periodHash = (() => {
+          let key = period.length * 13;
+          if (period === "daily") {
+            const d = dailyRange?.from ?? today;
+            key += d.getDate() * 7 + d.getMonth() * 31 + (d.getFullYear() % 100) * 3;
+            const to = dailyRange?.to ?? d;
+            if (to.getTime() !== d.getTime()) key += to.getDate() * 11;
+          } else if (period === "weekly") {
+            key += selectedDate.getMonth() * 19 + (selectedDate.getFullYear() % 100) * 5;
+          } else if (period === "monthly") {
+            key += monthRange.from * 11 + monthRange.to * 7 + (monthRange.year % 100) * 3;
+          } else if (period === "yearly") {
+            key += (yearRange.from % 100) * 23 + (yearRange.to % 100) * 17;
+          }
+          return key;
+        })();
+        // Scale qty/revenue by number of buckets in `data` so totals reflect selected scope
+        const periodScale = Math.max(0.35, Math.min(20, data.length * 0.4));
         let working = baseProducts.map((p, i) => {
-          const drop = period === "daily" ? (i + periodHash) % 3 === 0 : period === "weekly" ? (i + periodHash) % 5 === 0 : false;
+          const drop = (i + periodHash) % 4 === 0 && period === "daily" && (!dailyRange?.to || dailyRange.to.getTime() === dailyRange.from!.getTime());
           if (drop) return { ...p, sold: 0, revenue: 0 };
           return {
             ...p,
@@ -4335,22 +7710,10 @@ function ReportProductsTab() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>Top Product</h3>
-                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#f0faf3] text-[#319754]`} style={{ fontWeight: 600 }}>
-                    <span className="size-1.5 rounded-full bg-[#319754]" />
-                    {periodLabelMap[period]}
-                  </span>
-                  {focusedLabel && (
-                    <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#fff7ed] text-[#c2410c]`} style={{ fontWeight: 600 }}>
-                      <span className="size-1.5 rounded-full bg-[#c2410c]" />
-                      เฉพาะ {focusedLabel}
-                      <button onClick={() => setFocusedLabel(null)} className="ml-0.5 hover:text-[#7c2d12] cursor-pointer">
-                        <X className="size-2.5" />
-                      </button>
-                    </span>
-                  )}
                 </div>
-                <p className={`${font} text-[12px] text-gray-400 mt-0.5`}>
-                  สินค้าทั้งหมด {sorted.length} รายการ · แสดง {sorted.length === 0 ? 0 : pageStart + 1}–{pageStart + pageItems.length}
+                <p className={`${font} text-[12px] text-gray-400 mt-1 inline-flex items-center gap-1.5`}>
+                  <CalendarIcon className="size-3.5" />
+                  <span>ข้อมูลของ <span className="text-gray-600" style={{ fontWeight: 500 }}>{datasetLabel}</span> · สินค้าทั้งหมด {sorted.length} รายการ · แสดง {sorted.length === 0 ? 0 : pageStart + 1}–{pageStart + pageItems.length}</span>
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -4439,7 +7802,7 @@ function ReportProductsTab() {
                 <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
                 <div className="relative">
                   <select value={productPerPage} onChange={(e) => { setProductPerPage(Number(e.target.value)); setProductPage(1); }}
-                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-md pl-2 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
                     {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
                   </select>
                   <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -4479,8 +7842,9 @@ function ReportProductsTab() {
                     เฉลี่ย {avgRating} ★
                   </span>
                 </div>
-                <p className={`${font} text-[12px] text-gray-400 mt-0.5`}>
-                  สินค้าทั้งหมด {ratingSorted.length} รายการ · แสดง {ratingSorted.length === 0 ? 0 : ratingPageStart + 1}–{ratingPageStart + ratingTop.length} · รีวิวรวม {totalReviews.toLocaleString()} ครั้ง
+                <p className={`${font} text-[12px] text-gray-400 mt-1 inline-flex items-center gap-1.5`}>
+                  <CalendarIcon className="size-3.5" />
+                  <span>ข้อมูลของ <span className="text-gray-600" style={{ fontWeight: 500 }}>{datasetLabel}</span> · สินค้าทั้งหมด {ratingSorted.length} รายการ · แสดง {ratingSorted.length === 0 ? 0 : ratingPageStart + 1}–{ratingPageStart + ratingTop.length} · รีวิวรวม {totalReviews.toLocaleString()} ครั้ง</span>
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -4629,7 +7993,14 @@ function ReportMarketTab() {
   const [chPerPage, setChPerPage] = useState(10);
   const today = new Date();
   const [range, setRange] = useState<DateRange | undefined>({ from: today, to: today });
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [dailyRange, setDailyRange] = useState<DateRange | undefined>({ from: today, to: today });
+  const [monthRange, setMonthRange] = useState<{ from: number; to: number; year: number }>({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() });
+  const [monthClickPhase, setMonthClickPhase] = useState<0 | 1>(0);
+  const [yearRange, setYearRange] = useState<{ from: number; to: number }>({ from: today.getFullYear(), to: today.getFullYear() });
+  const [yearClickPhase, setYearClickPhase] = useState<0 | 1>(0);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [datasetCalOpen, setDatasetCalOpen] = useState(false);
   const fmtDate = (d?: Date) => d ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear() + 543}` : "";
   const rangeLabel = range?.from
     ? range.to && range.to.getTime() !== range.from.getTime()
@@ -4637,49 +8008,91 @@ function ReportMarketTab() {
       : fmtDate(range.from)
     : "เลือกช่วงวันที่";
 
-  const dataByPeriod = {
-    daily: [
-      { label: "00:00", visits: 18, orders: 0 },
-      { label: "04:00", visits: 32, orders: 1 },
-      { label: "08:00", visits: 145, orders: 6 },
-      { label: "12:00", visits: 280, orders: 14 },
-      { label: "16:00", visits: 410, orders: 22 },
-      { label: "20:00", visits: 195, orders: 9 },
-    ],
-    weekly: [
-      { label: "สัปดาห์ที่ 1", visits: 4280, orders: 145 },
-      { label: "สัปดาห์ที่ 2", visits: 5640, orders: 198 },
-      { label: "สัปดาห์ที่ 3", visits: 6920, orders: 248 },
-      { label: "สัปดาห์ที่ 4", visits: 5980, orders: 215 },
-      { label: "สัปดาห์ที่ 5", visits: 2410, orders: 88 },
-    ],
-    monthly: Array.from({ length: 31 }, (_, i) => {
-      const day = i + 1;
-      const samples: Record<number, { visits: number; orders: number }> = {
-        1: { visits: 145, orders: 5 }, 2: { visits: 280, orders: 9 }, 3: { visits: 95, orders: 2 },
-        4: { visits: 320, orders: 11 }, 5: { visits: 240, orders: 8 },
-      };
-      return { label: String(day), ...(samples[day] ?? { visits: 0, orders: 0 }) };
-    }),
-    yearly: [
-      { label: "2565", visits: 24580, orders: 845 },
-      { label: "2566", visits: 32420, orders: 1124 },
-      { label: "2567", visits: 41680, orders: 1486 },
-      { label: "2568", visits: 48920, orders: 1672 },
-      { label: "2569", visits: 14180, orders: 542 },
-    ],
-    custom: [
-      { label: "ธ.ค.", visits: 1520, orders: 0 },
-      { label: "ม.ค.", visits: 1820, orders: 0 },
-      { label: "ก.พ.", visits: 2410, orders: 0 },
-      { label: "มี.ค.", visits: 4820, orders: 165 },
-      { label: "เม.ย.", visits: 1680, orders: 0 },
-      { label: "พ.ค.", visits: 1080, orders: 32 },
-    ],
+  const thaiMonthsFull = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  const thaiMonthsShort = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const availableYears = Array.from({ length: 5 }, (_, i) => today.getFullYear() - i);
+
+  const datasetLabel = (() => {
+    switch (period) {
+      case "daily": {
+        if (dailyRange?.from && dailyRange.to && dailyRange.to.getTime() !== dailyRange.from.getTime()) return `${fmtDate(dailyRange.from)} - ${fmtDate(dailyRange.to)}`;
+        const d = dailyRange?.from ?? today;
+        return `วันที่ ${d.getDate()} ${thaiMonthsFull[d.getMonth()]} ${d.getFullYear() + 543}`;
+      }
+      case "weekly": return `เดือน${thaiMonthsFull[selectedDate.getMonth()]} ${selectedDate.getFullYear() + 543}`;
+      case "monthly": {
+        const yr = monthRange.year + 543;
+        if (monthRange.from === monthRange.to) return `เดือน${thaiMonthsFull[monthRange.from]} ${yr}`;
+        return `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+      }
+      case "yearly": {
+        if (yearRange.from === yearRange.to) return `ปี ${yearRange.from + 543}`;
+        const a = Math.min(yearRange.from, yearRange.to);
+        const b = Math.max(yearRange.from, yearRange.to);
+        return `ปี ${a + 543} – ${b + 543}`;
+      }
+      case "custom": return rangeLabel;
+    }
+  })();
+
+  const handleMonthClick = (m: number) => {
+    if (monthClickPhase === 0) { setMonthRange((cur) => ({ ...cur, from: m, to: m })); setMonthClickPhase(1); }
+    else { setMonthRange((cur) => ({ ...cur, from: Math.min(cur.from, m), to: Math.max(cur.from, m) })); setMonthClickPhase(0); setDatasetCalOpen(false); }
   };
-  const data = dataByPeriod[period];
+  const handleYearClick = (y: number) => {
+    if (yearClickPhase === 0) { setYearRange({ from: y, to: y }); setYearClickPhase(1); }
+    else { setYearRange((cur) => ({ from: Math.min(cur.from, y), to: Math.max(cur.from, y) })); setYearClickPhase(0); setDatasetCalOpen(false); }
+  };
+
+  const shade = (hex: string, percent: number) => {
+    const n = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+    const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
+    return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+  };
+  const Bar3D = (props: any) => {
+    const { x, y, width, height, fill } = props;
+    if (!height || height <= 0 || !width) return null;
+    const depth = Math.min(Math.max(width * 0.28, 5), 9);
+    return (<g>
+      <path d={`M${x + width},${y} L${x + width + depth},${y - depth} L${x + width + depth},${y + height - depth} L${x + width},${y + height} Z`} fill={shade(fill, -18)} />
+      <path d={`M${x},${y} L${x + depth},${y - depth} L${x + width + depth},${y - depth} L${x + width},${y} Z`} fill={shade(fill, 12)} />
+      <rect x={x} y={y} width={width} height={height} fill={fill} />
+    </g>);
+  };
+
+  const data = buildReportData({ period, dailyRange, selectedDate, monthRange, yearRange, today });
 
   const PIE_COLORS = ["#7c3aed", "#a78bfa", "#c4b5fd", "#6366f1", "#818cf8", "#f59e0b"];
+
+  const kpi = (() => {
+    const sumKey = (k: string) => data.reduce((s, d) => s + ((d as any)[k] || 0), 0);
+    const visits = sumKey("visits");
+    const orders = sumKey("orders");
+    const conv = visits > 0 ? ((orders / visits) * 100) : 0;
+    const days = Math.max(1, data.length);
+    const avgVisits = Math.round(visits / days);
+    const avgOrders = Math.round(orders / days);
+    const aov = orders > 0 ? Math.round((orders * 250) / orders) : 0; // mock AOV
+    let scope = "วันนี้";
+    if (period === "daily") {
+      const from = dailyRange?.from ?? today; const to = dailyRange?.to ?? today;
+      const isRange = !!(from && to && to.getTime() !== from.getTime());
+      if (isRange) scope = `${fmtDate(from)} – ${fmtDate(to)}`;
+      else if (from.toDateString() === today.toDateString()) scope = "วันนี้";
+      else scope = `วันที่ ${from.getDate()} ${thaiMonthsFull[from.getMonth()]} ${from.getFullYear() + 543}`;
+    } else if (period === "weekly") scope = `เดือน${thaiMonthsFull[selectedDate.getMonth()]} ${selectedDate.getFullYear() + 543}`;
+    else if (period === "monthly") {
+      const yr = monthRange.year + 543;
+      scope = monthRange.from === monthRange.to ? `เดือน${thaiMonthsFull[monthRange.from]} ${yr}` : `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+    } else if (period === "yearly") {
+      const a = Math.min(yearRange.from, yearRange.to) + 543; const b = Math.max(yearRange.from, yearRange.to) + 543;
+      scope = a === b ? `ปี ${a}` : `ปี ${a} – ${b}`;
+    }
+    return { scope, visits, orders, conv, avgVisits, avgOrders, aov };
+  })();
 
   const periodTabs: { id: typeof period; label: string }[] = [
     { id: "daily", label: "รายวัน" },
@@ -4698,169 +8111,396 @@ function ReportMarketTab() {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 gap-3">
         <h2 className={`${font} text-[24px]`} style={{ fontWeight: 500 }}>รายงานข้อมูลตลาด</h2>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white px-5 py-2 rounded-full cursor-pointer`}>
-              <Download className="size-4" />
-              ส่งออกรายงาน
-              <ChevronDown className="size-3.5" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-44 p-1">
-            <button className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
-              <FileSpreadsheet className="size-4 text-[#0f7a3a]" />
-              <span>Excel (.xlsx)</span>
-            </button>
-            <button className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
-              <FileText className="size-4 text-[#dc2626]" />
-              <span>PDF (.pdf)</span>
-            </button>
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {[
-            {
-              label: "อัตราการแปลง", value: "4.2", suffix: "%", change: "+0.5%", positive: true,
-              accent: "#7c3aed",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
-            },
-            {
-              label: "CAC ต่อราย", value: "฿85", suffix: "", change: "−12%", positive: true,
-              accent: "#10b981",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
-            },
-            {
-              label: "ROAS แคมเปญ", value: "3.8x", suffix: "", change: "+0.4", positive: true,
-              accent: "#f59e0b",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
-            },
-            {
-              label: "คูปองที่ใช้", value: "32", suffix: "ครั้ง", change: "+8", positive: true,
-              accent: "#ec4899",
-              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V8H6a2 2 0 010-4h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>,
-            },
-          ].map((s) => (
-            <div key={s.label} className="rounded-2xl border p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)]"
-              style={{ backgroundColor: `${s.accent}0d`, borderColor: `${s.accent}26` }}>
-              <div className="flex items-center justify-between">
-                <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
-                <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>{s.icon}</div>
-              </div>
-              <p className={`${font} text-[26px] mt-3 tracking-tight`} style={{ fontWeight: 700, color: s.accent }}>
-                {s.value}{s.suffix && <span className="text-[14px] text-gray-400 ml-1" style={{ fontWeight: 500 }}>{s.suffix}</span>}
-              </p>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className={`${font} inline-flex items-center gap-0.5 text-[11px] px-1.5 py-0.5 rounded-md`}
-                  style={{ backgroundColor: "#dcfce7", color: "#15803d", fontWeight: 600 }}>
-                  <svg width="9" height="9" viewBox="0 0 13 5" fill="none"><path d="M1 4.5L6.5 1L12 4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {s.change}
-                </span>
-                <span className={`${font} text-[11px] text-gray-400`}>เทียบช่วงก่อนหน้า</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
-          <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>การเข้าชม & คอนเวิร์ต</h3>
-          <div className="inline-flex items-center bg-gray-50 rounded-full p-1 self-start md:self-auto overflow-x-auto max-w-full">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
+            <PopoverTrigger asChild>
+              <button
+                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                aria-label="เปลี่ยนวันที่"
+              >
+                <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
+                <span style={{ fontWeight: 500 }}>{datasetLabel}</span>
+                <ChevronDown className="size-3.5 text-gray-400 group-hover:text-[#319754]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              {(period === "daily" || period === "custom") && (
+                <>
+                  <Calendar mode="range" numberOfMonths={2} selected={period === "daily" ? dailyRange : range}
+                    onSelect={period === "daily" ? setDailyRange : setRange}
+                    defaultMonth={(period === "daily" ? dailyRange?.from : range?.from) ?? today} />
+                  <div className="flex items-center justify-between gap-2 p-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 1 วัน หรือ 2 ครั้งสำหรับช่วง</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => { period === "daily" ? setDailyRange({ from: today, to: today }) : setRange(undefined); }}
+                        className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ล้าง</button>
+                      <button onClick={() => setDatasetCalOpen(false)}
+                        className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
+                    </div>
+                  </div>
+                </>
+              )}
+              {period === "weekly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear() - 1, selectedDate.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronLeft className="size-4 text-gray-600" /></button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {selectedDate.getFullYear() + 543}</span>
+                    <button onClick={() => setSelectedDate(new Date(selectedDate.getFullYear() + 1, selectedDate.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronRight className="size-4 text-gray-600" /></button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const isActive = selectedDate.getMonth() === i;
+                      return (<button key={m} onClick={() => { setSelectedDate(new Date(selectedDate.getFullYear(), i, 1)); setDatasetCalOpen(false); }}
+                        className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isActive ? "bg-[#319754] text-white" : "hover:bg-gray-100 text-gray-700"}`}
+                        style={{ fontWeight: isActive ? 600 : 500 }}>{m}</button>);
+                    })}
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-3 mt-3 border-t">
+                    <button onClick={() => { setSelectedDate(today); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
+                  </div>
+                </div>
+              )}
+              {period === "monthly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year - 1 }))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronLeft className="size-4 text-gray-600" /></button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {monthRange.year + 543}</span>
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year + 1 }))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronRight className="size-4 text-gray-600" /></button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const inRange = i >= Math.min(monthRange.from, monthRange.to) && i <= Math.max(monthRange.from, monthRange.to);
+                      const isEdge = i === monthRange.from || i === monthRange.to;
+                      return (<button key={m} onClick={() => handleMonthClick(i)}
+                        className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                        style={{ fontWeight: isEdge ? 600 : 500 }}>{m}</button>);
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <button onClick={() => { setMonthRange({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() }); setMonthClickPhase(0); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
+                  </div>
+                </div>
+              )}
+              {period === "yearly" && (
+                <div className="p-3 w-[200px]">
+                  <p className={`${font} text-[11px] text-gray-400 mb-2`}>ย้อนหลังได้ถึง 5 ปี</p>
+                  <div className="flex flex-col gap-1">
+                    {availableYears.map((y) => {
+                      const inRange = y >= Math.min(yearRange.from, yearRange.to) && y <= Math.max(yearRange.from, yearRange.to);
+                      const isEdge = y === yearRange.from || y === yearRange.to;
+                      return (<button key={y} onClick={() => handleYearClick(y)}
+                        className={`${font} text-[13px] py-2 px-3 rounded-lg cursor-pointer transition-colors text-left ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                        style={{ fontWeight: isEdge ? 600 : 500 }}>ปี {y + 543}</button>);
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <button onClick={() => { setYearRange({ from: today.getFullYear(), to: today.getFullYear() }); setYearClickPhase(0); setDatasetCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ปีนี้</button>
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
                 className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
-                  <motion.div layoutId="report-mkt-period-bg" className="absolute inset-0 bg-[#7c3aed] rounded-full"
+                  <motion.div layoutId="report-mkt-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                 )}
                 <span className="relative z-10">{t.label}</span>
               </button>
             ))}
           </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+                <Download className="size-4" />
+                ส่งออก
+                <ChevronDown className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-44 p-1">
+              <button className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileSpreadsheet className="size-4 text-[#0f7a3a]" />
+                <span>Excel (.xlsx)</span>
+              </button>
+              <button className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileText className="size-4 text-[#dc2626]" />
+                <span>PDF (.pdf)</span>
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[
+            {
+              label: `ผู้เข้าชม ${kpi.scope}`, value: kpi.visits.toLocaleString() + " คน",
+              subLabel: `เฉลี่ย ${kpi.avgVisits.toLocaleString()} คน/วัน`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+              accent: "#7c3aed",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgVisitors}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: `ออเดอร์ ${kpi.scope}`, value: kpi.orders.toLocaleString() + " รายการ",
+              subLabel: `เฉลี่ย ${kpi.avgOrders.toLocaleString()} รายการ/วัน`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+              accent: "#f59e0b",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgBagInCart}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: `อัตราคอนเวิร์ต ${kpi.scope}`, value: kpi.conv.toFixed(2) + "%",
+              subLabel: `${kpi.orders.toLocaleString()} จาก ${kpi.visits.toLocaleString()} ครั้ง`,
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+              accent: "#10b981",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgConvert}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+                  aria-hidden
+                />
+              ),
+            },
+            {
+              label: "คูปองที่ใช้", value: "32 ครั้ง",
+              subLabel: "8 คูปองล่าสุด",
+              subIcon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V8H6a2 2 0 010-4h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>,
+              accent: "#ec4899",
+              icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V8H6a2 2 0 010-4h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4z"/></svg>,
+              bgArt: (
+                <motion.img
+                  src={imgCoupon}
+                  alt=""
+                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  style={{
+                    maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                    WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  }}
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+                  aria-hidden
+                />
+              ),
+            },
+          ].map((s: any) => (
+            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+              style={{ backgroundColor: `${s.accent}0d` }}>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>{s.icon}</div>
+                </div>
+                <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}><AnimatedValue value={s.value} /></p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                    style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                    {s.subIcon}{s.subLabel}
+                  </span>
+                </div>
+              </div>
+              {s.bgArt}
+            </div>
+          ))}
         </div>
 
-        {period === "custom" && (
-          <div className="flex flex-wrap items-center gap-2 mb-5">
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <button className={`${font} text-[13px] inline-flex items-center gap-2 border border-gray-200 rounded-full px-4 py-1.5 hover:border-[#7c3aed] focus:outline-none focus:border-[#7c3aed] cursor-pointer min-w-[230px]`}>
-                  <CalendarIcon className="size-4 text-gray-500" />
-                  <span className={range?.from ? "text-[#1a1a1a]" : "text-gray-400"}>{rangeLabel}</span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="range" numberOfMonths={2} selected={range} onSelect={setRange} defaultMonth={range?.from} />
-                <div className="flex items-center justify-end gap-2 p-3 border-t">
-                  <button onClick={() => setRange(undefined)} className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ล้าง</button>
-                  <button onClick={() => setCalendarOpen(false)} className={`${font} text-[13px] bg-[#7c3aed] hover:bg-[#6d28d9] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
-                </div>
-              </PopoverContent>
-            </Popover>
-            <button className={`${font} text-[13px] bg-[#7c3aed] hover:bg-[#6d28d9] text-white px-5 py-1.5 rounded-full cursor-pointer`}>ค้นหา</button>
-          </div>
-        )}
+        <h3 className={`${font} text-[18px] mb-5`} style={{ fontWeight: 600 }}>การเข้าชม & คอนเวิร์ต</h3>
 
-        <ResponsiveContainer width="100%" height={320}>
+        <ResponsiveContainer width="100%" height={340}>
           {chartType === "line" ? (
-            <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-              onClick={(state: any) => {
-                const i = state?.activeTooltipIndex;
-                if (typeof i === "number" && data[i]) { setFocusedLabel(data[i].label); setChPage(1); }
-              }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
-              <YAxis yAxisId="left" tick={{ fontSize: 12, fill: "#7c3aed" }} axisLine={false} tickLine={false} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: "#f59e0b" }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Legend iconType="circle" />
-              <Line yAxisId="left" type="monotone" dataKey="visits" stroke="#7c3aed" strokeWidth={2.5} name="ผู้เข้าชม"
-                dot={(props: any) => {
-                  const isActive = data[props.index]?.label === focusedLabel;
-                  return <circle key={props.index} cx={props.cx} cy={props.cy} r={isActive ? 6 : 4} fill="#7c3aed" stroke={isActive ? "#fff" : "none"} strokeWidth={isActive ? 2 : 0} />;
-                }} />
-              <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#f59e0b" strokeWidth={2.5} name="คอนเวิร์ต (ออเดอร์)"
-                dot={(props: any) => {
-                  const isActive = data[props.index]?.label === focusedLabel;
-                  return <circle key={props.index} cx={props.cx} cy={props.cy} r={isActive ? 6 : 4} fill="#f59e0b" stroke={isActive ? "#fff" : "none"} strokeWidth={isActive ? 2 : 0} />;
-                }} />
-            </LineChart>
+            <ComposedChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+              <defs>
+                <filter id="mktGlowPurple" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="mktGlowOrange" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip cursor={{ stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4 4" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (<div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                    <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                    <div className="flex flex-col gap-1.5">{payload.map((p: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                        <span className="flex items-center gap-1.5"><span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} /><span className="text-gray-600">{p.name}</span></span>
+                        <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.value.toLocaleString()}</span>
+                      </div>
+                    ))}</div>
+                  </div>);
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: 20 }}
+                content={({ payload }: any) => (
+                  <div className="flex items-center justify-center gap-3 flex-wrap">{payload?.map((entry: any, i: number) => (
+                    <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                      <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}</div>
+                )}
+              />
+              <Line yAxisId="left" type="monotone" dataKey="visits" stroke="#7c3aed" strokeWidth={3} name="ผู้เข้าชม"
+                style={{ filter: "url(#mktGlowPurple)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#7c3aed", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#7c3aed", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(124,58,237,0.35))" } }}
+                animationDuration={800}
+              />
+              <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#f59e0b" strokeWidth={3} name="คอนเวิร์ต (ออเดอร์)"
+                style={{ filter: "url(#mktGlowOrange)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#f59e0b", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#f59e0b", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(245,158,11,0.35))" } }}
+                animationDuration={800}
+              />
+            </ComposedChart>
           ) : chartType === "bar" ? (
-            <BarChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-              onClick={(state: any) => {
-                const i = state?.activeTooltipIndex;
-                if (typeof i === "number" && data[i]) { setFocusedLabel(data[i].label); setChPage(1); }
-              }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={{ stroke: "#e5e7eb" }} tickLine={false} />
-              <YAxis yAxisId="left" tick={{ fontSize: 12, fill: "#7c3aed" }} axisLine={false} tickLine={false} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: "#f59e0b" }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Legend iconType="circle" />
-              <Bar yAxisId="left" dataKey="visits" name="ผู้เข้าชม" radius={[6, 6, 0, 0]}>
-                {data.map((d, i) => <Cell key={i} fill="#7c3aed" fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.35 : 1} />)}
-              </Bar>
-              <Bar yAxisId="right" dataKey="orders" name="คอนเวิร์ต (ออเดอร์)" radius={[6, 6, 0, 0]}>
-                {data.map((d, i) => <Cell key={i} fill="#f59e0b" fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.35 : 1} />)}
-              </Bar>
+            <BarChart data={data} margin={{ top: 20, right: 30, left: 10, bottom: 10 }} barCategoryGap="22%" barGap={6}>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toString()} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip cursor={{ fill: "rgba(148,163,184,0.08)" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (<div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                    <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                    <div className="flex flex-col gap-1.5">{payload.map((p: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                        <span className="flex items-center gap-1.5"><span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} /><span className="text-gray-600">{p.name}</span></span>
+                        <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.value.toLocaleString()}</span>
+                      </div>
+                    ))}</div>
+                  </div>);
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: 20 }}
+                content={({ payload }: any) => (
+                  <div className="flex items-center justify-center gap-3 flex-wrap">{payload?.map((entry: any, i: number) => (
+                    <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                      <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}</div>
+                )}
+              />
+              <Bar yAxisId="left" dataKey="visits" name="ผู้เข้าชม" fill="#7c3aed" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+              <Bar yAxisId="right" dataKey="orders" name="คอนเวิร์ต (ออเดอร์)" fill="#f59e0b" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
             </BarChart>
           ) : (
-            <PieChart>
-              <Pie data={data.filter((d) => d.visits > 0)} cx="50%" cy="50%" innerRadius={60} outerRadius={120}
-                dataKey="visits" nameKey="label" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                onClick={(entry: any) => { if (entry?.label) { setFocusedLabel(entry.label); setChPage(1); } }}>
-                {data.filter((d) => d.visits > 0).map((d, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]}
-                    stroke={d.label === focusedLabel ? "#1a1a1a" : "#fff"}
-                    strokeWidth={d.label === focusedLabel ? 3 : 1}
-                    fillOpacity={focusedLabel && d.label !== focusedLabel ? 0.4 : 1} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend iconType="circle" />
-            </PieChart>
+            (() => {
+              const pieData = data.filter((d) => (d as any).visits > 0);
+              const pieTotal = pieData.reduce((s, d) => s + ((d as any).visits || 0), 0);
+              return (<PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={72} outerRadius={120} paddingAngle={2}
+                  dataKey="visits" nameKey="label" labelLine={false}
+                  label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }: any) => {
+                    if (percent < 0.06) return null;
+                    const RADIAN = Math.PI / 180;
+                    const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                    return (<text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 600, pointerEvents: "none" }}>{(percent * 100).toFixed(0)}%</text>);
+                  }}
+                  isAnimationActive animationDuration={700}
+                >
+                  {pieData.map((d, i) => (<Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="#fff" strokeWidth={3} />))}
+                </Pie>
+                <text x="50%" y="38%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 11, fill: "#9ca3af" }}>ผู้เข้าชมรวม</text>
+                <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 20, fill: "#1a1a1a", fontWeight: 700 }}>{pieTotal.toLocaleString()} คน</text>
+                <Tooltip
+                  content={({ active, payload }: any) => {
+                    if (!active || !payload?.length) return null;
+                    const p = payload[0];
+                    const pct = pieTotal > 0 ? ((p.value / pieTotal) * 100).toFixed(1) : "0";
+                    return (<div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[160px]`}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.payload.fill || PIE_COLORS[0] }} />
+                        <span className="text-[12px] text-gray-600" style={{ fontWeight: 500 }}>{p.name}</span>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-[16px] tabular-nums" style={{ fontWeight: 700, color: p.payload.fill || PIE_COLORS[0] }}>{p.value.toLocaleString()} คน</span>
+                        <span className="text-[11px] text-gray-400 tabular-nums">{pct}%</span>
+                      </div>
+                    </div>);
+                  }}
+                />
+                <Legend wrapperStyle={{ paddingTop: 20 }}
+                  content={({ payload }: any) => (
+                    <div className="flex items-center justify-center gap-2 flex-wrap max-w-full px-4">{payload?.map((entry: any, i: number) => (
+                      <div key={i} className={`${font} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px]`}
+                        style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                        <span className="block rounded-full" style={{ width: 8, height: 8, backgroundColor: entry.color, boxShadow: `0 0 0 2.5px ${entry.color}25` }} />
+                        <span>{entry.value}</span>
+                      </div>
+                    ))}</div>
+                  )}
+                />
+              </PieChart>);
+            })()
           )}
         </ResponsiveContainer>
 
@@ -4870,7 +8510,7 @@ function ReportMarketTab() {
               <button key={t.id} onClick={() => setChartType(t.id)}
                 className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${chartType === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {chartType === t.id && (
-                  <motion.div layoutId="report-mkt-chart-bg" className="absolute inset-0 bg-[#7c3aed] rounded-full"
+                  <motion.div layoutId="report-mkt-chart-bg" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                 )}
                 <span className="relative z-10">{t.label}</span>
@@ -4895,11 +8535,26 @@ function ReportMarketTab() {
           { name: "YouTube", type: "Social", visits: 180, orders: 6, revenue: 3200, cost: 600, initial: "Y", bg: "#fee2e2", fg: "#b91c1c" },
         ];
 
-        // Period filtering
-        const periodHash = period.length * 13 + (range?.from?.getMonth() ?? new Date().getMonth()) * 5;
-        const periodScale = period === "daily" ? 0.35 : period === "weekly" ? 0.7 : period === "yearly" ? 12 : 1;
+        // Period + date selection filtering — channels rotate + scale by selection
+        const periodHash = (() => {
+          let key = period.length * 13;
+          if (period === "daily") {
+            const d = dailyRange?.from ?? today;
+            key += d.getDate() * 7 + d.getMonth() * 31 + (d.getFullYear() % 100) * 3;
+            const to = dailyRange?.to ?? d;
+            if (to.getTime() !== d.getTime()) key += to.getDate() * 11;
+          } else if (period === "weekly") {
+            key += selectedDate.getMonth() * 19 + (selectedDate.getFullYear() % 100) * 5;
+          } else if (period === "monthly") {
+            key += monthRange.from * 11 + monthRange.to * 7 + (monthRange.year % 100) * 3;
+          } else if (period === "yearly") {
+            key += (yearRange.from % 100) * 23 + (yearRange.to % 100) * 17;
+          }
+          return key;
+        })();
+        const periodScale = Math.max(0.35, Math.min(20, data.length * 0.4));
         let working = baseChannels.map((c, i) => {
-          const drop = period === "daily" ? (i + periodHash) % 4 === 0 : period === "weekly" ? (i + periodHash) % 6 === 0 : false;
+          const drop = (i + periodHash) % 5 === 0 && period === "daily" && (!dailyRange?.to || dailyRange.to.getTime() === dailyRange.from!.getTime());
           if (drop) return { ...c, visits: 0, orders: 0, revenue: 0, cost: 0 };
           return {
             ...c,
@@ -4976,28 +8631,16 @@ function ReportMarketTab() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>ประสิทธิภาพช่องทางการตลาด</h3>
-                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#f5f3ff] text-[#6d28d9]`} style={{ fontWeight: 600 }}>
-                    <span className="size-1.5 rounded-full bg-[#7c3aed]" />
-                    {periodLabelMap[period]}
-                  </span>
-                  {focusedLabel && (
-                    <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-[#fff7ed] text-[#c2410c]`} style={{ fontWeight: 600 }}>
-                      <span className="size-1.5 rounded-full bg-[#c2410c]" />
-                      เฉพาะ {focusedLabel}
-                      <button onClick={() => setFocusedLabel(null)} className="ml-0.5 hover:text-[#7c2d12] cursor-pointer">
-                        <X className="size-2.5" />
-                      </button>
-                    </span>
-                  )}
                 </div>
-                <p className={`${font} text-[12px] text-gray-400 mt-0.5`}>
-                  รายได้และคอนเวิร์ตต่อช่องทาง · แสดง {sorted.length === 0 ? 0 : pageStart + 1}–{pageStart + pageItems.length} จาก {sorted.length} ช่องทาง
+                <p className={`${font} text-[12px] text-gray-400 mt-1 inline-flex items-center gap-1.5`}>
+                  <CalendarIcon className="size-3.5" />
+                  <span>ข้อมูลของ <span className="text-gray-600" style={{ fontWeight: 500 }}>{datasetLabel}</span> · แสดง {sorted.length === 0 ? 0 : pageStart + 1}–{pageStart + pageItems.length} จาก {sorted.length} ช่องทาง</span>
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="relative">
                   <select value={chSort} onChange={(e) => setChSort(e.target.value as any)}
-                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-lg pl-3 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#7c3aed]`}>
+                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
                     <option value="revenue_desc">เรียง: รายได้สูงสุด</option>
                     <option value="visits_desc">เรียง: ผู้เข้าชมมากสุด</option>
                     <option value="conv_desc">เรียง: Conv. Rate สูงสุด</option>
@@ -5085,7 +8728,7 @@ function ReportMarketTab() {
                 <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
                 <div className="relative">
                   <select value={chPerPage} onChange={(e) => { setChPerPage(Number(e.target.value)); setChPage(1); }}
-                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-md pl-2 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#7c3aed]`}>
+                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
                     {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
                   </select>
                   <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -5100,7 +8743,7 @@ function ReportMarketTab() {
                 </button>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                   <button key={p} onClick={() => setChPage(p)}
-                    className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safePage === p ? "bg-[#7c3aed] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safePage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
                     style={{ fontWeight: safePage === p ? 600 : 400 }}>
                     {p}
                   </button>
@@ -5125,10 +8768,43 @@ export function OwnerDashboard() {
   const [activeTab, setActiveTab] = useState<OwnerTab>("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedComplaintId, setSelectedComplaintId] = useState("CPL-001");
+  const [ordersInitialFilter, setOrdersInitialFilter] = useState<OrderFilterTab>("all");
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const mainRef = React.useRef<HTMLElement>(null);
+
+  // Reset scroll to top when switching tabs (also handles sidebar nav, openOrderDetail, etc)
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: "auto" });
+  }, [activeTab, selectedOrderId]);
 
   const handleSelect = (tab: OwnerTab) => {
     setActiveTab(tab);
     if (window.innerWidth < 768) setSidebarCollapsed(true);
+  };
+
+  // Map subpages to their parent menu so the sidebar stays highlighted on detail/sub-views
+  const subpageToParent: Partial<Record<OwnerTab, OwnerTab>> = {
+    order_detail:     "orders",
+    complaint_detail: "complaints",
+    add_product:      "products",
+    flash_event:      "flash_sale",
+    bank_settings:    "finance",
+  };
+  const sidebarActive = subpageToParent[activeTab] ?? activeTab;
+
+  const openOrders = (filter: OrderFilterTab = "all") => {
+    setOrdersInitialFilter(filter);
+    setActiveTab("orders");
+  };
+
+  const updateOrder = (id: string, patch: Partial<Order>) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+  };
+
+  const openOrderDetail = (id: string) => {
+    setSelectedOrderId(id);
+    setActiveTab("order_detail");
   };
 
   return (
@@ -5137,14 +8813,15 @@ export function OwnerDashboard() {
         <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarCollapsed(true)} />
       )}
 
-      <div className={`${sidebarCollapsed ? "hidden md:block" : "fixed md:relative z-30 md:z-auto"} md:h-full md:overflow-y-auto shrink-0 transition-all duration-300`}>
-        <Sidebar active={activeTab} onSelect={handleSelect} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
+      <div className={`${sidebarCollapsed ? "hidden md:block" : "fixed inset-y-0 left-0 md:static md:inset-auto z-30 md:z-auto"} h-full md:overflow-y-auto shrink-0 transition-all duration-300`}>
+        <Sidebar active={sidebarActive} onSelect={handleSelect} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
       </div>
 
-      {/* Content */}
-      <main className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0">
-        {activeTab === "overview" && <OverviewTab />}
-        {activeTab === "orders" && <OrdersTab />}
+      {/* Content — only this area scrolls, sidebar stays fixed */}
+      <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">
+        {activeTab === "overview" && <OverviewTab onViewOrders={openOrders} />}
+        {activeTab === "orders" && <OrdersTab initialFilter={ordersInitialFilter} orders={orders} onUpdate={updateOrder} onOpenDetail={openOrderDetail} />}
+        {activeTab === "order_detail" && <OrderDetailTab order={orders.find((o) => o.id === selectedOrderId) || null} onBack={() => setActiveTab("orders")} onUpdate={updateOrder} />}
         {activeTab === "products" && <ProductsTab onAddProduct={() => setActiveTab("add_product")} />}
         {activeTab === "flash_sale" && <FlashSaleTab onViewEvent={() => setActiveTab("flash_event")} />}
         {activeTab === "flash_event" && <FlashEventDetail onBack={() => setActiveTab("flash_sale")} />}
