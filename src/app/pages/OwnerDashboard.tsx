@@ -5,10 +5,11 @@ import { useNavigate } from "react-router";
 import {
   BarChart3, Package, ShoppingCart, Zap, Megaphone, Ticket,
   Settings, ChevronDown, ChevronLeft, Store, Search,
-  Plus, MoreHorizontal, Eye, AlertCircle, X, Check, Clock, ArrowRight, ArrowUpRight, RotateCcw, Wallet,
+  Plus, MoreHorizontal, Eye, AlertCircle, X, Check, Clock, ArrowRight, ArrowUpRight, RotateCcw, Wallet, Percent,
   AlertTriangle, Phone, Mail, ChevronRight, Filter,
   FileText, TrendingUp, Users, ShoppingBag, BarChart2, Download, FileSpreadsheet,
-  ClipboardList, ScanSearch, Truck, PackageCheck, PackageX, EyeOff
+  ClipboardList, ScanSearch, Truck, PackageCheck, PackageX, EyeOff, Send,
+  Lock, Banknote, ArrowDownToLine, Info
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from "recharts";
@@ -48,9 +49,12 @@ import imgSideBar from "figma:asset/9c30b1921f0988e49ef49ac4f89b2dd06b320b33.png
 import imgProd from "figma:asset/9e21f4217f39c8b2aaff50eadcf63d44b0fcf83c.png";
 import imgFlash from "../../assets/flash.png";
 import imgTerms from "../../assets/Terms and conditions.png";
-import imgEvidence0 from "figma:asset/d0cb417cf99aba1cdf79d5426f5fd585177d3d46.png";
-import imgEvidence1 from "figma:asset/7506073c04064524065ab7d328509bd53de6d2ae.png";
-import imgRefundProduct from "figma:asset/e9fa4baa6fae7a43e086cd2f7372c763ac79e774.png";
+import imgPromoCard from "../../assets/promotioncard.png";
+// Mock placeholder URLs — figma:asset/* ไม่มี binary จริง (Vite จะ replace เป็น 1×1 PNG)
+// ใช้ Unsplash URL ให้แสดงภาพจริงในตัวอย่าง
+const imgEvidence0 = "https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?w=400&q=80";
+const imgEvidence1 = "https://images.unsplash.com/photo-1631547516650-d2b4d9b4f1f0?w=400&q=80";
+const imgRefundProduct = "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=200&q=80";
 import bankLogoKBANK from "figma:asset/fc3734dca1dc1106a8a9ae04448d90848680e3b4.png";
 import bankLogoSCB from "figma:asset/480398b2a511e7f907960af090b46919e996b2fb.png";
 import bankLogoKTB from "figma:asset/3bc35e854570ff8d031628a1b961ff515af8c04c.png";
@@ -107,6 +111,8 @@ const sidebarItems: SidebarItem[] = [
     { id: "report_products", label: "รายงานข้อมูลสินค้า" },
     { id: "report_market", label: "Market Report" },
   ]},
+  // การเงิน — เมนูเดี่ยว (กระเป๋าเงิน) ส่วน "ตั้งค่าการเงิน" เข้าผ่านปุ่มในหน้านี้แทน
+  { id: "finance", label: "การเงิน", icon: Wallet },
 ];
 
 const sidebarSettings: SidebarItem[] = [];
@@ -221,8 +227,23 @@ function getMockFlashEvents(): FlashEvent[] {
     };
   });
 
-  // เรียงล่าสุด → เก่าสุด (เดือน 12 อยู่หน้าแรก, เดือน 1 อยู่หน้าสุดท้าย)
-  return events.sort((a, b) => Number(b.id) - Number(a.id));
+  // Demo: event ที่ "กำลังดำเนินการ" ตอนนี้ (เริ่มเมื่อวาน → จบพรุ่งนี้ 23:59)
+  // เพื่อให้เห็นการ์ด active + countdown สด ไม่ว่าจะเปิดวันไหน
+  const demoStart = new Date(now); demoStart.setDate(demoStart.getDate() - 1); demoStart.setHours(0, 0, 0, 0);
+  const demoEnd   = new Date(now); demoEnd.setDate(demoEnd.getDate() + 1);   demoEnd.setHours(23, 59, 0, 0);
+  const demoActive: FlashEvent = {
+    id: "demo-active",
+    name: `Flash Sale ${demoStart.getMonth() + 1}.${demoStart.getDate()}`,
+    items: 8,
+    date: range(demoStart, demoEnd),
+    status: "active",
+    startsAt: demoStart.toISOString(),
+    endsAt: demoEnd.toISOString(),
+  };
+
+  // เรียงล่าสุด → เก่าสุด — demo "active" อยู่หน้าสุดเสมอ
+  const sortedMonthly = events.sort((a, b) => Number(b.id) - Number(a.id));
+  return [demoActive, ...sortedMonthly];
 }
 
 function useFlashCountdown(endsAt?: string) {
@@ -246,13 +267,24 @@ function useFlashCountdown(endsAt?: string) {
   };
 }
 
-const mockFlashProducts = [
-  { id: "1", name: "ขมิ้นชันแคปซูล 60 แคป",       normalPrice: "฿ 220.00", flashPrice: "฿ 149.00", start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
-  { id: "2", name: "น้ำมันเหลือง MetaHerb 20ml",   normalPrice: "฿ 159.00", flashPrice: "฿ 99.00",  start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
-  { id: "3", name: "ชาตะไคร้ใบเตย 30 ซอง",        normalPrice: "฿ 110.00", flashPrice: "฿ 79.00",  start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
-  { id: "4", name: "ใบบัวบกแคปซูล 60 แคป",        normalPrice: "฿ 180.00", flashPrice: "฿ 129.00", start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
-  { id: "5", name: "ยาดมสมุนไพร MetaHerb",        normalPrice: "฿ 89.00",  flashPrice: "฿ 59.00",  start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
-  { id: "6", name: "สเปรย์สมุนไพร MetaHerb 50ml", normalPrice: "฿ 199.00", flashPrice: "฿ 139.00", start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังดำเนินการ", statusColor: "#319754" },
+// helper: ISO ของวันใน "ออฟเซ็ต" จากวันนี้ + เวลา (ใช้ทำ mock startsAt — past = กำลังขาย, future = กำหนดไว้ล่วงหน้า)
+const _flashOffsetIso = (dayOffset: number, hour = 0, min = 0): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + dayOffset);
+  d.setHours(hour, min, 0, 0);
+  return d.toISOString();
+};
+
+const mockFlashProducts: FlashProductRow[] = [
+  { id: "1", name: "ขมิ้นชันแคปซูล 60 แคป",       image: "https://images.unsplash.com/photo-1740592754365-2117f5977528?w=400&q=80", normalPrice: "฿ 220.00", flashPrice: "฿ 149.00", start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังขาย", statusColor: "#319754", flashPriceDisplay: "฿ 149.00", originalPriceDisplay: "฿ 220.00", quantity: 50, sold: 18, startsAt: _flashOffsetIso(-1, 0, 0) },
+  { id: "2", name: "น้ำมันเหลือง MetaHerb 20ml",   image: "https://images.unsplash.com/photo-1624454002302-36b824d7bd0a?w=400&q=80", normalPrice: "฿ 159.00", flashPrice: "฿ 99.00",  start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังขาย", statusColor: "#319754", flashPriceDisplay: "฿ 99.00",  originalPriceDisplay: "฿ 159.00", quantity: 80, sold: 42, startsAt: _flashOffsetIso(-1, 0, 0) },
+  { id: "3", name: "กาแฟดริป Signature อเมริกาโนเย็น (12 ซอง)", image: "https://images.unsplash.com/photo-1599639932525-213272ff954b?w=400&q=80", normalPrice: "฿ 220.00", flashPrice: "฿ 198.00", start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังขาย", statusColor: "#319754", flashPriceDisplay: "฿ 135.00 - 252.00", originalPriceDisplay: "฿ 150.00 - 280.00", quantity: 30, sold: 7, startsAt: _flashOffsetIso(-1, 0, 0) },
+  { id: "4", name: "ใบบัวบกแคปซูล 60 แคป",        image: "https://images.unsplash.com/photo-1748390359572-8e7a47bf5cb5?w=400&q=80", normalPrice: "฿ 180.00", flashPrice: "฿ 129.00", start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังขาย", statusColor: "#319754", flashPriceDisplay: "฿ 129.00", originalPriceDisplay: "฿ 180.00", quantity: 60, sold: 25, startsAt: _flashOffsetIso(-1, 0, 0) },
+  { id: "5", name: "ยาดมสมุนไพร MetaHerb",        image: "https://images.unsplash.com/photo-1573821663912-6df460f9c684?w=400&q=80", normalPrice: "฿ 89.00",  flashPrice: "฿ 59.00",  start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังขาย", statusColor: "#319754", flashPriceDisplay: "฿ 59.00",  originalPriceDisplay: "฿ 89.00", quantity: 50,  sold: 50, startsAt: _flashOffsetIso(-1, 0, 0) },
+  { id: "6", name: "สเปรย์สมุนไพร MetaHerb 50ml", image: "https://images.unsplash.com/photo-1591282017732-207fbba7dfd4?w=400&q=80", normalPrice: "฿ 199.00", flashPrice: "฿ 139.00", start: "08 พ.ค. 2569 - 00:00 น.", end: "09 พ.ค. 2569 - 23:59 น.", status: "กำลังขาย", statusColor: "#319754", flashPriceDisplay: "฿ 139.00", originalPriceDisplay: "฿ 199.00", quantity: 40, sold: 12, startsAt: _flashOffsetIso(-1, 0, 0) },
+  // สินค้าที่กำหนดไว้ล่วงหน้า (start ยังไม่ถึง — เริ่มอีก 3 วัน)
+  { id: "7", name: "ชาเก๊กฮวยออร์แกนิก 20 ซอง",   image: "https://images.unsplash.com/photo-1610643625267-aee6dae3ca22?w=400&q=80", normalPrice: "฿ 125.00", flashPrice: "฿ 89.00",  start: "11 พ.ค. 2569 - 00:00 น.", end: "12 พ.ค. 2569 - 23:59 น.", status: "กำหนดไว้ล่วงหน้า", statusColor: "#f59e0b", flashPriceDisplay: "฿ 89.00", originalPriceDisplay: "฿ 125.00", quantity: 100, sold: 0, startsAt: _flashOffsetIso(3, 0, 0) },
+  { id: "8", name: "ชาตะไคร้ใบเตย 30 ซอง",        image: "https://images.unsplash.com/photo-1592479996-0c8a1e8c5d4e?w=400&q=80", normalPrice: "฿ 110.00", flashPrice: "฿ 79.00",  start: "12 พ.ค. 2569 - 00:00 น.", end: "13 พ.ค. 2569 - 23:59 น.", status: "กำหนดไว้ล่วงหน้า", statusColor: "#f59e0b", flashPriceDisplay: "฿ 79.00", originalPriceDisplay: "฿ 110.00", quantity: 60,  sold: 0, startsAt: _flashOffsetIso(4, 0, 0) },
 ];
 
 type OrderStatus = "pending_payment" | "pending_verify" | "ready_ship" | "shipping" | "shipped" | "cancelled";
@@ -684,13 +716,6 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
           <motion.div variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.25 }}>
             {withTooltip("การร้องเรียน",
               <MenuBtn isActive={active === "complaints" || active === "complaint_detail"} icon={AlertTriangle} label="การร้องเรียน" onClick={() => onSelect("complaints")} collapsed={collapsed} />
-            )}
-          </motion.div>
-
-          {/* Finance */}
-          <motion.div variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.25 }}>
-            {withTooltip("การเงิน",
-              <MenuBtn isActive={active === "finance"} icon={Wallet} label="การเงิน" onClick={() => onSelect("finance")} collapsed={collapsed} />
             )}
           </motion.div>
         </motion.nav>
@@ -2640,40 +2665,57 @@ function FlashEventCard({
 /* ========== FLASH SALE TAB ========== */
 function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?: { isNewJoin?: boolean }) => void }) {
   const [flashFilter, setFlashFilter] = useState("all");
+  const [flashSearch, setFlashSearch] = useState("");
+  const [flashStorePage, setFlashStorePage] = useState(1);
+  const [flashStorePerPage, setFlashStorePerPage] = useState(10);
   const [showPopup, setShowPopup] = useState(false);
   const [popupEvent, setPopupEvent] = useState<FlashEvent | null>(null);
   const [events] = useState(() => getMockFlashEvents());
   const [eventPage, setEventPage] = useState(1);
   const [monthFilter, setMonthFilter] = useState("all"); // "all" | "1".."12"
+  // Flash Sale Store list — เก็บเป็น state เพื่อให้เพิ่มสินค้าใหม่จาก modal ได้
+  const [storeProducts, setStoreProducts] = useState<FlashProductRow[]>(mockFlashProducts);
+  const [showStoreAddModal, setShowStoreAddModal] = useState(false);
   const eventsPerPage = 4;
   const filteredEvents = monthFilter === "all" ? events : events.filter((e) => e.id === monthFilter);
   const totalEventPages = Math.max(1, Math.ceil(filteredEvents.length / eventsPerPage));
   const safeEventPage = Math.min(eventPage, totalEventPages);
   const pagedEvents = filteredEvents.slice((safeEventPage - 1) * eventsPerPage, safeEventPage * eventsPerPage);
 
+  // helper + count ตามสถานะจริง — ต้องประกาศก่อน filteredStoreProducts ที่ใช้งาน
+  const _now = Date.now();
+  const _isScheduled = (p: FlashProductRow) => !!p.startsAt && new Date(p.startsAt).getTime() > _now;
+  const storeCountActive    = storeProducts.filter((p) => !_isScheduled(p) && p.quantity - p.sold > 0).length;
+  const storeCountSoldOut   = storeProducts.filter((p) => p.quantity - p.sold <= 0).length;
+  const storeCountScheduled = storeProducts.filter(_isScheduled).length;
   const flashFilterTabs = [
-    { id: "all",       label: "ทั้งหมด",          count: 10, Icon: ClipboardList },
-    { id: "active",    label: "กำลังดำเนินการ",   count: 6,  Icon: Zap           },
-    { id: "scheduled", label: "กำหนดไว้ล่วงหน้า", count: 0,  Icon: Clock         },
+    { id: "all",       label: "ทั้งหมด",          count: storeProducts.length,     Icon: ClipboardList   },
+    { id: "active",    label: "กำลังขาย",          count: storeCountActive,         Icon: Zap             },
+    { id: "soldout",   label: "สินค้าหมด",         count: storeCountSoldOut,        Icon: AlertTriangle   },
+    { id: "scheduled", label: "กำหนดไว้ล่วงหน้า", count: storeCountScheduled,      Icon: Clock           },
   ];
+
+  // กรองตาม tab + keyword
+  const filteredStoreProducts = storeProducts.filter((p) => {
+    const remaining = p.quantity - p.sold;
+    const scheduled = _isScheduled(p);
+    if (flashFilter === "active"    && (scheduled || remaining <= 0)) return false;
+    if (flashFilter === "soldout"   && remaining > 0) return false;
+    if (flashFilter === "scheduled" && !scheduled)    return false;
+    if (flashSearch.trim()) {
+      return p.name.toLowerCase().includes(flashSearch.trim().toLowerCase());
+    }
+    return true;
+  });
+  const totalFlashStorePages = Math.max(1, Math.ceil(filteredStoreProducts.length / flashStorePerPage));
+  const safeFlashStorePage = Math.min(flashStorePage, totalFlashStorePages);
+  const pagedStoreProducts = filteredStoreProducts.slice((safeFlashStorePage - 1) * flashStorePerPage, safeFlashStorePage * flashStorePerPage);
 
   return (
     <div>
-      {/* Header — title + add button */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      {/* Header — title only */}
+      <div className="mb-6">
         <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>Flash Sale</h2>
-        <motion.button
-          whileTap={{ scale: 0.96 }}
-          whileHover={{ y: -1 }}
-          transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
-          style={{ transition: "background-color 200ms, box-shadow 200ms" }}
-        >
-          <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
-            <Plus className="size-[14px]" strokeWidth={2.6} />
-          </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
-        </motion.button>
       </div>
 
       {/* Section A: Flash Sale Events */}
@@ -2754,132 +2796,336 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
 
       {/* Section B: Flash Sale Store */}
       <div className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
-            <Store className="size-5 text-[#319754]" strokeWidth={2.2} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>Flash Sale Store</h3>
-            <div className="flex items-center gap-1.5 mt-1">
-              <AlertCircle className="size-3.5 text-gray-400" />
-              <span className={`${font} text-[12px] text-[#8e8e93]`}>สินค้าในร้านที่เข้าร่วม Flash Sale</span>
+        <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <Store className="size-5 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>Flash Sale Store</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <AlertCircle className="size-3.5 text-gray-400" />
+                <span className={`${font} text-[12px] text-[#8e8e93]`}>สินค้าในร้านที่เข้าร่วม Flash Sale</span>
+              </div>
             </div>
           </div>
+
+          {/* ปุ่ม "เพิ่มสินค้า Flash Sale" — อยู่ใน row เดียวกับ title (ขวาสุด) */}
+          <motion.button
+            onClick={() => setShowStoreAddModal(true)}
+            whileTap={{ scale: 0.96 }}
+            whileHover={{ y: -1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] shrink-0`}
+            style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+          >
+            <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
+              <Plus className="size-[14px]" strokeWidth={2.6} />
+            </span>
+            <span style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
+          </motion.button>
         </div>
 
         {/* Filter tabs (unified style: green icons + red badges) */}
-        <div className="bg-[#fafbfc] rounded-full p-2 mb-4 flex items-center gap-2 flex-wrap">
-          {flashFilterTabs.map((tab) => {
-            const isAct = flashFilter === tab.id;
-            return (
-              <motion.button
-                key={tab.id}
-                onClick={() => setFlashFilter(tab.id)}
-                whileTap={{ scale: 0.94 }}
-                whileHover={!isAct ? { scale: 1.04 } : undefined}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${
-                  !isAct ? "hover:bg-white" : ""
-                }`}
-              >
-                {isAct && (
-                  <motion.span
-                    layoutId="flashTabActivePill"
-                    className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                  />
-                )}
-                <motion.span layout
-                  className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
-                  transition={{ duration: 0.2 }}
+        {/* Filter tabs + search (in one pill) — ตรงกับ ProductsTab */}
+        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-4 flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
+            {flashFilterTabs.map((tab) => {
+              const isAct = flashFilter === tab.id;
+              return (
+                <motion.button
+                  key={tab.id}
+                  onClick={() => { setFlashFilter(tab.id); setFlashStorePage(1); }}
+                  whileTap={{ scale: 0.94 }}
+                  whileHover={!isAct ? { scale: 1.04 } : undefined}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${
+                    !isAct ? "hover:bg-gray-50" : ""
+                  }`}
                 >
-                  <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
-                </motion.span>
-                <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                  style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
-                  {tab.label}
-                </span>
-                <motion.span layout
-                  className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
-                  <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
-                    {tab.count}
+                  {isAct && (
+                    <motion.span
+                      layoutId="flashTabActivePill"
+                      className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                  <motion.span layout
+                    className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
+                    style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
                   </motion.span>
-                </motion.span>
-              </motion.button>
-            );
-          })}
+                  <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
+                    style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
+                    {tab.label}
+                  </span>
+                  <motion.span layout
+                    className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
+                    style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
+                    <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
+                      {tab.count}
+                    </motion.span>
+                  </motion.span>
+                </motion.button>
+              );
+            })}
+          </div>
+          {/* Search */}
+          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+            <input
+              value={flashSearch}
+              onChange={(e) => { setFlashSearch(e.target.value); setFlashStorePage(1); }}
+              className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
+              placeholder="ค้นหาสินค้า Flash Sale...."
+            />
+            <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+              <Search className="size-4 text-white" />
+            </button>
+          </div>
         </div>
 
-        {/* Table */}
-        <div className="border border-gray-100 rounded-2xl overflow-hidden">
-          <table className="w-full">
+        {/* Table — โครงสร้างเดียวกับ FlashEventDetail (table-fixed + tfoot summary) */}
+        <div>
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col style={{ width: "26%" }} />{/* สินค้า */}
+              <col style={{ width: "8%" }}  />{/* ส่วนลด */}
+              <col style={{ width: "10%" }} />{/* ขายแล้ว */}
+              <col style={{ width: "12%" }} />{/* คงเหลือ */}
+              <col style={{ width: "12%" }} />{/* ยอดขาย */}
+              <col style={{ width: "16%" }} />{/* ระยะเวลา */}
+              <col style={{ width: "10%" }} />{/* สถานะ */}
+              <col style={{ width: "6%" }}  />{/* จัดการ */}
+            </colgroup>
             <thead>
-              <tr className={`${font} text-[12px] text-[#8e8e93] bg-[#fafbfc] border-b border-gray-100`}>
-                <th className="text-left py-3 px-4" style={{ fontWeight: 500 }}>สินค้า</th>
-                <th className="text-right py-3 px-4" style={{ fontWeight: 500 }}>ราคาปกติ</th>
-                <th className="text-right py-3 px-4" style={{ fontWeight: 500 }}>ราคา Flash Sale</th>
-                <th className="text-center py-3 px-4" style={{ fontWeight: 500 }}>ส่วนลด</th>
-                <th className="text-left py-3 px-4" style={{ fontWeight: 500 }}>เวลาเริ่ม</th>
-                <th className="text-left py-3 px-4" style={{ fontWeight: 500 }}>เวลาสิ้นสุด</th>
-                <th className="text-center py-3 px-4" style={{ fontWeight: 500 }}>สถานะ</th>
-                <th className="text-center py-3 px-4" style={{ fontWeight: 500 }}>จัดการ</th>
+              <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>สินค้า</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>ส่วนลด</th>
+                <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ขายแล้ว</th>
+                <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>คงเหลือ</th>
+                <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ยอดขาย</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ระยะเวลา</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>สถานะ</th>
+                <th className="text-center pb-3" style={{ fontWeight: 500 }}>จัดการ</th>
               </tr>
             </thead>
             <tbody>
-              {mockFlashProducts.map((p) => {
+              {pagedStoreProducts.map((p) => {
                 const normal = parseFloat(String(p.normalPrice).replace(/[^\d.]/g, "")) || 0;
                 const flash  = parseFloat(String(p.flashPrice).replace(/[^\d.]/g, ""))  || 0;
                 const discountPct = normal > 0 && flash > 0 ? Math.round(((normal - flash) / normal) * 100) : 0;
+                const remaining = Math.max(0, p.quantity - p.sold);
+                const lowStock = p.quantity > 0 && remaining / p.quantity <= 0.2;
+                const isSoldOut = remaining === 0;
+                const isScheduled = !!p.startsAt && new Date(p.startsAt).getTime() > Date.now();
+                const revenue = flash * p.sold;
+                const stLabel = isScheduled ? "ล่วงหน้า" : isSoldOut ? "สินค้าหมด" : "กำลังขาย";
+                const stColor = isScheduled ? "#f59e0b" : isSoldOut ? "#dc2626" : "#319754";
                 return (
-                  <tr key={p.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors group/row">
-                    {/* Product */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="size-[56px] rounded-xl overflow-hidden shrink-0 bg-gray-100 border border-gray-200 group-hover/row:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow">
-                          <ImageWithFallback src={imgProd} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover/row:scale-110" />
+                  <tr key={p.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                    {/* Product (image + name + flash + original prices) */}
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center gap-3 min-w-0 group/row">
+                        <div className="relative size-[64px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] group-hover/row:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow shrink-0">
+                          <ImageWithFallback
+                            src={p.image}
+                            alt={p.name}
+                            className={`w-full h-full object-cover transition-transform duration-500 ease-out group-hover/row:scale-110 ${isSoldOut ? "grayscale opacity-60" : ""}`}
+                          />
+                          {isSoldOut && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                              <span className={`${font} text-white text-[14px] tracking-wider`} style={{ fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
+                                หมด
+                              </span>
+                            </div>
+                          )}
                         </div>
-                        <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{p.name}</span>
+                        <div className="min-w-0 flex-1">
+                          <p className={`${font} text-[14px] text-[#1a1a1a] truncate`} style={{ fontWeight: 500 }} title={p.name}>{p.name}</p>
+                          {(p.flashPriceDisplay || p.originalPriceDisplay) && (
+                            <p className={`${font} text-[12px] truncate mt-0.5 tabular-nums`}>
+                              {p.flashPriceDisplay && (
+                                <span className="text-[#ff3b30]" style={{ fontWeight: 600 }}>{p.flashPriceDisplay}</span>
+                              )}
+                              {p.originalPriceDisplay && (
+                                <span className="text-gray-400 line-through ml-2">{p.originalPriceDisplay}</span>
+                              )}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </td>
-                    {/* Normal price */}
-                    <td className={`${font} text-[13px] text-gray-500 line-through text-right py-3 px-4 tabular-nums`}>{p.normalPrice}</td>
-                    {/* Flash price */}
-                    <td className={`${font} text-[14px] text-[#ff3b30] text-right py-3 px-4 tabular-nums`} style={{ fontWeight: 600 }}>{p.flashPrice}</td>
-                    {/* Discount badge */}
-                    <td className="py-3 px-4 text-center">
+                    {/* Discount */}
+                    <td className="py-3 pr-4 text-center">
                       {discountPct > 0 && (
-                        <span className={`${font} bg-[#e62e05] text-white text-[11px] px-2.5 py-0.5 rounded-full inline-block`} style={{ fontWeight: 600 }}>
-                          -{discountPct}%
-                        </span>
+                        <span className={`${font} text-[13px] text-[#dc2626]`} style={{ fontWeight: 600 }}>-{discountPct}%</span>
                       )}
                     </td>
-                    {/* Start */}
-                    <td className={`${font} text-[12px] text-gray-500 py-3 px-4`}>{p.start}</td>
-                    {/* End */}
-                    <td className={`${font} text-[12px] text-gray-500 py-3 px-4`}>{p.end}</td>
-                    {/* Status */}
-                    <td className="py-3 px-4 text-center">
-                      <span className={`${font} inline-flex items-center gap-1.5 text-[12px] px-3 py-0.5 rounded-full`}
-                        style={{ backgroundColor: `${p.statusColor}1a`, color: p.statusColor, fontWeight: 500 }}>
-                        <span className="size-1.5 rounded-full" style={{ backgroundColor: p.statusColor }} />
-                        {p.status}
+                    {/* Sold */}
+                    <td className={`py-3 pr-4 text-right ${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
+                      {p.sold.toLocaleString()} <span className="text-gray-400 text-[11px]">ชิ้น</span>
+                    </td>
+                    {/* Remaining */}
+                    <td className="py-3 pr-4 text-right">
+                      <span className={`${font} text-[14px] tabular-nums ${lowStock ? "text-[#dc2626]" : "text-[#1a1a1a]"}`} style={{ fontWeight: lowStock ? 600 : 500 }}>
+                        {remaining.toLocaleString()} <span className={`text-[11px] ${lowStock ? "text-[#dc2626]/70" : "text-gray-400"}`}>/ {p.quantity.toLocaleString()} ชิ้น</span>
                       </span>
                     </td>
-                    {/* Action */}
-                    <td className="py-3 px-4 text-center">
-                      <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto">
-                        <MoreHorizontal className="size-4" />
-                      </button>
+                    {/* Revenue */}
+                    <td className="py-3 pr-4 text-right">
+                      <span className={`${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 600 }}>
+                        ฿ {revenue.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </td>
+                    {/* ระยะเวลา */}
+                    <td className={`${font} text-[11px] text-gray-500 py-3 pr-4`}>
+                      <div className="flex flex-col gap-0.5 leading-tight">
+                        <span className="truncate" title={p.start}>{p.start}</span>
+                        <span className="truncate text-gray-400" title={p.end}>↳ {p.end}</span>
+                      </div>
+                    </td>
+                    {/* Status */}
+                    <td className="py-3 pr-4 text-center align-middle">
+                      <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3.5 py-0.5 rounded-full text-[14px]`}
+                        style={{ backgroundColor: `${stColor}1a`, color: stColor }}>
+                        <Package className="size-3" strokeWidth={2.4} />
+                        {stLabel}
+                      </span>
+                    </td>
+                    {/* Action — Popover menu */}
+                    <td className="py-3 text-center align-middle">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                            <MoreHorizontal className="size-4" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="end"
+                          sideOffset={6}
+                          className="w-[230px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)]"
+                        >
+                          <motion.div
+                            initial={{ scale: 0.4, opacity: 0, y: -6 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.4, opacity: 0, y: -6 }}
+                            transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                            style={{ transformOrigin: "top right" }}
+                            className="overflow-hidden"
+                          >
+                            <button
+                              onClick={() => toast.info(`แก้ไขส่วนลด: ${p.name}`)}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                              <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>แก้ไขส่วนลด / จำนวน</span>
+                            </button>
+                            <button
+                              onClick={() => toast.info(`ดูสถิติการขาย: ${p.name}`)}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                              <TrendingUp className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>ดูสถิติการขาย</span>
+                            </button>
+                            <div className="h-px bg-gray-100 my-1" />
+                            <button
+                              onClick={() => { if (confirm(`เอา "${p.name}" ออกจาก Flash Sale?`)) toast.success(`เอาออกแล้ว: ${p.name}`); }}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
+                              <Trash2 className="size-3.5" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>เอาออกจาก Flash Sale</span>
+                            </button>
+                          </motion.div>
+                        </PopoverContent>
+                      </Popover>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
+            {/* Footer summary */}
+            {pagedStoreProducts.length > 0 && (() => {
+              const totalSold = pagedStoreProducts.reduce((s, p) => s + p.sold, 0);
+              const totalRemaining = pagedStoreProducts.reduce((s, p) => s + Math.max(0, p.quantity - p.sold), 0);
+              const totalQuantity = pagedStoreProducts.reduce((s, p) => s + p.quantity, 0);
+              const totalRevenue = pagedStoreProducts.reduce((s, p) => {
+                const flash = parseFloat(String(p.flashPrice).replace(/[^\d.]/g, "")) || 0;
+                return s + (flash * p.sold);
+              }, 0);
+              return (
+                <tfoot>
+                  <tr className="border-t-2 border-gray-100">
+                    <td className={`pt-3 pr-4 ${font} text-[13px]`} style={{ fontWeight: 600 }}>
+                      รวม ({pagedStoreProducts.length} รายการที่แสดง)
+                    </td>
+                    <td />
+                    <td className={`pt-3 pr-4 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>
+                      {totalSold.toLocaleString()} <span className="text-gray-400 text-[11px]">ชิ้น</span>
+                    </td>
+                    <td className={`pt-3 pr-4 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>
+                      {totalRemaining.toLocaleString()} <span className="text-gray-400 text-[11px]">/ {totalQuantity.toLocaleString()} ชิ้น</span>
+                    </td>
+                    <td className={`pt-3 pr-4 text-right ${font} text-[14px] text-[#319754]`} style={{ fontWeight: 700 }}>
+                      ฿ {totalRevenue.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td colSpan={3} />
+                  </tr>
+                </tfoot>
+              );
+            })()}
           </table>
         </div>
+
+        {/* Pagination — เหมือน FlashEventDetail */}
+        {mockFlashProducts.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select
+                  className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}
+                  value={flashStorePerPage}
+                  onChange={(e) => { setFlashStorePerPage(Number(e.target.value)); setFlashStorePage(1); }}
+                >
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={safeFlashStorePage === 1} onClick={() => setFlashStorePage(safeFlashStorePage - 1)}
+                aria-label="หน้าก่อน"
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safeFlashStorePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: totalFlashStorePages }, (_, i) => i + 1).map((p) => (
+                <button key={p} onClick={() => setFlashStorePage(p)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safeFlashStorePage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: safeFlashStorePage === p ? 600 : 400 }}>
+                  {p}
+                </button>
+              ))}
+              <button disabled={safeFlashStorePage === totalFlashStorePages} onClick={() => setFlashStorePage(safeFlashStorePage + 1)}
+                aria-label="หน้าถัดไป"
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safeFlashStorePage === totalFlashStorePages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Add Product Flash Sale Modal — Store level (ใช้ modal ตัวเดียวกับ FlashEventDetail) */}
+      <AddFlashSaleModal
+        open={showStoreAddModal}
+        event={null}
+        onClose={() => setShowStoreAddModal(false)}
+        onConfirm={(newProducts) => {
+          setStoreProducts((prev) => [...newProducts, ...prev]);
+          setFlashStorePage(1);
+          setShowStoreAddModal(false);
+        }}
+      />
 
       {/* Flash Sale Join Popup */}
       {showPopup && (
@@ -2965,13 +3211,294 @@ function isoToDatetimeLocal(iso: string): string {
 type FlashProductRow = {
   id: string;
   name: string;
+  image: string;
   normalPrice: string;
   flashPrice: string;
   start: string;
   end: string;
   status: string;
   statusColor: string;
+  // ใต้ชื่อสินค้า: ราคา Flash (แดง) + ราคาเดิม (ขีดทับ) — สำหรับ multi-option จะเป็นช่วงราคา
+  flashPriceDisplay?: string;
+  originalPriceDisplay?: string;
+  // จำนวนที่ตั้งไว้ขาย Flash + ขายแล้ว
+  quantity: number;
+  sold: number;
+  // เวลาเริ่มจริง (ISO) — ใช้เช็คสถานะ "กำหนดไว้ล่วงหน้า" (start > now)
+  startsAt?: string;
 };
+
+// Number input ที่ใช้ string buffer ให้พิมพ์/ลบได้ลื่น (ไม่โดน clamp ทุก keystroke)
+function NumberField({
+  value, onCommit, min = 0, max, className,
+}: {
+  value: number;
+  onCommit: (n: number) => void;
+  min?: number;
+  max?: number;
+  className?: string;
+}) {
+  const [str, setStr] = useState<string>(String(value));
+  useEffect(() => { setStr(String(value)); }, [value]);
+
+  const clamp = (n: number) => {
+    let v = n;
+    if (typeof max === "number") v = Math.min(max, v);
+    v = Math.max(min, v);
+    return v;
+  };
+
+  return (
+    <input
+      type="number"
+      value={str}
+      min={min}
+      max={max}
+      onChange={(e) => {
+        const v = e.target.value;
+        setStr(v);
+        if (v === "") return; // ปล่อยให้พิมพ์ใหม่ — commit เมื่อ blur หรือเป็นเลข
+        const n = parseFloat(v);
+        if (!isNaN(n)) onCommit(clamp(n));
+      }}
+      onBlur={() => {
+        if (str === "" || isNaN(parseFloat(str))) {
+          onCommit(clamp(min));
+          setStr(String(clamp(min)));
+        } else {
+          const c = clamp(parseFloat(str));
+          onCommit(c);
+          setStr(String(c));
+        }
+      }}
+      className={className}
+    />
+  );
+}
+
+// DateTime picker — Calendar (วัน) + time input (เวลา) ใน Popover เดียว
+function DateTimePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const parsed: Date | null = value ? new Date(value) : null;
+
+  const buildValue = (d: Date, h: number, m: number) => {
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(h)}:${p(m)}`;
+  };
+
+  const handleDateSelect = (d: Date | undefined) => {
+    if (!d) return;
+    const h = parsed?.getHours() ?? 0;
+    const m = parsed?.getMinutes() ?? 0;
+    onChange(buildValue(d, h, m));
+  };
+
+  const handleTimeChange = (timeStr: string) => {
+    const [hh, mm] = timeStr.split(":");
+    const d = parsed ?? new Date();
+    onChange(buildValue(d, parseInt(hh) || 0, parseInt(mm) || 0));
+  };
+
+  const display = (() => {
+    if (!parsed) return "เลือกวันและเวลา";
+    const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${parsed.getDate()} ${months[parsed.getMonth()]} ${parsed.getFullYear() + 543} · ${p(parsed.getHours())}:${p(parsed.getMinutes())} น.`;
+  })();
+
+  const timeStr = parsed
+    ? `${String(parsed.getHours()).padStart(2, "0")}:${String(parsed.getMinutes()).padStart(2, "0")}`
+    : "00:00";
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={`${font} bg-[#fafafa] hover:bg-gray-100/80 flex h-12 items-center justify-between pl-6 pr-4 py-3 rounded-full w-full text-left cursor-pointer transition-all data-[state=open]:ring-2 data-[state=open]:ring-[#319754]/30`}
+        >
+          <span className={`text-[14px] truncate ${parsed ? "text-black" : "text-[#a3a3a3]"}`}>{display}</span>
+          <CalendarIcon className="size-4 text-black shrink-0 ml-2" strokeWidth={2} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-auto p-0 rounded-2xl border border-gray-100 shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)]"
+        align="start"
+      >
+        <Calendar
+          mode="single"
+          selected={parsed ?? undefined}
+          onSelect={handleDateSelect}
+          defaultMonth={parsed ?? undefined}
+        />
+        <div className="border-t border-gray-100 p-3 flex items-center justify-between gap-3 bg-[#fafafa]">
+          <div className="flex items-center gap-2">
+            <Clock className="size-4 text-gray-500" strokeWidth={2.2} />
+            <span className={`${font} text-[12px] text-gray-700`} style={{ fontWeight: 500 }}>เวลา</span>
+            <input
+              type="time"
+              value={timeStr}
+              onChange={(e) => handleTimeChange(e.target.value)}
+              className={`${font} bg-white border border-gray-200 h-9 rounded-lg px-3 text-[13px] tabular-nums outline-none focus:ring-2 focus:ring-[#319754]/30 focus:border-[#319754] transition-all`}
+            />
+            <span className={`${font} text-[12px] text-gray-500`}>น.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-4 h-9 rounded-lg cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}
+          >เสร็จ</button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// Stepper สำหรับช่อง "จำนวน" — ใช้ framer-motion เหมือน NumberStepper (ธีมหลัก) + ขนาดตาม Figma 92×32
+function InlineStepper({ value, onChange, min = 1, max = Number.MAX_SAFE_INTEGER, step = 1 }: { value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number }) {
+  const atMin = value <= min;
+  const atMax = value >= max;
+  const spring = { type: "spring" as const, stiffness: 500, damping: 22 };
+  return (
+    <div className="flex items-center h-8 w-[92px] rounded-full bg-[rgba(116,116,128,0.08)] overflow-hidden shrink-0">
+      <motion.button
+        type="button"
+        onClick={() => onChange(Math.max(min, value - step))}
+        disabled={atMin}
+        whileHover={!atMin ? { backgroundColor: "rgba(0,0,0,0.06)" } : undefined}
+        whileTap={!atMin ? { scale: 0.82 } : undefined}
+        transition={spring}
+        className={`${font} flex-1 h-full flex items-center justify-center text-[18px] ${atMin ? "text-gray-300 cursor-not-allowed" : "text-black cursor-pointer"}`}
+        style={{ fontWeight: 600 }}
+      >
+        <motion.span key={`m-${value}`} initial={{ scale: 0.6, opacity: 0.4 }} animate={{ scale: 1, opacity: 1 }} transition={spring} className="inline-block leading-none select-none">−</motion.span>
+      </motion.button>
+      <div className="w-px h-3.5 bg-gray-300/60" />
+      <motion.button
+        type="button"
+        onClick={() => onChange(Math.min(max, value + step))}
+        disabled={atMax}
+        whileHover={!atMax ? { backgroundColor: "rgba(49,151,84,0.12)" } : undefined}
+        whileTap={!atMax ? { scale: 0.82 } : undefined}
+        transition={spring}
+        className={`${font} flex-1 h-full flex items-center justify-center text-[18px] ${atMax ? "text-gray-300 cursor-not-allowed" : "text-black cursor-pointer"}`}
+        style={{ fontWeight: 600 }}
+      >
+        <motion.span key={`p-${value}`} initial={{ scale: 0.6, opacity: 0.4 }} animate={{ scale: 1, opacity: 1 }} transition={spring} className="inline-block leading-none select-none">+</motion.span>
+      </motion.button>
+    </div>
+  );
+}
+
+// Header การ์ดสินค้า/ตัวเลือก (image + ชื่อ + ราคา + stock)
+// - ค่าเริ่มต้น: แสดง flashPrice (สีแดง) + originalPrice (ขีดทับ)
+// - ถ้าส่ง priceRange มา: แสดงเป็นช่วงราคาแทน (สำหรับ multi-option main header)
+function ProductHeaderCard({
+  image, name, originalPrice, flashPrice, stock, priceRange,
+}: {
+  image: string;
+  name: string;
+  originalPrice: number;
+  flashPrice: number;
+  stock: number | string;
+  priceRange?: string;
+}) {
+  return (
+    <div className="flex gap-4 items-start w-full">
+      <div className="bg-[#d4d4d8] rounded-2xl size-[80px] overflow-hidden shrink-0">
+        <ImageWithFallback src={image} alt={name} className="w-full h-full object-cover" />
+      </div>
+      <div className="flex-1 self-stretch flex flex-col items-start justify-between min-w-0">
+        <p className={`${font} text-[14px] text-black truncate w-full`} style={{ fontWeight: 600 }}>{name}</p>
+        <div className="flex items-center justify-between w-full gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {priceRange ? (
+              <span className={`${font} text-[14px] text-[#bc1b06] tabular-nums whitespace-nowrap`} style={{ fontWeight: 500 }}>{priceRange}</span>
+            ) : (
+              <>
+                <span className={`${font} text-[14px] text-[#bc1b06] tabular-nums whitespace-nowrap`} style={{ fontWeight: 500 }}>฿ {flashPrice.toFixed(2)}</span>
+                <span className={`${font} text-[12px] text-[#a3a3a3] line-through tabular-nums whitespace-nowrap`}>฿ {originalPrice.toFixed(2)}</span>
+              </>
+            )}
+          </div>
+          <span className={`${font} inline-flex items-center gap-1.5 text-[12px] text-black shrink-0`}>
+            <Boxes className="size-3.5" strokeWidth={2} />
+            <span>{stock}</span>
+            <span>ชิ้น</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// แถว ส่วนลด + จำนวน (ใช้ทั้ง single และ per-variant)
+function DiscountQtyRow({
+  discountType, discountValue, quantity, maxQty,
+  onDiscountTypeChange, onDiscountValueChange, onQuantityChange,
+}: {
+  discountType: "percent" | "baht";
+  discountValue: number;
+  quantity: number;
+  maxQty: number;
+  onDiscountTypeChange: (type: "percent" | "baht") => void;
+  onDiscountValueChange: (v: number) => void;
+  onQuantityChange: (v: number) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-4 w-full">
+      <div className="flex flex-col gap-2 items-start">
+        <div className={`${font} flex items-center gap-1 text-[14px]`}>
+          <span className="text-black" style={{ fontWeight: 500 }}>ส่วนลด ({discountType === "percent" ? "%" : "฿"})</span>
+          <span className="text-[#ff3b30]">*</span>
+        </div>
+        <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-6 pr-2 py-3 rounded-full w-full focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+          <NumberField
+            value={discountValue}
+            onCommit={onDiscountValueChange}
+            min={0}
+            max={discountType === "percent" ? 100 : undefined}
+            className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0`}
+          />
+          <DiscountTypeDropdown value={discountType} onChange={onDiscountTypeChange} />
+        </div>
+      </div>
+      <div className="flex flex-col gap-2 items-start">
+        <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>จำนวน Flash Sale</p>
+        <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-6 pr-2 py-3 rounded-full w-full focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+          <NumberField
+            value={quantity}
+            onCommit={onQuantityChange}
+            min={1}
+            max={maxQty}
+            className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0`}
+          />
+          <InlineStepper value={quantity} onChange={onQuantityChange} min={1} max={maxQty} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DiscountTypeDropdown({ value, onChange }: {
+  value: "percent" | "baht";
+  onChange: (type: "percent" | "baht") => void;
+}) {
+  return (
+    <div className="relative shrink-0 inline-flex items-center bg-[rgba(118,118,128,0.12)] hover:bg-[rgba(118,118,128,0.2)] rounded-full transition-colors">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as "percent" | "baht")}
+        className={`${font} appearance-none bg-transparent cursor-pointer outline-none text-[12px] text-black pl-3 pr-7 py-1.5 rounded-full focus:ring-2 focus:ring-[#319754]/30 transition-shadow`}
+      >
+        <option value="percent">% เปอร์เซ็น</option>
+        <option value="baht">฿ บาท</option>
+      </select>
+      <ChevronDown className="size-3.5 text-black absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.4} />
+    </div>
+  );
+}
 
 function AddFlashSaleModal({
   open,
@@ -3009,16 +3536,16 @@ function AddFlashSaleModal({
   const eventStartLocal = event ? isoToDatetimeLocal(event.startsAt) : "";
   const eventEndLocal   = event ? isoToDatetimeLocal(event.endsAt)   : "";
 
-  const goToConfigure = () => {
-    if (!selectedId) return;
-    const product = mockProducts.find((p) => p.id === selectedId);
+  const goToConfigure = (id: string) => {
+    const product = mockProducts.find((p) => p.id === id);
     if (!product) return;
     const stockNum = parseInt(product.stock) || 1;
     const isMulti = product.type === "หลายตัวเลือก";
-    const variants = mockVariants[selectedId] ?? [];
+    const variants = mockVariants[id] ?? [];
 
+    setSelectedId(id);
     setConfig({
-      productId: selectedId,
+      productId: id,
       startsAt: eventStartLocal,
       endsAt: eventEndLocal,
       discountType: "percent",
@@ -3077,6 +3604,20 @@ function AddFlashSaleModal({
 
     if (isMulti) {
       const variants = mockVariants[selectedId] ?? [];
+      // ช่วงราคาของ variants ทั้งหมด — สำหรับ "ราคาเดิม" + "ราคา Flash" ใต้ชื่อ
+      const fmtRange = (nums: number[]) => {
+        const min = Math.min(...nums);
+        const max = Math.max(...nums);
+        return min === max ? `฿ ${min.toFixed(2)}` : `฿ ${min.toFixed(2)} - ${max.toFixed(2)}`;
+      };
+      const originalRange = fmtRange(variants.map((v) => v.price));
+      const selectedFlashes: number[] = [];
+      config.variants.filter((v) => v.selected).forEach((vc) => {
+        const v = variants.find((x) => x.id === vc.variantId);
+        if (v) selectedFlashes.push(computeFromValue(v.price, vc.discountType, vc.discountValue));
+      });
+      const flashRange = selectedFlashes.length > 0 ? fmtRange(selectedFlashes) : "—";
+
       config.variants.filter((v) => v.selected).forEach((vc) => {
         const v = variants.find((x) => x.id === vc.variantId);
         if (!v) return;
@@ -3084,11 +3625,17 @@ function AddFlashSaleModal({
         newProducts.push({
           id: `flash-${vc.variantId}-${ts}`,
           name: `${product.name} (${v.name})`,
+          image: product.image,
           normalPrice: `฿ ${v.price.toFixed(2)}`,
           flashPrice: `฿ ${flash.toFixed(2)}`,
           start, end,
-          status: "กำลังดำเนินการ",
+          status: "กำลังขาย",
           statusColor: "#319754",
+          flashPriceDisplay: flashRange,
+          originalPriceDisplay: originalRange,
+          quantity: vc.quantity,
+          sold: 0,
+          startsAt: config.startsAt ? new Date(config.startsAt).toISOString() : undefined,
         });
       });
     } else {
@@ -3097,11 +3644,17 @@ function AddFlashSaleModal({
       newProducts.push({
         id: `flash-${selectedId}-${ts}`,
         name: product.name,
+        image: product.image,
         normalPrice: product.price,
         flashPrice: `฿ ${flash.toFixed(2)}`,
         start, end,
-        status: "กำลังดำเนินการ",
+        status: "กำลังขาย",
         statusColor: "#319754",
+        flashPriceDisplay: `฿ ${flash.toFixed(2)}`,
+        originalPriceDisplay: product.price,
+        quantity: config.quantity,
+        sold: 0,
+        startsAt: config.startsAt ? new Date(config.startsAt).toISOString() : undefined,
       });
     }
     onConfirm(newProducts);
@@ -3110,31 +3663,24 @@ function AddFlashSaleModal({
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl w-full max-w-[640px] h-[640px] max-h-[85vh] flex flex-col shadow-xl overflow-hidden"
+        className="bg-white rounded-2xl w-full max-w-[640px] h-[760px] max-h-[92vh] flex flex-col shadow-xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header — title + close */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            {step === "configure" && (
-              <button
-                onClick={() => setStep("select")}
-                className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer shrink-0 transition-colors"
-                aria-label="ย้อนกลับ"
-              >
-                <ChevronLeft className="size-4" strokeWidth={2.4} />
-              </button>
-            )}
-            <div className="min-w-0">
-              <p className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</p>
-              <p className={`${font} text-[11px] text-[#8e8e93]`}>
-                ขั้นตอน {step === "select" ? "1" : "2"} จาก 2 — {step === "select" ? "เลือกสินค้าในร้าน" : "กำหนดส่วนลดและจำนวน"}
-              </p>
-            </div>
-          </div>
+          <p className={`${font} text-[18px] text-black truncate`} style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</p>
           <button onClick={onClose} className="size-7 rounded-full bg-[rgba(120,120,128,0.12)] hover:bg-[rgba(120,120,128,0.2)] flex items-center justify-center cursor-pointer shrink-0 transition-colors">
             <X className="size-3.5" />
           </button>
+        </div>
+
+        {/* Compact step indicator */}
+        <div className="px-4 py-2 border-b border-gray-100 shrink-0 flex items-center justify-center">
+          <div className={`${font} inline-flex items-center gap-2 bg-[#319754]/10 text-[#319754] px-3 py-1 rounded-full text-[12px]`} style={{ fontWeight: 500 }}>
+            <span className="tabular-nums">ขั้น {step === "select" ? "1" : "2"} / 2</span>
+            <span className="text-[#319754]/40">·</span>
+            <span style={{ fontWeight: 600 }}>{step === "select" ? "เลือกสินค้า" : "กำหนดส่วนลด"}</span>
+          </div>
         </div>
 
         {/* Body */}
@@ -3156,16 +3702,11 @@ function AddFlashSaleModal({
               ) : (
                 <div className="flex flex-col gap-2.5">
                   {filteredProducts.map((p) => {
-                    const isSelected = selectedId === p.id;
                     return (
                       <button
                         key={p.id}
-                        onClick={() => setSelectedId(p.id)}
-                        className={`group/item flex items-center gap-4 p-4 rounded-2xl border bg-white transition-all text-left cursor-pointer ${
-                          isSelected
-                            ? "border-[#319754] shadow-[0_2px_10px_rgba(49,151,84,0.18)]"
-                            : "border-[#d4d4d4]/40 hover:border-[#319754]/40"
-                        }`}
+                        onClick={() => goToConfigure(p.id)}
+                        className="group/item flex items-center gap-4 p-4 rounded-2xl border bg-white border-[#d4d4d4]/40 hover:border-[#319754]/60 hover:shadow-[0_2px_10px_rgba(49,151,84,0.12)] active:scale-[0.99] transition-all text-left cursor-pointer"
                       >
                         {/* Image 80×80 */}
                         <div className="size-[80px] rounded-2xl overflow-hidden shrink-0 bg-[#d4d4d8]">
@@ -3213,229 +3754,121 @@ function AddFlashSaleModal({
             const variants = mockVariants[selectedId] ?? [];
 
             return (
-              <div className="bg-[#fafafa] rounded-2xl p-4 flex flex-col gap-3">
-                {/* Product header */}
-                <div className="flex items-center gap-3">
-                  <div className="size-14 rounded-lg bg-gray-100 overflow-hidden shrink-0">
-                    <ImageWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>{product.name}</p>
-                    <p className={`${font} text-[12px] text-[#8e8e93] truncate`}>
-                      {isMulti ? `${variants.length} ตัวเลือก · ${product.price}` : `ราคาปกติ ${product.price} · ${product.stock}`}
-                    </p>
-                  </div>
-                </div>
+              <div className="bg-white rounded-2xl flex flex-col items-start w-full">
+                {/* Product header (top-level: padded for visual separation from body) */}
+                {(() => {
+                  const normal = getNormalPrice(product.price);
+                  const flash = isMulti
+                    ? normal // ราคาหลักไม่ได้ลด (รายตัวเลือก)
+                    : computeFromValue(normal, config.discountType, config.discountValue);
 
-                {/* Date-time range */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={`${font} text-[11px] text-gray-600 mb-1.5 block`} style={{ fontWeight: 500 }}>เริ่มกิจกรรม</label>
-                    <input
-                      type="datetime-local"
-                      value={config.startsAt}
-                      onChange={(e) => updateConfig({ startsAt: e.target.value })}
-                      className={`${font} w-full h-10 px-3 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[12px] bg-white transition-colors`}
-                    />
-                  </div>
-                  <div>
-                    <label className={`${font} text-[11px] text-gray-600 mb-1.5 block`} style={{ fontWeight: 500 }}>สิ้นสุดกิจกรรม</label>
-                    <input
-                      type="datetime-local"
-                      value={config.endsAt}
-                      onChange={(e) => updateConfig({ endsAt: e.target.value })}
-                      className={`${font} w-full h-10 px-3 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[12px] bg-white transition-colors`}
-                    />
-                  </div>
-                </div>
+                  // สำหรับ multi-option: แสดงเป็นช่วงราคา min - max ของทุก variant
+                  let priceRange: string | undefined;
+                  if (isMulti && variants.length > 0) {
+                    const prices = variants.map((v) => v.price);
+                    const minP = Math.min(...prices);
+                    const maxP = Math.max(...prices);
+                    priceRange = minP === maxP
+                      ? `฿ ${minP.toFixed(2)}`
+                      : `฿ ${minP.toFixed(2)} - ${maxP.toFixed(2)}`;
+                  }
 
-                {!isMulti ? (
-                  // ===== Single-option: ส่วนลด + จำนวน =====
-                  <>
-                    <div>
-                      <label className={`${font} text-[11px] text-gray-600 mb-1.5 block`} style={{ fontWeight: 500 }}>ประเภทส่วนลด</label>
-                      <div className="flex bg-white rounded-full p-1 border border-gray-200">
-                        {(["percent", "baht"] as const).map((type) => {
-                          const isAct = config.discountType === type;
-                          return (
-                            <button
-                              key={type}
-                              onClick={() => updateConfig({ discountType: type })}
-                              className={`${font} flex-1 h-8 rounded-full text-[12px] cursor-pointer transition-colors ${
-                                isAct ? "bg-[#319754] text-white" : "text-gray-500 hover:text-gray-700"
-                              }`}
-                              style={{ fontWeight: isAct ? 600 : 400 }}
-                            >
-                              {type === "percent" ? "เปอร์เซ็นต์ (%)" : "บาท (฿)"}
-                            </button>
-                          );
-                        })}
-                      </div>
+                  return (
+                    <div className="p-4 w-full">
+                      <ProductHeaderCard
+                        image={product.image}
+                        name={product.name}
+                        originalPrice={normal}
+                        flashPrice={flash}
+                        stock={product.stock.replace(/\s*ชิ้น\s*/g, "")}
+                        priceRange={priceRange}
+                      />
                     </div>
+                  );
+                })()}
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className={`${font} text-[11px] text-gray-600 mb-1.5 block`} style={{ fontWeight: 500 }}>มูลค่าส่วนลด</label>
-                        <div className="relative">
-                          <input
-                            type="number"
-                            value={config.discountValue}
-                            onChange={(e) => updateConfig({ discountValue: Math.max(0, parseFloat(e.target.value) || 0) })}
-                            className={`${font} w-full h-10 pl-3 pr-10 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[13px] bg-white transition-colors`}
-                            min={0}
-                            max={config.discountType === "percent" ? 100 : undefined}
-                          />
-                          <span className={`${font} absolute right-4 top-1/2 -translate-y-1/2 text-[12px] text-gray-400`}>
-                            {config.discountType === "percent" ? "%" : "฿"}
-                          </span>
-                        </div>
-                      </div>
-                      <div>
-                        <label className={`${font} text-[11px] text-gray-600 mb-1.5 block`} style={{ fontWeight: 500 }}>จำนวน (สูงสุด {parseInt(product.stock) || 0})</label>
-                        <input
-                          type="number"
-                          value={config.quantity}
-                          onChange={(e) => {
-                            const max = parseInt(product.stock) || 0;
-                            updateConfig({ quantity: Math.min(max, Math.max(1, parseInt(e.target.value) || 1)) });
-                          }}
-                          className={`${font} w-full h-10 px-3 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[13px] bg-white transition-colors`}
-                          min={1}
-                          max={parseInt(product.stock) || 0}
+                {/* Body */}
+                <div className="flex flex-col gap-4 items-start justify-center p-4 w-full">
+                  {/* Date row — เริ่มต้น / สิ้นสุด (ใช้ DateTimePicker custom) */}
+                  <div className="grid grid-cols-2 gap-4 w-full">
+                    <div className="flex flex-col gap-2 items-start">
+                      <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เริ่มต้น</p>
+                      <DateTimePicker value={config.startsAt} onChange={(v) => updateConfig({ startsAt: v })} />
+                    </div>
+                    <div className="flex flex-col gap-2 items-start">
+                      <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>สิ้นสุด</p>
+                      <DateTimePicker value={config.endsAt} onChange={(v) => updateConfig({ endsAt: v })} />
+                    </div>
+                  </div>
+
+                  {/* Discount + Quantity row (single-option) */}
+                  {!isMulti && (
+                    <DiscountQtyRow
+                      discountType={config.discountType}
+                      discountValue={config.discountValue}
+                      quantity={config.quantity}
+                      maxQty={parseInt(product.stock) || 1}
+                      onDiscountTypeChange={(t) => updateConfig({ discountType: t })}
+                      onDiscountValueChange={(v) => updateConfig({ discountValue: v })}
+                      onQuantityChange={(v) => updateConfig({ quantity: v })}
+                    />
+                  )}
+
+                  {/* Multi-option: variant cards */}
+                  {isMulti && variants.map((v) => {
+                    const vc = config.variants.find((x) => x.variantId === v.id);
+                    if (!vc) return null;
+                    const flash = computeFromValue(v.price, vc.discountType, vc.discountValue);
+
+                    return (
+                      <div key={v.id} className="border border-[#e5e5e5] flex flex-col gap-[30px] items-center p-4 rounded-2xl w-full">
+                        {/* Variant header */}
+                        <ProductHeaderCard
+                          image={product.image}
+                          name={v.name}
+                          originalPrice={v.price}
+                          flashPrice={flash}
+                          stock={v.stock}
+                        />
+                        {/* Variant discount + qty */}
+                        <DiscountQtyRow
+                          discountType={vc.discountType}
+                          discountValue={vc.discountValue}
+                          quantity={vc.quantity}
+                          maxQty={v.stock || 1}
+                          onDiscountTypeChange={(t) => updateVariant(v.id, { discountType: t })}
+                          onDiscountValueChange={(val) => updateVariant(v.id, { discountValue: val })}
+                          onQuantityChange={(val) => updateVariant(v.id, { quantity: val })}
                         />
                       </div>
-                    </div>
-
-                    {(() => {
-                      const normal = getNormalPrice(product.price);
-                      const flash = computeFromValue(normal, config.discountType, config.discountValue);
-                      const pct = normal > 0 ? Math.round(((normal - flash) / normal) * 100) : 0;
-                      return (
-                        <div className="flex items-center justify-between bg-white rounded-xl p-3 border border-gray-100">
-                          <span className={`${font} text-[12px] text-[#8e8e93]`}>ราคา Flash Sale</span>
-                          <div className="flex items-center gap-2">
-                            {pct > 0 && (
-                              <span className={`${font} bg-[#e62e05] text-white text-[11px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>-{pct}%</span>
-                            )}
-                            <span className={`${font} text-[16px] text-[#ff3b30] tabular-nums`} style={{ fontWeight: 700 }}>฿ {flash.toFixed(2)}</span>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </>
-                ) : (
-                  // ===== Multi-option: list ตัวเลือก พร้อมเลือก + กำหนดส่วนลดต่อตัว =====
-                  <div className="flex flex-col gap-2">
-                    <p className={`${font} text-[11px] text-gray-600`} style={{ fontWeight: 500 }}>ตัวเลือกที่เข้าร่วม Flash Sale</p>
-                    {variants.map((v) => {
-                      const vc = config.variants.find((x) => x.variantId === v.id);
-                      if (!vc) return null;
-                      const flash = computeFromValue(v.price, vc.discountType, vc.discountValue);
-                      const pct = v.price > 0 ? Math.round(((v.price - flash) / v.price) * 100) : 0;
-                      return (
-                        <div key={v.id} className={`bg-white rounded-xl border-2 transition-colors ${vc.selected ? "border-[#319754]/40" : "border-gray-100"}`}>
-                          {/* Variant header — click to toggle */}
-                          <button
-                            onClick={() => updateVariant(v.id, { selected: !vc.selected })}
-                            className="w-full flex items-center gap-3 p-3 cursor-pointer text-left"
-                          >
-                            <div className={`size-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
-                              vc.selected ? "bg-[#319754] border-[#319754]" : "border-gray-300"
-                            }`}>
-                              {vc.selected && <Check className="size-3 text-white" strokeWidth={3} />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{v.name}</p>
-                              <p className={`${font} text-[11px] text-[#8e8e93]`}>฿ {v.price.toFixed(2)} · คงเหลือ {v.stock} ชิ้น</p>
-                            </div>
-                            {vc.selected && pct > 0 && (
-                              <span className={`${font} bg-[#e62e05] text-white text-[10px] px-2 py-0.5 rounded-full shrink-0`} style={{ fontWeight: 600 }}>-{pct}%</span>
-                            )}
-                          </button>
-
-                          {/* Per-variant controls — แสดงเมื่อเลือก */}
-                          {vc.selected && (
-                            <div className="px-3 pb-3 flex flex-col gap-2.5 border-t border-gray-100 pt-3">
-                              <div className="flex bg-[#fafafa] rounded-full p-1 border border-gray-200">
-                                {(["percent", "baht"] as const).map((type) => {
-                                  const isAct = vc.discountType === type;
-                                  return (
-                                    <button
-                                      key={type}
-                                      onClick={() => updateVariant(v.id, { discountType: type })}
-                                      className={`${font} flex-1 h-7 rounded-full text-[11px] cursor-pointer transition-colors ${
-                                        isAct ? "bg-[#319754] text-white" : "text-gray-500 hover:text-gray-700"
-                                      }`}
-                                      style={{ fontWeight: isAct ? 600 : 400 }}
-                                    >
-                                      {type === "percent" ? "ลด %" : "ลด ฿"}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                              <div className="grid grid-cols-3 gap-2">
-                                <div className="relative">
-                                  <input
-                                    type="number"
-                                    value={vc.discountValue}
-                                    onChange={(e) => updateVariant(v.id, { discountValue: Math.max(0, parseFloat(e.target.value) || 0) })}
-                                    placeholder="ส่วนลด"
-                                    className={`${font} w-full h-9 pl-3 pr-7 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[12px] bg-white transition-colors`}
-                                    min={0}
-                                    max={vc.discountType === "percent" ? 100 : undefined}
-                                  />
-                                  <span className={`${font} absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400`}>
-                                    {vc.discountType === "percent" ? "%" : "฿"}
-                                  </span>
-                                </div>
-                                <input
-                                  type="number"
-                                  value={vc.quantity}
-                                  onChange={(e) => updateVariant(v.id, { quantity: Math.min(v.stock, Math.max(1, parseInt(e.target.value) || 1)) })}
-                                  placeholder="จำนวน"
-                                  className={`${font} w-full h-9 px-3 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[12px] bg-white transition-colors`}
-                                  min={1}
-                                  max={v.stock}
-                                />
-                                <div className={`${font} h-9 px-3 rounded-full bg-[#ff3b30]/10 text-[#ff3b30] flex items-center justify-end text-[12px] tabular-nums`} style={{ fontWeight: 700 }}>
-                                  ฿ {flash.toFixed(2)}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </div>
             );
           })()}
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-gray-100 p-4 shrink-0">
-          {step === "select" ? (
+        {/* Footer — แสดงเฉพาะขั้นกำหนดส่วนลด (ขั้นเลือกสินค้า: คลิกการ์ดไปขั้นถัดไปทันที) */}
+        {step === "configure" && (
+          <div className="border-t border-gray-100 p-4 shrink-0 flex items-center gap-3">
             <button
-              onClick={goToConfigure}
-              disabled={!selectedId}
-              className={`${font} w-full h-[49px] rounded-full text-white text-[14px] transition-colors ${
-                !selectedId ? "bg-gray-300 cursor-not-allowed" : "bg-[#008c45] hover:bg-[#007a3b] cursor-pointer"
-              }`}
-              style={{ fontWeight: 600 }}
+              onClick={() => setStep("select")}
+              className={`${font} inline-flex items-center justify-center gap-1.5 h-[49px] px-5 rounded-full text-[13px] text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors shrink-0`}
+              style={{ fontWeight: 500 }}
             >
-              {!selectedId ? "เลือกสินค้าก่อน" : "ถัดไป"}
+              <ChevronLeft className="size-4" strokeWidth={2.4} />
+              ย้อนกลับ
             </button>
-          ) : (
             <button
               onClick={handleSubmit}
-              className={`${font} w-full bg-[#008c45] h-[49px] rounded-full text-white text-[14px] cursor-pointer hover:bg-[#007a3b] transition-colors`}
+              className={`${font} flex-1 bg-[#008c45] h-[49px] rounded-full text-white text-[14px] cursor-pointer hover:bg-[#007a3b] transition-colors`}
               style={{ fontWeight: 600 }}
             >
               เพิ่มสินค้า Flash Sale
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -3445,7 +3878,12 @@ function AddFlashSaleModal({
 function FlashEventDetail({ onBack, isNewJoin = false, event }: { onBack: () => void; isNewJoin?: boolean; event: FlashEvent | null }) {
   const [showAddModal, setShowAddModal] = useState(false);
   // เข้าร่วมใหม่: ยังไม่มีสินค้า → ต้องเพิ่มก่อนถึงจะเห็นตาราง
-  const [products, setProducts] = useState(isNewJoin ? [] : mockFlashProducts);
+  const [products, setProducts] = useState<FlashProductRow[]>(isNewJoin ? [] : mockFlashProducts);
+  const [productPage, setProductPage] = useState(1);
+  const [productsPerPage, setProductsPerPage] = useState(10);
+  const totalProductPages = Math.max(1, Math.ceil(products.length / productsPerPage));
+  const safeProductPage = Math.min(productPage, totalProductPages);
+  const pagedProducts = products.slice((safeProductPage - 1) * productsPerPage, safeProductPage * productsPerPage);
 
   // Countdown — เดินจริงเฉพาะ event ที่ active (นับถึง endsAt)
   // ยังไม่ถึงวันกิจกรรม (join/pending) หรือสิ้นสุดแล้ว (ended) → แสดง 00:00:00
@@ -3534,55 +3972,257 @@ function FlashEventDetail({ onBack, isNewJoin = false, event }: { onBack: () => 
           </motion.button>
         </div>
       ) : (
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className={`${font} text-[12px] text-gray-500 border-b bg-gray-50`}>
-              <th className="text-left py-3 px-4">สินค้า</th>
-              <th className="text-left py-3 px-4">ราคาปกติ</th>
-              <th className="text-left py-3 px-4">Flash Sale</th>
-              <th className="text-left py-3 px-4">เวลาเริ่ม</th>
-              <th className="text-left py-3 px-4">เวลาสิ้นสุด</th>
-              <th className="text-left py-3 px-4">สถานะ</th>
-              <th className="text-center py-3 px-4">เพิ่มเติม</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-3">
-                    <div className="size-[50px] bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                      <ImageWithFallback src={imgProd} alt="" className="w-full h-full object-cover" />
-                    </div>
-                    <span className={`${font} text-[13px]`}>{p.name}</span>
-                  </div>
-                </td>
-                <td className={`${font} text-[13px] py-3 px-4`}>{p.normalPrice}</td>
-                <td className={`${font} text-[13px] py-3 px-4 text-[#ff3b30]`} style={{ fontWeight: 500 }}>{p.flashPrice}</td>
-                <td className={`${font} text-[12px] py-3 px-4 text-gray-500`}>{p.start}</td>
-                <td className={`${font} text-[12px] py-3 px-4 text-gray-500`}>{p.end}</td>
-                <td className="py-3 px-4">
-                  <span className={`${font} text-[12px] flex items-center gap-1`} style={{ color: p.statusColor }}>
-                    <span className="size-2 rounded-full" style={{ backgroundColor: p.statusColor }} /> {p.status}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-center">
-                  <button className="cursor-pointer"><MoreHorizontal className="size-5 text-gray-400" /></button>
-                </td>
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+        <div>
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col style={{ width: "26%" }} />{/* สินค้า */}
+              <col style={{ width: "8%" }}  />{/* ส่วนลด */}
+              <col style={{ width: "10%" }} />{/* ขายแล้ว */}
+              <col style={{ width: "12%" }} />{/* คงเหลือ */}
+              <col style={{ width: "12%" }} />{/* ยอดขาย */}
+              <col style={{ width: "16%" }} />{/* ระยะเวลา */}
+              <col style={{ width: "10%" }} />{/* สถานะ */}
+              <col style={{ width: "6%" }}  />{/* จัดการ */}
+            </colgroup>
+            <thead>
+              <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>สินค้า</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>ส่วนลด</th>
+                <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ขายแล้ว</th>
+                <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>คงเหลือ</th>
+                <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ยอดขาย</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ระยะเวลา</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>สถานะ</th>
+                <th className="text-center pb-3" style={{ fontWeight: 500 }}>จัดการ</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-end gap-1 p-4">
-          <button className="size-7 rounded-full flex items-center justify-center cursor-pointer text-gray-400"><ChevronLeft className="size-4" /></button>
-          {[1, 2, 3, 4, 5].map((p) => (
-            <button key={p} className={`size-7 rounded-full flex items-center justify-center text-[12px] ${font} cursor-pointer ${p === 1 ? "bg-[#319754] text-white" : "text-gray-500"}`}>{p}</button>
-          ))}
-          <button className="size-7 rounded-full flex items-center justify-center cursor-pointer text-gray-400 rotate-180"><ChevronLeft className="size-4" /></button>
+            </thead>
+            <tbody>
+              {pagedProducts.map((p) => {
+                const normal = parseFloat(String(p.normalPrice).replace(/[^\d.]/g, "")) || 0;
+                const flash  = parseFloat(String(p.flashPrice).replace(/[^\d.]/g, ""))  || 0;
+                const discountPct = normal > 0 && flash > 0 ? Math.round(((normal - flash) / normal) * 100) : 0;
+                return (
+                  <tr key={p.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                    {/* Product */}
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center gap-3 min-w-0 group/row">
+                        {(() => {
+                          const isSoldOut = Math.max(0, p.quantity - p.sold) === 0;
+                          return (
+                            <div className="relative size-[64px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] group-hover/row:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow shrink-0">
+                              <ImageWithFallback
+                                src={p.image}
+                                alt={p.name}
+                                className={`w-full h-full object-cover transition-transform duration-500 ease-out group-hover/row:scale-110 ${isSoldOut ? "grayscale opacity-60" : ""}`}
+                              />
+                              {isSoldOut && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                                  <span className={`${font} text-white text-[14px] tracking-wider`} style={{ fontWeight: 700, textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
+                                    หมด
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                        <div className="min-w-0 flex-1">
+                          <p className={`${font} text-[14px] text-[#1a1a1a] truncate`} style={{ fontWeight: 500 }} title={p.name}>{p.name}</p>
+                          {(p.flashPriceDisplay || p.originalPriceDisplay) && (
+                            <p className={`${font} text-[12px] truncate mt-0.5 tabular-nums`}>
+                              {p.flashPriceDisplay && (
+                                <span className="text-[#ff3b30]" style={{ fontWeight: 600 }}>{p.flashPriceDisplay}</span>
+                              )}
+                              {p.originalPriceDisplay && (
+                                <span className="text-gray-400 line-through ml-2">{p.originalPriceDisplay}</span>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    {/* Discount */}
+                    <td className="py-3 pr-4 text-center">
+                      {discountPct > 0 && (
+                        <span className={`${font} text-[13px] text-[#dc2626]`} style={{ fontWeight: 600 }}>-{discountPct}%</span>
+                      )}
+                    </td>
+                    {/* Sold */}
+                    <td className={`py-3 pr-4 text-right ${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
+                      {p.sold.toLocaleString()} <span className="text-gray-400 text-[11px]">ชิ้น</span>
+                    </td>
+                    {/* Remaining */}
+                    <td className="py-3 pr-4 text-right">
+                      {(() => {
+                        const remaining = Math.max(0, p.quantity - p.sold);
+                        const lowStock = p.quantity > 0 && remaining / p.quantity <= 0.2;
+                        return (
+                          <span className={`${font} text-[14px] tabular-nums ${lowStock ? "text-[#dc2626]" : "text-[#1a1a1a]"}`} style={{ fontWeight: lowStock ? 600 : 500 }}>
+                            {remaining.toLocaleString()} <span className={`text-[11px] ${lowStock ? "text-[#dc2626]/70" : "text-gray-400"}`}>/ {p.quantity.toLocaleString()} ชิ้น</span>
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    {/* Revenue (ยอดขาย) — sold × flashPrice */}
+                    <td className="py-3 pr-4 text-right">
+                      {(() => {
+                        const revenue = flash * p.sold;
+                        return (
+                          <span className={`${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 600 }}>
+                            ฿ {revenue.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    {/* ระยะเวลา — เริ่ม → สิ้นสุด ในคอลัมน์เดียว (แสดงซ้อน) */}
+                    <td className={`${font} text-[11px] text-gray-500 py-3 pr-4`}>
+                      <div className="flex flex-col gap-0.5 leading-tight">
+                        <span className="truncate" title={p.start}>{p.start}</span>
+                        <span className="truncate text-gray-400" title={p.end}>↳ {p.end}</span>
+                      </div>
+                    </td>
+                    {/* Status pill — ตรงกับ ProductsTab (tinted bg + Package icon) */}
+                    <td className="py-3 pr-4 text-center align-middle">
+                      {(() => {
+                        const remaining = Math.max(0, p.quantity - p.sold);
+                        const isSoldOut = remaining === 0;
+                        const label = isSoldOut ? "สินค้าหมด" : "กำลังขาย";
+                        const color = isSoldOut ? "#dc2626" : "#319754";
+                        return (
+                          <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3.5 py-0.5 rounded-full text-[14px]`}
+                            style={{ backgroundColor: `${color}1a`, color }}>
+                            <Package className="size-3" strokeWidth={2.4} />
+                            {label}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    {/* Action — Popover menu (เหมือน ProductsTab) */}
+                    <td className="py-3 text-center align-middle">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                            <MoreHorizontal className="size-4" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          align="end"
+                          sideOffset={6}
+                          className="w-[230px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)]"
+                        >
+                          <motion.div
+                            initial={{ scale: 0.4, opacity: 0, y: -6 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.4, opacity: 0, y: -6 }}
+                            transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                            style={{ transformOrigin: "top right" }}
+                            className="overflow-hidden"
+                          >
+                            <button
+                              onClick={() => toast.info(`แก้ไขส่วนลด: ${p.name}`)}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                              <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>แก้ไขส่วนลด / จำนวน</span>
+                            </button>
+                            <button
+                              onClick={() => toast.info(`ดูสถิติการขาย: ${p.name}`)}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                              <TrendingUp className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>ดูสถิติการขาย</span>
+                            </button>
+                            <div className="h-px bg-gray-100 my-1" />
+                            <button
+                              onClick={() => {
+                                if (confirm(`เอา "${p.name}" ออกจาก Flash Sale?`)) {
+                                  setProducts((prev) => prev.filter((x) => x.id !== p.id));
+                                  toast.success(`เอาออกแล้ว: ${p.name}`);
+                                }
+                              }}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
+                              <Trash2 className="size-3.5" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>เอาออกจาก Flash Sale</span>
+                            </button>
+                          </motion.div>
+                        </PopoverContent>
+                      </Popover>
+                    </td>
+                  </tr>
+                );
+              })}
+              {pagedProducts.length === 0 && (
+                <tr><td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการสินค้า</td></tr>
+              )}
+            </tbody>
+            {pagedProducts.length > 0 && (() => {
+              const totalSold = pagedProducts.reduce((s, p) => s + p.sold, 0);
+              const totalRemaining = pagedProducts.reduce((s, p) => s + Math.max(0, p.quantity - p.sold), 0);
+              const totalQuantity = pagedProducts.reduce((s, p) => s + p.quantity, 0);
+              const totalRevenue = pagedProducts.reduce((s, p) => {
+                const flash = parseFloat(String(p.flashPrice).replace(/[^\d.]/g, "")) || 0;
+                return s + (flash * p.sold);
+              }, 0);
+              return (
+                <tfoot>
+                  <tr className="border-t-2 border-gray-100">
+                    <td className={`pt-3 pr-4 ${font} text-[13px]`} style={{ fontWeight: 600 }}>
+                      รวม ({pagedProducts.length} รายการที่แสดง)
+                    </td>
+                    <td />
+                    <td className={`pt-3 pr-4 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>
+                      {totalSold.toLocaleString()} <span className="text-gray-400 text-[11px]">ชิ้น</span>
+                    </td>
+                    <td className={`pt-3 pr-4 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>
+                      {totalRemaining.toLocaleString()} <span className="text-gray-400 text-[11px]">/ {totalQuantity.toLocaleString()} ชิ้น</span>
+                    </td>
+                    <td className={`pt-3 pr-4 text-right ${font} text-[14px] text-[#319754]`} style={{ fontWeight: 700 }}>
+                      ฿ {totalRevenue.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td colSpan={3} />
+                  </tr>
+                </tfoot>
+              );
+            })()}
+          </table>
         </div>
+
+        {/* Pagination — แสดงเสมอเมื่อมีอย่างน้อย 1 รายการ */}
+        {products.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select
+                  className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}
+                  value={productsPerPage}
+                  onChange={(e) => { setProductsPerPage(Number(e.target.value)); setProductPage(1); }}
+                >
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={safeProductPage === 1} onClick={() => setProductPage(safeProductPage - 1)}
+                aria-label="หน้าก่อน"
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safeProductPage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: totalProductPages }, (_, i) => i + 1).map((p) => (
+                <button key={p} onClick={() => setProductPage(p)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safeProductPage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: safeProductPage === p ? 600 : 400 }}>
+                  {p}
+                </button>
+              ))}
+              <button disabled={safeProductPage === totalProductPages} onClick={() => setProductPage(safeProductPage + 1)}
+                aria-label="หน้าถัดไป"
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safeProductPage === totalProductPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       )}
 
@@ -4941,129 +5581,251 @@ const financeTransactions = [
 function FinanceTab({ onBankSettings }: { onBankSettings: () => void }) {
   const [activeView, setActiveView] = useState<"all" | "withdraw">("all");
   const [selectedMonth, setSelectedMonth] = useState("มี.ค. 2569");
-  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
   const monthOptions = [
-    { value: "มี.ค. 2569", label: "มีนาคม" },
-    { value: "ก.พ. 2569", label: "กุมภาพันธ์" },
-    { value: "ม.ค. 2569", label: "มกราคม" },
+    { value: "มี.ค. 2569", label: "มีนาคม 2569" },
+    { value: "ก.พ. 2569", label: "กุมภาพันธ์ 2569" },
+    { value: "ม.ค. 2569", label: "มกราคม 2569" },
   ];
   const filteredTx = financeTransactions.filter((tx) => tx.date.includes(selectedMonth));
+  const totalPages = Math.max(1, Math.ceil(filteredTx.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const paged = filteredTx.slice((safePage - 1) * perPage, safePage * perPage);
+
+  // สีของแต่ละประเภทรายการ — ใช้ใน type pill (style ตรงกับ ProductsTab/Complaints)
+  const typeColorOf = (type: string): string => {
+    if (type === "ปล่อยยอด")     return "#319754"; // green
+    if (type === "Escrow")        return "#0088ff"; // blue
+    if (type === "ค่าธรรมเนียม GP") return "#ff9500"; // orange
+    if (type === "ถอนเงิน")        return "#9747ff"; // purple
+    return "#737373"; // gray fallback
+  };
+
+  // 4 stat cards — สีและไอคอน lucide
+  const stats = [
+    { label: "ยอดพร้อมถอน",  value: "฿2,775.21", color: "#319754", Icon: Wallet,           hint: "พร้อมถอนเข้าบัญชีได้ทันที" },
+    { label: "ยอด ESCROW",   value: "฿1,370.60", color: "#0088ff", Icon: Lock,             hint: "รอการปล่อยยอดอัตโนมัติ", info: true },
+    { label: "รายได้สะสม",   value: "฿2,775.21", color: "#9747ff", Icon: TrendingUp,       hint: "รายได้สุทธิทั้งหมด" },
+    { label: "ถอนไปแล้ว",    value: "฿0.00",     color: "#ff9500", Icon: Banknote,         hint: "ยอดที่โอนเข้าบัญชีแล้ว" },
+  ];
+
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      {/* Header — title + actions (ตรงธีมหลัก: ProductsTab) */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${fontBold} text-[22px]`} style={{ fontWeight: 700 }}>กระเป๋าเงิน</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>กระเป๋าเงิน</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการรายได้และการถอนเงินของร้านค้า</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={onBankSettings} className={`border border-gray-300 text-gray-700 px-5 py-2 rounded-full text-[14px] ${font} cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-1.5`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <button onClick={onBankSettings}
+            className={`${font} inline-flex items-center gap-2 text-[13px] text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-4 h-[36px] rounded-full cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            <Settings className="size-4" strokeWidth={2.2} />
             ตั้งค่าการเงิน
           </button>
-          <button className={`bg-[#319754] text-white px-5 py-2 rounded-full text-[14px] ${font} cursor-pointer hover:bg-[#2a8348] transition-colors`}>ถอนเงิน</button>
+          <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
+            onClick={() => toast.success("เปิดหน้าถอนเงิน")}
+            className={`${font} inline-flex items-center gap-2 text-[13px] text-white bg-[#319754] hover:bg-[#287745] px-5 h-[36px] rounded-full cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+            style={{ fontWeight: 500 }}>
+            <ArrowDownToLine className="size-4" strokeWidth={2.4} />
+            ถอนเงิน
+          </motion.button>
         </div>
       </div>
 
-      {/* Summary cards */}
+      {/* Summary cards — colored tinted bg ตามประเภท */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {[
-          { label: "ยอดพร้อมถอน", value: "฿663.96", icon: "💰", gradient: "from-[#319754] to-[#46A165]", text: "text-white", sub: "text-white/70" },
-          { label: "ยอด ESCROW ⓘ", value: "฿697.00", icon: "🔒", gradient: "from-[#007aff] to-[#339af0]", text: "text-white", sub: "text-white/70" },
-          { label: "รายได้สะสม", value: "฿663.96", icon: "📈", gradient: "from-[#ff9500] to-[#ffb340]", text: "text-white", sub: "text-white/70" },
-          { label: "ถอนไปแล้ว", value: "฿0.00", icon: "🏦", gradient: "from-gray-50 to-white", text: "text-gray-800", sub: "text-gray-500", isBorder: true },
-        ].map((c) => (
-          <div key={c.label} className={`bg-gradient-to-br ${c.gradient} rounded-2xl p-5 relative overflow-hidden ${c.isBorder ? "border border-gray-200" : "shadow-sm"}`}>
-            <div className="absolute -top-3 -right-3 text-[48px] opacity-15 select-none">{c.icon}</div>
-            <p className={`${font} text-[12px] ${c.sub} mb-2`}>{c.label}</p>
-            <p className={`${fontBold} text-[24px] ${c.text}`} style={{ fontWeight: 700 }}>{c.value}</p>
+        {stats.map((s) => (
+          <div key={s.label}
+            className="group rounded-2xl p-4 flex flex-col gap-3 transition-all cursor-default border hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
+            style={{
+              backgroundColor: `${s.color}0d`,  // ~5% tint
+              borderColor: `${s.color}33`,       // ~20% border
+            }}>
+            {/* Top row: label + icon */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className={`${font} text-[12px] truncate`} style={{ color: s.color, fontWeight: 600 }}>{s.label}</p>
+                {s.info && <Info className="size-3 shrink-0 opacity-60" style={{ color: s.color }} strokeWidth={2.2} />}
+              </div>
+              <div className="size-9 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shrink-0"
+                style={{ backgroundColor: s.color }}>
+                <s.Icon className="size-4 text-white" strokeWidth={2.4} />
+              </div>
+            </div>
+            {/* Value — big tabular-nums + sub hint */}
+            <p className={`${font} text-[24px] text-[#101828] tabular-nums leading-none`} style={{ fontWeight: 700 }}>
+              <AnimatedValue value={s.value} />
+            </p>
+            <p className={`${font} text-[11px]`} style={{ color: `${s.color}cc` }}>{s.hint}</p>
           </div>
         ))}
       </div>
 
-      {/* Transactions table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 flex-wrap gap-3">
-          <p className={`${fontBold} text-[16px]`} style={{ fontWeight: 600 }}>รายการเคลื่อนไหวล่าสุด</p>
-          <div className="flex items-center gap-4">
+      {/* Transactions card */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+        {/* Top: title + month dropdown + view toggle */}
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 600 }}>รายการเคลื่อนไหวล่าสุด</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Month dropdown — themed */}
             <div className="relative">
-              <button onClick={() => setShowMonthDropdown(!showMonthDropdown)}
-                className={`${font} bg-[#fafafa] flex items-center gap-[24px] px-[24px] py-[6px] rounded-[100px] cursor-pointer text-[14px] text-black`} style={{ fontWeight: 400 }}>
-                {monthOptions.find(m => m.value === selectedMonth)?.label}
-                <svg className="w-[16px] h-[9px] shrink-0" fill="none" viewBox="0 0 16 9">
-                  <path d={svgChevron.p2aea2180} fill="black" fillOpacity="0.85" />
-                </svg>
-              </button>
-              {showMonthDropdown && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowMonthDropdown(false)} />
-                  <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 min-w-[160px]">
-                    {monthOptions.map((m) => (
-                      <button key={m.value} onClick={() => { setSelectedMonth(m.value); setShowMonthDropdown(false); }}
-                        className={`${font} w-full text-left px-4 py-2 text-[14px] cursor-pointer hover:bg-gray-50 transition-colors ${selectedMonth === m.value ? "text-[#319754]" : "text-gray-700"}`}
-                        style={{ fontWeight: selectedMonth === m.value ? 500 : 400 }}>
-                        {m.label}{selectedMonth === m.value && " ✓"}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+              <CalendarIcon className="size-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
+              <select value={selectedMonth} onChange={(e) => { setSelectedMonth(e.target.value); setPage(1); }}
+                className={`${font} text-[13px] appearance-none border border-gray-200 rounded-full pl-9 pr-9 h-[36px] bg-white cursor-pointer focus:outline-none focus:border-[#319754] hover:border-gray-300 transition-colors`}>
+                {monthOptions.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+              <ChevronDown className="size-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.4} />
             </div>
-            <div className="bg-white flex items-center overflow-clip p-[4px] rounded-[100px] shadow-[0px_0px_6px_0px_rgba(0,0,0,0.1)] w-fit">
-              <button onClick={() => setActiveView("all")}
-                className={`${font} text-[14px] cursor-pointer backdrop-blur-[2px] flex items-center justify-center px-[12px] py-[4px] rounded-[100px] transition-colors ${activeView === "all" ? "bg-[#319754] text-white" : "text-black"}`} style={{ fontWeight: activeView === "all" ? 500 : 400 }}>ดูทั้งหมด</button>
-              <button onClick={() => setActiveView("withdraw")}
-                className={`${font} text-[14px] cursor-pointer backdrop-blur-[2px] flex items-center justify-center px-[12px] py-[4px] rounded-[100px] transition-colors ${activeView === "withdraw" ? "bg-[#319754] text-white" : "text-black"}`} style={{ fontWeight: activeView === "withdraw" ? 500 : 400 }}>ประวัติการถอน</button>
+            {/* View toggle — motion shared layout (เหมือน complaint tabs) */}
+            <div className="bg-white rounded-full shadow-[0_0_6px_rgba(0,0,0,0.08)] p-1 flex items-center gap-1">
+              {[
+                { id: "all" as const,      label: "ดูทั้งหมด" },
+                { id: "withdraw" as const, label: "ประวัติการถอน" },
+              ].map((v) => {
+                const isAct = activeView === v.id;
+                return (
+                  <motion.button key={v.id} onClick={() => setActiveView(v.id)}
+                    whileTap={{ scale: 0.96 }}
+                    className={`${font} relative h-[28px] px-3.5 rounded-full text-[13px] cursor-pointer`}
+                    style={{ fontWeight: isAct ? 600 : 500 }}>
+                    {isAct && (
+                      <motion.span layoutId="financeViewPill"
+                        className="absolute inset-0 bg-[#319754] rounded-full shadow-[0_2px_6px_rgba(49,151,84,0.25)]"
+                        transition={{ type: "spring", stiffness: 380, damping: 32 }} />
+                    )}
+                    <span className="relative" style={{ color: isAct ? "#fff" : "#171717" }}>{v.label}</span>
+                  </motion.button>
+                );
+              })}
             </div>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-t border-gray-100">
-                <th className={`${font} text-[12px] text-gray-500 text-left px-5 py-3`} style={{ fontWeight: 500 }}>วันที่</th>
-                <th className={`${font} text-[12px] text-gray-500 text-left px-5 py-3`} style={{ fontWeight: 500 }}>ประเภท</th>
-                <th className={`${font} text-[12px] text-gray-500 text-left px-5 py-3`} style={{ fontWeight: 500 }}>เลขออเดอร์</th>
-                <th className={`${font} text-[12px] text-gray-500 text-right px-5 py-3`} style={{ fontWeight: 500 }}>จำนวนเงิน</th>
-                <th className={`${font} text-[12px] text-gray-500 text-right px-5 py-3`} style={{ fontWeight: 500 }}>ยอดคงเหลือ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(activeView === "all" ? filteredTx : []).map((tx, i) => (
-                <tr key={i} className="border-t border-gray-50 hover:bg-gray-50/50">
-                  <td className={`${font} text-[13px] text-gray-700 px-5 py-3 whitespace-nowrap`}>{tx.date}</td>
-                  <td className="px-5 py-3">
-                    <span className={`${font} text-[11px] px-2.5 py-1 rounded-md ${tx.typeColor}`} style={{ fontWeight: 500 }}>{tx.type}</span>
+
+        {/* Table — table-fixed + colgroup (ตรงธีม ProductsTab) */}
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "20%" }} />{/* วันที่ */}
+            <col style={{ width: "18%" }} />{/* ประเภท */}
+            <col style={{ width: "27%" }} />{/* เลขออเดอร์ */}
+            <col style={{ width: "17%" }} />{/* จำนวนเงิน */}
+            <col style={{ width: "18%" }} />{/* ยอดคงเหลือ */}
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-left pb-3 pr-4"  style={{ fontWeight: 500 }}>วันที่</th>
+              <th className="text-left pb-3 pr-4"  style={{ fontWeight: 500 }}>ประเภท</th>
+              <th className="text-left pb-3 pr-4"  style={{ fontWeight: 500 }}>เลขออเดอร์</th>
+              <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>จำนวนเงิน</th>
+              <th className="text-right pb-3"      style={{ fontWeight: 500 }}>ยอดคงเหลือ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activeView === "withdraw" && (
+              <tr><td colSpan={5} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>ยังไม่มีประวัติการถอน</td></tr>
+            )}
+            {activeView === "all" && paged.length === 0 && (
+              <tr><td colSpan={5} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>ไม่มีรายการในเดือนนี้</td></tr>
+            )}
+            {activeView === "all" && paged.map((tx, i) => {
+              const txColor = typeColorOf(tx.type);
+              const isPositive = tx.amount.startsWith("+");
+              return (
+                <tr key={i} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                  <td className="py-3 pr-4">
+                    <span className={`${font} text-[13px] text-black tabular-nums`}>{tx.date}</span>
                   </td>
-                  <td className={`${font} text-[13px] text-gray-700 px-5 py-3 whitespace-nowrap`}>{tx.order}</td>
-                  <td className={`${font} text-[13px] text-right px-5 py-3 whitespace-nowrap ${tx.amount.startsWith("+") ? "text-[#319754]" : "text-gray-700"}`}>{tx.amount}</td>
-                  <td className={`${font} text-[13px] text-gray-700 text-right px-5 py-3 whitespace-nowrap`}>{tx.balance}</td>
+                  <td className="py-3 pr-4">
+                    <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3.5 py-0.5 rounded-full text-[14px]`}
+                      style={{ backgroundColor: `${txColor}1a`, color: txColor }}>
+                      <span className="size-1.5 rounded-full" style={{ backgroundColor: txColor }} />
+                      {tx.type}
+                    </span>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span className={`${font} text-[13px] text-gray-700 tabular-nums`}>{tx.order}</span>
+                  </td>
+                  <td className="py-3 pr-4 text-right">
+                    <span className={`${font} text-[14px] tabular-nums ${isPositive ? "text-[#319754]" : "text-[#ff3b30]"}`}
+                      style={{ fontWeight: 600 }}>
+                      {tx.amount}
+                    </span>
+                  </td>
+                  <td className="py-3 text-right">
+                    <span className={`${font} text-[13px] text-gray-700 tabular-nums`}>{tx.balance}</span>
+                  </td>
                 </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* Pagination */}
+        {activeView === "all" && filteredTx.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}
+                  value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}>
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={safePage === 1} onClick={() => setPage(safePage - 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                <button key={n} onClick={() => setPage(n)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safePage === n ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: safePage === n ? 600 : 400 }}>{n}</button>
               ))}
-              {activeView === "all" && filteredTx.length === 0 && (
-                <tr><td colSpan={5} className={`${font} text-[13px] text-gray-400 text-center py-8`}>ไม่มีรายการในเดือนนี้</td></tr>
-              )}
-              {activeView === "withdraw" && (
-                <tr><td colSpan={5} className={`${font} text-[13px] text-gray-400 text-center py-8`}>ยังไม่มีประวัติการถอน</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              <button disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-
-
     </div>
   );
 }
 
 /* ========== BANK SETTINGS ========== */
+// Bank options + brand colors (เพิ่ม code/color เพราะ logo (figma:asset) เป็น 1×1 transparent — ใช้ badge initials แทน)
 const bankOptions = [
-  { value: "KTB", label: "ธนาคารกรุงไทย", logo: bankLogoKTB },
-  { value: "KBANK", label: "ธนาคารกสิกรไทย", logo: bankLogoKBANK },
-  { value: "SCB", label: "ธนาคารไทยพาณิชย์", logo: bankLogoSCB },
-  { value: "BBL", label: "ธนาคารกรุงเทพ", logo: bankLogoBBL },
-  { value: "TTB", label: "ธนาคารทหารไทยธนชาต", logo: bankLogoTTB },
+  { value: "KTB",   label: "ธนาคารกรุงไทย",         code: "KTB",  color: "#1ba5e1", colorDark: "#1380bd", logo: bankLogoKTB   },
+  { value: "KBANK", label: "ธนาคารกสิกรไทย",       code: "K",    color: "#138f2d", colorDark: "#0c6a20", logo: bankLogoKBANK },
+  { value: "SCB",   label: "ธนาคารไทยพาณิชย์",     code: "SCB",  color: "#4e2e7f", colorDark: "#36205c", logo: bankLogoSCB   },
+  { value: "BBL",   label: "ธนาคารกรุงเทพ",         code: "BBL",  color: "#1e4598", colorDark: "#14336d", logo: bankLogoBBL   },
+  { value: "TTB",   label: "ธนาคารทหารไทยธนชาต",  code: "TTB",  color: "#1577be", colorDark: "#0f5a91", logo: bankLogoTTB   },
 ];
+
+// Badge รูปวงกลมพร้อมตัวอักษรย่อ — ใช้แทน logo บนการ์ด (since figma:asset stub doesn't render)
+function BankBadge({ bank, size = 40 }: { bank: typeof bankOptions[0]; size?: number }) {
+  return (
+    <div
+      className="rounded-full flex items-center justify-center shrink-0 text-white"
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: bank.color,
+        fontSize: size * 0.32,
+        fontWeight: 700,
+        letterSpacing: bank.code.length > 2 ? "-0.5px" : "0",
+      }}
+    >
+      {bank.code}
+    </div>
+  );
+}
 
 function BankSettingsTab({ onBack }: { onBack: () => void }) {
   const [editing, setEditing] = useState(false);
@@ -5074,156 +5836,280 @@ function BankSettingsTab({ onBack }: { onBack: () => void }) {
   const handleSave = () => {
     setBankData(draft);
     setEditing(false);
+    toast.success("บันทึกข้อมูลบัญชีธนาคารแล้ว");
   };
 
   const selectedBank = bankOptions.find(b => b.value === bankData.bank) || bankOptions[0];
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex flex-col gap-2">
-        <div className="flex gap-2 items-center">
-          <button onClick={onBack} className="bg-[#d4d4d4] hover:bg-[#c4c4c4] flex gap-2.5 items-center justify-center px-4 py-1 rounded-full cursor-pointer transition-colors">
-            <svg width="8" height="12" viewBox="0 0 8 12" fill="none" className="rotate-180"><path d="M8 5.99654C8 5.82383 7.93314 5.66493 7.80612 5.54058L2.51294 0.17962C2.39264 0.0621761 2.24561 0 2.07184 0C1.73099 0 1.46365 0.26943 1.46365 0.62867C1.46365 0.80138 1.53049 0.960275 1.63742 1.07772L6.5029 5.99654L1.63742 10.9154C1.53049 11.0328 1.46365 11.1848 1.46365 11.3644C1.46365 11.7237 1.73099 11.9931 2.07184 11.9931C2.24561 11.9931 2.39264 11.9309 2.51294 11.8066L7.80612 6.4525C7.93314 6.32124 8 6.16925 8 5.99654Z" fill="black"/></svg>
-            <span className={`${font} text-[12px] text-black`}>กลับ</span>
-          </button>
-          <h2 className={`${fontBold} text-[22px]`} style={{ fontWeight: 700 }}>ตั้งค่าการเงิน</h2>
-        </div>
-        <div className="pl-[82px]">
-          <p className={`${font} text-[13px] text-[#6a7282]`}>จัดการบัญชีธนาคารสำหรับรับเงินจากการขาย</p>
-        </div>
+    <div>
+      {/* Back button — ธีมหลัก (เขียว pill) */}
+      <div className="mb-5">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
       </div>
 
-      {/* Bank Card */}
-      <div className="bg-white rounded-2xl p-4 w-full flex flex-col gap-4">
-        {/* Title row */}
-        <div className="flex items-start justify-between">
-          <h3 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>บัญชีธนาคารสำหรับรับเงิน</h3>
-          {!editing ? (
-            <button onClick={() => { setDraft(bankData); setEditing(true); }} className="bg-[#f2f2f7] hover:bg-[#e5e5ea] flex gap-2.5 items-center justify-center px-4 py-1 rounded-full cursor-pointer transition-colors">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.00955 11.3122L10.0345 3.08148L8.74737 1.75248L0.714958 9.98325L0.0161701 11.6671C-0.0573865 11.8484 0.133861 12.0598 0.310397 11.9842L2.00955 11.3122ZM10.6819 2.43208L11.4248 1.68452C11.7999 1.29941 11.822 0.884102 11.4837 0.536747L11.2335 0.280008C10.9026 -0.0597926 10.498 -0.0295881 10.1228 0.347968L9.37992 1.10308L10.6819 2.43208Z" fill="black" fillOpacity="0.85"/></svg>
-              <span className={`${font} text-[12px] text-black`}>แก้ไข</span>
+      {/* Header — title + subtitle (ตรงธีม FinanceTab/ProductsTab) */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>ตั้งค่าการเงิน</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการบัญชีธนาคารสำหรับรับเงินจากการขาย</p>
+        </div>
+        {/* Action buttons */}
+        {!editing ? (
+          <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
+            onClick={() => { setDraft(bankData); setEditing(true); }}
+            className={`${font} inline-flex items-center gap-2 text-[13px] text-[#319754] bg-white border border-[#319754] hover:bg-[#319754]/10 px-5 h-[36px] rounded-full cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            <Pencil className="size-3.5" strokeWidth={2.4} />
+            แก้ไข
+          </motion.button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button onClick={() => setEditing(false)}
+              className={`${font} inline-flex items-center gap-2 text-[13px] text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-5 h-[36px] rounded-full cursor-pointer transition-colors`}
+              style={{ fontWeight: 500 }}>
+              ยกเลิก
             </button>
+            <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
+              onClick={handleSave}
+              className={`${font} inline-flex items-center gap-2 text-[13px] text-white bg-[#319754] hover:bg-[#287745] px-5 h-[36px] rounded-full cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+              style={{ fontWeight: 500 }}>
+              <Check className="size-4" strokeWidth={2.4} />
+              บันทึก
+            </motion.button>
+          </div>
+        )}
+      </div>
+
+      {/* Two-column layout: Card preview (left) + Card management (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
+
+        {/* LEFT: Bank card preview (เหมือนบัตรเครดิตจริง + ซ้อนการ์ดสีขาวด้านล่างเหมือนสมุด) */}
+        <div className="lg:col-span-2">
+          <div className="group relative cursor-pointer" style={{ perspective: "1200px" }}>
+            {/* Stacked white "pages" behind the card — hover ขยายออกเหมือนพัดหน้ากระดาษ */}
+            <div
+              className="absolute inset-x-2 top-2 bottom-[-12px] bg-white rounded-2xl shadow-[0_4px_8px_-2px_rgba(0,0,0,0.08)] pointer-events-none border border-gray-100 transition-all duration-500 ease-out group-hover:bottom-[-26px] group-hover:translate-x-1 group-hover:rotate-[1.5deg] origin-top-left"
+              style={{ zIndex: 0 }}
+            />
+            <div
+              className="absolute inset-x-1 top-1 bottom-[-6px] bg-white rounded-2xl shadow-[0_2px_4px_-1px_rgba(0,0,0,0.06)] pointer-events-none border border-gray-100 transition-all duration-500 ease-out group-hover:bottom-[-14px] group-hover:-translate-x-1 group-hover:-rotate-[1deg] origin-top-right"
+              style={{ zIndex: 1 }}
+            />
+
+            <motion.div
+              key={selectedBank.value + (editing ? "-edit" : "")}
+              initial="rest"
+              animate="rest"
+              whileHover="hover"
+              variants={{
+                rest:  { y: 0,  scale: 1,    rotateY: 0 },
+                hover: { y: -6, scale: 1.02, rotateY: 0 },
+              }}
+              transition={{ type: "spring", stiffness: 300, damping: 22 }}
+              className="relative rounded-2xl p-6 text-white overflow-hidden shadow-[0_8px_24px_-4px_rgba(0,0,0,0.15)] hover:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.25)] aspect-[1.586/1] min-h-[220px] flex flex-col justify-between transition-shadow duration-500"
+              style={{
+                background: `linear-gradient(135deg, ${selectedBank.color} 0%, ${selectedBank.colorDark} 100%)`,
+                zIndex: 2,
+                transformStyle: "preserve-3d",
+              }}
+            >
+              {/* Shine sweep — แถบแสงเคลื่อนซ้าย→ขวาตอน hover (variants ตามพ่อ) */}
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                variants={{
+                  rest:  { x: "-120%", opacity: 0 },
+                  hover: { x: "120%",  opacity: 1 },
+                }}
+                transition={{ duration: 1, ease: "easeInOut" }}
+                style={{
+                  background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%)",
+                }}
+              />
+            {/* Decorative circles */}
+            <div className="absolute -top-12 -right-12 size-48 rounded-full bg-white/10 pointer-events-none" />
+            <div className="absolute -bottom-16 -left-10 size-40 rounded-full bg-white/5 pointer-events-none" />
+
+            {/* Top: bank name + badge */}
+            <div className="flex items-start justify-between relative z-10">
+              <div>
+                <p className={`${font} text-[10px] text-white/70 uppercase tracking-wider`} style={{ fontWeight: 500 }}>Bank</p>
+                <p className={`${font} text-[15px] text-white mt-0.5`} style={{ fontWeight: 600 }}>{selectedBank.label}</p>
+              </div>
+              <BankBadge bank={selectedBank} size={44} />
+            </div>
+
+            {/* Middle: chip + account number */}
+            <div className="relative z-10 flex flex-col gap-2">
+              {/* Mock chip */}
+              <div className="size-9 rounded-md bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600 flex items-center justify-center shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]">
+                <div className="w-6 h-5 border border-yellow-700/40 rounded-sm grid grid-cols-3 grid-rows-3 gap-px p-0.5">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className="bg-yellow-700/30 rounded-[1px]" />
+                  ))}
+                </div>
+              </div>
+              <p className={`${font} text-[20px] text-white tabular-nums tracking-[0.15em]`} style={{ fontWeight: 600 }}>
+                {(editing ? draft.account : bankData.account) || "xxx-x-xxxxx-x"}
+              </p>
+            </div>
+
+            {/* Bottom: account holder */}
+            <div className="relative z-10 flex items-end justify-between">
+              <div className="min-w-0 flex-1">
+                <p className={`${font} text-[9px] text-white/70 uppercase tracking-wider`} style={{ fontWeight: 500 }}>Account Holder</p>
+                <p className={`${font} text-[13px] text-white truncate mt-0.5`} style={{ fontWeight: 500 }}>
+                  {(editing ? draft.name : bankData.name) || "ชื่อบัญชี"}
+                </p>
+              </div>
+              <div className="text-right shrink-0 ml-3">
+                <p className={`${font} text-[9px] text-white/70 uppercase tracking-wider`} style={{ fontWeight: 500 }}>Status</p>
+                <p className={`${font} text-[11px] text-white mt-0.5 inline-flex items-center gap-1`} style={{ fontWeight: 500 }}>
+                  <Check className="size-3" strokeWidth={3} />
+                  ยืนยันแล้ว
+                </p>
+              </div>
+            </div>
+          </motion.div>
+          </div>
+
+          {/* Trust badges */}
+          <div className="grid grid-cols-2 gap-3 mt-5">
+            <div className="bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-2.5">
+              <div className="size-8 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Lock className="size-3.5 text-[#319754]" strokeWidth={2.4} />
+              </div>
+              <div className="min-w-0">
+                <p className={`${font} text-[11px] text-black`} style={{ fontWeight: 600 }}>เข้ารหัสปลอดภัย</p>
+                <p className={`${font} text-[10px] text-gray-500`}>SSL 256-bit</p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-100 p-3 flex items-center gap-2.5">
+              <div className="size-8 rounded-full bg-[#0088ff]/10 flex items-center justify-center shrink-0">
+                <ArrowDownToLine className="size-3.5 text-[#0088ff]" strokeWidth={2.4} />
+              </div>
+              <div className="min-w-0">
+                <p className={`${font} text-[11px] text-black`} style={{ fontWeight: 600 }}>โอนเงินอัตโนมัติ</p>
+                <p className={`${font} text-[10px] text-gray-500`}>ทุกวันทำการ</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT: Detail / Edit form */}
+        <div className="lg:col-span-3 bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
+          {/* Section heading */}
+          <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
+            <Wallet className="size-4 text-[#319754]" strokeWidth={2.2} />
+            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>
+              {editing ? "แก้ไขข้อมูลบัญชีธนาคาร" : "ข้อมูลบัญชีธนาคาร"}
+            </p>
+          </div>
+
+          {/* Notice */}
+          <div className="bg-[#fff7ed] border border-[#fed7aa] rounded-xl px-4 py-3 flex items-start gap-2.5">
+            <Info className="size-4 text-[#ff9500] shrink-0 mt-0.5" strokeWidth={2.2} />
+            <span className={`${font} text-[12px] text-[#9a3412] leading-relaxed`}>
+              เมื่อมีคำสั่งซื้อสำเร็จ Admin จะโอนเงินค่าสินค้า (หักค่าธรรมเนียม) ให้คุณผ่านบัญชีนี้
+            </span>
+          </div>
+
+          {!editing ? (
+            <div className="flex flex-col gap-4">
+              {/* Bank info row */}
+              <div className="flex items-center gap-3 bg-[#fafafa] rounded-xl p-3">
+                <BankBadge bank={selectedBank} size={40} />
+                <div className="flex-1 min-w-0">
+                  <p className={`${font} text-[11px] text-[#999]`}>ธนาคาร</p>
+                  <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{selectedBank.label}</p>
+                </div>
+              </div>
+
+              {/* Account number */}
+              <div className="flex flex-col gap-1.5">
+                <p className={`${font} text-[11px] text-[#999]`}>เลขที่บัญชี</p>
+                <p className={`${font} text-[16px] text-black tabular-nums tracking-wider`} style={{ fontWeight: 600 }}>{bankData.account}</p>
+              </div>
+
+              {/* Account holder */}
+              <div className="flex flex-col gap-1.5">
+                <p className={`${font} text-[11px] text-[#999]`}>ชื่อบัญชี</p>
+                <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{bankData.name}</p>
+              </div>
+
+              {/* Last updated info */}
+              <div className="pt-3 border-t border-gray-100 flex items-center gap-2 text-[12px] text-gray-400">
+                <Clock className="size-3.5" strokeWidth={2.2} />
+                <span className={`${font}`}>อัปเดตล่าสุด: 8 พ.ค. 2569 14:32</span>
+              </div>
+            </div>
           ) : (
-            <div className="flex gap-2.5 items-center">
-              <button onClick={() => setEditing(false)} className="border border-[#ff3b30] flex items-center justify-center px-4 py-1 rounded-full cursor-pointer hover:bg-red-50 transition-colors">
-                <span className={`${font} text-[12px] text-[#ff3b30]`}>ยกเลิก</span>
-              </button>
-              <button onClick={handleSave} className="bg-[#319754] hover:bg-[#2a8348] flex items-center justify-center px-4 py-1 rounded-full cursor-pointer transition-colors">
-                <span className={`${font} text-[12px] text-white`}>บันทึก</span>
-              </button>
+            <div className="flex flex-col gap-4">
+              {/* Bank select */}
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ธนาคาร <span className="text-[#ff3b30]">*</span></label>
+                <div className="relative">
+                  <button type="button" onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className={`bg-[#fafafa] h-12 w-full rounded-full pl-3 pr-12 text-[14px] ${font} outline-none cursor-pointer flex items-center gap-2.5 focus:ring-2 focus:ring-[#319754]/30 transition-shadow`}
+                    style={{ fontWeight: 500 }}>
+                    {(() => { const db = bankOptions.find(b => b.value === draft.bank); return db ? <><BankBadge bank={db} size={32} /><span className="truncate">{db.label}</span></> : null; })()}
+                  </button>
+                  <ChevronDown className={`size-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-transform ${dropdownOpen ? "rotate-180" : ""}`} strokeWidth={2.2} />
+                  {dropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
+                      <div className="absolute top-full left-0 mt-1 w-full bg-white rounded-2xl shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)] border border-gray-100 z-20 py-1.5 overflow-hidden">
+                        {bankOptions.map(b => (
+                          <button key={b.value} type="button"
+                            onClick={() => { setDraft({ ...draft, bank: b.value }); setDropdownOpen(false); }}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors ${draft.bank === b.value ? "bg-[#319754]/5" : ""}`}>
+                            <BankBadge bank={b} size={28} />
+                            <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{b.label}</span>
+                            {draft.bank === b.value && <Check className="ml-auto size-4 text-[#319754] shrink-0" strokeWidth={2.5} />}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Account number */}
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>เลขที่บัญชี <span className="text-[#ff3b30]">*</span></label>
+                <input value={draft.account} onChange={(e) => setDraft({ ...draft, account: e.target.value })} placeholder="xxx-x-xxxxx-x"
+                  className={`bg-[#fafafa] h-12 w-full rounded-full px-5 text-[14px] ${font} outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow tabular-nums`}
+                  style={{ fontWeight: 500 }} />
+              </div>
+
+              {/* Account holder */}
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ชื่อบัญชี <span className="text-[#ff3b30]">*</span></label>
+                <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="ชื่อ-นามสกุล"
+                  className={`bg-[#fafafa] h-12 w-full rounded-full px-5 text-[14px] ${font} outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow`}
+                  style={{ fontWeight: 500 }} />
+              </div>
             </div>
           )}
         </div>
-
-        {/* Divider */}
-        <div className="w-full h-px bg-[#d4d4d8]" />
-
-        {!editing ? (
-          <>
-            {/* Notice */}
-            <div className="bg-[rgba(255,141,40,0.1)] px-2 py-1 rounded-full inline-flex self-start">
-              <span className={`${font} text-[12px] text-[#ff9500]`}>เมื่อมีคำสั่งซื้อสำเร็จ Admin จะโอนเงินค่าสินค้า (หักค่าธรรมเนียม) ให้คุณผ่านบัญชีนี้</span>
-            </div>
-
-            {/* Bank info */}
-            <div className="flex flex-col gap-2">
-              <span className={`${font} text-[14px] text-[#999]`} style={{ fontWeight: 500 }}>ธนาคาร</span>
-              <div className="flex gap-2 items-center py-3">
-                <img src={selectedBank.logo} alt="" className="w-7 h-7 object-contain rounded-full" />
-                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{selectedBank.label}</span>
-              </div>
-            </div>
-
-            {/* Account number & name side by side */}
-            <div className="flex gap-4">
-              <div className="flex-1 flex flex-col gap-2">
-                <span className={`${font} text-[14px] text-[#999]`} style={{ fontWeight: 500 }}>เลขที่บัญชี</span>
-                <div className="py-3">
-                  <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{bankData.account}</span>
-                </div>
-              </div>
-              <div className="flex-1 flex flex-col gap-2">
-                <span className={`${font} text-[14px] text-[#999]`} style={{ fontWeight: 500 }}>ชื่อบัญชี</span>
-                <div className="py-3">
-                  <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{bankData.name}</span>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Notice */}
-            <div className="bg-[rgba(255,141,40,0.1)] px-2 py-1 rounded-full inline-flex self-start">
-              <span className={`${font} text-[12px] text-[#ff9500]`}>เมื่อมีคำสั่งซื้อสำเร็จ Admin จะโอนเงินค่าสินค้า (หักค่าธรรมเนียม) ให้คุณผ่านบัญชีนี้</span>
-            </div>
-
-            {/* Bank select */}
-            <div className="flex flex-col gap-2">
-              <label className={`${font} text-[14px] text-[#999]`} style={{ fontWeight: 500 }}>ธนาคาร</label>
-              <div className="relative w-full sm:w-1/2">
-                {/* Custom dropdown trigger */}
-                <button
-                  type="button"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className={`bg-[#fafafa] h-[48px] w-full rounded-full px-6 py-3 text-[14px] ${font} outline-none cursor-pointer flex items-center gap-2.5 pr-12`}
-                  style={{ fontWeight: 500 }}
-                >
-                  {(() => { const db = bankOptions.find(b => b.value === draft.bank); return db ? <><img src={db.logo} alt="" className="w-6 h-6 object-contain rounded-full shrink-0" /><span className="truncate">{db.label}</span></> : null; })()}
-                </button>
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg width="16" height="9" viewBox="0 0 16 9" fill="none" className={`transition-transform ${dropdownOpen ? "rotate-180" : ""}`}><path d="M7.83767 9C8.06314 9 8.28862 8.91545 8.44194 8.75493L15.4228 2.05352C15.5761 1.90986 15.6663 1.72394 15.6663 1.51268C15.6663 1.07323 15.3145 0.73521 14.8455 0.73521C14.6201 0.73521 14.4127 0.819718 14.2594 0.954933L7.35062 7.57182H8.31568L1.40699 0.954933C1.26269 0.819718 1.05525 0.73521 0.820745 0.73521C0.351748 0.73521 0 1.07323 0 1.51268C0 1.72394 0.0901917 1.90986 0.243518 2.06197L7.22436 8.75493C7.39572 8.91545 7.60316 9 7.83767 9Z" fill="black" fillOpacity="0.85"/></svg>
-                </div>
-                {/* Dropdown list */}
-                {dropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                    <div className="absolute top-[52px] left-0 w-full bg-white rounded-2xl shadow-lg border border-gray-100 z-20 py-1 overflow-hidden">
-                      {bankOptions.map(b => (
-                        <button
-                          key={b.value}
-                          type="button"
-                          onClick={() => { setDraft({ ...draft, bank: b.value }); setDropdownOpen(false); }}
-                          className={`w-full flex items-center gap-2.5 px-6 py-3 hover:bg-[#f5f5f5] cursor-pointer transition-colors ${draft.bank === b.value ? "bg-[#f0faf3]" : ""}`}
-                        >
-                          <img src={b.logo} alt="" className="w-6 h-6 object-contain rounded-full shrink-0" />
-                          <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{b.label}</span>
-                          {draft.bank === b.value && (
-                            <svg className="ml-auto shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#319754" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Account number & name */}
-            <div className="flex gap-4">
-              <div className="flex-1 flex flex-col gap-2">
-                <label className={`${font} text-[14px] text-[#999]`} style={{ fontWeight: 500 }}>เลขที่บัญชี</label>
-                <input value={draft.account} onChange={(e) => setDraft({ ...draft, account: e.target.value })} placeholder="xxx-x-xxxxx-x" className={`bg-[#fafafa] h-[48px] w-full rounded-full px-6 py-3 text-[14px] ${font} outline-none`} style={{ fontWeight: 500 }} />
-              </div>
-              <div className="flex-1 flex flex-col gap-2">
-                <label className={`${font} text-[14px] text-[#999]`} style={{ fontWeight: 500 }}>ชื่อบัญชี</label>
-                <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="ชื่อ-นามสกุล" className={`bg-[#fafafa] h-[48px] w-full rounded-full px-6 py-3 text-[14px] ${font} outline-none`} style={{ fontWeight: 500 }} />
-              </div>
-            </div>
-          </>
-        )}
       </div>
     </div>
   );
 }
 
 /* ========== COMPLAINTS DATA ========== */
-type ComplaintStatus = "pending" | "in_progress" | "approved" | "completed" | "rejected";
-type ComplaintType = "damaged" | "defective" | "return" | "refund" | "wrong_item";
+// อัปเดตตาม Figma 6455:14708 / 6455:15438
+type ComplaintStatus = "pending" | "acknowledged" | "refund_full" | "refund_partial" | "rejected";
+type ComplaintType = "damaged" | "wrong_item" | "return" | "refund";
 
 interface Complaint {
-  id: string;
-  orderId: string;
+  id: string;            // DSP-YYYYMMDD-NNN
+  orderId: string;       // ORD-YYYYMMDD-NNNN
   customer: string;
   customerEmail: string;
   customerPhone: string;
@@ -5232,25 +6118,118 @@ interface Complaint {
   product: string;
   description: string;
   amount: number;
+  refundAmount?: number;        // กรณี refund_partial
   refundChannel: string;
-  createdAt: string;
-  items: { name: string; qty: number; price: number; hasImage: boolean }[];
+  createdAt: string;            // "13 มี.ค. 2569"
+  items: { name: string; option?: string; qty: number; price: number; image?: string }[];
   timeline: { title: string; desc: string; date: string; done: boolean }[];
 }
 
-const typeLabels: Record<ComplaintType, string> = { damaged: "สินค้าเสียหาย", defective: "สินค้ามีตำหนิ", return: "คืนสินค้า", refund: "ขอเงินคืน", wrong_item: "สินค้าผิดรายการ" };
-const statusLabels: Record<ComplaintStatus, string> = { pending: "รอดำเนินการ", in_progress: "กำลังดำเนินการ", approved: "อนุมัติแล้ว", completed: "เสร็จสิ้น", rejected: "ปฏิเสธ" };
-const statusColors: Record<ComplaintStatus, string> = { pending: "bg-[#ff9500] text-white", in_progress: "bg-[#007aff] text-white", approved: "bg-[#319754] text-white", completed: "bg-gray-500 text-white", rejected: "bg-[#ff3b30] text-white" };
-const typeTextColors: Record<ComplaintType, string> = { damaged: "text-[#ef4444]", defective: "text-[#f97316]", return: "text-[#3b82f6]", refund: "text-[#8b5cf6]", wrong_item: "text-[#eab308]" };
+// แมพรูปสินค้าตาม keyword ในชื่อ (ใช้ Unsplash) — fallback ถ้า item.image ไม่มี
+const complaintProductImg = (name: string): string => {
+  const n = name.toLowerCase();
+  if (n.includes("ชา") || n.includes("ใบ"))                    return "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=200&q=80"; // tea
+  if (n.includes("น้ำผึ้ง"))                                    return "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=200&q=80"; // honey
+  if (n.includes("น้ำมัน") || n.includes("บาล์ม") || n.includes("ไพล")) return "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=200&q=80"; // oil/balm
+  if (n.includes("ครีม"))                                       return "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=200&q=80"; // cream
+  if (n.includes("สบู่"))                                        return "https://images.unsplash.com/photo-1607006517806-1abf5ec4923f?w=200&q=80"; // soap
+  if (n.includes("แคปซูล") || n.includes("สกัด"))               return "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200&q=80"; // capsules
+  if (n.includes("ผง"))                                         return "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=200&q=80"; // powder
+  if (n.includes("พิมเสน") || n.includes("อโรมา") || n.includes("หอม") || n.includes("สเปรย์"))
+                                                                 return "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=200&q=80"; // aroma/spray
+  if (n.includes("เซ็ต") || n.includes("ของขวัญ"))              return "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=200&q=80"; // gift set
+  return "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=200&q=80"; // generic herbal
+};
+
+const typeLabels: Record<ComplaintType, string> = {
+  damaged:    "สินค้าเสียหาย",
+  wrong_item: "สินค้าไม่ตรงตามสั่ง",
+  return:     "ต้องการคืนสินค้า",
+  refund:     "ต้องการขอเงินคืน",
+};
+const statusLabels: Record<ComplaintStatus, string> = {
+  pending:        "รอดำเนินการ",
+  acknowledged:   "ยืนยันรับแจ้งปัญหา",
+  refund_full:    "คืนเงินเต็มจำนวน",
+  refund_partial: "คืนเงินบางส่วน",
+  rejected:       "ปฏิเสธ",
+};
+// สีของแต่ละสถานะ (อิง Figma) — ใช้ 6-digit hex เพื่อให้ต่อ alpha (`${color}1a`) ได้
+const statusColorMap: Record<ComplaintStatus, string> = {
+  pending:        "#f59e0b", // amber
+  acknowledged:   "#0088ff", // blue
+  refund_full:    "#319754", // green
+  refund_partial: "#f7c42b", // yellow
+  rejected:       "#ff383c", // red
+};
+// สีของแต่ละประเภท (อิง Figma)
+const typeColorMap: Record<ComplaintType, string> = {
+  damaged:    "#ff383c", // red
+  wrong_item: "#df9723", // orange
+  return:     "#9747ff", // purple
+  refund:     "#0088ff", // blue
+};
+// keep for back-compat (ใช้ใน detail page เก่า)
+const statusColors: Record<ComplaintStatus, string> = {
+  pending:        "bg-[#f59e0b] text-white",
+  acknowledged:   "bg-[#08f] text-white",
+  refund_full:    "bg-[#319754] text-white",
+  refund_partial: "bg-[#f7c42b] text-white",
+  rejected:       "bg-[#ff383c] text-white",
+};
+const typeTextColors: Record<ComplaintType, string> = {
+  damaged:    "text-[#ff383c]",
+  wrong_item: "text-[#df9723]",
+  return:     "text-[#9747ff]",
+  refund:     "text-[#08f]",
+};
+
+// Helper สร้าง timeline ตามสถานะ — ลด boilerplate ใน mock
+const _tl = (status: ComplaintStatus, date: string, refund?: number) => {
+  const base = [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: `${date} 09:00`, done: true }];
+  if (status === "pending") return [...base,
+    { title: "ตรวจสอบข้อมูล",   desc: "ทีมงานกำลังตรวจสอบ", date: "รอดำเนินการ", done: false },
+    { title: "ตัดสินคำร้องเรียน", desc: "รอการตัดสิน",       date: "รอดำเนินการ", done: false },
+    { title: "เสร็จสิ้น",         desc: "ปิดคำร้องเรียน",     date: "รอดำเนินการ", done: false }];
+  if (status === "acknowledged") return [...base,
+    { title: "ยืนยันรับแจ้งปัญหา", desc: "ทีมงานยืนยันรับเรื่อง", date: `${date} 13:00`, done: true },
+    { title: "ตัดสินคำร้องเรียน",   desc: "รอการตัดสิน",         date: "รอดำเนินการ",   done: false },
+    { title: "เสร็จสิ้น",           desc: "ปิดคำร้องเรียน",       date: "รอดำเนินการ",   done: false }];
+  if (status === "refund_full") return [...base,
+    { title: "ยืนยันรับแจ้งปัญหา",  desc: "ทีมงานยืนยันรับเรื่อง",                  date: `${date} 13:00`, done: true },
+    { title: "อนุมัติคืนเงินเต็มจำนวน", desc: `อนุมัติคืนเงิน ${refund?.toLocaleString() ?? ""} บาท`, date: `${date} 16:00`, done: true },
+    { title: "เสร็จสิ้น",            desc: "ปิดคำร้องเรียน",                         date: "รอดำเนินการ",   done: false }];
+  if (status === "refund_partial") return [...base,
+    { title: "ยืนยันรับแจ้งปัญหา",   desc: "ทีมงานยืนยันรับเรื่อง",                  date: `${date} 13:00`, done: true },
+    { title: "อนุมัติคืนเงินบางส่วน", desc: `อนุมัติคืนเงิน ${refund?.toLocaleString() ?? ""} บาท`, date: `${date} 16:00`, done: true },
+    { title: "เสร็จสิ้น",             desc: "ปิดคำร้องเรียน",                         date: "รอดำเนินการ",   done: false }];
+  return [...base,
+    { title: "ยืนยันรับแจ้งปัญหา", desc: "ทีมงานยืนยันรับเรื่อง",      date: `${date} 13:00`, done: true },
+    { title: "ปฏิเสธคำร้อง",        desc: "ไม่พบหลักฐานที่เพียงพอ",     date: `${date} 16:00`, done: true },
+    { title: "เสร็จสิ้น",           desc: "ปิดคำร้องเรียน",              date: `${date} 16:30`, done: true }];
+};
 
 const mockComplaints: Complaint[] = [
-  { id: "CPL-001", orderId: "ORD-20260301-5821", customer: "สมชาย ใจดี", customerEmail: "metaherb@gmail.com", customerPhone: "061-421-3111", type: "damaged", status: "in_progress", product: "ชาสมุนไพรเมต้าเฮิร์บ (กล่อง 30 ซอง)", description: "กล่องสินค้าบุบเสียหายอย่างหนัก ผลิตภัณฑ์ด้านในแตกออกและหกเลอะ ไม่สามารถใช้งานได้", amount: 450, refundChannel: "ธนาคารทหารไทยธนชาต [*1234]", createdAt: "15 มี.ค. 2569", items: [{ name: "ชาอูหลงผสมดอกหอมหมื่นลี้", qty: 1, price: 150, hasImage: true }, { name: "ชาเขียวมัทฉะผสมส้มยูซุ", qty: 1, price: 150, hasImage: false }, { name: "ชาเขียวมัทฉะลาเต้", qty: 1, price: 150, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "15 มี.ค. 2569 09:15", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานกำลังตรวจสอบหลักฐานและข้อมูล", date: "15 มี.ค. 2569 11:30", done: true }, { title: "อนุมัติและดำเนินการ", desc: "อยู่ระหว่างจัดส่งสินค้าทดแทน", date: "16 มี.ค. 2569 14:00", done: true }, { title: "จัดส่งสินค้าทดแทน", desc: "ส่งสินค้าทดแทนให้ลูกค้า", date: "รอดำเนินการ", done: false }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
-  { id: "CPL-002", orderId: "ORD-20260228-015", customer: "วรรณา สุขสบาย", customerEmail: "wanna@email.com", customerPhone: "089-876-5432", type: "wrong_item", status: "pending", product: "ชาสมุนไพรรวม MetaHerb 30 ซอง", description: "สั่งชาสมุนไพรรวม แต่ได้รับชาดอกคาโมมายล์แทน", amount: 350, refundChannel: "ธนาคารไทยพาณิชย์ [*5432]", createdAt: "10 มี.ค. 2569", items: [{ name: "ชาสมุนไพรรวม MetaHerb 30 ซอง", qty: 1, price: 350, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "10 มี.ค. 2569 14:20", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานกำลังตรวจสอบหลักฐานและข้อมูล", date: "รอดำเนินการ", done: false }, { title: "อนุมัติและดำเนินการ", desc: "รอการพิจารณา", date: "รอดำเนินการ", done: false }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
-  { id: "CPL-003", orderId: "ORD-20260225-008", customer: "ปราณี รักสมุนไพร", customerEmail: "pranee@email.com", customerPhone: "062-111-2222", type: "refund", status: "approved", product: "ครีมสมุนไพร MetaHerb 50g", description: "ใช้ผลิตภัณฑ์แล้วเกิดอาการแพ้ ต้องการขอเงินคืนเต็มจำนวน", amount: 890, refundChannel: "ธนาคารกรุงเทพ [*3333]", createdAt: "8 มี.ค. 2569", items: [{ name: "ครีมสมุนไพร MetaHerb 50g", qty: 1, price: 890, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "8 มี.ค. 2569 10:00", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานกำลังตรวจสอบหลักฐานและข้อมูล", date: "9 มี.ค. 2569 09:30", done: true }, { title: "อนุมัติและดำเนินการ", desc: "อนุมัติคืนเงินเรียบร้อย", date: "10 มี.ค. 2569 14:00", done: true }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
-  { id: "CPL-004", orderId: "ORD-20260220-022", customer: "อนุชา ต้นไม้", customerEmail: "anucha@email.com", customerPhone: "095-333-4444", type: "return", status: "completed", product: "เซ็ตสมุนไพรบำรุงผิว MetaHerb", description: "สินค้าที่ได้รับไม่ตรงกับรูปและรายละเอียดที่แสดงบนเว็บไซต์", amount: 1250, refundChannel: "ธนาคารกสิกรไทย [*4444]", createdAt: "5 มี.ค. 2569", items: [{ name: "เซ็ตสมุนไพรบำรุงผิว MetaHerb", qty: 1, price: 1250, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "5 มี.ค. 2569 08:30", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานตรวจสอบเสร็จสิ้น", date: "6 มี.ค. 2569 10:00", done: true }, { title: "อนุมัติและดำเนินการ", desc: "อนุมัติคืนสินค้าเรียบร้อย", date: "7 มี.ค. 2569 11:00", done: true }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียนเรียบร้อย", date: "10 มี.ค. 2569 16:00", done: true }] },
-  { id: "CPL-005", orderId: "ORD-20260218-030", customer: "มานะ ขยันดี", customerEmail: "mana@email.com", customerPhone: "087-555-6666", type: "defective", status: "rejected", product: "น้ำมันไพล MetaHerb 50ml", description: "ฝาขวดปิดไม่สนิท น้ำมันไหลซึมออกมา", amount: 195, refundChannel: "ธนาคารกรุงไทย [*6666]", createdAt: "1 มี.ค. 2569", items: [{ name: "น้ำมันไพล MetaHerb 50ml", qty: 1, price: 195, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "1 มี.ค. 2569 13:00", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานตรวจสอบเสร็จสิ้น", date: "2 มี.ค. 2569 09:00", done: true }, { title: "ปฏิเสธคำร้อง", desc: "ไม่อยู่ในเงื่อนไขการรับประกัน", date: "3 มี.ค. 2569 10:00", done: true }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
-  { id: "CPL-006", orderId: "ORD-20260315-011", customer: "จิราภรณ์ ดอกไม้", customerEmail: "jira@email.com", customerPhone: "063-777-8888", type: "damaged", status: "pending", product: "สบู่สมุนไพร MetaHerb 3 ก้อน", description: "กล่องพัสดุถูกทับจนบุบ สินค้าข้างในเสียรูป", amount: 450, refundChannel: "ธนาคารกสิกรไทย [*8888]", createdAt: "17 มี.ค. 2569", items: [{ name: "สบู่สมุนไพร MetaHerb 3 ก้อน", qty: 1, price: 450, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "17 มี.ค. 2569 10:45", done: true }, { title: "ตรวจสอบข้อมูล", desc: "รอตรวจสอบ", date: "รอดำเนินการ", done: false }, { title: "อนุมัติและดำเนินการ", desc: "รอการพิจารณา", date: "รอดำเนินการ", done: false }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
-  { id: "CPL-007", orderId: "ORD-20260310-005", customer: "กนกวรรณ ใจเย็น", customerEmail: "kanok@email.com", customerPhone: "091-999-0000", type: "refund", status: "in_progress", product: "แชมพูสมุนไพร MetaHerb 300ml", description: "ชำระเงินซ้ำ 2 รอบ ต้องการเงินคืน 1 รายการ", amount: 780, refundChannel: "ธนาคารกรุงไทย [*0000]", createdAt: "12 มี.ค. 2569", items: [{ name: "แชมพูสมุนไพร MetaHerb 300ml", qty: 1, price: 780, hasImage: false }], timeline: [{ title: "ส่งคำร้องเรียน", desc: "ระบบได้รับคำร้องเรียนของคุณแล้ว", date: "12 มี.ค. 2569 16:30", done: true }, { title: "ตรวจสอบข้อมูล", desc: "ทีมงานกำลังตรวจสอบหลักฐานและข้อมูล", date: "14 มี.ค. 2569 09:00", done: true }, { title: "อนุมัติและดำเนินการ", desc: "รอการพิจารณา", date: "รอดำเนินการ", done: false }, { title: "เสร็จสิ้น", desc: "ปิดคำร้องเรียน", date: "รอดำเนินการ", done: false }] },
+  { id: "DSP-20260313-001", orderId: "ORD-20260318-4421", customer: "มาลี สวยงาม",       customerEmail: "malee@email.com",    customerPhone: "091-555-6666", type: "damaged",    status: "pending",        product: "ชาสมุนไพรพรีเมี่ยม คอลเลกชัน",  description: "ไม่ได้รับสินค้าภายใน 14 วัน แต่ระบบแสดงว่าจัดส่งแล้ว ต้องการขอเงินคืน",        amount: 690,                     refundChannel: "ธนาคารไทยพาณิชย์ (SCB) [*4321]", createdAt: "13 มี.ค. 2569", items: [{ name: "ชาสมุนไพรพรีเมี่ยม คอลเลกชัน", option: "ชาอูหลงผสมดอกหอมหมื่นลี้", qty: 1, price: 150 }, { name: "ชาสมุนไพรพรีเมี่ยม คอลเลกชัน", option: "ชาเขียวมัทฉะผสมส้มยูซุ", qty: 1, price: 150 }, { name: "ชาสมุนไพรพรีเมี่ยม คอลเลกชัน", option: "ชาเขียวมัทฉะลาเต้", qty: 1, price: 150 }], timeline: _tl("pending", "13 มี.ค. 2569") },
+  { id: "DSP-20260313-002", orderId: "ORD-20260318-4422", customer: "สมชาย ใจดี",         customerEmail: "somchai@email.com",  customerPhone: "061-421-3111", type: "wrong_item", status: "acknowledged",   product: "ชาสมุนไพรรวม 30 ซอง",            description: "สั่งชาสมุนไพรรวม แต่ได้รับชาคาโมมายล์แทน",                                       amount: 350,                     refundChannel: "ธนาคารกสิกรไทย [*8821]",         createdAt: "14 มี.ค. 2569", items: [{ name: "ชาสมุนไพรรวม", option: "30 ซอง · รสชาติรวม", qty: 1, price: 350 }], timeline: _tl("acknowledged", "14 มี.ค. 2569") },
+  { id: "DSP-20260313-003", orderId: "ORD-20260318-4423", customer: "วรรณา สุขสบาย",      customerEmail: "wanna@email.com",    customerPhone: "089-876-5432", type: "return",     status: "refund_full",    product: "เซ็ตสมุนไพรบำรุงผิว",            description: "สินค้าที่ได้รับไม่ตรงกับรูปและรายละเอียดบนเว็บไซต์ ขอคืนสินค้าและเงิน",         amount: 1250, refundAmount: 1250, refundChannel: "ธนาคารกรุงเทพ [*3333]",          createdAt: "15 มี.ค. 2569", items: [{ name: "เซ็ตสมุนไพรบำรุงผิว", option: "Premium Set (5 ชิ้น)", qty: 1, price: 1250 }], timeline: _tl("refund_full", "15 มี.ค. 2569", 1250) },
+  { id: "DSP-20260313-004", orderId: "ORD-20260318-4424", customer: "ปราณี รักสมุนไพร",   customerEmail: "pranee@email.com",   customerPhone: "062-111-2222", type: "refund",     status: "refund_partial", product: "ครีมสมุนไพร",                     description: "ใช้ผลิตภัณฑ์ไป 1 ครั้งแล้วเกิดอาการระคายเคือง ต้องการขอเงินคืนบางส่วน",      amount: 890,  refundAmount: 400,  refundChannel: "ธนาคารกรุงเทพ [*4444]",          createdAt: "16 มี.ค. 2569", items: [{ name: "ครีมสมุนไพร", option: "ขนาด 50g · สูตรว่านหางจระเข้", qty: 1, price: 890 }], timeline: _tl("refund_partial", "16 มี.ค. 2569", 400) },
+  { id: "DSP-20260313-005", orderId: "ORD-20260318-4425", customer: "อนุชา ต้นไม้",        customerEmail: "anucha@email.com",   customerPhone: "095-333-4444", type: "wrong_item", status: "refund_partial", product: "น้ำมันสมุนไพร",                   description: "ได้รับสินค้าผิดขนาด สั่ง 100ml แต่ได้รับ 50ml",                                    amount: 480,  refundAmount: 200,  refundChannel: "ธนาคารกสิกรไทย [*5555]",         createdAt: "17 มี.ค. 2569", items: [{ name: "น้ำมันสมุนไพร", option: "ขนาด 100ml", qty: 1, price: 480 }], timeline: _tl("refund_partial", "17 มี.ค. 2569", 200) },
+  { id: "DSP-20260313-006", orderId: "ORD-20260318-4426", customer: "มานะ ขยันดี",         customerEmail: "mana@email.com",     customerPhone: "087-555-6666", type: "damaged",    status: "rejected",       product: "น้ำมันไพล",                       description: "ฝาขวดปิดไม่สนิท น้ำมันไหลซึมออกมา (ขอคืนเงิน)",                                  amount: 195,                     refundChannel: "ธนาคารกรุงไทย [*6666]",          createdAt: "18 มี.ค. 2569", items: [{ name: "น้ำมันไพล", option: "ขนาด 50ml", qty: 1, price: 195 }], timeline: _tl("rejected", "18 มี.ค. 2569") },
+  { id: "DSP-20260313-007", orderId: "ORD-20260319-4427", customer: "ธนพล ทองคำ",          customerEmail: "thanapol@email.com", customerPhone: "081-234-5678", type: "return",     status: "pending",        product: "เซ็ตของขวัญสมุนไพรพรีเมี่ยม",      description: "สั่งเป็นของขวัญแต่ผู้รับไม่ชอบ ต้องการคืนสินค้าและขอเงินคืนเต็มจำนวน",         amount: 1890,                    refundChannel: "ธนาคารกรุงไทย [*7777]",          createdAt: "19 มี.ค. 2569", items: [{ name: "เซ็ตของขวัญสมุนไพรพรีเมี่ยม", option: "กล่องสีแดง · มีโบว์", qty: 1, price: 1890 }], timeline: _tl("pending", "19 มี.ค. 2569") },
+  { id: "DSP-20260313-008", orderId: "ORD-20260319-4428", customer: "นภัสสร อ่อนนุช",      customerEmail: "napatsorn@email.com",customerPhone: "094-887-1234", type: "refund",     status: "pending",        product: "ขมิ้นชันแคปซูล",                  description: "สั่งซื้อ 2 ขวด แต่ได้รับขวดเดียว ขอเงินคืนเฉพาะส่วนที่ขาด",                       amount: 440,  refundAmount: 220,  refundChannel: "ธนาคารกสิกรไทย [*9001]",         createdAt: "19 มี.ค. 2569", items: [{ name: "ขมิ้นชันแคปซูล", option: "60 แคปซูล/ขวด", qty: 2, price: 220 }], timeline: _tl("pending", "19 มี.ค. 2569") },
+  { id: "DSP-20260313-009", orderId: "ORD-20260320-4429", customer: "พิมพ์ชนก สีแดง",      customerEmail: "pimchanok@email.com",customerPhone: "098-771-5566", type: "damaged",    status: "acknowledged",   product: "บาล์มสมุนไพรไพล",                description: "ตลับแตก เนื้อบาล์มไหลออกครึ่งตลับ มีรอยแตกชัดเจนตอนรับพัสดุ",                  amount: 95,                      refundChannel: "ธนาคารไทยพาณิชย์ (SCB) [*1212]", createdAt: "20 มี.ค. 2569", items: [{ name: "บาล์มสมุนไพรไพล", qty: 1, price: 95 }], timeline: _tl("acknowledged", "20 มี.ค. 2569") },
+  { id: "DSP-20260313-010", orderId: "ORD-20260320-4430", customer: "เกียรติศักดิ์ ภักดี",  customerEmail: "kiat@email.com",     customerPhone: "086-543-2100", type: "wrong_item", status: "acknowledged",   product: "ฟ้าทะลายโจร",                     description: "สั่งฟ้าทะลายโจรผง แต่ได้รับเป็นแคปซูล",                                          amount: 145,                     refundChannel: "ธนาคารกรุงเทพ [*8080]",          createdAt: "20 มี.ค. 2569", items: [{ name: "ฟ้าทะลายโจร", option: "รูปแบบ: ผง 100g", qty: 1, price: 145 }], timeline: _tl("acknowledged", "20 มี.ค. 2569") },
+  { id: "DSP-20260313-011", orderId: "ORD-20260321-4431", customer: "สุนันทา จิตรกุล",      customerEmail: "sunanta@email.com",  customerPhone: "092-101-2020", type: "return",     status: "refund_full",    product: "ชาเก๊กฮวยออร์แกนิก",              description: "เปิดมาแล้วชาขึ้นรา กลิ่นเหม็น ต้องการคืนสินค้าและเงินทั้งหมด",                  amount: 375,  refundAmount: 375,  refundChannel: "ธนาคารกรุงไทย [*4711]",          createdAt: "21 มี.ค. 2569", items: [{ name: "ชาเก๊กฮวยออร์แกนิก", option: "20 ซอง · รสดั้งเดิม", qty: 3, price: 125 }], timeline: _tl("refund_full", "21 มี.ค. 2569", 375) },
+  { id: "DSP-20260313-012", orderId: "ORD-20260321-4432", customer: "อมรเทพ รัตนพล",        customerEmail: "amorn@email.com",    customerPhone: "099-887-3344", type: "refund",     status: "refund_full",    product: "สบู่สมุนไพรขมิ้น",                description: "สินค้าหมดอายุแล้ว แสดงเดือน 11/2568 ขอเงินคืนเต็มจำนวน",                       amount: 325,  refundAmount: 325,  refundChannel: "ธนาคารกสิกรไทย [*5577]",         createdAt: "22 มี.ค. 2569", items: [{ name: "สบู่สมุนไพรขมิ้น", option: "ขนาด 100g", qty: 5, price: 65 }], timeline: _tl("refund_full", "22 มี.ค. 2569", 325) },
+  { id: "DSP-20260313-013", orderId: "ORD-20260322-4433", customer: "ชมพูนุช พิมพา",        customerEmail: "chompoo@email.com",  customerPhone: "083-444-5566", type: "damaged",    status: "refund_full",    product: "น้ำผึ้งดอกลำไย",                  description: "ขวดแตกระหว่างขนส่ง น้ำผึ้งหกเลอะกล่อง",                                            amount: 430,  refundAmount: 430,  refundChannel: "ธนาคารไทยพาณิชย์ (SCB) [*9919]", createdAt: "22 มี.ค. 2569", items: [{ name: "น้ำผึ้งดอกลำไย", option: "ขนาด 250ml", qty: 2, price: 215 }], timeline: _tl("refund_full", "22 มี.ค. 2569", 430) },
+  { id: "DSP-20260313-014", orderId: "ORD-20260323-4434", customer: "ภานุวัฒน์ พรมมา",      customerEmail: "panuwat@email.com",  customerPhone: "088-901-2233", type: "wrong_item", status: "refund_partial", product: "ชามะรุม",                          description: "ได้รับชาตะไคร้แทน ต้องการขอเงินคืนบางส่วนเพราะยังใช้ได้",                       amount: 130,  refundAmount: 65,   refundChannel: "ธนาคารกรุงเทพ [*6622]",          createdAt: "23 มี.ค. 2569", items: [{ name: "ชามะรุม", option: "30 ซอง", qty: 1, price: 130 }], timeline: _tl("refund_partial", "23 มี.ค. 2569", 65) },
+  { id: "DSP-20260313-015", orderId: "ORD-20260323-4435", customer: "กมลทิพย์ คงสุข",       customerEmail: "kamonthip@email.com",customerPhone: "082-333-7788", type: "return",     status: "refund_partial", product: "ครีมสมุนไพร",                     description: "ได้รับ 2 หลอด แต่ใช้แล้วไม่ถูกผิว ขอคืน 1 หลอด เก็บไว้ใช้ 1 หลอด",              amount: 1780, refundAmount: 890,  refundChannel: "ธนาคารกรุงไทย [*4422]",          createdAt: "23 มี.ค. 2569", items: [{ name: "ครีมสมุนไพร", option: "ขนาด 50g · สูตรกระชับผิว", qty: 2, price: 890 }], timeline: _tl("refund_partial", "23 มี.ค. 2569", 890) },
+  { id: "DSP-20260313-016", orderId: "ORD-20260324-4436", customer: "เด่นชัย ศรีสวัสดิ์",    customerEmail: "denchai@email.com",  customerPhone: "097-654-7890", type: "refund",     status: "refund_partial", product: "ใบบัวบกแคปซูล",                  description: "บรรจุภัณฑ์ภายในชำรุด แต่ตัวสินค้ายังใช้ได้ ขอคืนเงินบางส่วน",                  amount: 180,  refundAmount: 80,   refundChannel: "ธนาคารกสิกรไทย [*7733]",         createdAt: "24 มี.ค. 2569", items: [{ name: "ใบบัวบกแคปซูล", option: "60 แคปซูล", qty: 1, price: 180 }], timeline: _tl("refund_partial", "24 มี.ค. 2569", 80) },
+  { id: "DSP-20260313-017", orderId: "ORD-20260324-4437", customer: "ภูริชญา จันทร์เพ็ญ",   customerEmail: "purichaya@email.com",customerPhone: "084-222-9911", type: "damaged",    status: "rejected",       product: "ถุงหอมอโรมา MetaHerb",            description: "อ้างว่าถุงหอมไม่มีกลิ่น แต่ทดสอบในร้านพบว่ายังหอมปกติ",                       amount: 199,                     refundChannel: "ธนาคารกรุงเทพ [*8801]",          createdAt: "24 มี.ค. 2569", items: [{ name: "ถุงหอมอโรมา MetaHerb", option: "กลิ่นลาเวนเดอร์", qty: 1, price: 199 }], timeline: _tl("rejected", "24 มี.ค. 2569") },
+  { id: "DSP-20260313-018", orderId: "ORD-20260325-4438", customer: "นิติพล วัฒนะ",         customerEmail: "nitipol@email.com",  customerPhone: "095-101-3344", type: "return",     status: "rejected",       product: "เห็ดหลินจือสกัด",                 description: "ขอคืนสินค้าเปิดใช้แล้วเกิน 7 วัน ไม่ตรงตามนโยบาย",                                amount: 245,                     refundChannel: "ธนาคารไทยพาณิชย์ (SCB) [*5050]", createdAt: "25 มี.ค. 2569", items: [{ name: "เห็ดหลินจือสกัด", option: "60 แคปซูล", qty: 1, price: 245 }], timeline: _tl("rejected", "25 มี.ค. 2569") },
+  { id: "DSP-20260313-019", orderId: "ORD-20260325-4439", customer: "พัชรียา เนตรประไพ",    customerEmail: "patchareeya@email.com",customerPhone: "086-998-2233", type: "refund",   status: "pending",        product: "พิมเสนน้ำอโรมา ตราเมต้าเฮิร์บ",   description: "ระบบหักเงินซ้ำสองรอบ ต้องการขอเงินคืนรอบที่เกิน",                                amount: 267,  refundAmount: 267,  refundChannel: "ธนาคารกรุงไทย [*1166]",          createdAt: "25 มี.ค. 2569", items: [{ name: "พิมเสนน้ำอโรมา ตราเมต้าเฮิร์บ", qty: 3, price: 89 }], timeline: _tl("pending", "25 มี.ค. 2569") },
+  { id: "DSP-20260313-020", orderId: "ORD-20260326-4440", customer: "ศิริรัตน์ ทองดี",       customerEmail: "siriwat@email.com",  customerPhone: "081-665-9090", type: "wrong_item", status: "rejected",       product: "ขิงผงออร์แกนิก",                  description: "อ้างว่าได้สินค้าไม่ตรง แต่ตรวจสอบใบสั่งซื้อพบว่าตรงตามที่สั่ง",                  amount: 130,                     refundChannel: "ธนาคารกสิกรไทย [*3344]",         createdAt: "26 มี.ค. 2569", items: [{ name: "ขิงผงออร์แกนิก", option: "100g", qty: 1, price: 130 }], timeline: _tl("rejected", "26 มี.ค. 2569") },
 ];
 
 /* ========== COMPLAINTS TAB (List) ========== */
@@ -5258,23 +6237,24 @@ function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void })
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ComplaintStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState<ComplaintType | "all">("all");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
-  const statusTabs: { id: ComplaintStatus | "all"; label: string; count: number }[] = [
-    { id: "all", label: "ทั้งหมด", count: mockComplaints.length },
-    { id: "pending", label: "รอดำเนินการ", count: mockComplaints.filter((c) => c.status === "pending").length },
-    { id: "in_progress", label: "กำลังดำเนินการ", count: mockComplaints.filter((c) => c.status === "in_progress").length },
-    { id: "approved", label: "อนุมัติแล้ว", count: mockComplaints.filter((c) => c.status === "approved").length },
-    { id: "completed", label: "เสร็จสิ้น", count: mockComplaints.filter((c) => c.status === "completed").length },
-    { id: "rejected", label: "ปฏิเสธ", count: mockComplaints.filter((c) => c.status === "rejected").length },
+  const statusTabs: { id: ComplaintStatus | "all"; label: string; count: number; Icon: any }[] = [
+    { id: "all",            label: "ทั้งหมด",            count: mockComplaints.length, Icon: ClipboardList },
+    { id: "pending",        label: "รอดำเนินการ",        count: mockComplaints.filter((c) => c.status === "pending").length, Icon: Clock },
+    { id: "acknowledged",   label: "ยืนยันรับแจ้งปัญหา", count: mockComplaints.filter((c) => c.status === "acknowledged").length, Icon: Check },
+    { id: "refund_full",    label: "คืนเงินเต็มจำนวน",   count: mockComplaints.filter((c) => c.status === "refund_full").length, Icon: RotateCcw },
+    { id: "refund_partial", label: "คืนเงินบางส่วน",      count: mockComplaints.filter((c) => c.status === "refund_partial").length, Icon: PackageCheck },
+    { id: "rejected",       label: "ปฏิเสธ",             count: mockComplaints.filter((c) => c.status === "rejected").length, Icon: Ban },
   ];
 
   const typeTabs: { id: ComplaintType | "all"; label: string }[] = [
-    { id: "all", label: "ทุกประเภท" },
-    { id: "damaged", label: "สินค้าเสียหาย" },
-    { id: "defective", label: "สินค้ามีตำหนิ" },
-    { id: "return", label: "คืนสินค้า" },
-    { id: "refund", label: "ขอเงินคืน" },
-    { id: "wrong_item", label: "สินค้าผิดรายการ" },
+    { id: "all",        label: "ทุกประเภท" },
+    { id: "damaged",    label: "สินค้าเสียหาย" },
+    { id: "wrong_item", label: "สินค้าไม่ตรงตามสั่ง" },
+    { id: "return",     label: "ต้องการคืนสินค้า" },
+    { id: "refund",     label: "ต้องการขอเงินคืน" },
   ];
 
   const filtered = mockComplaints.filter((c) => {
@@ -5286,222 +6266,291 @@ function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void })
     }
     return true;
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * perPage, safePage * perPage);
 
   return (
     <div>
-      {/* Header */}
+      {/* Header — title only (เหมือน ProductsTab) */}
       <div className="flex items-center justify-between mb-6">
         <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>การร้องเรียน</h2>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-white border border-gray-300 rounded-full pl-4 pr-1.5 py-1.5 w-[320px]">
-            <input className={`${font} flex-1 text-[13px] outline-none bg-transparent`} placeholder="ค้นหาเลขร้องเรียน, ชื่อลูกค้า..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-            <button className="bg-[#319754] p-1.5 rounded-full cursor-pointer"><Search className="size-4 text-white" /></button>
-          </div>
+      </div>
+
+      {/* Status filter tabs + search (in one pill) — เหมือน ProductsTab */}
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-4 flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
+          {statusTabs.map((tab) => {
+            const isAct = statusFilter === tab.id;
+            return (
+              <motion.button
+                key={tab.id}
+                onClick={() => { setStatusFilter(tab.id); setPage(1); }}
+                whileTap={{ scale: 0.94 }}
+                whileHover={!isAct ? { scale: 1.04 } : undefined}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}
+              >
+                {isAct && (
+                  <motion.span
+                    layoutId="complaintTabActivePill"
+                    className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <motion.span layout
+                  className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
+                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
+                </motion.span>
+                <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
+                  style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
+                  {tab.label}
+                </span>
+                <motion.span layout
+                  className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
+                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
+                  <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
+                    {tab.count}
+                  </motion.span>
+                </motion.span>
+              </motion.button>
+            );
+          })}
         </div>
-      </div>
-
-      {/* Status filter tabs */}
-      <div className="bg-white rounded-[100px] shadow-[0px_0px_6px_0px_rgba(0,0,0,0.1)] flex items-center justify-start gap-1 overflow-x-auto p-2 mb-4">
-        {statusTabs.map((tab) => {
-          const isAct = statusFilter === tab.id;
-          return (
-            <button key={tab.id} onClick={() => setStatusFilter(tab.id)}
-              className={`backdrop-blur-[2px] flex gap-2.5 items-center justify-center pl-3 pr-2 py-1 rounded-[100px] cursor-pointer shrink-0 transition-colors ${isAct ? "bg-[#319754]" : ""}`}>
-              <span className={`${font} text-[14px] whitespace-nowrap ${isAct ? "text-white" : "text-black"}`} style={{ fontWeight: isAct ? 500 : 400 }}>{tab.label}</span>
-              <div className={`flex items-center justify-center px-2 py-1 rounded-[100px] shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] ${isAct ? "bg-white" : "bg-[#ff383c]"}`}>
-                <span className={`${font} text-[8px] ${isAct ? "text-[#ff383c]" : "text-white"}`}>{tab.count}</span>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Type filter */}
-      <div className="flex items-center gap-2 mb-4 flex-wrap">
-        <Filter className="size-4 text-gray-400" />
-        {typeTabs.map((tab) => (
-          <button key={tab.id} onClick={() => setTypeFilter(tab.id)}
-            className={`px-3 py-1 rounded-full text-[12px] cursor-pointer transition-colors border ${typeFilter === tab.id ? "border-[#319754] bg-[#319754]/10 text-[#319754]" : "border-gray-200 text-gray-500 hover:bg-gray-50"} ${font}`}>
-            {tab.label}
+        {/* Type filter dropdown (อยู่หน้าช่องค้นหา) */}
+        <div className="relative shrink-0">
+          <Filter className="size-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
+          <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value as ComplaintType | "all"); setPage(1); }}
+            className={`${font} text-[13px] appearance-none border border-gray-200 rounded-full pl-9 pr-9 h-[36px] bg-white cursor-pointer focus:outline-none focus:border-[#319754] hover:border-gray-300 transition-colors min-w-[140px]`}>
+            {typeTabs.map((tab) => (
+              <option key={tab.id} value={tab.id}>{tab.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="size-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.4} />
+        </div>
+        {/* Search (inside same pill, aligned right) */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0">
+          <input value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+            placeholder="ค้นหาเลขร้องเรียน, ชื่อลูกค้า..."
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+          <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* Table - Figma style */}
-      <div className="bg-white rounded-[16px] overflow-hidden relative border border-[#e8e8e8]">
-        {/* Header */}
-        <div className="bg-[#fafafa] border-b border-[#e8e8e8] grid grid-cols-[1fr_1fr_0.75fr_0.5fr_0.5fr] items-center px-5 py-3">
-          {["การร้องเรียน","สินค้า / คำสั่งซื้อ","ผู้แจ้ง","ประเภท","สถานะ"].map((h, i) => (
-            <p key={i} className={`${font} text-[12px] text-[#999]`} style={{ fontWeight: 500 }}>{h}</p>
-          ))}
-        </div>
-        {/* Rows */}
-        {filtered.map((c) => {
-          const typeIconConfig: Record<ComplaintType, { bg: string; border: string; color: string }> = {
-            refund: { bg: "bg-[#eef2ff]", border: "border-[#c7d2fe]", color: "#6366F1" },
-            damaged: { bg: "bg-[#fef2f2]", border: "border-[#fecaca]", color: "#EF4444" },
-            return: { bg: "bg-[#f0fdf4]", border: "border-[#bbf7d0]", color: "#319754" },
-            wrong_item: { bg: "bg-[#fffbeb]", border: "border-[#fde68a]", color: "#F59E0B" },
-            defective: { bg: "bg-[#fff7ed]", border: "border-[#fed7aa]", color: "#F97316" },
+      {/* Table — ตรง Figma 6455:14708 */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "16%" }} />{/* เลขที่ */}
+            <col style={{ width: "20%" }} />{/* คำสั่งซื้อ */}
+            <col style={{ width: "12%" }} />{/* วันที่ */}
+            <col style={{ width: "22%" }} />{/* ประเภท */}
+            <col style={{ width: "22%" }} />{/* สถานะ */}
+            <col style={{ width: "8%" }} />{/* จัดการ */}
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>เลขที่</th>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>คำสั่งซื้อ</th>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>วันที่</th>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ประเภท</th>
+              <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>สถานะ</th>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paged.length === 0 && (
+              <tr><td colSpan={6} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการร้องเรียน</td></tr>
+            )}
+        {paged.map((c) => {
+          // ไอคอน lucide ตามประเภท — แต่ละประเภทมี hover animation ที่ต่างกัน
+          // (ใช้ group-hover บน <tr>; transform-gpu = ป้องกัน blur)
+          const typeIcon: Record<ComplaintType, { Icon: any; hoverIcon: string }> = {
+            damaged:    { Icon: AlertTriangle, hoverIcon: "group-hover:rotate-[-12deg] group-hover:scale-110" }, // สั่นเตือน
+            wrong_item: { Icon: PackageX,      hoverIcon: "group-hover:rotate-[12deg] group-hover:scale-110" },  // เอียงไม่ตรง
+            return:     { Icon: RotateCcw,     hoverIcon: "group-hover:-rotate-180" },                            // หมุนคืน
+            refund:     { Icon: Wallet,        hoverIcon: "group-hover:-translate-y-0.5 group-hover:scale-110" }, // เด้งขึ้น
           };
-          const typeBadgeConfig: Record<ComplaintType, { bg: string; text: string }> = {
-            refund: { bg: "bg-[#eef2ff]", text: "text-[#6366f1]" },
-            damaged: { bg: "bg-[#fef2f2]", text: "text-[#ef4444]" },
-            return: { bg: "bg-[#f0fdf4]", text: "text-[#319754]" },
-            wrong_item: { bg: "bg-[#fffbeb]", text: "text-[#f59e0b]" },
-            defective: { bg: "bg-[#fff7ed]", text: "text-[#f97316]" },
+          const statusIcon: Record<ComplaintStatus, any> = {
+            pending:        Clock,
+            acknowledged:   Check,
+            refund_full:    RotateCcw,
+            refund_partial: PackageCheck,
+            rejected:       Ban,
           };
-          const statusBadgeConfig: Record<ComplaintStatus, { bg: string; text: string; color: string }> = {
-            pending: { bg: "bg-[#fffbeb]", text: "text-[#f59e0b]", color: "#F59E0B" },
-            in_progress: { bg: "bg-[#eff6ff]", text: "text-[#3b82f6]", color: "#3B82F6" },
-            approved: { bg: "bg-[#f0fdf4]", text: "text-[#319754]", color: "#319754" },
-            completed: { bg: "bg-[#eef2ff]", text: "text-[#6366f1]", color: "#6366F1" },
-            rejected: { bg: "bg-[#fef2f2]", text: "text-[#ef4444]", color: "#EF4444" },
-          };
-          const ti = typeIconConfig[c.type];
-          const tb = typeBadgeConfig[c.type];
-          const sb = statusBadgeConfig[c.status];
+          const tColor = typeColorMap[c.type];
+          const sColor = statusColorMap[c.status];
+          const { Icon: TIcon, hoverIcon } = typeIcon[c.type];
+          const SIcon = statusIcon[c.status];
           return (
-            <div key={c.id} className="grid grid-cols-[1fr_1fr_0.75fr_0.5fr_0.5fr] items-center px-5 py-4 border-b border-[#f5f5f5] hover:bg-gray-50/50 cursor-pointer transition-colors" onClick={() => onViewDetail(c.id)}>
-              {/* Col 1: Icon + ID + Date */}
-              <div className="flex items-center gap-3">
-                <div className={`${ti.bg} border ${ti.border} rounded-lg size-9 shrink-0 flex items-center justify-center`}>
-                  {c.type === "refund" && (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgComplaint.p2949e900} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d={svgComplaint.p22e64900} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></svg>
-                  )}
-                  {c.type === "damaged" && (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgComplaint.p18993c00} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M8 14.6667V8" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d={svgComplaint.p14df0fc0} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M5 2.84667L11 6.28" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></svg>
-                  )}
-                  {c.type === "return" && (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgComplaint.p12949080} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M2 2V5.33333H5.33333" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></svg>
-                  )}
-                  {c.type === "wrong_item" && (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgComplaint.p19987d80} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M14 2V5.33333H10.6667" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d={svgComplaint.p2a3e9c80} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M5.33333 10.6667H2V14" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></svg>
-                  )}
-                  {c.type === "defective" && (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d={svgComplaint.p18993c00} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M8 14.6667V8" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d={svgComplaint.p14df0fc0} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M5 2.84667L11 6.28" stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></svg>
-                  )}
+            <tr key={c.id} className="group border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => onViewDetail(c.id)}>
+              {/* เลขที่ — มีไอคอนสื่อถึงประเภทการร้องเรียน + hover animation */}
+              <td className="py-3 pr-4">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="size-10 rounded-[16px] flex items-center justify-center shrink-0 transform-gpu transition-all duration-300 group-hover:scale-105"
+                    style={{ backgroundColor: `${tColor}1a` }}
+                    title={typeLabels[c.type]}
+                  >
+                    <TIcon
+                      className={`size-5 transform-gpu transition-transform duration-300 ${hoverIcon}`}
+                      style={{ color: tColor }}
+                      strokeWidth={2}
+                    />
+                  </span>
+                  <span className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 500 }}>{c.id}</span>
                 </div>
-                <div className="flex flex-col min-w-0">
-                  <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{c.id}</p>
-                  <p className={`${font} text-[11px] text-[#999]`}>{c.createdAt}</p>
-                </div>
-              </div>
-              {/* Col 2: Product + Order ID */}
-              <div className="flex flex-col justify-center min-w-0">
-                <p className={`${font} text-[13px] text-black truncate`}>{c.product}</p>
-                <p className={`${font} text-[11px] text-[#999]`}>{c.orderId}</p>
-              </div>
-              {/* Col 3: Email + Phone */}
-              <div className="flex flex-col justify-center min-w-0">
-                <p className={`${font} text-[13px] text-black truncate`}>{c.customerEmail}</p>
-                <p className={`${font} text-[11px] text-[#999]`}>{c.customerPhone}</p>
-              </div>
-              {/* Col 4: Type badge */}
-              <div>
-                <span className={`${font} text-[11px] ${tb.bg} ${tb.text} px-2.5 py-1 rounded-full inline-block`}>{typeLabels[c.type]}</span>
-              </div>
-              {/* Col 5: Status badge with icon */}
-              <div>
-                <span className={`${font} text-[11px] ${sb.bg} ${sb.text} pl-[10px] pr-2.5 py-1 rounded-full inline-flex items-center gap-1`}>
-                  {c.status === "pending" && (
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M6 3V6L8 7" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  )}
-                  {c.status === "in_progress" && (
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d={svgComplaint.p3e7757b0} stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M6 4V6" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M6 8H6.005" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  )}
-                  {(c.status === "approved" || c.status === "completed") && (
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d={svgComplaint.p23551518} stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M4.5 5.5L6 7L11 2" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  )}
-                  {c.status === "rejected" && (
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d={svgComplaint.p3e7757b0} stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M7.5 4.5L4.5 7.5" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /><path d="M4.5 4.5L7.5 7.5" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" /></svg>
-                  )}
+              </td>
+              {/* คำสั่งซื้อ */}
+              <td className="py-3 pr-4">
+                <span className={`${font} text-[13px] text-black tabular-nums`}>{c.orderId}</span>
+              </td>
+              {/* วันที่ */}
+              <td className="py-3 pr-4">
+                <span className={`${font} text-[13px] text-black`}>{c.createdAt}</span>
+              </td>
+              {/* ประเภท — text-only, ชิดซ้าย */}
+              <td className="py-3 pr-4">
+                <span className={`${font} text-[13px] text-black`}>
+                  {typeLabels[c.type]}
+                </span>
+              </td>
+              {/* สถานะ — pill bg tinted + icon (ตรงธีมหลัก ProductsTab) */}
+              <td className="py-3 pr-4 text-center">
+                <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3.5 py-0.5 rounded-full text-[14px]`}
+                  style={{ backgroundColor: `${sColor}1a`, color: sColor }}>
+                  <SIcon className="size-3" strokeWidth={2.4} />
                   {statusLabels[c.status]}
                 </span>
-              </div>
-
-            </div>
+              </td>
+              {/* Col 6: Action */}
+              <td className="py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                      <MoreHorizontal className="size-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" sideOffset={6}
+                    className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)]">
+                    <motion.div initial={{ scale: 0.4, opacity: 0, y: -6 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                      style={{ transformOrigin: "top right" }} className="overflow-hidden">
+                      <button onClick={() => onViewDetail(c.id)}
+                        className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                        <Eye className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                        <span style={{ fontWeight: 500 }}>ดูรายละเอียด</span>
+                      </button>
+                      <button onClick={() => toast.info(`ติดต่อลูกค้า: ${c.customer}`)}
+                        className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                        <MessageCircle className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                        <span style={{ fontWeight: 500 }}>ติดต่อลูกค้า</span>
+                      </button>
+                    </motion.div>
+                  </PopoverContent>
+                </Popover>
+              </td>
+            </tr>
           );
         })}
-        {filtered.length === 0 && (
-          <div className={`${font} text-center py-12 text-[#999] text-[14px]`}>ไม่พบรายการร้องเรียน</div>
+          </tbody>
+        </table>
+
+        {/* Pagination */}
+        {filtered.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}
+                  value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}>
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={safePage === 1} onClick={() => setPage(safePage - 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                <button key={n} onClick={() => setPage(n)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safePage === n ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: safePage === n ? 600 : 400 }}>{n}</button>
+              ))}
+              <button disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-/* ========== COMPLAINT DETAIL TAB (Figma-matched layout) ========== */
+/* ========== COMPLAINT DETAIL TAB (Figma 6455:15438) ========== */
 function ComplaintDetailTab({ complaintId, onBack }: { complaintId: string; onBack: () => void }) {
   const complaint = mockComplaints.find((c) => c.id === complaintId) || mockComplaints[0];
-  const [selectedStatus, setSelectedStatus] = useState<ComplaintStatus>(complaint.status);
-  const [noteText, setNoteText] = useState("");
-  const [isEditingNote, setIsEditingNote] = useState(false);
+  // 4 ตัวเลือกการตัดสิน (ไม่มี pending — pending เป็นสถานะเริ่มต้น ก่อนเลือก)
+  type Decision = "acknowledged" | "refund_full" | "refund_partial" | "rejected";
+  const initialDecision: Decision | null =
+    complaint.status === "pending" ? null : (complaint.status as Decision);
+  const [decision, setDecision] = useState<Decision | null>(initialDecision);
+  const [partialAmount, setPartialAmount] = useState<number>(complaint.refundAmount ?? 0);
+  const [customerNote, setCustomerNote] = useState("");
 
-  /* --- type icon config for header --- */
-  const typeIconConfig: Record<ComplaintType, { bg: string; border: string; color: string }> = {
-    refund: { bg: "bg-[#eef2ff]", border: "border-[#c7d2fe]", color: "#6366F1" },
-    damaged: { bg: "bg-[#fef2f2]", border: "border-[#fecaca]", color: "#EF4444" },
-    return: { bg: "bg-[#f0fdf4]", border: "border-[#bbf7d0]", color: "#319754" },
-    wrong_item: { bg: "bg-[#fffbeb]", border: "border-[#fde68a]", color: "#F59E0B" },
-    defective: { bg: "bg-[#fff7ed]", border: "border-[#fed7aa]", color: "#F97316" },
+  const sColor = statusColorMap[complaint.status];
+  const tColor = typeColorMap[complaint.type];
+
+  const statusIcon: Record<ComplaintStatus, any> = {
+    pending: Clock,
+    acknowledged: Check,
+    refund_full: RotateCcw,
+    refund_partial: PackageCheck,
+    rejected: Ban,
   };
-  const statusBadgeConfig: Record<ComplaintStatus, { bg: string; text: string; borderColor: string; color: string }> = {
-    pending: { bg: "bg-[#fffbeb]", text: "text-[#f59e0b]", borderColor: "rgba(245,158,11,0.38)", color: "#F59E0B" },
-    in_progress: { bg: "bg-[#eff6ff]", text: "text-[#3b82f6]", borderColor: "rgba(59,130,246,0.38)", color: "#3B82F6" },
-    approved: { bg: "bg-[#f0fdf4]", text: "text-[#319754]", borderColor: "rgba(49,151,84,0.38)", color: "#319754" },
-    completed: { bg: "bg-[#eef2ff]", text: "text-[#6366f1]", borderColor: "rgba(99,102,241,0.38)", color: "#6366F1" },
-    rejected: { bg: "bg-[#fef2f2]", text: "text-[#ef4444]", borderColor: "rgba(239,68,68,0.38)", color: "#EF4444" },
-  };
-  const ti = typeIconConfig[complaint.type];
-  const sb = statusBadgeConfig[complaint.status];
+  const SIcon = statusIcon[complaint.status];
+
+  // 4 ตัวเลือกการตัดสิน — ตาม Figma
+  const decisionOptions: { id: Decision; label: string; color: string; Icon: any }[] = [
+    { id: "acknowledged",   label: "ยืนยันรับแจ้งปัญหา", color: statusColorMap.acknowledged,   Icon: Check },
+    { id: "refund_full",    label: "คืนเงินเต็มจำนวน",   color: statusColorMap.refund_full,    Icon: RotateCcw },
+    { id: "refund_partial", label: "คืนเงินบางส่วน",      color: statusColorMap.refund_partial, Icon: PackageCheck },
+    { id: "rejected",       label: "ปฏิเสธ",             color: statusColorMap.rejected,       Icon: Ban },
+  ];
 
   return (
     <div>
-      {/* Back button */}
-      <div className="mb-6">
-        <button onClick={onBack} className="flex gap-2 items-center bg-[#d4d4d4] rounded-full px-4 py-1 cursor-pointer hover:bg-[#c4c4c4] transition-colors">
-          <ChevronLeft size={14} />
-          <span className={`${font} text-[12px] text-black`}>กลับ</span>
+      {/* Back button + ส่งคำร้องเมื่อ */}
+      <div className="mb-5 flex items-center gap-3">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
         </button>
+        <span className={`${font} text-[13px] text-[#999]`}>ส่งคำร้องเมื่อ {complaint.createdAt}</span>
       </div>
 
-      {/* ===== HEADER: Type icon + Title + Status badge ===== */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className={`${ti.bg} border ${ti.border} rounded-[12px] size-12 shrink-0 flex items-center justify-center`}>
-            {complaint.type === "refund" && (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d={svgDetail.p1cbf6000} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d={svgDetail.p10779400} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
-            )}
-            {complaint.type === "damaged" && (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d={svgDetail.p1cbf6000} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d={svgDetail.p10779400} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
-            )}
-            {complaint.type === "return" && (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d={svgDetail.p1cbf6000} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d={svgDetail.p10779400} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
-            )}
-            {complaint.type === "wrong_item" && (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d={svgDetail.p1cbf6000} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d={svgDetail.p10779400} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
-            )}
-            {complaint.type === "defective" && (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d={svgDetail.p1cbf6000} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d={svgDetail.p10779400} stroke={ti.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
-            )}
-          </div>
-          <div>
-            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{typeLabels[complaint.type]}</p>
-            <p className={`${font} text-[13px] text-[#999]`}>#{complaint.id} · {complaint.createdAt}</p>
-          </div>
-        </div>
-        {/* Status badge */}
-        <div className={`${sb.bg} rounded-full h-[37px] flex items-center gap-2 px-4`} style={{ border: `1px solid ${sb.borderColor}` }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d={svgDetail.p39ee6532} stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-            {complaint.status === "pending" && <path d="M8 4V8L10.6667 9.33333" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />}
-            {complaint.status === "in_progress" && <><path d="M8 5.33333V8" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M8 10.6667H8.00667" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></>}
-            {(complaint.status === "approved" || complaint.status === "completed") && <path d={svgDetail.p1f2c5400} stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />}
-            {complaint.status === "rejected" && <><path d="M10 6L6 10" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /><path d="M6 6L10 10" stroke={sb.color} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" /></>}
-          </svg>
-          <p className={`${font} text-[14px] ${sb.text}`} style={{ fontWeight: 500 }}>{statusLabels[complaint.status]}</p>
-        </div>
+      {/* ===== HEADER: DSP # (h1) + status pill ===== */}
+      <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
+        <h1 className={`${font} text-[22px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{complaint.id}</h1>
+        {/* Status pill — match list pill style */}
+        <span
+          className={`${font} inline-flex items-center gap-2 px-4 h-[34px] rounded-full text-[13px]`}
+          style={{ backgroundColor: `${sColor}1a`, color: sColor, fontWeight: 500 }}
+        >
+          <SIcon className="size-3.5" strokeWidth={2.2} />
+          {statusLabels[complaint.status]}
+        </span>
       </div>
 
       {/* ===== TWO-COLUMN LAYOUT ===== */}
@@ -5511,10 +6560,11 @@ function ComplaintDetailTab({ complaintId, onBack }: { complaintId: string; onBa
         <div className="flex-1 min-w-0 flex flex-col gap-5">
 
           {/* Card: รายละเอียดคำร้องเรียน */}
-          <div className="bg-white rounded-[16px] relative border border-[#e8e8e8]">
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
             <div className="flex flex-col gap-4 p-5">
               {/* Section heading with bottom border */}
-              <div className="pb-3 border-b border-[#e8e8e8]">
+              <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
+                <FileText className="size-4 text-[#319754]" strokeWidth={2.2} />
                 <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>รายละเอียดคำร้องเรียน</p>
               </div>
 
@@ -5524,14 +6574,28 @@ function ComplaintDetailTab({ complaintId, onBack }: { complaintId: string; onBa
                 <div className="flex gap-4">
                   <div className="flex-1 flex flex-col gap-0.5">
                     <p className={`${font} text-[11px] text-[#999]`}>เลขที่คำสั่งซื้อ</p>
-                    <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{complaint.orderId}</p>
+                    <p className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 500 }}>{complaint.orderId}</p>
                   </div>
                   <div className="flex-1 flex flex-col gap-0.5">
                     <p className={`${font} text-[11px] text-[#999]`}>สินค้า</p>
-                    <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{complaint.product}</p>
+                    <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{complaint.product}</p>
                   </div>
                 </div>
-                {/* Row 2: อีเมล | เบอร์ติดต่อ */}
+                {/* Row 2: ลูกค้า | ประเภท */}
+                <div className="flex gap-4">
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <p className={`${font} text-[11px] text-[#999]`}>ลูกค้า</p>
+                    <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{complaint.customer}</p>
+                  </div>
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <p className={`${font} text-[11px] text-[#999]`}>ประเภท</p>
+                    <span className={`${font} self-start inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${tColor}1a`, color: tColor, fontWeight: 500 }}>
+                      {typeLabels[complaint.type]}
+                    </span>
+                  </div>
+                </div>
+                {/* Row 3: อีเมล | เบอร์ติดต่อ */}
                 <div className="flex gap-4">
                   <div className="flex-1 flex flex-col gap-0.5">
                     <p className={`${font} text-[11px] text-[#999]`}>อีเมล</p>
@@ -5539,57 +6603,75 @@ function ComplaintDetailTab({ complaintId, onBack }: { complaintId: string; onBa
                   </div>
                   <div className="flex-1 flex flex-col gap-0.5">
                     <p className={`${font} text-[11px] text-[#999]`}>เบอร์ติดต่อ</p>
-                    <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{complaint.customerPhone}</p>
+                    <p className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 500 }}>{complaint.customerPhone}</p>
                   </div>
                 </div>
-                {/* Row 3: ยอดขอคืนเงิน */}
+                {/* Row 4: ยอดขอคืนเงิน */}
                 <div className="flex flex-col gap-0.5">
                   <p className={`${font} text-[11px] text-[#999]`}>ยอดขอคืนเงิน</p>
-                  <p className={`${font} text-[14px] text-[#319754]`} style={{ fontWeight: 500 }}>฿{complaint.amount.toLocaleString()}</p>
+                  <p className={`${font} text-[18px] text-[#319754] tabular-nums`} style={{ fontWeight: 600 }}>฿{complaint.amount.toLocaleString()}</p>
                 </div>
               </div>
 
               {/* รายละเอียดปัญหา */}
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1.5">
                 <p className={`${font} text-[11px] text-[#999]`}>รายละเอียดปัญหา</p>
                 <div className="bg-[#fafafa] rounded-[10px] relative border border-[#e8e8e8] px-[17px] py-[17px]">
-                  <p className={`${font} text-[14px] text-black`}>{complaint.description}</p>
+                  <p className={`${font} text-[14px] text-black leading-relaxed`}>{complaint.description}</p>
                 </div>
               </div>
 
               {/* Evidence images */}
-              <div className="flex gap-3">
-                <div className="rounded-[10px] relative shrink-0 size-[133px] overflow-hidden border border-[#d4d4d8]">
-                  <img src={imgEvidence0} alt="หลักฐาน 1" className="w-full h-full object-cover" />
-                </div>
-                <div className="rounded-[10px] relative shrink-0 size-[133px] overflow-hidden border border-[#d4d4d8]">
-                  <img src={imgEvidence1} alt="หลักฐาน 2" className="w-full h-full object-cover" />
+              <div className="flex flex-col gap-1.5">
+                <p className={`${font} text-[11px] text-[#999]`}>หลักฐานประกอบ</p>
+                <div className="flex gap-3">
+                  <div className="rounded-[10px] relative shrink-0 size-[133px] overflow-hidden border border-[#d4d4d8]">
+                    <img src={imgEvidence0} alt="หลักฐาน 1" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="rounded-[10px] relative shrink-0 size-[133px] overflow-hidden border border-[#d4d4d8]">
+                    <img src={imgEvidence1} alt="หลักฐาน 2" className="w-full h-full object-cover" />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Card: สินค้าที่ต้องการขอคืนเงิน */}
-          <div className="bg-white rounded-[16px] relative border border-[#e8e8e8] overflow-hidden">
-            <div className="flex flex-col gap-4 p-4">
-              <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 500 }}>สินค้าที่ต้องการขอคืนเงิน</p>
-              <div className="h-px bg-[#d4d4d8]" />
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden">
+            <div className="flex flex-col gap-3 p-5">
+              <div className="flex items-center gap-2 pb-3 border-b border-[#e8e8e8]">
+                <Package className="size-4 text-[#319754]" strokeWidth={2.2} />
+                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>สินค้าที่ต้องการขอคืนเงิน</p>
+              </div>
               {complaint.items.map((item, idx) => (
-                <div key={idx} className="bg-white rounded-[12px] relative border border-[#d9d9d9]">
-                  <div className="flex items-center gap-2 p-4">
-                    <div className="rounded-lg shrink-0 size-16 overflow-hidden">
-                      {item.hasImage ? (
-                        <img src={imgRefundProduct} alt="" className="w-full h-full object-cover rounded-lg" />
-                      ) : (
-                        <div className="bg-[#e7e7e7] rounded-lg size-full" />
-                      )}
+                <div key={idx} className="bg-[#fafafa] rounded-xl border border-[#f0f0f0] p-3">
+                  <div className="flex items-start gap-3">
+                    {/* Image */}
+                    <div className="rounded-xl shrink-0 size-[70px] overflow-hidden bg-[#e7e7e7]">
+                      <ImageWithFallback
+                        src={item.image ?? complaintProductImg(item.name)}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`${font} text-[12px] text-black truncate`} style={{ fontWeight: 500 }}>{item.name}</p>
-                    </div>
-                    <div className="flex flex-col items-end shrink-0">
-                      <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>฿ {item.price.toFixed(2)}</p>
-                      <p className={`${font} text-[10px] text-black`}>จำนวน {item.qty} ชิ้น</p>
+                    {/* Body — name on top; meta + price on bottom */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-0.5 gap-2">
+                      <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{item.name}</p>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                          {item.option && (
+                            <span className={`${font} inline-flex items-center bg-white border border-[#e8e8e8] text-[#555] text-[11px] px-2 py-0.5 rounded-full whitespace-nowrap`}>
+                              {item.option}
+                            </span>
+                          )}
+                          <span className={`${font} bg-[#f5f5f5] text-[#262626] text-[10px] px-2.5 py-0.5 rounded-full whitespace-nowrap`} style={{ fontWeight: 500 }}>
+                            จำนวน {item.qty} ชิ้น
+                          </span>
+                        </div>
+                        <span className={`${font} text-[14px] text-black tabular-nums shrink-0`} style={{ fontWeight: 600 }}>
+                          ฿{item.price.toLocaleString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -5598,14 +6680,11 @@ function ComplaintDetailTab({ complaintId, onBack }: { complaintId: string; onBa
           </div>
 
           {/* Card: ข้อมูลบัญชีธนาคาร */}
-          <div className="bg-white rounded-[16px] relative border border-[#e8e8e8]">
-            <div className="flex flex-col gap-4 pt-5 px-5 pb-5">
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+            <div className="flex flex-col gap-4 p-5">
               {/* Heading with icon */}
-              <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d={svgDetail.p35993080} stroke="#6366F1" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                  <path d="M1.33333 6.66667H14.6667" stroke="#6366F1" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                </svg>
+              <div className="flex items-center gap-2 pb-3 border-b border-[#e8e8e8]">
+                <Wallet className="size-4 text-[#319754]" strokeWidth={2.2} />
                 <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลบัญชีธนาคาร</p>
               </div>
 
@@ -5613,62 +6692,25 @@ function ComplaintDetailTab({ complaintId, onBack }: { complaintId: string; onBa
               <div className="grid grid-cols-2 gap-x-4 gap-y-4">
                 <div className="flex flex-col gap-0.5">
                   <p className={`${font} text-[11px] text-[#999]`}>ธนาคาร</p>
-                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ธนาคารไทยพาณิชย์ (SCB)</p>
+                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{complaint.refundChannel.split(" [")[0]}</p>
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <p className={`${font} text-[11px] text-[#999]`}>ชื่อบัญชี</p>
-                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>มาลี สวยงาม</p>
+                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{complaint.customer}</p>
                 </div>
                 <div className="flex flex-col gap-0.5">
                   <p className={`${font} text-[11px] text-[#999]`}>เลขบัญชี</p>
-                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>987-6-54321-0</p>
+                  <p className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 500 }}>
+                    {complaint.refundChannel.match(/\[(.*?)\]/)?.[1] ?? "—"}
+                  </p>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <p className={`${font} text-[11px] text-[#999]`}>ยอดโอน</p>
-                  <p className={`${font} text-[18px] text-[#6366f1]`} style={{ fontWeight: 500 }}>฿{complaint.amount.toLocaleString()}</p>
+                  <p className={`${font} text-[11px] text-[#999]`}>ยอดที่ต้องคืน</p>
+                  <p className={`${font} text-[18px] text-[#319754] tabular-nums`} style={{ fontWeight: 600 }}>
+                    ฿{(complaint.refundAmount ?? complaint.amount).toLocaleString()}
+                  </p>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Card: บันทึกของเจ้าหน้าที่ */}
-          <div className="bg-white rounded-[16px] relative border border-[#e8e8e8]">
-            <div className="flex flex-col gap-3 pt-5 px-5 pb-5">
-              {/* Heading row */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d={svgDetail.p1bb15080} stroke="#319754" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                  </svg>
-                  <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>บันทึกของเจ้าหน้าที่</p>
-                </div>
-                <button onClick={() => setIsEditingNote(!isEditingNote)} className="flex items-center gap-1 cursor-pointer">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M7 11.6667H12.25" stroke="#319754" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.16667" />
-                    <path d={svgDetail.p3d94d500} stroke="#319754" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.16667" />
-                  </svg>
-                  <span className={`${font} text-[12px] text-[#319754]`} style={{ fontWeight: 500 }}>แก้ไข</span>
-                </button>
-              </div>
-              {/* Note content */}
-              {isEditingNote ? (
-                <div className="flex flex-col gap-2">
-                  <textarea
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="เพิ่มบันทึก..."
-                    className={`${font} text-[14px] bg-[#f0fdf4] rounded-[12px] border border-[#bbf7d0] px-[17px] py-[17px] min-h-[57px] resize-none outline-none`}
-                  />
-                  <div className="flex justify-end gap-2">
-                    <button onClick={() => setIsEditingNote(false)} className={`${font} text-[12px] text-[#999] px-3 py-1 rounded-full cursor-pointer`}>ยกเลิก</button>
-                    <button onClick={() => setIsEditingNote(false)} className={`${font} text-[12px] text-white bg-[#319754] px-4 py-1 rounded-full cursor-pointer`}>บันทึก</button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-[#f0fdf4] rounded-[12px] relative border border-[#bbf7d0] px-[17px] py-[17px]">
-                  <p className={`${font} text-[14px] text-[#999]`}>{noteText || "ยังไม่มีบันทึก"}</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -5676,90 +6718,139 @@ function ComplaintDetailTab({ complaintId, onBack }: { complaintId: string; onBa
         {/* RIGHT COLUMN */}
         <div className="shrink-0 flex flex-col gap-5" style={{ width: 408 }}>
 
-          {/* Card: อัปเดตสถานะ */}
-          <div className="bg-white rounded-[16px] relative border border-[#e8e8e8]">
+          {/* Card: การตัดสินคำร้องเรียน */}
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
             <div className="flex flex-col gap-4 p-5">
               {/* Section heading */}
-              <div className="pb-3 border-b border-[#e8e8e8]">
-                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>อัปเดตสถานะ</p>
+              <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
+                <ClipboardList className="size-4 text-[#319754]" strokeWidth={2.2} />
+                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>การตัดสินคำร้องเรียน</p>
               </div>
 
-              {/* Status radio buttons */}
+              {/* 4 decision options */}
               <div className="flex flex-col gap-2">
-                {(["pending", "in_progress", "approved", "completed", "rejected"] as ComplaintStatus[]).map((status) => {
-                  const isSelected = selectedStatus === status;
-                  const sbc = statusBadgeConfig[status];
+                {decisionOptions.map((opt) => {
+                  const isSelected = decision === opt.id;
+                  const OptIcon = opt.Icon;
                   return (
-                    <button
-                      key={status}
-                      onClick={() => setSelectedStatus(status)}
-                      className={`relative h-[45.5px] rounded-[12px] flex items-center gap-2 px-[17px] cursor-pointer transition-colors ${
-                        isSelected ? `${sbc.bg}` : "bg-white"
-                      }`}
-                      style={{ border: `1px solid ${isSelected ? sbc.borderColor : "#e8e8e8"}` }}
-                    >
-                      {/* Status icon */}
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        {status === "pending" && (
-                          <>
-                            <path d={svgDetail.p39ee6532} stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                            <path d="M8 4V8L10.6667 9.33333" stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                          </>
-                        )}
-                        {status === "in_progress" && (
-                          <>
-                            <path d={svgDetail.p39ee6532} stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                            <path d="M8 5.33333V8" stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                            <path d="M8 10.6667H8.00667" stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                          </>
-                        )}
-                        {(status === "approved" || status === "completed") && (
-                          <>
-                            <path d={svgDetail.p34e03900} stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                            <path d={svgDetail.p1f2c5400} stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                          </>
-                        )}
-                        {status === "rejected" && (
-                          <>
-                            <path d={svgDetail.p39ee6532} stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                            <path d="M10 6L6 10" stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                            <path d="M6 6L10 10" stroke={isSelected ? sbc.color : "#666"} strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                          </>
-                        )}
-                      </svg>
-                      <p className={`${font} text-[13px] ${isSelected ? sbc.text : "text-[#666]"}`} style={{ fontWeight: 500 }}>{statusLabels[status]}</p>
-                      {/* Active indicator dot */}
-                      {isSelected && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 size-2 rounded-full" style={{ backgroundColor: sbc.color }} />
+                    <Fragment key={opt.id}>
+                      <button
+                        onClick={() => setDecision(opt.id)}
+                        className={`relative rounded-full flex items-center gap-3 pl-1.5 pr-4 py-1.5 cursor-pointer transition-all ${
+                          isSelected ? "" : "bg-white hover:bg-gray-50"
+                        }`}
+                        style={{
+                          border: `1px solid ${isSelected ? opt.color : "#e8e8e8"}`,
+                          backgroundColor: isSelected ? `${opt.color}12` : undefined,
+                        }}
+                      >
+                        <span
+                          className="size-8 rounded-full flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: isSelected ? opt.color : `${opt.color}20` }}
+                        >
+                          <OptIcon className="size-4" style={{ color: isSelected ? "#fff" : opt.color }} strokeWidth={2.4} />
+                        </span>
+                        <p className={`${font} text-[13px] flex-1 text-left`}
+                          style={{ color: isSelected ? opt.color : "#171717", fontWeight: isSelected ? 600 : 500 }}>
+                          {opt.label}
+                        </p>
+                        {/* radio indicator */}
+                        <span
+                          className="size-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-colors"
+                          style={{ borderColor: isSelected ? opt.color : "#d4d4d8" }}
+                        >
+                          {isSelected && (
+                            <span className="size-2 rounded-full" style={{ backgroundColor: opt.color }} />
+                          )}
+                        </span>
+                      </button>
+                      {/* คืนเงินบางส่วน — input ระบุจำนวนเงิน (ธีมหลัก: NumberField + InlineStepper) */}
+                      {opt.id === "refund_partial" && isSelected && (
+                        <div className="pl-2 pr-0 -mt-1 flex flex-col gap-1.5">
+                          <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-5 pr-2 rounded-full w-full focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+                            <span className={`${font} text-[14px] text-[#666] shrink-0`}>฿</span>
+                            <NumberField
+                              value={partialAmount}
+                              onCommit={setPartialAmount}
+                              min={0}
+                              max={complaint.amount}
+                              className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums pl-2 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                            />
+                            <InlineStepper value={partialAmount} onChange={setPartialAmount} min={0} max={complaint.amount} step={10} />
+                          </div>
+                          <span className={`${font} text-[11px] text-gray-400 pl-3`}>ไม่เกิน ฿{complaint.amount.toLocaleString()}</span>
+                        </div>
                       )}
-                    </button>
+                    </Fragment>
                   );
                 })}
               </div>
 
               {/* Save button */}
-              <button className="bg-[#319754] h-[45px] rounded-full w-full flex items-center justify-center cursor-pointer hover:bg-[#2a8248] transition-colors">
-                <span className={`${font} text-[14px] text-white`} style={{ fontWeight: 500 }}>บันทึกสถานะ</span>
+              <button
+                disabled={!decision || (decision === "refund_partial" && partialAmount <= 0)}
+                onClick={() => {
+                  if (!decision) return;
+                  toast.success(`บันทึกการตัดสิน: ${statusLabels[decision]}`);
+                }}
+                className={`h-[45px] rounded-full w-full flex items-center justify-center transition-colors ${
+                  !decision || (decision === "refund_partial" && partialAmount <= 0)
+                    ? "bg-gray-200 cursor-not-allowed"
+                    : "bg-[#319754] hover:bg-[#287745] cursor-pointer"
+                }`}
+              >
+                <span className={`${font} text-[14px] ${!decision || (decision === "refund_partial" && partialAmount <= 0) ? "text-gray-400" : "text-white"}`} style={{ fontWeight: 500 }}>
+                  บันทึกสถานะ
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Card: หมายเหตุถึงลูกค้า */}
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+            <div className="flex flex-col gap-3 p-5">
+              <div className="flex items-center gap-2 pb-3 border-b border-[#e8e8e8]">
+                <MessageCircle className="size-4 text-[#319754]" strokeWidth={2.2} />
+                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>หมายเหตุถึงลูกค้า</p>
+              </div>
+              <textarea
+                value={customerNote}
+                onChange={(e) => setCustomerNote(e.target.value)}
+                placeholder="เขียนข้อความถึงลูกค้า..."
+                rows={4}
+                className={`${font} text-[13px] bg-[#fafafa] rounded-[10px] border border-[#e8e8e8] px-3 py-3 resize-none outline-none focus:border-[#319754] transition-colors`}
+              />
+              <button
+                disabled={!customerNote.trim()}
+                onClick={() => {
+                  toast.success("ส่งข้อความถึงลูกค้าแล้ว");
+                  setCustomerNote("");
+                }}
+                className={`h-[41.5px] rounded-full w-full flex items-center justify-center gap-2 transition-colors ${
+                  customerNote.trim()
+                    ? "bg-[#319754] hover:bg-[#287745] cursor-pointer"
+                    : "bg-gray-200 cursor-not-allowed"
+                }`}
+              >
+                <Send className={`size-4 ${customerNote.trim() ? "text-white" : "text-gray-400"}`} strokeWidth={2.2} />
+                <span className={`${font} text-[13px] ${customerNote.trim() ? "text-white" : "text-gray-400"}`} style={{ fontWeight: 500 }}>
+                  ส่งข้อความ
+                </span>
               </button>
             </div>
           </div>
 
           {/* Action buttons */}
           <div className="flex flex-col gap-2">
-            {/* ส่งอีเมลหาลูกค้า */}
-            <button className="bg-[#f0fdf4] h-[41.5px] rounded-full w-full flex items-center justify-center gap-2 border border-[#bbf7d0] cursor-pointer hover:bg-[#dcfce7] transition-colors">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d={svgDetail.p17070980} stroke="#319754" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-                <path d={svgDetail.p120c8200} stroke="#319754" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-              </svg>
-              <span className={`${font} text-[13px] text-[#319754]`}>ส่งอีเมลหาลูกค้า</span>
+            {/* ส่งอีเมลหาลูกค้า — สีน้ำเงิน (สื่อถึงข้อมูล/ติดต่อ) */}
+            <button className={`bg-[#0088ff] h-[41.5px] rounded-full w-full flex items-center justify-center gap-2 cursor-pointer hover:bg-[#0077e6] transition-colors shadow-[0_2px_6px_rgba(0,136,255,0.25)]`}>
+              <Mail className="size-4 text-white" strokeWidth={2.2} />
+              <span className={`${font} text-[13px] text-white`} style={{ fontWeight: 500 }}>ส่งอีเมลหาลูกค้า</span>
             </button>
-            {/* โทรหาลูกค้า */}
-            <button className="bg-[#f5f5f5] h-[41.5px] rounded-full w-full flex items-center justify-center gap-2 border border-[#e8e8e8] cursor-pointer hover:bg-[#ebebeb] transition-colors">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d={svgDetail.p2a44c680} stroke="#555" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.33333" />
-              </svg>
-              <span className={`${font} text-[13px] text-[#555]`}>โทรหาลูกค้า</span>
+            {/* โทรหาลูกค้า — สีเขียวแบรนด์ (สื่อถึงการโทร) */}
+            <button className={`bg-[#319754] h-[41.5px] rounded-full w-full flex items-center justify-center gap-2 cursor-pointer hover:bg-[#287745] transition-colors shadow-[0_2px_6px_rgba(49,151,84,0.25)]`}>
+              <Phone className="size-4 text-white" strokeWidth={2.2} />
+              <span className={`${font} text-[13px] text-white`} style={{ fontWeight: 500 }}>โทรหาลูกค้า</span>
             </button>
           </div>
         </div>
@@ -9486,6 +10577,1453 @@ function ReportMarketTab() {
   );
 }
 
+/* ========== COUPONS ========== */
+type CouponStatus = "active" | "expired" | "disabled";
+type CouponDiscountType = "percent" | "baht" | "freeship";
+type Coupon = {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  discountType: CouponDiscountType;
+  discountValue: number;        // % หรือ ฿ (ไม่ใช้กับ freeship)
+  maxDiscount?: number;         // ฿ — สูงสุด (เฉพาะ %)
+  minOrder?: number;            // ฿
+  usageLimit?: number;          // 0 = ไม่จำกัด
+  perUserLimit?: number;        // ต่อคน
+  startsAt: string;             // ISO
+  endsAt: string;               // ISO
+  membersOnly?: boolean;
+  firstOrderOnly?: boolean;
+  used: number;
+  status: CouponStatus;         // override (default คำนวณจากวันที่)
+};
+
+const _couponNow = Date.now();
+const _couponDay = (offset: number, h = 0, m = 0): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+};
+
+const mockCoupons: Coupon[] = [
+  // ── ใช้งานอยู่ (active) ──
+  {
+    id: "a1", code: "WELCOME10", name: "ลด 10% สำหรับสมาชิกใหม่",
+    description: "ใช้กับคำสั่งซื้อแรกเท่านั้น", discountType: "percent", discountValue: 10,
+    maxDiscount: 100, minOrder: 300, usageLimit: 500, perUserLimit: 1,
+    startsAt: _couponDay(-3, 0, 0), endsAt: _couponDay(27, 23, 59),
+    membersOnly: true, firstOrderOnly: true,
+    used: 87, status: "active",
+  },
+  {
+    id: "a2", code: "SUMMER50", name: "ลด 50 บาท ทันที",
+    description: "ลดราคาสินค้าเมื่อช้อปครบ 500 บาท", discountType: "baht", discountValue: 50,
+    minOrder: 500, usageLimit: 200, perUserLimit: 2,
+    startsAt: _couponDay(-7, 0, 0), endsAt: _couponDay(14, 23, 59),
+    used: 42, status: "active",
+  },
+  {
+    id: "a3", code: "FREESHIP100", name: "ส่งฟรี ขั้นต่ำ 100 บาท",
+    discountType: "freeship", discountValue: 0,
+    minOrder: 100, usageLimit: 0, perUserLimit: 3,
+    startsAt: _couponDay(-1, 0, 0), endsAt: _couponDay(60, 23, 59),
+    used: 156, status: "active",
+  },
+  {
+    id: "a4", code: "HERB15", name: "ลด 15% สมุนไพรทุกชนิด",
+    discountType: "percent", discountValue: 15,
+    maxDiscount: 200, minOrder: 0, usageLimit: 1000, perUserLimit: 5,
+    startsAt: _couponDay(-2, 9, 0), endsAt: _couponDay(7, 23, 59),
+    used: 234, status: "active",
+  },
+  // ── หมดอายุ (expired) ──
+  {
+    id: "e1", code: "FR001", name: "ส่งฟรีไม่มีขั้นต่ำ",
+    discountType: "freeship", discountValue: 0,
+    minOrder: 0, usageLimit: 0, perUserLimit: 1,
+    startsAt: _couponDay(-50, 11, 41), endsAt: _couponDay(-30, 23, 59),
+    used: 3, status: "expired",
+  },
+  {
+    id: "e2", code: "SP100", name: "ลด 100 บาท",
+    discountType: "baht", discountValue: 100,
+    minOrder: 500, usageLimit: 100, perUserLimit: 1,
+    startsAt: _couponDay(-50, 11, 13), endsAt: _couponDay(-30, 23, 59),
+    used: 1, status: "expired",
+  },
+  // ── ปิดใช้งาน (disabled) ──
+  {
+    id: "d1", code: "TRYME20", name: "ลด 20% ทดลองรหัส",
+    description: "คูปองทดลอง — ปิดใช้งานชั่วคราว", discountType: "percent", discountValue: 20,
+    maxDiscount: 150, minOrder: 200, usageLimit: 50, perUserLimit: 1,
+    startsAt: _couponDay(-5, 0, 0), endsAt: _couponDay(20, 23, 59),
+    used: 12, status: "disabled",
+  },
+];
+
+function fmtCouponThaiDateTime(iso: string): string {
+  const d = new Date(iso);
+  const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function fmtCouponDiscount(c: Coupon): { label: string; color: string } {
+  if (c.discountType === "freeship") return { label: "ส่งฟรี", color: "#3b82f6" };          // ฟ้า
+  if (c.discountType === "percent")  return { label: `${c.discountValue}%`, color: "#319754" }; // เขียว
+  return { label: `฿${c.discountValue}`, color: "#319754" };                                    // เขียว
+}
+
+function CreateCouponModal({ open, onClose, onCreate }: {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (c: Coupon) => void;
+}) {
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [discountType, setDiscountType] = useState<CouponDiscountType>("percent");
+  const [discountValue, setDiscountValue] = useState(0);
+  const [maxDiscount, setMaxDiscount] = useState(0);   // 0 = ไม่จำกัด
+  const [minOrder, setMinOrder] = useState(0);         // 0 = ไม่กำหนด
+  const [usageLimit, setUsageLimit] = useState(0);     // 0 = ไม่จำกัด
+  const [perUserLimit, setPerUserLimit] = useState(1);
+  const [startsAt, setStartsAt] = useState(() => isoToDatetimeLocal(new Date().toISOString()));
+  const [endsAt, setEndsAt] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(23, 59, 0, 0);
+    return isoToDatetimeLocal(d.toISOString());
+  });
+  const [membersOnly, setMembersOnly] = useState(false);
+  const [firstOrderOnly, setFirstOrderOnly] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setCode(""); setName(""); setDescription("");
+      setDiscountType("percent"); setDiscountValue(0);
+      setMaxDiscount(0); setMinOrder(0); setUsageLimit(0); setPerUserLimit(1);
+      setMembersOnly(false); setFirstOrderOnly(false);
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const canSubmit = code.trim() && name.trim() && (discountType === "freeship" || discountValue > 0);
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    onCreate({
+      id: `coupon-${Date.now()}`,
+      code: code.trim().toUpperCase(),
+      name: name.trim(),
+      description: description.trim() || undefined,
+      discountType,
+      discountValue: discountType === "freeship" ? 0 : discountValue,
+      maxDiscount: maxDiscount > 0 ? maxDiscount : undefined,
+      minOrder: minOrder > 0 ? minOrder : undefined,
+      usageLimit,
+      perUserLimit,
+      startsAt: new Date(startsAt).toISOString(),
+      endsAt: new Date(endsAt).toISOString(),
+      membersOnly,
+      firstOrderOnly,
+      used: 0,
+      status: "active",
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-[720px] h-[760px] max-h-[92vh] flex flex-col shadow-xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
+          <p className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>สร้างคูปองใหม่</p>
+          <button onClick={onClose} className="size-7 rounded-full bg-[rgba(120,120,128,0.12)] hover:bg-[rgba(120,120,128,0.2)] flex items-center justify-center cursor-pointer transition-colors">
+            <X className="size-3.5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#fafbfc]">
+          {/* ── Section 1: ข้อมูลคูปอง ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Ticket className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ข้อมูลคูปอง</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>รหัส ชื่อ และคำอธิบายของคูปอง</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>รหัสคูปอง <span className="text-[#ff3b30]">*</span></label>
+                <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="เช่น MYSHOP10"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3] uppercase`} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ชื่อคูปอง <span className="text-[#ff3b30]">*</span></label>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="เช่น ลด 10% เฉพาะร้านเรา"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>คำอธิบาย</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="รายละเอียดคูปอง (ไม่บังคับ)" rows={2}
+                className={`${font} bg-[#fafafa] rounded-2xl px-5 py-3 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3] resize-none`} />
+            </div>
+          </section>
+
+          {/* ── Section 2: ส่วนลด ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#ff3b30]/10 flex items-center justify-center shrink-0">
+                <Megaphone className="size-4 text-[#ff3b30]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ส่วนลด</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>เลือกประเภทและมูลค่าส่วนลด</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ประเภทส่วนลด <span className="text-[#ff3b30]">*</span></label>
+                <div className="relative">
+                  <select value={discountType} onChange={(e) => setDiscountType(e.target.value as CouponDiscountType)}
+                    className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-5 pr-10 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
+                    <option value="percent">เปอร์เซ็นต์ (%)</option>
+                    <option value="baht">บาท (฿)</option>
+                    <option value="freeship">ส่งฟรี</option>
+                  </select>
+                  <ChevronDown className="size-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
+                </div>
+              </div>
+              {/* มูลค่าส่วนลด — disabled เมื่อเลือกส่งฟรี */}
+              <div className={`flex flex-col gap-1.5 transition-opacity ${discountType === "freeship" ? "opacity-40 pointer-events-none" : ""}`}>
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>มูลค่าส่วนลด {discountType !== "freeship" && <span className="text-[#ff3b30]">*</span>}</label>
+                <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-5 pr-2 rounded-full w-full focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+                  <NumberField value={discountValue} onCommit={setDiscountValue} min={0} max={discountType === "percent" ? 100 : undefined}
+                    className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                  <InlineStepper value={discountValue} onChange={setDiscountValue} min={0} max={discountType === "percent" ? 100 : Number.MAX_SAFE_INTEGER} step={discountType === "percent" ? 1 : 10} />
+                </div>
+              </div>
+              {/* ส่วนลดสูงสุด — disabled เมื่อเลือกส่งฟรี */}
+              <div className={`flex flex-col gap-1.5 transition-opacity ${discountType === "freeship" ? "opacity-40 pointer-events-none" : ""}`}>
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ส่วนลดสูงสุด (฿)</label>
+                <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-5 pr-2 rounded-full w-full focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+                  <NumberField value={maxDiscount} onCommit={setMaxDiscount} min={0}
+                    className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums placeholder:text-[#a3a3a3] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                  <InlineStepper value={maxDiscount} onChange={setMaxDiscount} min={0} step={10} />
+                </div>
+                <span className={`${font} text-[11px] text-gray-400`}>0 = ไม่จำกัด</span>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Section 3: เงื่อนไขการใช้ ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+                <Settings className="size-4 text-[#3b82f6]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>เงื่อนไขการใช้</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>กำหนดยอดขั้นต่ำและจำนวนครั้งที่ใช้ได้</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ยอดสั่งซื้อขั้นต่ำ (฿)</label>
+                <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-5 pr-2 rounded-full w-full focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+                  <NumberField value={minOrder} onCommit={setMinOrder} min={0}
+                    className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                  <InlineStepper value={minOrder} onChange={setMinOrder} min={0} step={50} />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>จำกัดการใช้</label>
+                  <span className={`${font} text-[11px] text-gray-400`}>0 = ไม่จำกัด</span>
+                </div>
+                <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-5 pr-2 rounded-full w-full focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+                  <NumberField value={usageLimit} onCommit={setUsageLimit} min={0}
+                    className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                  <InlineStepper value={usageLimit} onChange={setUsageLimit} min={0} step={10} />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>จำกัดต่อผู้ใช้</label>
+                <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-5 pr-2 rounded-full w-full focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+                  <NumberField value={perUserLimit} onCommit={setPerUserLimit} min={1}
+                    className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                  <InlineStepper value={perUserLimit} onChange={setPerUserLimit} min={1} step={1} />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Section 4: ระยะเวลา ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#f59e0b]/10 flex items-center justify-center shrink-0">
+                <CalendarIcon className="size-4 text-[#f59e0b]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ระยะเวลา</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>ช่วงเวลาที่ลูกค้าใช้คูปองได้</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>วันเริ่มต้น <span className="text-[#ff3b30]">*</span></label>
+                <DateTimePicker value={startsAt} onChange={setStartsAt} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>วันสิ้นสุด <span className="text-[#ff3b30]">*</span></label>
+                <DateTimePicker value={endsAt} onChange={setEndsAt} />
+              </div>
+            </div>
+          </section>
+
+          {/* ── Section 5: เงื่อนไขพิเศษ ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center shrink-0">
+                <Star className="size-4 text-[#8b5cf6]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>เงื่อนไขพิเศษ</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>จำกัดเฉพาะกลุ่มผู้ใช้</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "สำหรับสมาชิกเท่านั้น", checked: membersOnly, set: setMembersOnly },
+                { label: "สำหรับคำสั่งซื้อแรกเท่านั้น", checked: firstOrderOnly, set: setFirstOrderOnly },
+              ].map((opt) => (
+                <label key={opt.label} className={`${font} flex items-center gap-3 px-4 h-12 rounded-full border-2 cursor-pointer transition-colors text-[13px] ${
+                  opt.checked ? "border-[#319754] bg-[#319754]/5" : "border-gray-200 hover:border-[#319754]/40"
+                }`}>
+                  <span onClick={() => opt.set(!opt.checked)} className={`size-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${opt.checked ? "bg-[#319754] border-[#319754]" : "border-gray-300"}`}>
+                    {opt.checked && <Check className="size-3 text-white" strokeWidth={3} />}
+                  </span>
+                  <span style={{ fontWeight: 500 }}>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <div className="border-t border-gray-100 p-4 shrink-0 flex items-center gap-3 justify-end">
+          <button onClick={onClose}
+            className={`${font} h-[44px] px-5 rounded-full text-[13px] text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            ยกเลิก
+          </button>
+          <button onClick={handleSubmit} disabled={!canSubmit}
+            className={`${font} h-[44px] px-6 rounded-full text-white text-[13px] transition-colors ${canSubmit ? "bg-[#008c45] hover:bg-[#007a3b] cursor-pointer" : "bg-gray-300 cursor-not-allowed"}`}
+            style={{ fontWeight: 600 }}>
+            สร้างคูปอง
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CouponsTab() {
+  const [coupons, setCoupons] = useState<Coupon[]>(mockCoupons);
+  const [filter, setFilter] = useState<"all" | CouponStatus>("all");
+  const [search, setSearch] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [couponPage, setCouponPage] = useState(1);
+  const [couponPerPage, setCouponPerPage] = useState(10);
+
+  const now = Date.now();
+  const computedStatus = (c: Coupon): CouponStatus => {
+    if (c.status === "disabled") return "disabled";
+    if (new Date(c.endsAt).getTime() < now) return "expired";
+    return "active";
+  };
+
+  const cnAll = coupons.length;
+  const cnActive = coupons.filter((c) => computedStatus(c) === "active").length;
+  const cnExpired = coupons.filter((c) => computedStatus(c) === "expired").length;
+  const cnDisabled = coupons.filter((c) => computedStatus(c) === "disabled").length;
+
+  const tabs: { id: "all" | CouponStatus; label: string; count: number; Icon: any }[] = [
+    { id: "all",      label: "คูปองทั้งหมด", count: cnAll,      Icon: Ticket         },
+    { id: "active",   label: "ใช้งานอยู่",    count: cnActive,   Icon: Check          },
+    { id: "expired",  label: "หมดอายุ",       count: cnExpired,  Icon: Clock          },
+    { id: "disabled", label: "ปิดใช้งาน",     count: cnDisabled, Icon: Ban            },
+  ];
+
+  const filtered = coupons.filter((c) => {
+    if (filter !== "all" && computedStatus(c) !== filter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      return c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+    }
+    return true;
+  });
+  const totalCouponPages = Math.max(1, Math.ceil(filtered.length / couponPerPage));
+  const safeCouponPage = Math.min(couponPage, totalCouponPages);
+  const pagedFiltered = filtered.slice((safeCouponPage - 1) * couponPerPage, safeCouponPage * couponPerPage);
+
+  return (
+    <div>
+      {/* Header — title + add button (เหมือน ProductsTab) */}
+      <div className="flex items-center justify-between mb-6">
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>คูปองร้านค้า</h2>
+        <motion.button onClick={() => setShowCreate(true)}
+          whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
+          <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
+            <Plus className="size-[14px]" strokeWidth={2.6} />
+          </span>
+          <span style={{ fontWeight: 600 }}>สร้างคูปอง</span>
+        </motion.button>
+      </div>
+
+      {/* Filter tabs + search (in one pill) — เหมือน ProductsTab */}
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
+          {tabs.map((tab) => {
+            const isAct = filter === tab.id;
+            return (
+              <motion.button key={tab.id}
+                onClick={() => { setFilter(tab.id); setCouponPage(1); }}
+                whileTap={{ scale: 0.94 }}
+                whileHover={!isAct ? { scale: 1.04 } : undefined}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
+                {isAct && (
+                  <motion.span layoutId="couponTabActivePill"
+                    className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }} />
+                )}
+                <motion.span layout
+                  className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
+                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
+                  transition={{ duration: 0.2 }}>
+                  <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
+                </motion.span>
+                <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
+                  style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
+                  {tab.label}
+                </span>
+                <motion.span layout
+                  className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
+                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
+                  <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
+                    {tab.count}
+                  </motion.span>
+                </motion.span>
+              </motion.button>
+            );
+          })}
+        </div>
+        {/* Search (inside same pill, aligned right) */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setCouponPage(1); }}
+            placeholder="ค้นหาคูปอง...."
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+          <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Body — table */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+        {/* Table */}
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "40%" }} />{/* คูปอง (ticket: icon + ชื่อ + เงื่อนไข + วันหมดอายุ) */}
+            <col style={{ width: "12%" }} />{/* รหัส */}
+            <col style={{ width: "10%" }} />{/* ส่วนลด */}
+            <col style={{ width: "12%" }} />{/* ใช้แล้ว/จำกัด */}
+            <col style={{ width: "16%" }} />{/* สถานะ */}
+            <col style={{ width: "10%" }} />{/* จัดการ */}
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>คูปอง</th>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>รหัส</th>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ส่วนลด</th>
+              <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ใช้แล้ว/จำกัด</th>
+              <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>สถานะ</th>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr><td colSpan={6} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>ไม่พบคูปอง</td></tr>
+            )}
+            {pagedFiltered.map((c) => {
+              const status = computedStatus(c);
+              const stCfg =
+                status === "active"   ? { label: "ใช้งานอยู่", color: "#319754", Icon: Check } :
+                status === "expired"  ? { label: "หมดอายุ",    color: "#dc2626", Icon: Clock } :
+                                        { label: "ปิดใช้งาน",   color: "#737373", Icon: Ban };
+              const dis = fmtCouponDiscount(c);
+              const usedLabel = c.usageLimit && c.usageLimit > 0 ? `${c.used}/${c.usageLimit}` : `${c.used}/∞`;
+              return (
+                <tr key={c.id} className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                  {/* คูปอง — ticket: icon + ชื่อ + เงื่อนไข + วันหมดอายุ */}
+                  <td className="py-3 pr-4">
+                    {(() => {
+                      const isFreeship = c.discountType === "freeship";
+                      const color = isFreeship ? "#3b82f6" : "#319754";
+                      const Icon = isFreeship ? Truck : Percent;
+                      const subLabel = isFreeship ? "โค้ดส่งฟรี" : "โค้ดส่วนลด";
+                      // เงื่อนไข — รวม min order + flag พิเศษ
+                      const conditions: string[] = [];
+                      if (c.minOrder && c.minOrder > 0) conditions.push(`ขั้นต่ำ ฿${c.minOrder.toLocaleString()}`);
+                      else conditions.push("ไม่มีขั้นต่ำ");
+                      if (c.membersOnly) conditions.push("สมาชิก");
+                      if (c.firstOrderOnly) conditions.push("ออเดอร์แรก");
+                      const condText = conditions.join(" · ");
+                      const expiryStr = fmtCouponThaiDateTime(c.endsAt);
+                      const NOTCH_X = 80;
+                      const NOTCH_R = 7;
+                      const maskCss = `radial-gradient(circle ${NOTCH_R}px at ${NOTCH_X}px 0%, transparent ${NOTCH_R}px, #000 ${NOTCH_R + 0.5}px), radial-gradient(circle ${NOTCH_R}px at ${NOTCH_X}px 100%, transparent ${NOTCH_R}px, #000 ${NOTCH_R + 0.5}px)`;
+                      return (
+                        // Wrapper — hover แค่ยกขึ้น + เงาเข้ม (ไม่มี scale/rotate เพื่อป้องกันตัวอักษรเบลอ)
+                        <div
+                          className="ticket-wrap w-full max-w-[340px] transition-[filter,transform] duration-300 ease-out group-hover/row:-translate-y-1 group-hover/row:[--ticket-shadow:drop-shadow(0_6px_14px_rgba(0,0,0,0.16))_drop-shadow(0_2px_6px_rgba(0,0,0,0.08))]"
+                          style={{
+                            filter: "var(--ticket-shadow, drop-shadow(0 2px 4px rgba(0,0,0,0.10)) drop-shadow(0 1px 2px rgba(0,0,0,0.06)))",
+                            willChange: "transform, filter",
+                            backfaceVisibility: "hidden",
+                            transform: "translateZ(0)",
+                          } as React.CSSProperties}
+                        >
+                          <div
+                            className="relative flex items-stretch rounded-xl min-h-[88px]"
+                            style={{
+                              WebkitMaskImage: maskCss,
+                              maskImage: maskCss,
+                              WebkitMaskComposite: "source-in",
+                              maskComposite: "intersect",
+                            }}
+                          >
+                            {/* Left stub */}
+                            <div className="flex flex-col items-center justify-center gap-1.5 py-4 px-3 shrink-0 w-[80px]" style={{ backgroundColor: color }}>
+                              <Icon className="size-6 text-white" strokeWidth={2.4} />
+                              <span className={`${font} text-white text-[10px] whitespace-nowrap`} style={{ fontWeight: 500 }}>{subLabel}</span>
+                            </div>
+                            {/* Right body */}
+                            <div className="flex-1 min-w-0 flex flex-col justify-center gap-2 pl-5 pr-4 py-3 bg-white relative">
+                              <span className="absolute left-0 top-[10px] bottom-[10px] w-0 border-l-2 border-dashed" style={{ borderColor: `${color}40` }} />
+                              <p className={`${font} text-[14px] text-[#1a1a1a] truncate leading-tight`} style={{ fontWeight: 600 }} title={c.name}>{c.name}</p>
+                              <p className={`${font} text-[11px] text-gray-500 truncate leading-tight`} title={condText}>{condText}</p>
+                              <p className={`${font} text-[11px] text-gray-500 truncate leading-tight inline-flex items-center gap-1`} title={expiryStr}>
+                                <CalendarIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
+                                <span>หมดอายุ {expiryStr}</span>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </td>
+                  {/* รหัส */}
+                  <td className="py-3 pr-4">
+                    <span className={`${font} text-[13px] tabular-nums text-[#1a1a1a]`} style={{ fontWeight: 600 }}>{c.code}</span>
+                  </td>
+                  {/* ส่วนลด */}
+                  <td className="py-3 pr-4">
+                    <span className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 600, color: dis.color }}>{dis.label}</span>
+                  </td>
+                  <td className={`py-3 pr-4 text-right ${font} text-[14px] tabular-nums`} style={{ fontWeight: 500 }}>{usedLabel}</td>
+                  <td className="py-3 pr-4 text-center align-middle">
+                    <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3.5 py-0.5 rounded-full text-[14px]`}
+                      style={{ backgroundColor: `${stCfg.color}1a`, color: stCfg.color }}>
+                      <stCfg.Icon className="size-3" strokeWidth={2.4} />
+                      {stCfg.label}
+                    </span>
+                  </td>
+                  <td className="py-3 text-center align-middle">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6}
+                        className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)]">
+                        <motion.div
+                          initial={{ scale: 0.4, opacity: 0, y: -6 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.4, opacity: 0, y: -6 }}
+                          transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                          style={{ transformOrigin: "top right" }} className="overflow-hidden">
+                          <button onClick={() => toast.info(`แก้ไข: ${c.code}`)}
+                            className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                            <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                            <span style={{ fontWeight: 500 }}>แก้ไข</span>
+                          </button>
+                          <button onClick={() => {
+                            setCoupons((prev) => prev.map((x) => x.id === c.id ? { ...x, status: x.status === "disabled" ? "active" : "disabled" } : x));
+                            toast.success(c.status === "disabled" ? `เปิดใช้งาน: ${c.code}` : `ปิดใช้งาน: ${c.code}`);
+                          }}
+                            className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                            <Ban className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                            <span style={{ fontWeight: 500 }}>{c.status === "disabled" ? "เปิดใช้งาน" : "ปิดใช้งาน"}</span>
+                          </button>
+                          <div className="h-px bg-gray-100 my-1" />
+                          <button onClick={() => {
+                            if (confirm(`ลบคูปอง "${c.code}"?`)) {
+                              setCoupons((prev) => prev.filter((x) => x.id !== c.id));
+                              toast.success(`ลบ: ${c.code}`);
+                            }
+                          }}
+                            className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
+                            <Trash2 className="size-3.5" strokeWidth={2.2} />
+                            <span style={{ fontWeight: 500 }}>ลบ</span>
+                          </button>
+                        </motion.div>
+                      </PopoverContent>
+                    </Popover>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* Pagination — เหมือนตารางหน้าอื่น */}
+        {filtered.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select
+                  className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}
+                  value={couponPerPage}
+                  onChange={(e) => { setCouponPerPage(Number(e.target.value)); setCouponPage(1); }}
+                >
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={safeCouponPage === 1} onClick={() => setCouponPage(safeCouponPage - 1)}
+                aria-label="หน้าก่อน"
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safeCouponPage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: totalCouponPages }, (_, i) => i + 1).map((p) => (
+                <button key={p} onClick={() => setCouponPage(p)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safeCouponPage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: safeCouponPage === p ? 600 : 400 }}>
+                  {p}
+                </button>
+              ))}
+              <button disabled={safeCouponPage === totalCouponPages} onClick={() => setCouponPage(safeCouponPage + 1)}
+                aria-label="หน้าถัดไป"
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safeCouponPage === totalCouponPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <CreateCouponModal
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreate={(c) => { setCoupons((prev) => [c, ...prev]); setShowCreate(false); toast.success(`สร้างคูปอง ${c.code} แล้ว`); }}
+      />
+    </div>
+  );
+}
+
+/* ========== PROMOTIONS ========== */
+type PromoStatus = "active" | "scheduled" | "ended";
+type PromoDiscountType = "percent" | "baht";
+type PromoScope = "products" | "all";
+
+type PromoProductLimit = { productId: string; limit: number | "unlimited" };
+
+type Promotion = {
+  id: string;
+  name: string;
+  description?: string;
+  discountType: PromoDiscountType;
+  discountValue: number;
+  maxDiscount?: number;
+  startsAt: string;
+  endsAt?: string;
+  noExpiry?: boolean;
+  enabled: boolean;
+  scope: PromoScope;
+  products: PromoProductLimit[];
+};
+
+const _promoDay = (offset: number, h = 0, m = 0): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+};
+
+const mockPromotions: Promotion[] = [
+  // ── กำลังดำเนินการ (active) ──
+  {
+    id: "p-a1", name: "ลดสุดคุ้ม สมุนไพรทุกชนิด 15%",
+    description: "ลดราคาสมุนไพรแคปซูลและผงสมุนไพรทุกตัว",
+    discountType: "percent", discountValue: 15, maxDiscount: 200,
+    startsAt: _promoDay(-3, 0, 0), endsAt: _promoDay(14, 23, 59),
+    enabled: true, scope: "products",
+    products: [
+      { productId: "2", limit: "unlimited" },
+      { productId: "3", limit: "unlimited" },
+      { productId: "5", limit: "unlimited" },
+      { productId: "9", limit: "unlimited" },
+    ],
+  },
+  {
+    id: "p-a2", name: "ดื่มดี สุขภาพดี ลด ฿30",
+    description: "ลดราคาชาสมุนไพรทุกซอง 30 บาท เมื่อช้อปครบ 200 บาท",
+    discountType: "baht", discountValue: 30,
+    startsAt: _promoDay(-5, 0, 0), endsAt: _promoDay(7, 23, 59),
+    enabled: true, scope: "products",
+    products: [
+      { productId: "6", limit: "unlimited" },
+      { productId: "8", limit: "unlimited" },
+      { productId: "15", limit: "unlimited" },
+    ],
+  },
+  {
+    id: "p-a3", name: "Mid Year Sale ลดทั้งร้าน 10%",
+    description: "ลดราคาสินค้าทุกชนิดในร้าน 10% รวมถึงทุกตัวเลือก",
+    discountType: "percent", discountValue: 10, maxDiscount: 150,
+    startsAt: _promoDay(-1, 0, 0), endsAt: _promoDay(30, 23, 59),
+    enabled: true, scope: "all",
+    products: [],
+  },
+  // ── กำหนดไว้ (scheduled) ──
+  {
+    id: "p-s1", name: "Flash Sale 6.6 ลด 25%",
+    description: "โปรโมชั่นมหกรรม 6.6 — ลดสูงสุด 250 บาท",
+    discountType: "percent", discountValue: 25, maxDiscount: 250,
+    startsAt: _promoDay(20, 0, 0), endsAt: _promoDay(20, 23, 59),
+    enabled: true, scope: "products",
+    products: [
+      { productId: "1", limit: "unlimited" },
+      { productId: "4", limit: "unlimited" },
+      { productId: "10", limit: "unlimited" },
+      { productId: "12", limit: "unlimited" },
+    ],
+  },
+  {
+    id: "p-s2", name: "Pre-Order วันแม่ ลด ฿50",
+    description: "เตรียมความพร้อมโปรวันแม่ ลด 50 บาท ทุกออเดอร์",
+    discountType: "baht", discountValue: 50,
+    startsAt: _promoDay(45, 0, 0), endsAt: _promoDay(60, 23, 59),
+    enabled: true, scope: "all",
+    products: [],
+  },
+  // ── สิ้นสุดแล้ว (ended) ──
+  {
+    id: "p-e1", name: "ต้อนรับเปิดร้าน ลด 20%",
+    description: "โปรโมชั่นฉลองเปิดเว็บไซต์ใหม่ ลด 20%",
+    discountType: "percent", discountValue: 20,
+    startsAt: _promoDay(-50, 17, 53), endsAt: _promoDay(-30, 17, 53),
+    enabled: true, scope: "products",
+    products: [
+      { productId: "1", limit: "unlimited" },
+      { productId: "2", limit: "unlimited" },
+      { productId: "3", limit: "unlimited" },
+    ],
+  },
+  {
+    id: "p-e2", name: "โปรสายบุญ วันมาฆะบูชา",
+    description: "โปรสายบุญ ชุดทำบุญถวายพระในวันมาฆะบูชา",
+    discountType: "percent", discountValue: 20,
+    startsAt: _promoDay(-60, 2, 0), endsAt: _promoDay(-60, 16, 59),
+    enabled: true, scope: "products",
+    products: [
+      { productId: "4", limit: "unlimited" },
+      { productId: "5", limit: "unlimited" },
+      { productId: "6", limit: "unlimited" },
+      { productId: "7", limit: "unlimited" },
+      { productId: "8", limit: "unlimited" },
+    ],
+  },
+];
+
+function fmtPromoThaiDateTime(iso: string): string {
+  const d = new Date(iso);
+  const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function CreatePromotionModal({ open, onClose, onCreate }: {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (p: Promotion) => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [discountType, setDiscountType] = useState<PromoDiscountType>("percent");
+  const [discountValue, setDiscountValue] = useState(20);
+  const [maxDiscount, setMaxDiscount] = useState(0);
+  const [startsAt, setStartsAt] = useState(() => isoToDatetimeLocal(new Date().toISOString()));
+  const [endsAt, setEndsAt] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(23, 59, 0, 0);
+    return isoToDatetimeLocal(d.toISOString());
+  });
+  const [noExpiry, setNoExpiry] = useState(false);
+  const [enabled, setEnabled] = useState(true);
+  const [scope, setScope] = useState<PromoScope>("products");
+  const [selectedProducts, setSelectedProducts] = useState<PromoProductLimit[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      setName(""); setDescription("");
+      setDiscountType("percent"); setDiscountValue(20); setMaxDiscount(0);
+      setNoExpiry(false); setEnabled(true);
+      setScope("products"); setSelectedProducts([]);
+      setShowPicker(false); setPickerSearch("");
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const canSubmit = name.trim() && discountValue > 0 && (scope === "all" || selectedProducts.length > 0);
+
+  const availableForPicker = mockProducts.filter((p) =>
+    p.status === "เปิดขาย" &&
+    !selectedProducts.find((s) => s.productId === p.id) &&
+    (pickerSearch.trim() ? p.name.toLowerCase().includes(pickerSearch.trim().toLowerCase()) : true)
+  );
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    onCreate({
+      id: `promo-${Date.now()}`,
+      name: name.trim(),
+      description: description.trim() || undefined,
+      discountType,
+      discountValue,
+      maxDiscount: maxDiscount > 0 ? maxDiscount : undefined,
+      startsAt: new Date(startsAt).toISOString(),
+      endsAt: noExpiry ? undefined : new Date(endsAt).toISOString(),
+      noExpiry,
+      enabled,
+      scope,
+      products: scope === "all" ? [] : selectedProducts,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-[760px] h-[820px] max-h-[92vh] flex flex-col shadow-xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
+          <p className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</p>
+          <button onClick={onClose} className="size-7 rounded-full bg-[rgba(120,120,128,0.12)] hover:bg-[rgba(120,120,128,0.2)] flex items-center justify-center cursor-pointer transition-colors">
+            <X className="size-3.5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#fafbfc]">
+          {/* ── Section 1: ข้อมูลโปรโมชั่น ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Megaphone className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ข้อมูลโปรโมชั่น</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>ชื่อและรายละเอียด</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ชื่อโปรโมชั่น <span className="text-[#ff3b30]">*</span></label>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="เช่น ลด 20% สินค้าสมุนไพร"
+                className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>รายละเอียด</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)" rows={2}
+                className={`${font} bg-[#fafafa] rounded-2xl px-5 py-3 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3] resize-none`} />
+            </div>
+          </section>
+
+          {/* ── Section 2: การลดราคา ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#ff3b30]/10 flex items-center justify-center shrink-0">
+                <Percent className="size-4 text-[#ff3b30]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>การลดราคา</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>ประเภทและมูลค่าส่วนลด</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ประเภทส่วนลด <span className="text-[#ff3b30]">*</span></label>
+                <div className="relative">
+                  <select value={discountType} onChange={(e) => setDiscountType(e.target.value as PromoDiscountType)}
+                    className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-5 pr-10 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
+                    <option value="percent">ลดเปอร์เซ็นต์ (%)</option>
+                    <option value="baht">ลดเป็นบาท (฿)</option>
+                  </select>
+                  <ChevronDown className="size-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>{discountType === "percent" ? "เปอร์เซ็นต์" : "มูลค่า (฿)"} <span className="text-[#ff3b30]">*</span></label>
+                <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-5 pr-2 rounded-full w-full focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+                  <NumberField value={discountValue} onCommit={setDiscountValue} min={0} max={discountType === "percent" ? 100 : undefined}
+                    className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                  <InlineStepper value={discountValue} onChange={setDiscountValue} min={0} max={discountType === "percent" ? 100 : Number.MAX_SAFE_INTEGER} step={discountType === "percent" ? 1 : 10} />
+                </div>
+              </div>
+              {/* ส่วนลดสูงสุด — disabled เมื่อเลือก "ลดเป็นบาท" (เพราะค่าที่กรอกคือสูงสุดอยู่แล้ว) */}
+              <div className={`flex flex-col gap-1.5 transition-opacity ${discountType === "baht" ? "opacity-40 pointer-events-none" : ""}`}>
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ส่วนลดสูงสุด (฿)</label>
+                <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-5 pr-2 rounded-full w-full focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+                  <NumberField value={maxDiscount} onCommit={setMaxDiscount} min={0}
+                    className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                  <InlineStepper value={maxDiscount} onChange={setMaxDiscount} min={0} step={10} />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Section 3: ระยะเวลา ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="size-9 rounded-xl bg-[#f59e0b]/10 flex items-center justify-center shrink-0">
+                  <CalendarIcon className="size-4 text-[#f59e0b]" strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ระยะเวลา</p>
+                  <p className={`${font} text-[11px] text-[#8e8e93]`}>ช่วงเวลาที่โปรโมชั่นใช้งานได้</p>
+                </div>
+              </div>
+              {/* Switch — ไม่มีวันหมดอายุ (อยู่ใน row title) */}
+              <label className={`${font} flex items-center gap-2 text-[13px] cursor-pointer shrink-0`}>
+                <span className="text-gray-700">ไม่มีวันหมดอายุ</span>
+                <ToggleSwitch checked={noExpiry} onChange={() => setNoExpiry(!noExpiry)} />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>เวลาเริ่ม <span className="text-[#ff3b30]">*</span></label>
+                <DateTimePicker value={startsAt} onChange={setStartsAt} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>เวลาสิ้นสุด {!noExpiry && <span className="text-[#ff3b30]">*</span>}</label>
+                {noExpiry ? (
+                  // ไม่มีวันหมดอายุ — แสดง infinity แทน datetime picker (layout คงที่)
+                  <div className={`${font} bg-[#fafafa] flex h-12 items-center justify-between pl-6 pr-4 py-3 rounded-full w-full opacity-60 cursor-not-allowed select-none`}>
+                    <span className="text-[14px] text-gray-500 tabular-nums inline-flex items-center gap-2">
+                      <span className="text-[20px] leading-none" style={{ fontWeight: 700 }}>∞</span>
+                      <span>ลดราคาตลอด</span>
+                    </span>
+                    <CalendarIcon className="size-4 text-gray-300" strokeWidth={2} />
+                  </div>
+                ) : (
+                  <DateTimePicker value={endsAt} onChange={setEndsAt} />
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Section 4: ขอบเขตโปรโมชั่น ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+                <Boxes className="size-4 text-[#3b82f6]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ขอบเขตโปรโมชั่น</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>เลือกสินค้าที่เข้าร่วม</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ใช้กับ</label>
+              <div className="relative">
+                <select value={scope} onChange={(e) => setScope(e.target.value as PromoScope)}
+                  className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-5 pr-10 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
+                  <option value="products">เฉพาะสินค้า</option>
+                  <option value="all">สินค้าทั้งหมดในร้าน</option>
+                </select>
+                <ChevronDown className="size-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
+              </div>
+              <p className={`${font} text-[11px] text-gray-400 mt-1`}>
+                {scope === "all" ? "ลดราคาสินค้าทั้งหมด (รวมทุกตัวเลือก)" : "ลดเฉพาะสินค้าที่เลือกด้านล่าง"}
+              </p>
+            </div>
+
+            {scope === "products" && (
+              <div className="flex flex-col gap-2.5 pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <p className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>
+                    สินค้าในโปรโมชั่น {selectedProducts.length > 0 && (
+                      <span className="ml-1 inline-flex items-center justify-center size-[20px] rounded-full bg-[#319754] text-white text-[11px]" style={{ fontWeight: 600 }}>{selectedProducts.length}</span>
+                    )}
+                  </p>
+                  <button type="button" onClick={() => setShowPicker(true)}
+                    className={`${font} inline-flex items-center gap-1 px-3 h-8 rounded-full text-[12px] bg-[#319754] text-white hover:bg-[#267a43] cursor-pointer transition-colors`}
+                    style={{ fontWeight: 500 }}>
+                    <Plus className="size-3.5" strokeWidth={2.4} /> เพิ่มสินค้า
+                  </button>
+                </div>
+
+                {selectedProducts.length === 0 ? (
+                  <button type="button" onClick={() => setShowPicker(true)}
+                    className="border-2 border-dashed border-gray-200 hover:border-[#319754]/40 rounded-2xl py-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors">
+                    <div className="size-9 rounded-full bg-gray-100 flex items-center justify-center">
+                      <Plus className="size-4 text-gray-400" strokeWidth={2.4} />
+                    </div>
+                    <span className={`${font} text-[13px] text-gray-500`}>เพิ่มเลือกสินค้าเข้าร่วม</span>
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {selectedProducts.map((sp) => {
+                      const p = mockProducts.find((x) => x.id === sp.productId);
+                      if (!p) return null;
+                      // คำนวณราคาที่ลดแล้ว (รองรับทั้งราคาเดียว + ช่วงราคา)
+                      const priceParts = p.price.replace(/[^\d.\-\s]/g, "").trim().split(/\s*-\s*/);
+                      const pmin = parseFloat(priceParts[0]) || 0;
+                      const pmax = priceParts[1] ? parseFloat(priceParts[1]) : null;
+                      const calc = (n: number): number => {
+                        let d = discountType === "percent" ? n * (1 - discountValue / 100) : Math.max(0, n - discountValue);
+                        if (discountType === "percent" && maxDiscount > 0) {
+                          const cut = n - d;
+                          if (cut > maxDiscount) d = n - maxDiscount;
+                        }
+                        return Math.max(0, d);
+                      };
+                      const hasDiscount = discountValue > 0;
+                      const flashPriceText = pmax === null
+                        ? `฿ ${calc(pmin).toFixed(2)}`
+                        : `฿ ${calc(pmin).toFixed(2)} - ${calc(pmax).toFixed(2)}`;
+                      const numericLimit = sp.limit === "unlimited" ? 0 : sp.limit;
+                      const setLimit = (n: number) => {
+                        const next: number | "unlimited" = n <= 0 ? "unlimited" : n;
+                        setSelectedProducts((prev) => prev.map((x) => x.productId === sp.productId ? { ...x, limit: next } : x));
+                      };
+                      return (
+                        <div key={sp.productId} className="group/sel flex items-center gap-3 bg-white border border-gray-200 rounded-xl p-3">
+                          <div className="relative size-[64px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] group-hover/sel:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow shrink-0">
+                            <ImageWithFallback src={p.image} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover/sel:scale-110" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{p.name}</p>
+                            <p className={`${font} text-[12px] tabular-nums mt-0.5 truncate`}>
+                              {hasDiscount ? (
+                                <>
+                                  <span className="text-[#ff3b30]" style={{ fontWeight: 600 }}>{flashPriceText}</span>
+                                  <span className="text-gray-400 line-through ml-2">{p.price}</span>
+                                </>
+                              ) : (
+                                <span className="text-[#319754]" style={{ fontWeight: 500 }}>{p.price}</span>
+                              )}
+                            </p>
+                            <p className={`${font} inline-flex items-center gap-1 text-[11px] text-gray-500 mt-0.5`}>
+                              <Boxes className="size-3" strokeWidth={2.2} />
+                              คงเหลือ {p.stock}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className={`${font} text-[13px] text-gray-700`} style={{ fontWeight: 500 }}>จำกัด</span>
+                            <div className="bg-[#fafafa] flex h-12 items-center justify-between pl-5 pr-2 rounded-full w-[180px] focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow">
+                              <NumberField
+                                value={numericLimit}
+                                onCommit={setLimit}
+                                min={0}
+                                className={`${font} bg-transparent flex-1 min-w-0 outline-none text-[14px] text-black tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                              />
+                              <InlineStepper value={numericLimit} onChange={setLimit} min={0} step={1} />
+                            </div>
+                            <button type="button" onClick={() => setSelectedProducts((prev) => prev.filter((x) => x.productId !== sp.productId))}
+                              className="size-7 rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 flex items-center justify-center cursor-pointer transition-colors"
+                              aria-label="ลบสินค้า">
+                              <X className="size-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          {/* ── Section 5: ตั้งค่า ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center shrink-0">
+                <Settings className="size-4 text-[#8b5cf6]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตั้งค่า</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>การตั้งค่าโปรโมชั่น</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 px-4 h-14 bg-[#fafafa] rounded-2xl">
+              <div className="flex flex-col min-w-0">
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เปิดใช้งานโปรโมชั่น</span>
+                <span className={`${font} text-[11px] text-gray-500`}>{enabled ? "โปรโมชั่นจะแสดงและใช้งานได้" : "โปรโมชั่นถูกซ่อน ไม่ใช้งาน"}</span>
+              </div>
+              <ToggleSwitch checked={enabled} onChange={() => setEnabled(!enabled)} />
+            </div>
+          </section>
+        </div>
+
+        <div className="border-t border-gray-100 p-4 shrink-0 flex items-center gap-3 justify-end">
+          <button onClick={onClose}
+            className={`${font} h-[44px] px-5 rounded-full text-[13px] text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            ยกเลิก
+          </button>
+          <button onClick={handleSubmit} disabled={!canSubmit}
+            className={`${font} h-[44px] px-6 rounded-full text-white text-[13px] transition-colors ${canSubmit ? "bg-[#008c45] hover:bg-[#007a3b] cursor-pointer" : "bg-gray-300 cursor-not-allowed"}`}
+            style={{ fontWeight: 600 }}>
+            บันทึก
+          </button>
+        </div>
+
+        {/* Sub-modal: Product picker */}
+        {showPicker && (
+          <div className="absolute inset-0 bg-black/40 z-10 flex items-center justify-center p-4" onClick={() => setShowPicker(false)}>
+            <div className="bg-white rounded-2xl w-full max-w-[480px] max-h-[80%] flex flex-col shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
+                <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 600 }}>เลือกสินค้าเข้าร่วมโปรโมชั่น</p>
+                <button onClick={() => setShowPicker(false)} className="size-7 rounded-full bg-[rgba(120,120,128,0.12)] hover:bg-[rgba(120,120,128,0.2)] flex items-center justify-center cursor-pointer">
+                  <X className="size-3.5" />
+                </button>
+              </div>
+              <div className="p-3 border-b border-gray-100 shrink-0">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+                  <input value={pickerSearch} onChange={(e) => setPickerSearch(e.target.value)} placeholder="ค้นหาสินค้า..."
+                    className={`${font} w-full pl-9 pr-3 h-10 rounded-full border border-gray-200 focus:outline-none focus:border-[#319754] text-[13px] bg-[#fafafa]`} />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-3">
+                {availableForPicker.length === 0 ? (
+                  <p className={`${font} text-center py-8 text-[13px] text-[#8e8e93]`}>ไม่พบสินค้า</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {availableForPicker.map((p) => (
+                      <button key={p.id} onClick={() => { setSelectedProducts((prev) => [...prev, { productId: p.id, limit: "unlimited" }]); }}
+                        className="group/pick flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-[#319754] hover:bg-[#319754]/5 cursor-pointer transition-colors text-left">
+                        <div className="relative size-[64px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] group-hover/pick:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow shrink-0">
+                          <ImageWithFallback src={p.image} alt={p.name} className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover/pick:scale-110" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{p.name}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={`${font} text-[12px] text-[#319754] tabular-nums`} style={{ fontWeight: 500 }}>{p.price}</span>
+                            <span className="text-gray-300">·</span>
+                            <span className={`${font} inline-flex items-center gap-1 text-[11px] text-gray-500`}>
+                              <Boxes className="size-3" strokeWidth={2.2} />
+                              {p.stock}
+                            </span>
+                          </div>
+                        </div>
+                        <Plus className="size-4 text-[#319754]" strokeWidth={2.4} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PromotionsTab() {
+  const [promotions, setPromotions] = useState<Promotion[]>(mockPromotions);
+  const [filter, setFilter] = useState<"all" | PromoStatus>("all");
+  const [search, setSearch] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+
+  const now = Date.now();
+  const computedStatus = (p: Promotion): PromoStatus => {
+    if (p.startsAt && new Date(p.startsAt).getTime() > now) return "scheduled";
+    if (p.endsAt && new Date(p.endsAt).getTime() < now) return "ended";
+    return "active";
+  };
+
+  const cAll = promotions.length;
+  const cActive = promotions.filter((p) => computedStatus(p) === "active").length;
+  const cScheduled = promotions.filter((p) => computedStatus(p) === "scheduled").length;
+  const cEnded = promotions.filter((p) => computedStatus(p) === "ended").length;
+
+  const tabs: { id: "all" | PromoStatus; label: string; count: number; Icon: any }[] = [
+    { id: "all",       label: "ทั้งหมด",           count: cAll,       Icon: ClipboardList },
+    { id: "active",    label: "กำลังดำเนินการ",     count: cActive,    Icon: Zap           },
+    { id: "scheduled", label: "กำหนดไว้",          count: cScheduled, Icon: Clock         },
+    { id: "ended",     label: "สิ้นสุดแล้ว",         count: cEnded,     Icon: Ban           },
+  ];
+
+  const filtered = promotions.filter((p) => {
+    if (filter !== "all" && computedStatus(p) !== filter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      return p.name.toLowerCase().includes(q) || (p.description?.toLowerCase().includes(q) ?? false);
+    }
+    return true;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * perPage, safePage * perPage);
+
+  return (
+    <div>
+      {/* Header — title + add button (เหมือน ProductsTab) */}
+      <div className="flex items-center justify-between mb-6">
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>โปรโมชั่น</h2>
+        <motion.button onClick={() => setShowCreate(true)}
+          whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
+          <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
+            <Plus className="size-[14px]" strokeWidth={2.6} />
+          </span>
+          <span style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</span>
+        </motion.button>
+      </div>
+
+      {/* Filter tabs + search (in one pill) — เหมือน ProductsTab */}
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
+          {tabs.map((tab) => {
+            const isAct = filter === tab.id;
+            return (
+              <motion.button key={tab.id}
+                onClick={() => { setFilter(tab.id); setPage(1); }}
+                whileTap={{ scale: 0.94 }}
+                whileHover={!isAct ? { scale: 1.04 } : undefined}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
+                {isAct && (
+                  <motion.span layoutId="promoTabActivePill"
+                    className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }} />
+                )}
+                <motion.span layout
+                  className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
+                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
+                  transition={{ duration: 0.2 }}>
+                  <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
+                </motion.span>
+                <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
+                  style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
+                  {tab.label}
+                </span>
+                <motion.span layout
+                  className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
+                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
+                  <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
+                    {tab.count}
+                  </motion.span>
+                </motion.span>
+              </motion.button>
+            );
+          })}
+        </div>
+        {/* Search (inside same pill, aligned right) */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="ค้นหาโปรโมชั่น...."
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+          <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Grid cards */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+        {paged.length === 0 ? (
+          <p className={`${font} text-center py-16 text-[13px] text-gray-400`}>ไม่พบโปรโมชั่น</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {paged.map((p) => {
+              const status = computedStatus(p);
+              const stCfg =
+                status === "active"    ? { label: "กำลังดำเนินการ", color: "#319754", Icon: Zap   } :
+                status === "scheduled" ? { label: "กำหนดไว้",         color: "#f59e0b", Icon: Clock } :
+                                         { label: "สิ้นสุดแล้ว",       color: "#737373", Icon: Ban   };
+              const productCount = p.scope === "all" ? "ทุกสินค้า" : `${p.products.length} รายการ`;
+              const discountLabel = p.discountType === "percent" ? `${p.discountValue}%` : `฿${p.discountValue}`;
+              const isEnded = status === "ended";
+              return (
+                <motion.div
+                  key={p.id}
+                  whileHover={{ y: -3 }}
+                  transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                  className={`group/card relative rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.10)] transition-shadow ${isEnded ? "opacity-75 hover:opacity-100" : ""}`}
+                >
+                  {/* Header — gradient bg + discount + status */}
+                  <div className="relative p-5 overflow-hidden" style={{
+                    background: isEnded
+                      ? "linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%)"
+                      : status === "scheduled"
+                        ? "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)"
+                        : "linear-gradient(135deg, rgba(255,107,53,0.95) 0%, rgba(230,46,5,0.95) 100%)"
+                  }}>
+                    {/* Decorative watermark — promotion card image */}
+                    <img
+                      src={imgPromoCard}
+                      alt=""
+                      aria-hidden="true"
+                      className={`absolute -bottom-3 -right-3 size-28 object-contain pointer-events-none select-none transition-opacity duration-300 group-hover/card:scale-105 ${isEnded ? "opacity-50 grayscale" : "opacity-90"}`}
+                    />
+
+                    <div className="relative z-10 flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className={`${font} text-[10px] uppercase tracking-wider mb-1 ${isEnded ? "text-gray-500" : status === "scheduled" ? "text-[#92400e]" : "text-white/85"}`} style={{ fontWeight: 600 }}>
+                          ส่วนลด
+                        </p>
+                        <p className={`${font} text-[36px] leading-none tabular-nums ${isEnded ? "text-gray-700" : status === "scheduled" ? "text-[#92400e]" : "text-white"}`} style={{ fontWeight: 800 }}>
+                          {discountLabel}
+                        </p>
+                      </div>
+                      {/* Status pill */}
+                      <span className={`${font} inline-flex items-center gap-1.5 pl-2 pr-3 py-0.5 rounded-full text-[11px] backdrop-blur-sm shrink-0 ${isEnded ? "bg-white/80" : "bg-white/95"}`}
+                        style={{ color: stCfg.color, fontWeight: 500 }}>
+                        <stCfg.Icon className="size-3" strokeWidth={2.4} />
+                        {stCfg.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Body — name + description + meta */}
+                  <div className="p-5 flex flex-col gap-3">
+                    <div>
+                      <p className={`${font} text-[15px] text-[#1a1a1a] truncate`} style={{ fontWeight: 600 }} title={p.name}>{p.name}</p>
+                      {p.description && (
+                        <p className={`${font} text-[12px] text-gray-500 line-clamp-2 mt-1`} title={p.description}>{p.description}</p>
+                      )}
+                    </div>
+
+                    {/* Meta — products + dates */}
+                    <div className="flex flex-col gap-1.5 pt-3 border-t border-gray-100">
+                      <div className={`${font} flex items-center gap-2 text-[12px] text-gray-600`}>
+                        <Boxes className="size-3.5 text-gray-400 shrink-0" strokeWidth={2.2} />
+                        <span>{productCount}</span>
+                      </div>
+                      <div className={`${font} flex items-center gap-2 text-[12px] text-gray-600`}>
+                        <CalendarIcon className="size-3.5 text-gray-400 shrink-0" strokeWidth={2.2} />
+                        <span className="truncate">
+                          {fmtPromoThaiDateTime(p.startsAt)} {p.endsAt ? `→ ${fmtPromoThaiDateTime(p.endsAt)}` : "(ไม่หมดอายุ)"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action — bottom right */}
+                    <div className="flex items-center justify-end pt-1">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="size-8 rounded-full inline-flex items-center justify-center bg-[#787880]/12 hover:bg-[#787880]/22 text-gray-700 transition-colors cursor-pointer data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                            <MoreHorizontal className="size-4" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" sideOffset={6}
+                          className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)]">
+                          <motion.div initial={{ scale: 0.4, opacity: 0, y: -6 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                            style={{ transformOrigin: "top right" }} className="overflow-hidden">
+                            <button onClick={() => toast.info(`แก้ไข: ${p.name}`)}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                              <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>แก้ไข</span>
+                            </button>
+                            <button onClick={() => {
+                              setPromotions((prev) => prev.map((x) => x.id === p.id ? { ...x, enabled: !x.enabled } : x));
+                              toast.success(p.enabled ? `ปิดใช้งาน: ${p.name}` : `เปิดใช้งาน: ${p.name}`);
+                            }}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                              <Ban className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>{p.enabled ? "ปิดใช้งาน" : "เปิดใช้งาน"}</span>
+                            </button>
+                            <div className="h-px bg-gray-100 my-1" />
+                            <button onClick={() => {
+                              if (confirm(`ลบโปรโมชั่น "${p.name}"?`)) {
+                                setPromotions((prev) => prev.filter((x) => x.id !== p.id));
+                                toast.success(`ลบ: ${p.name}`);
+                              }
+                            }}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
+                              <Trash2 className="size-3.5" strokeWidth={2.2} />
+                              <span style={{ fontWeight: 500 }}>ลบ</span>
+                            </button>
+                          </motion.div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {filtered.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}
+                  value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}>
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={safePage === 1} onClick={() => setPage(safePage - 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                <button key={n} onClick={() => setPage(n)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safePage === n ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: safePage === n ? 600 : 400 }}>{n}</button>
+              ))}
+              <button disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <CreatePromotionModal open={showCreate} onClose={() => setShowCreate(false)}
+        onCreate={(p) => { setPromotions((prev) => [p, ...prev]); setShowCreate(false); toast.success(`สร้างโปรโมชั่น "${p.name}" แล้ว`); }} />
+    </div>
+  );
+}
+
 /* ========== MAIN ========== */
 export function OwnerDashboard() {
   const { user } = useAuth();
@@ -9552,18 +12090,8 @@ export function OwnerDashboard() {
         {activeTab === "flash_sale" && <FlashSaleTab onViewEvent={(event, opts) => { setSelectedFlashEvent(event); setFlashEventIsNewJoin(!!opts?.isNewJoin); setActiveTab("flash_event"); }} />}
         {activeTab === "flash_event" && <FlashEventDetail event={selectedFlashEvent} isNewJoin={flashEventIsNewJoin} onBack={() => setActiveTab("flash_sale")} />}
         {activeTab === "add_product" && <AddProductTab onBack={() => setActiveTab("products")} />}
-        {activeTab === "promotions" && (
-          <div>
-            <h2 className={`${font} text-[22px] mb-4`} style={{ fontWeight: 600 }}>โปรโมชั่น</h2>
-            <p className={`${font} text-[13px] text-gray-400`}>ยังไม่มีโปรโมชั่นที่ใช้งานอยู่</p>
-          </div>
-        )}
-        {activeTab === "coupons" && (
-          <div>
-            <h2 className={`${font} text-[22px] mb-4`} style={{ fontWeight: 600 }}>คูปอง</h2>
-            <p className={`${font} text-[13px] text-gray-400`}>ยังไม่มีคูปองที่ใช้งานอยู่</p>
-          </div>
-        )}
+        {activeTab === "promotions" && <PromotionsTab />}
+        {activeTab === "coupons" && <CouponsTab />}
         {activeTab === "complaints" && <ComplaintsTab onViewDetail={(id: string) => { setSelectedComplaintId(id); setActiveTab("complaint_detail"); }} />}
         {activeTab === "complaint_detail" && <ComplaintDetailTab complaintId={selectedComplaintId} onBack={() => setActiveTab("complaints")} />}
         {activeTab === "finance" && <FinanceTab onBankSettings={() => setActiveTab("bank_settings")} />}
