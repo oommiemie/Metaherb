@@ -678,7 +678,7 @@ export function Layout() {
         )}
 
         {/* Menu Bar - Desktop */}
-        <nav className={`${isAdmin ? "bg-[#3b82f6]" : "bg-[#319754]"} hidden md:block`}>
+        <nav className="bg-[#319754] hidden md:block">
           <div className="max-w-[1440px] mx-auto flex items-center justify-center gap-2 py-2.5 px-6">
             {menuItems.map((item) => (
               <button
