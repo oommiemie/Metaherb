@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useLocation } from "react-router";
 import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
   Shield, DollarSign, Megaphone, UserCog, BarChart2, ShoppingBag,
   Plus, Pencil, Trash2, MoreHorizontal, Eye, Search, ChevronLeft, ChevronDown,
-  Check, X, Mail, Phone, FileText, Store, AlertCircle,
+  Check, X, Mail, Phone, FileText, Store, AlertCircle, Star, Video,
+  Home, Info, LayoutPanelTop, PanelBottom, Bell, Truck, MapPin, Globe, Tag, Zap, Ticket, Folder,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
 import { motion, AnimatePresence } from "motion/react";
@@ -13,7 +15,6 @@ import { toast } from "sonner";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
-// Admin theme — สีน้ำเงิน (แทนสีเขียวของฝั่ง shop owner)
 const ADMIN_PRIMARY = "#319754";
 const ADMIN_PRIMARY_DARK = "#287745";
 
@@ -36,68 +37,91 @@ const categoryData = [
 ];
 const COLORS = ["#3b82f6", "#319754", "#f59e0b", "#9747ff", "#ff9500"];
 
-const mockAdmins = [
-  { id: 1, name: "admin01", email: "admin@test.com",   role: "Super Admin",     status: "active"   },
-  { id: 2, name: "admin02", email: "admin02@test.com", role: "Content Manager", status: "active"   },
-  { id: 3, name: "admin03", email: "admin03@test.com", role: "Order Manager",   status: "inactive" },
-];
+/* ========== SECTION + ITEM TYPES ========== */
+type AdminSection = "overview" | "content" | "pages" | "settings";
 
-const mockBanners = [
-  { id: 1, title: "Nature's Remedies", position: "Hero Banner",  status: "active" },
-  { id: 2, title: "ลดสูงสุด 70%",       position: "Right Top",    status: "active" },
-  { id: 3, title: "สินค้ามาใหม่",        position: "Right Bottom", status: "draft"  },
-];
-
-/* ========== TAB TYPES ========== */
-type AdminTab =
-  | "overview"
-  | "report_sales" | "report_customers" | "report_products" | "report_marketing"
-  | "banners" | "admins" | "settings";
+type ItemId = string;
 
 interface AdminItem {
-  id: AdminTab | "reports";
+  id: ItemId;
   label: string;
   icon: any;
-  children?: { id: AdminTab; label: string }[];
+  children?: { id: ItemId; label: string; icon?: any }[];
 }
 
-const adminItems: AdminItem[] = [
-  { id: "overview", label: "ภาพรวม", icon: BarChart3 },
-  { id: "reports", label: "รายงาน", icon: FileText, children: [
-    { id: "report_sales",     label: "รายงานยอดขาย"  },
-    { id: "report_customers", label: "ข้อมูลลูกค้า"   },
-    { id: "report_products",  label: "ข้อมูลสินค้า"   },
-    { id: "report_marketing", label: "ข้อมูลการตลาด" },
-  ]},
-  { id: "banners",  label: "จัดการ Banner", icon: ImageIcon },
-  { id: "admins",   label: "จัดการแอดมิน",  icon: UserCog },
-  { id: "settings", label: "ตั้งค่าระบบ",    icon: Settings },
-];
-
-const childIconMap: Record<string, any> = {
-  report_sales: TrendingUp, report_customers: Users, report_products: ShoppingBag, report_marketing: BarChart2,
+// Map URL path → section
+const pathToSection = (path: string): AdminSection => {
+  if (path.startsWith("/admin/content"))  return "content";
+  if (path.startsWith("/admin/pages"))    return "pages";
+  if (path.startsWith("/admin/settings")) return "settings";
+  return "overview";
 };
 
-const tabLabels: Record<AdminTab, string> = {
-  overview:         "ภาพรวมระบบ",
-  report_sales:     "รายงานยอดขาย",
-  report_customers: "รายงานข้อมูลลูกค้า",
-  report_products:  "รายงานข้อมูลสินค้า",
-  report_marketing: "รายงานข้อมูลการตลาด",
-  banners:          "จัดการ Banner",
-  admins:           "จัดการแอดมิน",
-  settings:         "ตั้งค่าระบบ",
+// Sidebar config per section
+const sectionMenus: Record<AdminSection, AdminItem[]> = {
+  overview: [
+    { id: "dashboard",  label: "Dashboard",      icon: BarChart3 },
+    { id: "report",     label: "Report",         icon: FileText, children: [
+      { id: "report_sales",     label: "รายงานผลยอดขาย",   icon: TrendingUp },
+      { id: "report_customers", label: "รายงานข้อมูลลูกค้า", icon: Users },
+      { id: "report_products",  label: "รายงานข้อมูลสินค้า", icon: ShoppingBag },
+      { id: "report_marketing", label: "รายงานผลการตลาด",  icon: BarChart2 },
+    ]},
+    { id: "complaints", label: "การร้องเรียน",    icon: AlertCircle },
+    { id: "products",   label: "สินค้า",          icon: Package, children: [
+      { id: "products_manage",    label: "จัดการสินค้า",          icon: Package },
+      { id: "products_categories", label: "จัดการหมวดหมู่สินค้า", icon: Folder },
+      { id: "products_promotions", label: "จัดการโปรโมชั่น",       icon: Megaphone },
+      { id: "products_flash",     label: "Flash Sale Events",      icon: Zap },
+      { id: "products_coupons",   label: "คูปอง",                  icon: Ticket },
+      { id: "products_tags",      label: "แท็กสินค้า",              icon: Tag },
+    ]},
+    { id: "reviews",    label: "จัดการรีวิว",     icon: Star },
+    { id: "orders",     label: "คำสั่งซื้อ",       icon: ShoppingCart },
+  ],
+  content: [
+    { id: "content_banner", label: "Banner",   icon: ImageIcon },
+    { id: "content_blog",   label: "บทความ",   icon: FileText },
+    { id: "content_video",  label: "วิดีโอ",    icon: Video },
+    { id: "content_index",  label: "Index",    icon: Search },
+  ],
+  pages: [
+    { id: "page_home",      label: "หน้าหลัก",                 icon: Home },
+    { id: "page_products",  label: "หน้าผลิตภัณฑ์ทั้งหมด",  icon: Package },
+    { id: "page_blog",      label: "สาระความรู้ทั้งหมด",     icon: FileText },
+    { id: "page_about",     label: "เกี่ยวกับเรา",              icon: Info },
+    { id: "page_appbar",    label: "Appbar",                    icon: LayoutPanelTop },
+    { id: "page_footer",    label: "Footer",                    icon: PanelBottom },
+  ],
+  settings: [
+    { id: "site_info", label: "ข้อมูลเว็บไซต์", icon: Globe, children: [
+      { id: "site_info_general", label: "ข้อมูลเว็บไซต์", icon: Settings },
+      { id: "site_info_contact", label: "ข้อมูลติดต่อ",    icon: Phone },
+      { id: "site_info_address", label: "ที่อยู่",          icon: MapPin },
+      { id: "site_info_social",  label: "Social Media",   icon: Globe },
+    ]},
+    { id: "settings_shipping",      label: "การจัดส่ง",     icon: Truck },
+    { id: "settings_notifications", label: "การแจ้งเตือน",   icon: Bell },
+    { id: "settings_users", label: "ผู้ใช้งาน", icon: UserCog, children: [
+      { id: "users_list", label: "ผู้ใช้",          icon: Users },
+      { id: "shops_list", label: "ทะเบียนร้านค้า", icon: Store },
+    ]},
+  ],
 };
 
-const tabSubtitles: Record<AdminTab, string> = {
-  overview:         "ภาพรวมยอดขาย ลูกค้า และร้านค้าในระบบ",
-  report_sales:     "วิเคราะห์ยอดขายและคำสั่งซื้อรายเดือน",
-  report_customers: "ข้อมูลและพฤติกรรมของลูกค้าในระบบ",
-  report_products:  "สินค้าขายดี สต็อก และหมวดหมู่",
-  report_marketing: "ประสิทธิภาพแคมเปญและโปรโมชัน",
-  banners:          "จัดการ Banner ที่แสดงบนหน้าเว็บไซต์",
-  admins:           "กำหนดสิทธิ์และบทบาทผู้ดูแลระบบ",
-  settings:         "ตั้งค่าทั่วไปของเว็บไซต์",
+const sectionLabels: Record<AdminSection, string> = {
+  overview: "ภาพรวม",
+  content:  "เนื้อหาบนเว็บ",
+  pages:    "จัดการหน้าเว็บไซต์",
+  settings: "ตั้งค่า",
+};
+
+// Default first item per section
+const defaultItem: Record<AdminSection, ItemId> = {
+  overview: "dashboard",
+  content:  "content_banner",
+  pages:    "page_home",
+  settings: "site_info_general",
 };
 
 /* ========== SIDEBAR ========== */
@@ -139,10 +163,20 @@ function MenuBtn({ isActive, icon: Icon, label, onClick, hasArrow, expanded, col
   );
 }
 
-function AdminSidebar({ active, onSelect, collapsed, onToggle }: {
-  active: AdminTab; onSelect: (id: AdminTab) => void; collapsed: boolean; onToggle: () => void;
+function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
+  section: AdminSection; active: ItemId; onSelect: (id: ItemId) => void; collapsed: boolean; onToggle: () => void;
 }) {
-  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ reports: true });
+  const items = sectionMenus[section];
+  // Auto-expand parent that contains active child on mount/change
+  const initialExpanded = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    items.forEach((it) => {
+      if (it.children?.some((c) => c.id === active)) map[it.id] = true;
+      else if (it.children) map[it.id] = false;
+    });
+    return map;
+  }, [section, active, items]);
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(initialExpanded);
   const toggle = (id: string) => setExpandedMenus((p) => ({ ...p, [id]: !p[id] }));
 
   const withTooltip = (label: string, node: React.ReactNode) => collapsed ? (
@@ -174,7 +208,7 @@ function AdminSidebar({ active, onSelect, collapsed, onToggle }: {
                 transition={{ duration: 0.2 }}
                 className="flex items-center gap-2">
                 <Shield className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.4} />
-                <p className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>แผงควบคุม</p>
+                <p className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>{sectionLabels[section]}</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -192,17 +226,18 @@ function AdminSidebar({ active, onSelect, collapsed, onToggle }: {
         {/* Menu */}
         <TooltipPrimitive.Provider delayDuration={120}>
           <motion.nav
+            key={section}
             initial="hidden"
             animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } } }}
             className={`flex-1 pb-4 space-y-2.5 overflow-y-auto ${collapsed ? "px-2" : "px-4"}`}>
-            {adminItems.map((item) =>
+            {items.map((item) =>
               !item.children ? (
                 <motion.div key={item.id}
                   variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
                   transition={{ duration: 0.25 }}>
                   {withTooltip(item.label,
-                    <MenuBtn isActive={active === item.id} icon={item.icon} label={item.label} onClick={() => onSelect(item.id as AdminTab)} collapsed={collapsed} />
+                    <MenuBtn isActive={active === item.id} icon={item.icon} label={item.label} onClick={() => onSelect(item.id)} collapsed={collapsed} />
                   )}
                 </motion.div>
               ) : (
@@ -237,7 +272,7 @@ function AdminSidebar({ active, onSelect, collapsed, onToggle }: {
                               <motion.div key={child.id}
                                 variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }}
                                 transition={{ duration: 0.2 }}>
-                                <MenuBtn isActive={active === child.id} icon={childIconMap[child.id] || Package} label={child.label} onClick={() => onSelect(child.id)} collapsed={collapsed} />
+                                <MenuBtn isActive={active === child.id} icon={child.icon || Package} label={child.label} onClick={() => onSelect(child.id)} collapsed={collapsed} />
                               </motion.div>
                             ))}
                           </motion.div>
@@ -255,8 +290,8 @@ function AdminSidebar({ active, onSelect, collapsed, onToggle }: {
   );
 }
 
-/* ========== OVERVIEW TAB ========== */
-function OverviewTab() {
+/* ========== DASHBOARD CONTENT ========== */
+function DashboardContent() {
   const stats = [
     { label: "รายได้รวม",        value: "฿316,000", change: "+18%", color: "#319754", Icon: DollarSign,    hint: "เทียบเดือนที่แล้ว" },
     { label: "คำสั่งซื้อทั้งหมด", value: "885",      change: "+24",  color: "#3b82f6", Icon: ShoppingCart,  hint: "เดือนนี้" },
@@ -264,7 +299,6 @@ function OverviewTab() {
     { label: "ร้านค้าทั้งหมด",    value: "32",       change: "+3",   color: "#ff9500", Icon: Store,         hint: "ร้านค้าที่ active" },
   ];
 
-  // รายการรอดำเนินการ — ที่แอดมินต้อง action
   const pendingActions = [
     { label: "ร้านค้ารอตรวจสอบ", count: 4, color: "#ff9500", Icon: Store },
     { label: "ร้องเรียนใหม่",      count: 7, color: "#ff3b30", Icon: AlertCircle },
@@ -272,17 +306,15 @@ function OverviewTab() {
     { label: "รีพอร์ตจากผู้ใช้",   count: 3, color: "#f59e0b", Icon: Shield },
   ];
 
-  // Activity feed — กิจกรรมล่าสุดในระบบ
   const activities = [
-    { type: "shop",    actor: "ร้าน บ้านสมุนไพร",        action: "สมัครเข้าระบบ — รอตรวจสอบ",                  time: "5 นาทีที่แล้ว",  color: "#319754", Icon: Store         },
-    { type: "user",    actor: "user_24856",                action: "ลงทะเบียนเป็นลูกค้าใหม่",                       time: "12 นาทีที่แล้ว", color: "#3b82f6", Icon: Users         },
-    { type: "complaint", actor: "DSP-20260509-014",         action: "ร้องเรียนใหม่จาก Metaherb Store",              time: "28 นาทีที่แล้ว", color: "#ff3b30", Icon: AlertCircle    },
-    { type: "shop",    actor: "ร้าน อโรม่าฟาร์ม",        action: "ส่งเอกสารเพิ่มเติม",                            time: "1 ชม. ที่แล้ว",  color: "#319754", Icon: Store         },
-    { type: "banner",  actor: "Hero Banner — Summer",      action: "ร่างใหม่รอเผยแพร่",                              time: "2 ชม. ที่แล้ว",  color: "#9747ff", Icon: ImageIcon      },
-    { type: "user",    actor: "user_24820",                action: "รายงานสินค้าผิดกฎ — Power Boost+",            time: "3 ชม. ที่แล้ว",  color: "#ff9500", Icon: Shield        },
+    { actor: "ร้าน บ้านสมุนไพร",        action: "สมัครเข้าระบบ — รอตรวจสอบ",         time: "5 นาทีที่แล้ว",  color: "#319754", Icon: Store         },
+    { actor: "user_24856",                action: "ลงทะเบียนเป็นลูกค้าใหม่",              time: "12 นาทีที่แล้ว", color: "#3b82f6", Icon: Users         },
+    { actor: "DSP-20260509-014",         action: "ร้องเรียนใหม่จาก Metaherb Store",     time: "28 นาทีที่แล้ว", color: "#ff3b30", Icon: AlertCircle    },
+    { actor: "ร้าน อโรม่าฟาร์ม",        action: "ส่งเอกสารเพิ่มเติม",                   time: "1 ชม. ที่แล้ว",  color: "#319754", Icon: Store         },
+    { actor: "Hero Banner — Summer",      action: "ร่างใหม่รอเผยแพร่",                     time: "2 ชม. ที่แล้ว",  color: "#9747ff", Icon: ImageIcon      },
+    { actor: "user_24820",                action: "รายงานสินค้าผิดกฎ — Power Boost+",   time: "3 ชม. ที่แล้ว",  color: "#ff9500", Icon: Shield        },
   ];
 
-  // Top shops — ร้านค้าผลงานดีเดือนนี้
   const topShops = [
     { rank: 1, name: "Metaherb Store",      orders: 412, revenue: 145200, growth: "+24%", color: "#319754" },
     { rank: 2, name: "บ้านสมุนไพรไทย",   orders: 318, revenue: 98640,  growth: "+18%", color: "#3b82f6" },
@@ -315,9 +347,7 @@ function OverviewTab() {
         ))}
       </div>
 
-      {/* Row: Sales chart (2/3) + Pending actions (1/3) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Sales by month */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
           <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
             <BarChart3 className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
@@ -334,7 +364,6 @@ function OverviewTab() {
           </ResponsiveContainer>
         </div>
 
-        {/* Pending actions */}
         <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3">
           <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -364,9 +393,7 @@ function OverviewTab() {
         </div>
       </div>
 
-      {/* Row: Categories pie + Activity feed */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Categories pie */}
         <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
           <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
             <Package className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
@@ -380,7 +407,6 @@ function OverviewTab() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-          {/* Legend */}
           <div className="flex flex-wrap gap-x-3 gap-y-1.5">
             {categoryData.map((c, i) => (
               <div key={c.name} className="flex items-center gap-1.5">
@@ -392,21 +418,18 @@ function OverviewTab() {
           </div>
         </div>
 
-        {/* Activity feed */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3">
           <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <BarChart2 className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
               <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>กิจกรรมล่าสุด</p>
             </div>
-            <button className={`${font} text-[12px] hover:underline cursor-pointer`}
-              style={{ color: ADMIN_PRIMARY, fontWeight: 500 }}>ดูทั้งหมด</button>
+            <button className={`${font} text-[12px] hover:underline cursor-pointer`} style={{ color: ADMIN_PRIMARY, fontWeight: 500 }}>ดูทั้งหมด</button>
           </div>
           <div className="flex flex-col">
             {activities.map((a, i) => (
               <div key={i} className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-b-0">
-                <div className="size-9 rounded-full flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: `${a.color}1a` }}>
+                <div className="size-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${a.color}1a` }}>
                   <a.Icon className="size-4" style={{ color: a.color }} strokeWidth={2.2} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -420,31 +443,25 @@ function OverviewTab() {
         </div>
       </div>
 
-      {/* Top shops leaderboard */}
       <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
         <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <TrendingUp className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
             <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ร้านค้ายอดเยี่ยมเดือนนี้</p>
           </div>
-          <button className={`${font} text-[12px] hover:underline cursor-pointer`}
-            style={{ color: ADMIN_PRIMARY, fontWeight: 500 }}>ดูทั้งหมด</button>
+          <button className={`${font} text-[12px] hover:underline cursor-pointer`} style={{ color: ADMIN_PRIMARY, fontWeight: 500 }}>ดูทั้งหมด</button>
         </div>
         <table className="w-full table-fixed">
           <colgroup>
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "32%" }} />
-            <col style={{ width: "20%" }} />
-            <col style={{ width: "25%" }} />
-            <col style={{ width: "15%" }} />
+            <col style={{ width: "8%" }} /><col style={{ width: "32%" }} /><col style={{ width: "20%" }} /><col style={{ width: "25%" }} /><col style={{ width: "15%" }} />
           </colgroup>
           <thead>
             <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
               <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>อันดับ</th>
-              <th className="text-left   pb-3 pr-4" style={{ fontWeight: 500 }}>ร้านค้า</th>
-              <th className="text-right  pb-3 pr-4" style={{ fontWeight: 500 }}>คำสั่งซื้อ</th>
-              <th className="text-right  pb-3 pr-4" style={{ fontWeight: 500 }}>รายได้</th>
-              <th className="text-right  pb-3"      style={{ fontWeight: 500 }}>เติบโต</th>
+              <th className="text-left pb-3 pr-4"   style={{ fontWeight: 500 }}>ร้านค้า</th>
+              <th className="text-right pb-3 pr-4"  style={{ fontWeight: 500 }}>คำสั่งซื้อ</th>
+              <th className="text-right pb-3 pr-4"  style={{ fontWeight: 500 }}>รายได้</th>
+              <th className="text-right pb-3"       style={{ fontWeight: 500 }}>เติบโต</th>
             </tr>
           </thead>
           <tbody>
@@ -457,19 +474,15 @@ function OverviewTab() {
                 <td className="py-3 pr-4">
                   <div className="flex items-center gap-2.5">
                     <div className="size-9 rounded-full flex items-center justify-center text-white text-[12px]"
-                      style={{ backgroundColor: s.color, fontWeight: 700 }}>
-                      {s.name.charAt(0)}
-                    </div>
+                      style={{ backgroundColor: s.color, fontWeight: 700 }}>{s.name.charAt(0)}</div>
                     <span className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{s.name}</span>
                   </div>
                 </td>
                 <td className={`${font} py-3 pr-4 text-right text-[13px] text-black tabular-nums`} style={{ fontWeight: 500 }}>{s.orders.toLocaleString()}</td>
                 <td className={`${font} py-3 pr-4 text-right text-[13px] tabular-nums`} style={{ color: "#319754", fontWeight: 600 }}>฿{s.revenue.toLocaleString()}</td>
                 <td className="py-3 text-right">
-                  <span className={`${font} inline-flex items-center gap-1 text-[12px] tabular-nums`}
-                    style={{ color: "#319754", fontWeight: 600 }}>
-                    <TrendingUp className="size-3" strokeWidth={2.4} />
-                    {s.growth}
+                  <span className={`${font} inline-flex items-center gap-1 text-[12px] tabular-nums`} style={{ color: "#319754", fontWeight: 600 }}>
+                    <TrendingUp className="size-3" strokeWidth={2.4} />{s.growth}
                   </span>
                 </td>
               </tr>
@@ -481,8 +494,8 @@ function OverviewTab() {
   );
 }
 
-/* ========== REPORT TAB (generic) ========== */
-function ReportTab({ tab }: { tab: Exclude<AdminTab, "overview" | "banners" | "admins" | "settings"> }) {
+/* ========== REPORT CONTENT ========== */
+function ReportContent({ tab }: { tab: "report_sales" | "report_customers" | "report_products" | "report_marketing" }) {
   const isCustomer  = tab === "report_customers";
   const isProduct   = tab === "report_products";
   const isMarketing = tab === "report_marketing";
@@ -514,7 +527,6 @@ function ReportTab({ tab }: { tab: Exclude<AdminTab, "overview" | "banners" | "a
 
   return (
     <div className="flex flex-col gap-5">
-      {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((s) => (
           <div key={s.label}
@@ -526,11 +538,10 @@ function ReportTab({ tab }: { tab: Exclude<AdminTab, "overview" | "banners" | "a
         ))}
       </div>
 
-      {/* Chart */}
       <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
         <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
           <TrendingUp className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
-          <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{tabLabels[tab]} 6 เดือนล่าสุด</p>
+          <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>6 เดือนล่าสุด</p>
         </div>
         <ResponsiveContainer width="100%" height={300}>
           {tab === "report_sales" ? (
@@ -538,8 +549,7 @@ function ReportTab({ tab }: { tab: Exclude<AdminTab, "overview" | "banners" | "a
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#999" }} />
               <YAxis tick={{ fontSize: 12, fill: "#999" }} />
-              <Tooltip />
-              <Legend />
+              <Tooltip /><Legend />
               <Line type="monotone" dataKey="sales"  stroke={ADMIN_PRIMARY} strokeWidth={2.5} dot={{ r: 4 }} name="ยอดขาย (฿)" />
               <Line type="monotone" dataKey="orders" stroke="#f7931d"        strokeWidth={2.5} dot={{ r: 4 }} name="จำนวนคำสั่งซื้อ" />
             </LineChart>
@@ -558,413 +568,123 @@ function ReportTab({ tab }: { tab: Exclude<AdminTab, "overview" | "banners" | "a
   );
 }
 
-/* ========== BANNERS TAB ========== */
-function BannersTab() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "draft">("all");
-
-  const tabs = [
-    { id: "all" as const,    label: "ทั้งหมด", count: mockBanners.length },
-    { id: "active" as const, label: "เปิดใช้งาน", count: mockBanners.filter((b) => b.status === "active").length },
-    { id: "draft" as const,  label: "ร่าง", count: mockBanners.filter((b) => b.status === "draft").length },
-  ];
-
-  const filtered = mockBanners.filter((b) => {
-    if (statusFilter !== "all" && b.status !== statusFilter) return false;
-    if (searchQuery && !b.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
-
+/* ========== PLACEHOLDER CONTENT ========== */
+function PlaceholderContent({ icon: Icon, title, desc }: { icon: any; title: string; desc?: string }) {
   return (
-    <div>
-      {/* Filter pill — เหมือน ProductsTab */}
-      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-4 flex items-center gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
-          {tabs.map((tab) => {
-            const isAct = statusFilter === tab.id;
-            return (
-              <motion.button key={tab.id} onClick={() => setStatusFilter(tab.id)}
-                whileTap={{ scale: 0.94 }} whileHover={!isAct ? { scale: 1.04 } : undefined}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className={`relative flex items-center gap-2 h-[36px] px-4 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
-                {isAct && (
-                  <motion.span layoutId="adminBannerPill"
-                    className="absolute inset-0 rounded-full"
-                    style={{ backgroundColor: ADMIN_PRIMARY, boxShadow: "0 2px 8px rgba(49,151,84,0.25)" }}
-                    transition={{ type: "spring", stiffness: 380, damping: 32 }} />
-                )}
-                <span className={`${font} relative text-[13px] whitespace-nowrap`}
-                  style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>{tab.label}</span>
-                <span className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center`}
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>{tab.count}</span>
-              </motion.button>
-            );
-          })}
-        </div>
-        {/* Search */}
-        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0">
-          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ค้นหา Banner..."
-            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
-          <button className="size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0"
-            style={{ backgroundColor: ADMIN_PRIMARY }}>
-            <Search className="size-4 text-white" />
-          </button>
-        </div>
+    <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-12 flex flex-col items-center justify-center gap-4 text-center min-h-[400px]">
+      <div className="size-20 rounded-full flex items-center justify-center"
+        style={{ backgroundColor: `${ADMIN_PRIMARY}10` }}>
+        <Icon className="size-10" style={{ color: ADMIN_PRIMARY }} strokeWidth={1.8} />
       </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
-        <table className="w-full table-fixed">
-          <colgroup>
-            <col style={{ width: "40%" }} />
-            <col style={{ width: "30%" }} />
-            <col style={{ width: "20%" }} />
-            <col style={{ width: "10%" }} />
-          </colgroup>
-          <thead>
-            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
-              <th className="text-left  pb-3 pr-4" style={{ fontWeight: 500 }}>ชื่อ Banner</th>
-              <th className="text-left  pb-3 pr-4" style={{ fontWeight: 500 }}>ตำแหน่ง</th>
-              <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>สถานะ</th>
-              <th className="text-center pb-3"      style={{ fontWeight: 500 }}>จัดการ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan={4} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>ไม่พบ Banner</td></tr>
-            ) : filtered.map((b) => {
-              const sColor = b.status === "active" ? "#319754" : "#737373";
-              const sLabel = b.status === "active" ? "เปิดใช้งาน" : "ร่าง";
-              return (
-                <tr key={b.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
-                  <td className="py-3 pr-4">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-xl flex items-center justify-center"
-                        style={{ backgroundColor: `${ADMIN_PRIMARY}1a` }}>
-                        <ImageIcon className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
-                      </div>
-                      <span className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{b.title}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <span className={`${font} text-[13px] text-gray-700`}>{b.position}</span>
-                  </td>
-                  <td className="py-3 pr-4 text-center">
-                    <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3.5 py-0.5 rounded-full text-[14px]`}
-                      style={{ backgroundColor: `${sColor}1a`, color: sColor }}>
-                      <span className="size-1.5 rounded-full" style={{ backgroundColor: sColor }} />
-                      {sLabel}
-                    </span>
-                  </td>
-                  <td className="py-3 text-center align-middle">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto"
-                          style={{ color: undefined }}>
-                          <MoreHorizontal className="size-4" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent align="end" sideOffset={6}
-                        className="w-[180px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
-                        <button onClick={() => toast.info(`ดู: ${b.title}`)}
-                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
-                          <Eye className="size-3.5 text-gray-500" strokeWidth={2.2} />
-                          <span style={{ fontWeight: 500 }}>ดูรายละเอียด</span>
-                        </button>
-                        <button onClick={() => toast.info(`แก้ไข: ${b.title}`)}
-                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
-                          <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
-                          <span style={{ fontWeight: 500 }}>แก้ไข</span>
-                        </button>
-                        <div className="h-px bg-gray-100 my-1" />
-                        <button onClick={() => { if (confirm(`ลบ "${b.title}"?`)) toast.success(`ลบ: ${b.title}`); }}
-                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
-                          <Trash2 className="size-3.5" strokeWidth={2.2} />
-                          <span style={{ fontWeight: 500 }}>ลบ</span>
-                        </button>
-                      </PopoverContent>
-                    </Popover>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="flex flex-col gap-1.5 max-w-[400px]">
+        <p className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>{title}</p>
+        <p className={`${font} text-[13px] text-gray-500 leading-relaxed`}>
+          {desc || "หน้านี้กำลังพัฒนา — ข้อมูลและฟังก์ชันจะถูกเพิ่มเข้ามาในเฟสถัดไป"}
+        </p>
       </div>
+      <span className={`${font} inline-flex items-center gap-1.5 text-[11px] bg-[#fff7ed] text-[#ff9500] px-3 py-1 rounded-full mt-2`} style={{ fontWeight: 600 }}>
+        <span className="size-1.5 rounded-full bg-[#ff9500] animate-pulse" />
+        Coming Soon
+      </span>
     </div>
   );
 }
 
-/* ========== ADMINS TAB ========== */
-function AdminsTab() {
-  return (
-    <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
-      <table className="w-full table-fixed">
-        <colgroup>
-          <col style={{ width: "20%" }} />
-          <col style={{ width: "30%" }} />
-          <col style={{ width: "20%" }} />
-          <col style={{ width: "20%" }} />
-          <col style={{ width: "10%" }} />
-        </colgroup>
-        <thead>
-          <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
-            <th className="text-left  pb-3 pr-4" style={{ fontWeight: 500 }}>ชื่อ</th>
-            <th className="text-left  pb-3 pr-4" style={{ fontWeight: 500 }}>อีเมล</th>
-            <th className="text-left  pb-3 pr-4" style={{ fontWeight: 500 }}>หน้าที่</th>
-            <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>สถานะ</th>
-            <th className="text-center pb-3"      style={{ fontWeight: 500 }}>จัดการ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {mockAdmins.map((a) => {
-            const sColor = a.status === "active" ? "#319754" : "#ff3b30";
-            const sLabel = a.status === "active" ? "เปิดใช้งาน" : "ปิดใช้งาน";
-            return (
-              <tr key={a.id} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
-                <td className="py-3 pr-4">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-full flex items-center justify-center text-white"
-                      style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 600 }}>
-                      {a.name.slice(-2).toUpperCase()}
-                    </div>
-                    <span className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{a.name}</span>
-                  </div>
-                </td>
-                <td className={`${font} py-3 pr-4 text-[13px] text-gray-700`}>{a.email}</td>
-                <td className="py-3 pr-4">
-                  <span className={`${font} inline-flex items-center px-2.5 py-1 rounded-full text-[12px]`}
-                    style={{ backgroundColor: `${ADMIN_PRIMARY}1a`, color: ADMIN_PRIMARY, fontWeight: 500 }}>
-                    {a.role}
-                  </span>
-                </td>
-                <td className="py-3 pr-4 text-center">
-                  <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3.5 py-0.5 rounded-full text-[14px]`}
-                    style={{ backgroundColor: `${sColor}1a`, color: sColor }}>
-                    <span className="size-1.5 rounded-full" style={{ backgroundColor: sColor }} />
-                    {sLabel}
-                  </span>
-                </td>
-                <td className="py-3 text-center align-middle">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto">
-                        <MoreHorizontal className="size-4" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent align="end" sideOffset={6}
-                      className="w-[180px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
-                      <button onClick={() => toast.info(`แก้ไข: ${a.name}`)}
-                        className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
-                        <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
-                        <span style={{ fontWeight: 500 }}>แก้ไข</span>
-                      </button>
-                      <div className="h-px bg-gray-100 my-1" />
-                      <button onClick={() => { if (confirm(`ลบ "${a.name}"?`)) toast.success(`ลบ: ${a.name}`); }}
-                        className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
-                        <Trash2 className="size-3.5" strokeWidth={2.2} />
-                        <span style={{ fontWeight: 500 }}>ลบ</span>
-                      </button>
-                    </PopoverContent>
-                  </Popover>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+/* ========== HEADER LABELS ========== */
+const itemLabels: Record<string, { title: string; subtitle: string }> = {
+  // overview
+  dashboard:           { title: "Dashboard",                  subtitle: "ภาพรวมยอดขาย ลูกค้า และร้านค้าในระบบ" },
+  report_sales:        { title: "รายงานผลยอดขาย",           subtitle: "วิเคราะห์ยอดขายและคำสั่งซื้อรายเดือน" },
+  report_customers:    { title: "รายงานข้อมูลลูกค้า",         subtitle: "ข้อมูลและพฤติกรรมของลูกค้าในระบบ" },
+  report_products:     { title: "รายงานข้อมูลสินค้า",         subtitle: "สินค้าขายดี สต็อก และหมวดหมู่" },
+  report_marketing:    { title: "รายงานผลการตลาด",          subtitle: "ประสิทธิภาพแคมเปญและโปรโมชัน" },
+  complaints:          { title: "การร้องเรียน",                subtitle: "จัดการคำร้องเรียนจากลูกค้าทั้งระบบ" },
+  products_manage:     { title: "จัดการสินค้า",                subtitle: "รายการสินค้าทั้งระบบจากร้านค้าทุกร้าน" },
+  products_categories: { title: "จัดการหมวดหมู่สินค้า",     subtitle: "จัดหมวดหมู่และโครงสร้างสินค้า" },
+  products_promotions: { title: "จัดการโปรโมชั่น",            subtitle: "แคมเปญส่วนลดและโปรโมชั่นในระบบ" },
+  products_flash:      { title: "Flash Sale Events",          subtitle: "จัดการ event ลดราคาแฟลชเซลล์" },
+  products_coupons:    { title: "คูปอง",                       subtitle: "คูปองส่วนลดที่ออกโดยระบบและร้านค้า" },
+  products_tags:       { title: "แท็กสินค้า",                  subtitle: "จัดการแท็ก / label สำหรับค้นหาและกรอง" },
+  reviews:             { title: "จัดการรีวิว",                  subtitle: "ตรวจสอบและจัดการรีวิวสินค้า" },
+  orders:              { title: "คำสั่งซื้อ",                    subtitle: "ออเดอร์ทั้งระบบ" },
+  // content
+  content_banner: { title: "Banner",   subtitle: "จัดการ Banner ที่แสดงบนหน้าเว็บไซต์" },
+  content_blog:   { title: "บทความ",   subtitle: "จัดการบทความและสาระความรู้" },
+  content_video:  { title: "วิดีโอ",    subtitle: "จัดการวิดีโอที่แสดงบนเว็บไซต์" },
+  content_index:  { title: "Index",    subtitle: "จัดการ index และ SEO ของเนื้อหา" },
+  // pages
+  page_home:     { title: "หน้าหลัก",                  subtitle: "ปรับโครงสร้างและคอนเทนต์หน้า Landing" },
+  page_products: { title: "หน้าผลิตภัณฑ์ทั้งหมด",   subtitle: "การจัดเรียงและแสดงผลสินค้าทั้งหมด" },
+  page_blog:     { title: "สาระความรู้ทั้งหมด",      subtitle: "หน้ารวมบทความและสาระน่ารู้" },
+  page_about:    { title: "เกี่ยวกับเรา",               subtitle: "เนื้อหาหน้า About Us" },
+  page_appbar:   { title: "Appbar",                    subtitle: "เมนู navigation บนหัวเว็บ" },
+  page_footer:   { title: "Footer",                    subtitle: "ข้อมูลและลิงก์ในส่วน Footer" },
+  // settings
+  site_info_general: { title: "ข้อมูลเว็บไซต์", subtitle: "ชื่อเว็บไซต์ คำอธิบาย และ SEO" },
+  site_info_contact: { title: "ข้อมูลติดต่อ",    subtitle: "อีเมล เบอร์โทร และช่องทางติดต่อ" },
+  site_info_address: { title: "ที่อยู่",          subtitle: "ที่อยู่บริษัท / สำนักงานหลัก" },
+  site_info_social:  { title: "Social Media",   subtitle: "ลิงก์โซเชียลและ embed" },
+  settings_shipping:      { title: "การจัดส่ง",     subtitle: "ตั้งค่าระบบขนส่งและค่าธรรมเนียมรวม" },
+  settings_notifications: { title: "การแจ้งเตือน",   subtitle: "ตั้งค่าการแจ้งเตือนของระบบ" },
+  // users
+  users_list: { title: "ผู้ใช้",         subtitle: "รายการผู้ใช้งานทั้งระบบ" },
+  shops_list: { title: "ทะเบียนร้านค้า", subtitle: "ร้านค้าที่ลงทะเบียนในระบบ" },
+};
 
-/* ========== SETTINGS TAB ========== */
-function SettingsTab() {
-  const [siteName, setSiteName] = useState("MetaHerb - สมุนไพรออร์แกนิค");
-  const [siteDesc, setSiteDesc] = useState("ร้านขายสมุนไพรออร์แกนิคคุณภาพ ส่งตรงจากธรรมชาติ");
-  const [contactEmail, setContactEmail] = useState("Metaherb@gmail.com");
-  const [contactPhone, setContactPhone] = useState("061-421-3111");
-  const [allowRegister, setAllowRegister] = useState(true);
-  const [maintenance, setMaintenance] = useState(false);
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
-      {/* General info */}
-      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
-        <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
-          <Settings className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
-          <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลทั่วไป</p>
-        </div>
-        <Field icon={Store} label="ชื่อเว็บไซต์" value={siteName} onChange={setSiteName} placeholder="ชื่อเว็บไซต์" />
-        <div className="flex flex-col gap-1.5">
-          <label className={`${font} text-[12px] text-gray-500 flex items-center gap-1.5`}>
-            <FileText className="size-3 text-gray-400" strokeWidth={2.4} />
-            คำอธิบายเว็บไซต์ (SEO)
-          </label>
-          <textarea value={siteDesc} onChange={(e) => setSiteDesc(e.target.value)}
-            placeholder="คำอธิบายสำหรับ search engine"
-            rows={3}
-            className={`${font} bg-[#fafafa] rounded-2xl px-5 py-3 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 focus:bg-white transition-all resize-none placeholder:text-[#a3a3a3]`}
-            style={{ fontWeight: 500 }} />
-        </div>
-        <Field icon={Mail}  label="อีเมลติดต่อ"     value={contactEmail} onChange={setContactEmail} type="email" />
-        <Field icon={Phone} label="เบอร์โทรศัพท์"   value={contactPhone} onChange={setContactPhone} />
-      </div>
-
-      {/* System toggles */}
-      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
-        <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
-          <Shield className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
-          <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ระบบ & สิทธิ์</p>
-        </div>
-
-        <ToggleRow
-          icon={Store} color="#319754"
-          title="เปิดให้ลงทะเบียนร้านค้าใหม่"
-          desc="ผู้ใช้ทั่วไปสมัครเป็นเจ้าของร้านได้"
-          enabled={allowRegister}
-          onToggle={() => setAllowRegister(!allowRegister)}
-        />
-        <ToggleRow
-          icon={AlertCircle} color="#ff9500"
-          title="โหมดบำรุงรักษา"
-          desc="ปิดเว็บไซต์ชั่วคราว — แสดงเฉพาะหน้า maintenance"
-          enabled={maintenance}
-          onToggle={() => setMaintenance(!maintenance)}
-        />
-
-        {maintenance && (
-          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-[#ff9500]/10 border border-[#ff9500]/30 rounded-xl px-4 py-3 flex items-start gap-2.5">
-            <AlertCircle className="size-4 text-[#ff9500] shrink-0 mt-0.5" strokeWidth={2.2} />
-            <p className={`${font} text-[12px] text-[#9a3412] leading-relaxed`}>
-              เมื่อเปิดโหมดบำรุงรักษา ผู้ใช้ทั้งหมดจะถูก redirect ไปยังหน้า maintenance — เฉพาะแอดมินเท่านั้นที่เข้าใช้งานระบบได้
-            </p>
-          </motion.div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Field({ icon: Icon, label, value, onChange, placeholder, type = "text" }: {
-  icon?: any; label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5 w-full">
-      <label className={`${font} text-[12px] text-gray-500 flex items-center gap-1.5`}>
-        {Icon && <Icon className="size-3 text-gray-400" strokeWidth={2.4} />}
-        {label}
-      </label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className={`${font} bg-[#fafafa] h-12 w-full rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 focus:bg-white transition-all placeholder:text-[#a3a3a3]`}
-        style={{ fontWeight: 500 }} />
-    </div>
-  );
-}
-
-function ToggleRow({ icon: Icon, color, title, desc, enabled, onToggle }: {
-  icon: any; color: string; title: string; desc: string; enabled: boolean; onToggle: () => void;
-}) {
-  return (
-    <div className="flex items-center gap-3 p-3 rounded-2xl border border-gray-100 hover:border-gray-200 transition-colors">
-      <div className="size-10 rounded-2xl flex items-center justify-center shrink-0"
-        style={{ backgroundColor: `${color}1a` }}>
-        <Icon className="size-5" style={{ color }} strokeWidth={2.2} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{title}</p>
-        <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>{desc}</p>
-      </div>
-      <ToggleSwitch enabled={enabled} onToggle={onToggle} />
-    </div>
-  );
-}
-
-function ToggleSwitch({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
-  return (
-    <button onClick={onToggle}
-      className={`w-[44px] h-6 rounded-full cursor-pointer transition-colors relative shrink-0 p-0.5 flex items-center ${enabled ? "" : "bg-[rgba(60,60,67,0.3)]"}`}
-      style={enabled ? { backgroundColor: ADMIN_PRIMARY } : {}}>
-      <div className={`size-5 bg-white rounded-full shadow transition-transform ${enabled ? "translate-x-5" : "translate-x-0"}`} />
-    </button>
-  );
-}
+// Map item id → icon for placeholder content
+const itemIconMap: Record<string, any> = {
+  complaints: AlertCircle, products_manage: Package, products_categories: Folder, products_promotions: Megaphone,
+  products_flash: Zap, products_coupons: Ticket, products_tags: Tag, reviews: Star, orders: ShoppingCart,
+  content_banner: ImageIcon, content_blog: FileText, content_video: Video, content_index: Search,
+  page_home: Home, page_products: Package, page_blog: FileText, page_about: Info, page_appbar: LayoutPanelTop, page_footer: PanelBottom,
+  site_info_general: Settings, site_info_contact: Phone, site_info_address: MapPin, site_info_social: Globe,
+  settings_shipping: Truck, settings_notifications: Bell,
+  users_list: Users, shops_list: Store,
+};
 
 /* ========== MAIN ========== */
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const location = useLocation();
+  const section = pathToSection(location.pathname);
+  const [activeItem, setActiveItem] = useState<ItemId>(defaultItem[section]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Header right action — เปลี่ยนตาม tab
-  const headerAction = (() => {
-    if (activeTab === "banners") {
-      return (
-        <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
-          onClick={() => toast.success("เปิดหน้าเพิ่ม Banner")}
-          className={`${font} inline-flex items-center gap-2 text-[13px] text-white px-5 h-[36px] rounded-full cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
-          style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 500 }}>
-          <Plus className="size-4" strokeWidth={2.4} />
-          เพิ่ม Banner
-        </motion.button>
-      );
+  // Reset active item when section changes
+  React.useEffect(() => {
+    setActiveItem(defaultItem[section]);
+  }, [section]);
+
+  const meta = itemLabels[activeItem] ?? { title: activeItem, subtitle: "" };
+
+  const renderContent = () => {
+    if (activeItem === "dashboard") return <DashboardContent />;
+    if (activeItem === "report_sales" || activeItem === "report_customers" || activeItem === "report_products" || activeItem === "report_marketing") {
+      return <ReportContent tab={activeItem as any} />;
     }
-    if (activeTab === "admins") {
-      return (
-        <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
-          onClick={() => toast.success("เปิดหน้าเพิ่มแอดมิน")}
-          className={`${font} inline-flex items-center gap-2 text-[13px] text-white px-5 h-[36px] rounded-full cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
-          style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 500 }}>
-          <Plus className="size-4" strokeWidth={2.4} />
-          เพิ่มแอดมิน
-        </motion.button>
-      );
-    }
-    if (activeTab === "settings") {
-      return (
-        <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
-          onClick={() => toast.success("บันทึกการตั้งค่าเรียบร้อย")}
-          className={`${font} inline-flex items-center gap-2 text-[13px] text-white px-5 h-[36px] rounded-full cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
-          style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 500 }}>
-          <Check className="size-4" strokeWidth={2.4} />
-          บันทึก
-        </motion.button>
-      );
-    }
-    return null;
-  })();
+    const Icon = itemIconMap[activeItem] || FileText;
+    return <PlaceholderContent icon={Icon} title={meta.title} desc={meta.subtitle} />;
+  };
 
   return (
     <div className="flex h-full overflow-hidden relative">
       <div className="h-full md:overflow-y-auto shrink-0">
         <AdminSidebar
-          active={activeTab}
-          onSelect={setActiveTab}
+          section={section}
+          active={activeItem}
+          onSelect={setActiveItem}
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
       </div>
 
-      {/* Content — only this area scrolls */}
       <main className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
-            <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{tabLabels[activeTab]}</h2>
-            <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{tabSubtitles[activeTab]}</p>
+            <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{meta.title}</h2>
+            <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{meta.subtitle}</p>
           </div>
-          {headerAction}
         </div>
-
-        {/* Tab content */}
-        {activeTab === "overview"  && <OverviewTab />}
-        {activeTab === "report_sales"     && <ReportTab tab="report_sales" />}
-        {activeTab === "report_customers" && <ReportTab tab="report_customers" />}
-        {activeTab === "report_products"  && <ReportTab tab="report_products" />}
-        {activeTab === "report_marketing" && <ReportTab tab="report_marketing" />}
-        {activeTab === "banners"   && <BannersTab />}
-        {activeTab === "admins"    && <AdminsTab />}
-        {activeTab === "settings"  && <SettingsTab />}
+        {renderContent()}
       </main>
     </div>
   );

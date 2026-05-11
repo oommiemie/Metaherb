@@ -496,7 +496,10 @@ export function Layout() {
   ];
 
   const adminMenuItems = [
-    { label: "แผงควบคุม", path: "/admin" },
+    { label: "ภาพรวม",                path: "/admin" },
+    { label: "เนื้อหาบนเว็บ",         path: "/admin/content" },
+    { label: "จัดการหน้าเว็บไซต์",   path: "/admin/pages" },
+    { label: "ตั้งค่า",                path: "/admin/settings" },
   ];
 
   const menuItems = isOwner ? ownerMenuItems : isAdmin ? adminMenuItems : userMenuItems;
@@ -704,7 +707,7 @@ export function Layout() {
                 <span className="relative z-10">เกี่ยวกับเรา</span>
               </button>
             )}
-            {isStaffRole && (
+            {isOwner && (
               <button onClick={() => navigate("/settings")} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[14px] text-white ${font} cursor-pointer relative transition-colors ${location.pathname === "/settings" ? "" : "hover:bg-white/10"}`}>
                 {location.pathname === "/settings" && (
                   <motion.div layoutId="topnav-bg" className="absolute inset-0 bg-black/15 rounded-full"
