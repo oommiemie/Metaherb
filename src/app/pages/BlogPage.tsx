@@ -27,7 +27,7 @@ const SAFE_IMAGES = [
   "https://images.unsplash.com/photo-1644061923948-f5b918b524c7?w=600&q=80", // amla dried
 ];
 
-const articles = [
+export const articles = [
   { img: SAFE_IMAGES[3], category: "สรรพคุณสมุนไพร", title: "ขมิ้นชัน — ราชาแห่งสมุนไพรไทย ลดอักเสบช่วยตับ",
     desc: "รวมงานวิจัยล่าสุดเรื่องสาร Curcumin ในขมิ้นชันที่ช่วยลดการอักเสบและฟื้นฟูตับ พร้อมวิธีบริโภคให้ได้ประโยชน์สูงสุด", date: "3 พ.ค. 2569", views: 1248 },
   { img: SAFE_IMAGES[5], category: "สรรพคุณสมุนไพร", title: "ฟ้าทะลายโจร ทางเลือกธรรมชาติเสริมภูมิต้านทาน",
@@ -54,7 +54,7 @@ const articles = [
     desc: "สรุปงานวิจัย 5 ปีย้อนหลังเกี่ยวกับสาร Polysaccharide ในเห็ดหลินจือกับการต้านอนุมูลอิสระและภูมิคุ้มกัน", date: "8 เม.ย. 2569", views: 612 },
 ];
 
-const videos = [
+export const videos = [
   { img: SAFE_IMAGES[9], views: "12K", title: "ทำน้ำมันสมุนไพรทาแก้ปวดเมื่อย" },
   { img: SAFE_IMAGES[2], views: "15K", title: "เปิดสวนน้ำผึ้งดอกลำไย จ.ลำพูน" },
   { img: SAFE_IMAGES[4], views: "9K", title: "วิธีคั้นน้ำขิงสด บรรเทาหวัด" },
