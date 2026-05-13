@@ -1021,6 +1021,82 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
   );
 }
 
+// FilterTabPills — แสดง tabs row บน lg+ / dropdown icon บน < lg (ใช้ทั่วระบบร้านค้า)
+function FilterTabPills<T extends string>({ tabs, active, onChange, pillId }: {
+  tabs: { id: T; label: string; count: number; Icon: any }[];
+  active: T;
+  onChange: (id: T) => void;
+  pillId: string;
+}) {
+  const activeTab = tabs.find((t) => t.id === active);
+  const ActiveIcon = activeTab?.Icon;
+
+  return (
+    <>
+      {/* Desktop (lg+): tabs row */}
+      <div className="hidden lg:flex items-center gap-2 flex-wrap flex-1 min-w-0">
+        {tabs.map((tab) => {
+          const isAct = active === tab.id;
+          return (
+            <motion.button key={tab.id} onClick={() => onChange(tab.id)}
+              whileTap={{ scale: 0.94 }} whileHover={!isAct ? { scale: 1.04 } : undefined}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
+              {isAct && (
+                <motion.span layoutId={pillId}
+                  className="absolute inset-0 bg-[#319754] rounded-full"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }} />
+              )}
+              <motion.span layout className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
+                style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
+                transition={{ duration: 0.2 }}>
+                <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
+              </motion.span>
+              <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
+                style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>{tab.label}</span>
+              <span className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
+                style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>{tab.count}</span>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Mobile/tablet (< lg): icon-only dropdown */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button title={activeTab?.label}
+            className="lg:hidden inline-flex items-center justify-center size-[36px] rounded-full bg-[#319754] text-white cursor-pointer shrink-0 data-[state=open]:bg-[#267a43] transition-colors">
+            {ActiveIcon && <ActiveIcon className="size-[16px] text-white" strokeWidth={2.2} />}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" sideOffset={6}
+          className="w-[260px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+          <motion.div initial={{ scale: 0.6, opacity: 0, y: -6 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 380, damping: 26 }}
+            style={{ transformOrigin: "top left" }}>
+            {tabs.map((tab) => {
+              const isAct = active === tab.id;
+              return (
+                <button key={tab.id} onClick={() => onChange(tab.id)}
+                  className={`${font} w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors text-left ${isAct ? "bg-[#319754]/10" : "hover:bg-gray-50"}`}>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`size-7 rounded-full inline-flex items-center justify-center shrink-0 ${isAct ? "bg-[#319754]" : "bg-[#d6eadd]"}`}>
+                      <tab.Icon className={`size-3.5 ${isAct ? "text-white" : "text-[#319754]"}`} strokeWidth={2.2} />
+                    </span>
+                    <span className={`${font} text-[13px] truncate`} style={{ fontWeight: isAct ? 700 : 500, color: isAct ? "#319754" : "#171717" }}>{tab.label}</span>
+                  </div>
+                  <span className={`${font} text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 ${isAct ? "bg-[#319754] text-white" : "bg-[#ff3b30] text-white"}`} style={{ fontWeight: 600 }}>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </motion.div>
+        </PopoverContent>
+      </Popover>
+    </>
+  );
+}
+
 function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
   initialFilter?: OrderFilterTab;
   orders: Order[];
@@ -1081,85 +1157,17 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
       <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>จัดการคำสั่งซื้อ</h2>
 
       {/* Filter tabs + search (in one pill) */}
-      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
         {(() => {
-          // All icons share the brand green; all count badges share red — uniform look across tabs
-          const ICON_COLOR = "#319754";
-          const ICON_BG = "#d6eadd";
-          const BADGE_COLOR = "#ff3b30";
-          const tabStyle: Record<string, { Icon: any }> = {
-            all:             { Icon: ClipboardList },
-            pending_payment: { Icon: Wallet         },
-            pending_verify:  { Icon: ScanSearch     },
-            ready_ship:      { Icon: Package        },
-            shipping:        { Icon: Truck          },
-            shipped:         { Icon: PackageCheck   },
-            cancelled:       { Icon: PackageX       },
+          const orderIcons: Record<string, any> = {
+            all: ClipboardList, pending_payment: Wallet, pending_verify: ScanSearch,
+            ready_ship: Package, shipping: Truck, shipped: PackageCheck, cancelled: PackageX,
           };
-          return liveTabs.map((tab) => {
-          const isAct = activeFilter === tab.id;
-          const { Icon } = tabStyle[tab.id];
-          const color = ICON_COLOR;
-          const bg = ICON_BG;
-          return (
-            <motion.button
-              key={tab.id}
-              onClick={() => setActiveFilter(tab.id)}
-              whileTap={{ scale: 0.94 }}
-              whileHover={!isAct ? { scale: 1.04 } : undefined}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${
-                !isAct ? "hover:bg-gray-50" : ""
-              }`}
-            >
-              {/* Sliding green pill (active background) */}
-              {isAct && (
-                <motion.span
-                  layoutId="orderTabActivePill"
-                  className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                />
-              )}
-              <motion.span
-                layout
-                className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : bg }}
-                transition={{ duration: 0.2 }}
-              >
-                <Icon className="size-[14px]" style={{ color: isAct ? "#fff" : color }} strokeWidth={2.2} />
-              </motion.span>
-              <span
-                className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}
-              >
-                {tab.label}
-              </span>
-              <motion.span
-                layout
-                className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                style={{
-                  backgroundColor: isAct ? "rgba(255,255,255,0.25)" : BADGE_COLOR,
-                  color: "#fff",
-                  fontWeight: 600,
-                }}
-              >
-                <motion.span
-                  key={tab.count}
-                  initial={{ y: 8, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                >
-                  {tab.count}
-                </motion.span>
-              </motion.span>
-            </motion.button>
-          );
-        });
+          const tabsWithIcon = liveTabs.map((t) => ({ ...t, Icon: orderIcons[t.id] }));
+          return <FilterTabPills tabs={tabsWithIcon} active={activeFilter} onChange={setActiveFilter} pillId="orderTabActivePill" />;
         })()}
-        </div>
-        {/* Search (inside same pill, aligned right) */}
-        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+        {/* Search (inside same pill) */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
             placeholder="ค้นหาเลขคำสั่งซื้อ, ชื่อลูกค้า...."
@@ -1418,7 +1426,7 @@ function OrderDetailTab({ order, onBack, onUpdate }: {
     return (
       <div>
         <button onClick={onBack}
-          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors mb-4`}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors mb-5`}
           style={{ fontWeight: 500 }}>
           <ChevronLeft className="size-3.5" strokeWidth={2.5} />
           กลับ
@@ -1968,81 +1976,16 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
       </div>
 
       {/* Filter tabs + search (in one pill) */}
-      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
-          {(() => {
-            // All icons share the brand green; all count badges share red — uniform look across tabs
-            const ICON_COLOR = "#319754";
-            const ICON_BG = "#d6eadd";
-            const BADGE_COLOR = "#ff3b30";
-            const tabStyle: Record<string, { Icon: any }> = {
-              all:      { Icon: Package        },
-              active:   { Icon: PackageCheck   },
-              inactive: { Icon: EyeOff         },
-              out:      { Icon: AlertTriangle  },
-            };
-            return productFilterTabs.map((tab) => {
-              const isAct = productFilter === tab.id;
-              const { Icon } = tabStyle[tab.id];
-              const color = ICON_COLOR;
-              const bg = ICON_BG;
-              return (
-                <motion.button
-                  key={tab.id}
-                  onClick={() => { setProductFilter(tab.id); setCurrentPage(1); }}
-                  whileTap={{ scale: 0.94 }}
-                  whileHover={!isAct ? { scale: 1.04 } : undefined}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${
-                    !isAct ? "hover:bg-gray-50" : ""
-                  }`}
-                >
-                  {isAct && (
-                    <motion.span
-                      layoutId="productTabActivePill"
-                      className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    />
-                  )}
-                  <motion.span
-                    layout
-                    className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                    style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : bg }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Icon className="size-[14px]" style={{ color: isAct ? "#fff" : color }} strokeWidth={2.2} />
-                  </motion.span>
-                  <span
-                    className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                    style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}
-                  >
-                    {tab.label}
-                  </span>
-                  <motion.span
-                    layout
-                    className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                    style={{
-                      backgroundColor: isAct ? "rgba(255,255,255,0.25)" : BADGE_COLOR,
-                      color: "#fff",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <motion.span
-                      key={tab.count}
-                      initial={{ y: 8, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                    >
-                      {tab.count}
-                    </motion.span>
-                  </motion.span>
-                </motion.button>
-              );
-            });
-          })()}
-        </div>
-        {/* Search (inside same pill, aligned right) */}
-        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
+        {(() => {
+          const productIcons: Record<string, any> = {
+            all: Package, active: PackageCheck, inactive: EyeOff, out: AlertTriangle,
+          };
+          const tabsWithIcon = productFilterTabs.map((t) => ({ ...t, Icon: productIcons[t.id] }));
+          return <FilterTabPills tabs={tabsWithIcon} active={productFilter} onChange={(id) => { setProductFilter(id); setCurrentPage(1); }} pillId="productTabActivePill" />;
+        })()}
+        {/* Search (inside same pill) */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
             placeholder="ค้นหาสินค้าของคุณ...."
@@ -2828,52 +2771,10 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
 
         {/* Filter tabs (unified style: green icons + red badges) */}
         {/* Filter tabs + search (in one pill) — ตรงกับ ProductsTab */}
-        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-4 flex items-center gap-2">
-          <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
-            {flashFilterTabs.map((tab) => {
-              const isAct = flashFilter === tab.id;
-              return (
-                <motion.button
-                  key={tab.id}
-                  onClick={() => { setFlashFilter(tab.id); setFlashStorePage(1); }}
-                  whileTap={{ scale: 0.94 }}
-                  whileHover={!isAct ? { scale: 1.04 } : undefined}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${
-                    !isAct ? "hover:bg-gray-50" : ""
-                  }`}
-                >
-                  {isAct && (
-                    <motion.span
-                      layoutId="flashTabActivePill"
-                      className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    />
-                  )}
-                  <motion.span layout
-                    className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                    style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
-                  </motion.span>
-                  <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                    style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
-                    {tab.label}
-                  </span>
-                  <motion.span layout
-                    className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                    style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
-                    <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
-                      {tab.count}
-                    </motion.span>
-                  </motion.span>
-                </motion.button>
-              );
-            })}
-          </div>
+        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-4 flex items-center gap-2">
+          <FilterTabPills tabs={flashFilterTabs} active={flashFilter} onChange={(id) => { setFlashFilter(id); setFlashStorePage(1); }} pillId="flashTabActivePill" />
           {/* Search */}
-          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
             <input
               value={flashSearch}
               onChange={(e) => { setFlashSearch(e.target.value); setFlashStorePage(1); }}
@@ -10989,45 +10890,10 @@ function CouponsTab() {
       </div>
 
       {/* Filter tabs + search (in one pill) — เหมือน ProductsTab */}
-      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
-          {tabs.map((tab) => {
-            const isAct = filter === tab.id;
-            return (
-              <motion.button key={tab.id}
-                onClick={() => { setFilter(tab.id); setCouponPage(1); }}
-                whileTap={{ scale: 0.94 }}
-                whileHover={!isAct ? { scale: 1.04 } : undefined}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
-                {isAct && (
-                  <motion.span layoutId="couponTabActivePill"
-                    className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                    transition={{ type: "spring", stiffness: 380, damping: 32 }} />
-                )}
-                <motion.span layout
-                  className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
-                  transition={{ duration: 0.2 }}>
-                  <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
-                </motion.span>
-                <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                  style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
-                  {tab.label}
-                </span>
-                <motion.span layout
-                  className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
-                  <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
-                    {tab.count}
-                  </motion.span>
-                </motion.span>
-              </motion.button>
-            );
-          })}
-        </div>
-        {/* Search (inside same pill, aligned right) */}
-        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
+        <FilterTabPills tabs={tabs} active={filter} onChange={(id) => { setFilter(id); setCouponPage(1); }} pillId="couponTabActivePill" />
+        {/* Search */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input value={search} onChange={(e) => { setSearch(e.target.value); setCouponPage(1); }}
             placeholder="ค้นหาคูปอง...."
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
@@ -11811,45 +11677,10 @@ function PromotionsTab() {
       </div>
 
       {/* Filter tabs + search (in one pill) — เหมือน ProductsTab */}
-      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
-          {tabs.map((tab) => {
-            const isAct = filter === tab.id;
-            return (
-              <motion.button key={tab.id}
-                onClick={() => { setFilter(tab.id); setPage(1); }}
-                whileTap={{ scale: 0.94 }}
-                whileHover={!isAct ? { scale: 1.04 } : undefined}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
-                {isAct && (
-                  <motion.span layoutId="promoTabActivePill"
-                    className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                    transition={{ type: "spring", stiffness: 380, damping: 32 }} />
-                )}
-                <motion.span layout
-                  className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
-                  transition={{ duration: 0.2 }}>
-                  <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
-                </motion.span>
-                <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                  style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
-                  {tab.label}
-                </span>
-                <motion.span layout
-                  className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
-                  <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
-                    {tab.count}
-                  </motion.span>
-                </motion.span>
-              </motion.button>
-            );
-          })}
-        </div>
-        {/* Search (inside same pill, aligned right) */}
-        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
+        <FilterTabPills tabs={tabs} active={filter} onChange={(id) => { setFilter(id); setPage(1); }} pillId="promoTabActivePill" />
+        {/* Search */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="ค้นหาโปรโมชั่น...."
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
