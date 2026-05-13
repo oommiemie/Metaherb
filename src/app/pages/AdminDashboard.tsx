@@ -3,10 +3,11 @@ import { useLocation } from "react-router";
 import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
   Shield, DollarSign, Megaphone, UserCog, BarChart2, ShoppingBag,
-  Plus, Pencil, Trash2, MoreHorizontal, Eye, Search, ChevronLeft, ChevronRight, ChevronDown,
+  Plus, Minus, Pencil, Trash2, MoreHorizontal, Eye, Search, ChevronLeft, ChevronRight, ChevronDown, Menu,
   Check, X, Mail, Phone, FileText, Store, AlertCircle, Star, Video,
   Home, Info, LayoutPanelTop, PanelBottom, Bell, Truck, MapPin, Globe, Tag, Zap, Ticket, Folder,
   Calendar as CalendarIcon, Clock, Link as LinkIcon, MousePointer2, ArrowRight, EyeOff,
+  Image as ImageIcon2, Monitor, Smartphone, Tablet,
   Bold, Italic, Underline, Strikethrough, Heading1, Heading2, Heading3,
   AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Quote,
   Undo2, Redo2, Type, Palette, Highlighter, RemoveFormatting,
@@ -32,6 +33,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { Calendar } from "../components/ui/calendar";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog";
 import { toast } from "sonner";
 import imgRequests from "../../assets/requests.png";
 import imgDamagedGoods from "../../assets/damaged-goods.png";
