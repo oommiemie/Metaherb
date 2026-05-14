@@ -9,7 +9,7 @@ import {
   AlertTriangle, Phone, Mail, ChevronRight, Filter,
   FileText, TrendingUp, Users, ShoppingBag, BarChart2, Download, FileSpreadsheet,
   ClipboardList, ScanSearch, Truck, PackageCheck, PackageX, EyeOff, Send,
-  Lock, Banknote, ArrowDownToLine, Info
+  Lock, Banknote, ArrowDownToLine, Info, Save
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from "recharts";
@@ -11231,8 +11231,7 @@ function fmtPromoThaiDateTime(iso: string): string {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-function CreatePromotionModal({ open, onClose, onCreate }: {
-  open: boolean;
+function CreatePromotionView({ onClose, onCreate }: {
   onClose: () => void;
   onCreate: (p: Promotion) => void;
 }) {
@@ -11241,10 +11240,10 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
   const [discountType, setDiscountType] = useState<PromoDiscountType>("percent");
   const [discountValue, setDiscountValue] = useState(20);
   const [maxDiscount, setMaxDiscount] = useState(0);
-  const [startsAt, setStartsAt] = useState(() => isoToDatetimeLocal(new Date().toISOString()));
-  const [endsAt, setEndsAt] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(23, 59, 0, 0);
-    return isoToDatetimeLocal(d.toISOString());
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const end = new Date(); end.setDate(end.getDate() + 7); end.setHours(0, 0, 0, 0);
+    return { from: start, to: end };
   });
   const [noExpiry, setNoExpiry] = useState(false);
   const [enabled, setEnabled] = useState(true);
@@ -11252,18 +11251,6 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
   const [selectedProducts, setSelectedProducts] = useState<PromoProductLimit[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
-
-  useEffect(() => {
-    if (!open) {
-      setName(""); setDescription("");
-      setDiscountType("percent"); setDiscountValue(20); setMaxDiscount(0);
-      setNoExpiry(false); setEnabled(true);
-      setScope("products"); setSelectedProducts([]);
-      setShowPicker(false); setPickerSearch("");
-    }
-  }, [open]);
-
-  if (!open) return null;
 
   const canSubmit = name.trim() && discountValue > 0 && (scope === "all" || selectedProducts.length > 0);
 
@@ -11282,8 +11269,8 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
       discountType,
       discountValue,
       maxDiscount: maxDiscount > 0 ? maxDiscount : undefined,
-      startsAt: new Date(startsAt).toISOString(),
-      endsAt: noExpiry ? undefined : new Date(endsAt).toISOString(),
+      startsAt: dateRange?.from ? new Date(dateRange.from).toISOString() : new Date().toISOString(),
+      endsAt: noExpiry || !dateRange?.to ? undefined : (() => { const d = new Date(dateRange.to); d.setHours(23, 59, 59, 0); return d.toISOString(); })(),
       noExpiry,
       enabled,
       scope,
@@ -11292,17 +11279,43 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-[760px] h-[820px] max-h-[92vh] flex flex-col shadow-xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
-          <p className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</p>
-          <button onClick={onClose} className="size-7 rounded-full bg-[rgba(120,120,128,0.12)] hover:bg-[rgba(120,120,128,0.2)] flex items-center justify-center cursor-pointer transition-colors">
-            <X className="size-3.5" />
-          </button>
-        </div>
+    <div>
+      {/* Back button — pill style matching admin pattern */}
+      <div className="mb-5">
+        <button onClick={onClose}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#fafbfc]">
+      {/* Header — title left, action buttons right */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>กำหนดข้อมูล ส่วนลด ระยะเวลา และเลือกสินค้าที่เข้าร่วม</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onClose}
+            className={`${font} h-[38px] px-5 rounded-full text-[13px] text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            ยกเลิก
+          </button>
+          <motion.button onClick={handleSubmit} disabled={!canSubmit}
+            whileTap={{ scale: 0.96 }} whileHover={canSubmit ? { y: -1 } : undefined}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-white text-[13px] cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
+              <Save className="size-[14px] text-white" strokeWidth={2.6} />
+            </span>
+            <span style={{ fontWeight: 600 }}>บันทึก</span>
+          </motion.button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-start">
+        <div className="space-y-4 min-w-0">
           {/* ── Section 1: ข้อมูลโปรโมชั่น ── */}
           <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
             <div className="flex items-center gap-3">
@@ -11369,7 +11382,7 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
             </div>
           </section>
 
-          {/* ── Section 3: ระยะเวลา ── */}
+          {/* ── Section 3: ระยะเวลา — calendar range + summary (matches admin) ── */}
           <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -11377,39 +11390,173 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
                   <CalendarIcon className="size-4 text-[#f59e0b]" strokeWidth={2.2} />
                 </div>
                 <div className="min-w-0">
-                  <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ระยะเวลา</p>
-                  <p className={`${font} text-[11px] text-[#8e8e93]`}>ช่วงเวลาที่โปรโมชั่นใช้งานได้</p>
+                  <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ระยะเวลา <span className="text-[#ff3b30]">*</span></p>
+                  <p className={`${font} text-[11px] text-[#8e8e93]`}>เลือกช่วงเวลาที่โปรโมชั่นใช้งานได้</p>
                 </div>
               </div>
-              {/* Switch — ไม่มีวันหมดอายุ (อยู่ใน row title) */}
               <label className={`${font} flex items-center gap-2 text-[13px] cursor-pointer shrink-0`}>
                 <span className="text-gray-700">ไม่มีวันหมดอายุ</span>
                 <ToggleSwitch checked={noExpiry} onChange={() => setNoExpiry(!noExpiry)} />
               </label>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>เวลาเริ่ม <span className="text-[#ff3b30]">*</span></label>
-                <DateTimePicker value={startsAt} onChange={setStartsAt} />
+
+            {/* 2-column: calendar left, summary preview right */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+              {/* Calendar */}
+              <div className="bg-white rounded-2xl flex items-start justify-center overflow-x-auto">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={2}
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  defaultMonth={dateRange?.from}
+                  className={`${font}`}
+                  classNames={{
+                    months: "flex flex-col sm:flex-row gap-6",
+                    month: "flex flex-col gap-3",
+                    caption: "flex justify-center pt-1 relative items-center w-full",
+                    caption_label: `${font} text-[14px] text-black`,
+                    nav: "flex items-center gap-1",
+                    nav_button: "size-7 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] flex items-center justify-center p-0 cursor-pointer transition-colors",
+                    nav_button_previous: "absolute left-1",
+                    nav_button_next: "absolute right-1",
+                    table: "w-full border-collapse",
+                    head_row: "flex",
+                    head_cell: `${font} text-gray-400 w-9 font-normal text-[11px]`,
+                    row: "flex w-full mt-1",
+                    cell: "relative p-0 text-center text-[13px] focus-within:relative focus-within:z-20 has-[[aria-selected]]:bg-[#319754]/12 first:has-[[aria-selected]]:rounded-l-full last:has-[[aria-selected]]:rounded-r-full [&:has(.day-range-start)]:rounded-l-full [&:has(.day-range-end)]:rounded-r-full",
+                    day: `${font} size-9 p-0 font-normal text-[13px] rounded-full hover:bg-[#319754]/15 hover:text-[#319754] aria-selected:opacity-100 cursor-pointer transition-colors`,
+                    day_range_start: "day-range-start aria-selected:bg-[#319754] aria-selected:text-white aria-selected:hover:bg-[#287745] rounded-full",
+                    day_range_end:   "day-range-end aria-selected:bg-[#319754] aria-selected:text-white aria-selected:hover:bg-[#287745] rounded-full",
+                    day_selected:    "bg-[#319754] text-white hover:bg-[#287745] focus:bg-[#319754]",
+                    day_today:       "bg-[#319754]/8 text-[#319754] font-semibold",
+                    day_outside:     "day-outside text-gray-300 aria-selected:text-gray-400",
+                    day_disabled:    "text-gray-300 opacity-50",
+                    day_range_middle: "aria-selected:bg-transparent aria-selected:text-[#319754] aria-selected:font-semibold",
+                    day_hidden: "invisible",
+                  }}
+                />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>เวลาสิ้นสุด {!noExpiry && <span className="text-[#ff3b30]">*</span>}</label>
-                {noExpiry ? (
-                  // ไม่มีวันหมดอายุ — แสดง infinity แทน datetime picker (layout คงที่)
-                  <div className={`${font} bg-[#fafafa] flex h-12 items-center justify-between pl-6 pr-4 py-3 rounded-full w-full opacity-60 cursor-not-allowed select-none`}>
-                    <span className="text-[14px] text-gray-500 tabular-nums inline-flex items-center gap-2">
-                      <span className="text-[20px] leading-none" style={{ fontWeight: 700 }}>∞</span>
-                      <span>ลดราคาตลอด</span>
-                    </span>
-                    <CalendarIcon className="size-4 text-gray-300" strokeWidth={2} />
+
+              {/* Summary preview */}
+              {(() => {
+                const hasEnd = !!(dateRange?.to && !noExpiry);
+                const totalDays = dateRange?.from && hasEnd
+                  ? Math.max(1, Math.ceil((dateRange.to!.getTime() - dateRange.from.getTime()) / 86400000) + 1)
+                  : 0;
+                const startsToday = dateRange?.from ? (new Date().setHours(0,0,0,0) === new Date(dateRange.from).setHours(0,0,0,0)) : false;
+                const daysToStart = dateRange?.from ? Math.ceil((dateRange.from.getTime() - new Date().setHours(0,0,0,0)) / 86400000) : 0;
+                return (
+                  <div className="bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden">
+                    <CalendarIcon className="absolute -bottom-4 -right-4 size-32 text-gray-300/40 pointer-events-none" strokeWidth={1.5} />
+
+                    <div className="relative z-10 flex items-center justify-between gap-2">
+                      <p className={`${font} text-[11px] uppercase tracking-wider text-gray-600`} style={{ fontWeight: 700 }}>สรุประยะเวลา</p>
+                      {dateRange?.from && (hasEnd || noExpiry) && (
+                        <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/80 text-gray-700 text-[10px] tabular-nums`} style={{ fontWeight: 600 }}>
+                          <span className="size-1.5 rounded-full bg-gray-500 animate-pulse" />
+                          {startsToday ? "เริ่มวันนี้" : daysToStart > 0 ? `อีก ${daysToStart} วันเริ่ม` : "กำลังดำเนินการ"}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                      <div className="flex flex-col items-center text-center bg-white/80 rounded-xl p-3 backdrop-blur-sm">
+                        <p className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>เริ่มต้น</p>
+                        {dateRange?.from ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none tabular-nums text-gray-900 mt-1`} style={{ fontWeight: 800 }}>
+                              {dateRange.from.getDate()}
+                            </p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>
+                              {dateRange.from.toLocaleDateString("th-TH", { month: "short" })} {dateRange.from.getFullYear() + 543}
+                            </p>
+                          </>
+                        ) : (
+                          <p className={`${font} text-[11px] text-gray-400 italic mt-3 mb-1`}>—</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 px-1">
+                        <ArrowRight className="size-5 text-gray-500" strokeWidth={2.4} />
+                        {totalDays > 0 && (
+                          <span className={`${font} text-[9px] text-gray-600 tabular-nums whitespace-nowrap`} style={{ fontWeight: 600 }}>
+                            {totalDays} วัน
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-center text-center bg-white/80 rounded-xl p-3 backdrop-blur-sm">
+                        <p className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>สิ้นสุด</p>
+                        {noExpiry ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none text-gray-900 mt-1`} style={{ fontWeight: 800 }}>∞</p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>ลดราคาตลอด</p>
+                          </>
+                        ) : dateRange?.to ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none tabular-nums text-gray-900 mt-1`} style={{ fontWeight: 800 }}>
+                              {dateRange.to.getDate()}
+                            </p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>
+                              {dateRange.to.toLocaleDateString("th-TH", { month: "short" })} {dateRange.to.getFullYear() + 543}
+                            </p>
+                          </>
+                        ) : (
+                          <p className={`${font} text-[11px] text-gray-400 italic mt-3 mb-1`}>—</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="relative z-10 flex items-center justify-between gap-3 bg-white/80 rounded-xl px-4 py-3 backdrop-blur-sm">
+                      <div className="flex items-center gap-2">
+                        <Clock className="size-4 text-gray-500" strokeWidth={2.4} />
+                        <p className={`${font} text-[12px] text-gray-700`} style={{ fontWeight: 600 }}>ระยะเวลารวม</p>
+                      </div>
+                      {noExpiry ? (
+                        <p className={`${font} text-[18px] text-gray-900 leading-none`} style={{ fontWeight: 800 }}>ไม่มีกำหนด</p>
+                      ) : totalDays > 0 ? (
+                        <p className={`${font} text-[22px] text-gray-900 tabular-nums leading-none`} style={{ fontWeight: 800 }}>
+                          {totalDays.toLocaleString()} <span className="text-[12px]" style={{ fontWeight: 500 }}>วัน</span>
+                        </p>
+                      ) : (
+                        <p className={`${font} text-[12px] text-gray-400 italic`}>ยังไม่กำหนด</p>
+                      )}
+                    </div>
+
+                    {!dateRange?.from && (
+                      <div className="relative z-10 flex items-center gap-2 text-[11px] text-gray-500 italic">
+                        <Info className="size-3 shrink-0" strokeWidth={2.4} />
+                        คลิกวันที่เริ่ม → วันที่สิ้นสุดในปฏิทินด้านซ้าย
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <DateTimePicker value={endsAt} onChange={setEndsAt} />
-                )}
-              </div>
+                );
+              })()}
             </div>
           </section>
 
+          {/* ── Section 5: ตั้งค่า (in left column so width matches ระยะเวลา) ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center shrink-0">
+                <Settings className="size-4 text-[#8b5cf6]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตั้งค่า</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>การตั้งค่าโปรโมชั่น</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 px-4 h-14 bg-[#fafafa] rounded-2xl">
+              <div className="flex flex-col min-w-0">
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เปิดใช้งานโปรโมชั่น</span>
+                <span className={`${font} text-[11px] text-gray-500`}>{enabled ? "โปรโมชั่นจะแสดงและใช้งานได้" : "โปรโมชั่นถูกซ่อน ไม่ใช้งาน"}</span>
+              </div>
+              <ToggleSwitch checked={enabled} onChange={() => setEnabled(!enabled)} />
+            </div>
+          </section>
+        </div>
+
+        {/* Right column — promotion scope */}
+        <div className="space-y-4 lg:sticky lg:top-4 min-w-0">
           {/* ── Section 4: ขอบเขตโปรโมชั่น ── */}
           <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
             <div className="flex items-center gap-3">
@@ -11532,44 +11679,12 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
               </div>
             )}
           </section>
-
-          {/* ── Section 5: ตั้งค่า ── */}
-          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center shrink-0">
-                <Settings className="size-4 text-[#8b5cf6]" strokeWidth={2.2} />
-              </div>
-              <div>
-                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตั้งค่า</p>
-                <p className={`${font} text-[11px] text-[#8e8e93]`}>การตั้งค่าโปรโมชั่น</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-3 px-4 h-14 bg-[#fafafa] rounded-2xl">
-              <div className="flex flex-col min-w-0">
-                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เปิดใช้งานโปรโมชั่น</span>
-                <span className={`${font} text-[11px] text-gray-500`}>{enabled ? "โปรโมชั่นจะแสดงและใช้งานได้" : "โปรโมชั่นถูกซ่อน ไม่ใช้งาน"}</span>
-              </div>
-              <ToggleSwitch checked={enabled} onChange={() => setEnabled(!enabled)} />
-            </div>
-          </section>
         </div>
+      </div>
 
-        <div className="border-t border-gray-100 p-4 shrink-0 flex items-center gap-3 justify-end">
-          <button onClick={onClose}
-            className={`${font} h-[44px] px-5 rounded-full text-[13px] text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors`}
-            style={{ fontWeight: 500 }}>
-            ยกเลิก
-          </button>
-          <button onClick={handleSubmit} disabled={!canSubmit}
-            className={`${font} h-[44px] px-6 rounded-full text-white text-[13px] transition-colors ${canSubmit ? "bg-[#008c45] hover:bg-[#007a3b] cursor-pointer" : "bg-gray-300 cursor-not-allowed"}`}
-            style={{ fontWeight: 600 }}>
-            บันทึก
-          </button>
-        </div>
-
-        {/* Sub-modal: Product picker */}
+      {/* Sub-modal: Product picker (still a popup since it's a nested picker) */}
         {showPicker && (
-          <div className="absolute inset-0 bg-black/40 z-10 flex items-center justify-center p-4" onClick={() => setShowPicker(false)}>
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowPicker(false)}>
             <div className="bg-white rounded-2xl w-full max-w-[480px] max-h-[80%] flex flex-col shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
                 <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 600 }}>เลือกสินค้าเข้าร่วมโปรโมชั่น</p>
@@ -11615,7 +11730,6 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }
@@ -11627,6 +11741,15 @@ function PromotionsTab() {
   const [showCreate, setShowCreate] = useState(false);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+
+  if (showCreate) {
+    return (
+      <CreatePromotionView
+        onClose={() => setShowCreate(false)}
+        onCreate={(p) => { setPromotions((prev) => [p, ...prev]); setShowCreate(false); toast.success(`สร้างโปรโมชั่น "${p.name}" แล้ว`); }}
+      />
+    );
+  }
 
   const now = Date.now();
   const computedStatus = (p: Promotion): PromoStatus => {
@@ -11849,8 +11972,6 @@ function PromotionsTab() {
         )}
       </div>
 
-      <CreatePromotionModal open={showCreate} onClose={() => setShowCreate(false)}
-        onCreate={(p) => { setPromotions((prev) => [p, ...prev]); setShowCreate(false); toast.success(`สร้างโปรโมชั่น "${p.name}" แล้ว`); }} />
     </div>
   );
 }

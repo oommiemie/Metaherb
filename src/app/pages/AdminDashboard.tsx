@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router";
 import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
@@ -14,7 +14,7 @@ import {
   Sparkles, Loader2, Wand2, Play, Upload, Youtube, Film, Facebook, ExternalLink,
   ScrollText, Lock, Save, Gavel, AlertTriangle, PackageX, Wallet,
   MessageSquare, PackageOpen, RotateCcw, Ban, Filter, Pin, History, Send, FolderEdit,
-  Leaf, Coffee, Heart, Droplet, Gift, Apple, GripVertical,
+  Leaf, Coffee, Heart, Droplet, Gift, Apple, GripVertical, ClipboardList, UserPlus, Percent,
   Sprout, TreePine, TreeDeciduous, Flower, Flower2, Trees, Sun, Cloud,
   Cherry, Grape, Citrus, Banana, Carrot, Wheat, Egg, EggFried, Cookie, Cake,
   IceCream, IceCream2, Pizza, Sandwich, Salad, Soup, Beef, Drumstick, Fish, Ham, Croissant, UtensilsCrossed,
@@ -26,18 +26,41 @@ import {
   Dog, Cat, Bird, PawPrint, Rabbit, Squirrel, Bone,
   Bike, Tent, Footprints, Mountain, Sunrise, Sunset,
   Award, Trophy, Medal, Crown, Flame, Bookmark, Shirt, BookOpen, Book, Music, Gamepad2,
+  Download, FileSpreadsheet, PieChart as PieIcon,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, ComposedChart, Area } from "recharts";
 import { motion, AnimatePresence } from "motion/react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { Calendar } from "../components/ui/calendar";
+import type { DateRange } from "react-day-picker";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog";
 import { toast } from "sonner";
 import imgRequests from "../../assets/requests.png";
 import imgDamagedGoods from "../../assets/damaged-goods.png";
+import imgPromoCard from "../../assets/promotioncard.png";
+import imgFlash from "../../assets/flash.png";
+import imgCoin from "../../assets/cion.png";
+import imgBox from "../../assets/box-in-caer.png";
+import imgCost from "../../assets/cost.png";
+import imgCoinUp from "../../assets/cion-up.png";
+import imgBestStore from "../../assets/best-store.png";
+import imgPlatformFees from "../../assets/Platform-fees.png";
+import imgNewCustomer from "../../assets/new-customer.png";
+import imgRepeatCustomers from "../../assets/repeat-customers.png";
+import imgGroupCustomer from "../../assets/gourp-customer.png";
+import imgMember from "../../assets/member.png";
+import imgProductsSold from "../../assets/products-sold.png";
+import imgProductsStore from "../../assets/products-store.png";
+import imgStock from "../../assets/stock.png";
+import imgRating from "../../assets/rating.png";
+import imgVisitors from "../../assets/visitors.png";
+import imgBagInCart from "../../assets/bag-in-cart.png";
+import imgConvert from "../../assets/convert.png";
+import imgCoupon from "../../assets/coupon.png";
 import { products as siteProducts, categories as productCategories } from "../data/products";
+import { shops as siteShops } from "../data/shops";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
@@ -100,7 +123,7 @@ const sectionMenus: Record<AdminSection, AdminItem[]> = {
     ]},
     { id: "products",   label: "สินค้า",          icon: Package, children: [
       { id: "products_manage",    label: "จัดการสินค้า",          icon: Package },
-      { id: "products_categories", label: "จัดการหมวดหมู่สินค้า", icon: Folder },
+      { id: "products_categories", label: "หมวดหมู่สินค้า", icon: Folder },
       { id: "products_promotions", label: "จัดการโปรโมชั่น",       icon: Megaphone },
       { id: "products_flash",     label: "Flash Sale Events",      icon: Zap },
       { id: "products_coupons",   label: "คูปอง",                  icon: Ticket },
@@ -326,168 +349,373 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
 
 /* ========== DASHBOARD CONTENT ========== */
 function DashboardContent() {
+  const now = new Date();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? "สวัสดีตอนเช้า" : hour < 17 ? "สวัสดีตอนบ่าย" : "สวัสดีตอนเย็น";
+  const dayLabel = now.toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" }) + " " + (now.getFullYear() + 543);
+
   const stats = [
-    { label: "รายได้รวม",        value: "฿316,000", change: "+18%", color: "#319754", Icon: DollarSign,    hint: "เทียบเดือนที่แล้ว" },
-    { label: "คำสั่งซื้อทั้งหมด", value: "885",      change: "+24",  color: "#3b82f6", Icon: ShoppingCart,  hint: "เดือนนี้" },
-    { label: "ลูกค้าทั้งหมด",     value: "1,245",    change: "+56",  color: "#9747ff", Icon: Users,         hint: "ลูกค้าใหม่ + กลับมาซื้อ" },
-    { label: "ร้านค้าทั้งหมด",    value: "32",       change: "+3",   color: "#ff9500", Icon: Store,         hint: "ร้านค้าที่ active" },
+    { label: "รายได้รวมเดือนนี้",    value: "฿3,160,000", subLabel: "+18% เทียบเดือนที่แล้ว", accent: "#10b981", Icon: DollarSign,    img: imgCoin       },
+    { label: "คำสั่งซื้อเดือนนี้",     value: "8,850",       subLabel: "+24 จากสัปดาห์ที่แล้ว",   accent: "#0ea5e9", Icon: ShoppingCart, img: imgBox         },
+    { label: "ลูกค้าทั้งหมด",           value: "18,420",      subLabel: "+56 ลูกค้าใหม่",          accent: "#6366f1", Icon: Users,         img: imgGroupCustomer },
+    { label: "ร้านค้าทั้งหมด",          value: "32",          subLabel: "+3 รออนุมัติ",             accent: "#f59e0b", Icon: Store,         img: imgBestStore   },
   ];
 
-  const pendingActions = [
-    { label: "ร้านค้ารอตรวจสอบ", count: 4, color: "#ff9500", Icon: Store },
-    { label: "ร้องเรียนใหม่",      count: 7, color: "#ff3b30", Icon: AlertCircle },
-    { label: "Banner รอเผยแพร่",   count: 2, color: "#9747ff", Icon: ImageIcon },
-    { label: "รีพอร์ตจากผู้ใช้",   count: 3, color: "#f59e0b", Icon: Shield },
+  const quickActions = [
+    { label: "รายงานยอดขาย",      Icon: TrendingUp,    to: "report_sales",     color: "#319754" },
+    { label: "คำสั่งซื้อ",            Icon: ShoppingCart,  to: "orders",           color: "#3b82f6" },
+    { label: "ร้องเรียน",              Icon: AlertCircle,   to: "complaints_list",  color: "#ef4444" },
+    { label: "Flash Sale",            Icon: Zap,           to: "products_flash",   color: "#e62e05" },
   ];
 
-  const activities = [
-    { actor: "ร้าน บ้านสมุนไพร",        action: "สมัครเข้าระบบ — รอตรวจสอบ",         time: "5 นาทีที่แล้ว",  color: "#319754", Icon: Store         },
-    { actor: "user_24856",                action: "ลงทะเบียนเป็นลูกค้าใหม่",              time: "12 นาทีที่แล้ว", color: "#3b82f6", Icon: Users         },
-    { actor: "DSP-20260509-014",         action: "ร้องเรียนใหม่จาก Metaherb Store",     time: "28 นาทีที่แล้ว", color: "#ff3b30", Icon: AlertCircle    },
-    { actor: "ร้าน อโรม่าฟาร์ม",        action: "ส่งเอกสารเพิ่มเติม",                   time: "1 ชม. ที่แล้ว",  color: "#319754", Icon: Store         },
-    { actor: "Hero Banner — Summer",      action: "ร่างใหม่รอเผยแพร่",                     time: "2 ชม. ที่แล้ว",  color: "#9747ff", Icon: ImageIcon      },
-    { actor: "user_24820",                action: "รายงานสินค้าผิดกฎ — Power Boost+",   time: "3 ชม. ที่แล้ว",  color: "#ff9500", Icon: Shield        },
+  const pendingActions: { label: string; count: number; sub: string; color: string; urgent?: boolean; Icon: any }[] = [
+    { label: "ร้องเรียนใหม่",       count: 7, sub: "รอตรวจสอบ ≤ 24 ชม.",     color: "#ef4444", urgent: true,  Icon: AlertCircle },
+    { label: "ร้านค้ารอตรวจสอบ",  count: 4, sub: "เอกสารพร้อมอนุมัติ",   color: "#f59e0b",                Icon: Store        },
+    { label: "คูปองรอเปิดใช้",      count: 5, sub: "กำหนดเริ่มภายใน 3 วัน", color: "#3b82f6",                Icon: Ticket       },
+    { label: "รีพอร์ตจากผู้ใช้",   count: 3, sub: "สินค้า/รีวิวต้องสงสัย", color: "#f59e0b",                Icon: Shield       },
+    { label: "Banner รอเผยแพร่",   count: 2, sub: "ตรวจสอบรูปและลิงก์",   color: "#9747ff",                Icon: ImageIcon    },
+  ];
+  const pendingTotal = pendingActions.reduce((s, p) => s + p.count, 0);
+
+  const activities: { actor: string; action: string; time: string; type: string; typeLabel: string; color: string; Icon: any; cta?: string }[] = [
+    { actor: "ร้าน บ้านสมุนไพร",        action: "สมัครเข้าระบบ — รอตรวจสอบ",          time: "5 นาทีที่แล้ว",  type: "shop",      typeLabel: "ร้านใหม่",       color: "#319754", Icon: Store,       cta: "ตรวจสอบ" },
+    { actor: "user_24856",                action: "ลงทะเบียนเป็นลูกค้าใหม่",               time: "12 นาทีที่แล้ว", type: "customer",  typeLabel: "ลูกค้า",         color: "#3b82f6", Icon: Users        },
+    { actor: "DSP-20260509-014",         action: "ร้องเรียนใหม่จาก Metaherb Store",     time: "28 นาทีที่แล้ว", type: "complaint", typeLabel: "ร้องเรียน",      color: "#ef4444", Icon: AlertCircle, cta: "ดูเรื่อง" },
+    { actor: "ร้าน อโรม่าฟาร์ม",        action: "ส่งเอกสารเพิ่มเติม",                    time: "1 ชม. ที่แล้ว",  type: "shop",      typeLabel: "เอกสาร",         color: "#319754", Icon: Store        },
+    { actor: "Hero Banner — Summer",      action: "ร่างใหม่รอเผยแพร่",                      time: "2 ชม. ที่แล้ว",  type: "banner",    typeLabel: "Banner",         color: "#9747ff", Icon: ImageIcon,   cta: "เผยแพร่" },
+    { actor: "user_24820",                action: "รายงานสินค้าผิดกฎ — Power Boost+",    time: "3 ชม. ที่แล้ว",  type: "report",    typeLabel: "รีพอร์ต",        color: "#f59e0b", Icon: Shield,      cta: "ตรวจสอบ" },
   ];
 
   const topShops = [
-    { rank: 1, name: "Metaherb Store",      orders: 412, revenue: 145200, growth: "+24%", color: "#319754" },
-    { rank: 2, name: "บ้านสมุนไพรไทย",   orders: 318, revenue: 98640,  growth: "+18%", color: "#3b82f6" },
-    { rank: 3, name: "อโรม่าฟาร์ม",      orders: 264, revenue: 72180,  growth: "+12%", color: "#9747ff" },
-    { rank: 4, name: "Wellness Garden",    orders: 198, revenue: 58420,  growth: "+9%",  color: "#ff9500" },
-    { rank: 5, name: "Herb & Soul",        orders: 156, revenue: 41250,  growth: "+5%",  color: "#737373" },
+    { rank: 1, name: "METAHERB Store",     orders: 412, revenue: 145200, growth: "+24%" },
+    { rank: 2, name: "Organic Thai Farm",  orders: 318, revenue: 98640,  growth: "+18%" },
+    { rank: 3, name: "ธรรมชาติพรีเมียม",   orders: 264, revenue: 72180,  growth: "+12%" },
+    { rank: 4, name: "ร้านป่าหมอก",        orders: 198, revenue: 58420,  growth: "+9%"  },
+    { rank: 5, name: "สมุนไพรบ้านสวน",    orders: 156, revenue: 41250,  growth: "+5%"  },
   ];
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Stat cards */}
+      {/* Hero greeting */}
+      <div className="relative overflow-hidden rounded-2xl p-5 lg:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+        style={{ background: "linear-gradient(135deg, rgba(49,151,84,0.95) 0%, #287745 100%)" }}>
+        <div className="absolute -top-10 -right-10 size-40 rounded-full pointer-events-none opacity-20"
+          style={{ background: "radial-gradient(circle at center, #fff, transparent 70%)" }} />
+        <div className="absolute -bottom-16 -left-12 size-48 rounded-full pointer-events-none opacity-15"
+          style={{ background: "radial-gradient(circle at center, #fde68a, transparent 70%)" }} />
+        <div className="relative z-10 text-white">
+          <p className={`${font} text-[12px] text-white/80`} style={{ fontWeight: 500 }}>{dayLabel}</p>
+          <h2 className={`${font} text-[24px] lg:text-[28px] mt-1 leading-tight`} style={{ fontWeight: 700 }}>
+            {greeting} ผู้ดูแลระบบ 👋
+          </h2>
+          <p className={`${font} text-[13px] text-white/85 mt-1`}>มี <span className="tabular-nums" style={{ fontWeight: 700 }}>{pendingTotal}</span> รายการรอดำเนินการ · ภาพรวมระบบวันนี้</p>
+        </div>
+        <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
+          {quickActions.map((q) => (
+            <button key={q.label}
+              className={`${font} inline-flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white cursor-pointer transition-colors min-w-[88px]`}>
+              <q.Icon className="size-4" strokeWidth={2.4} />
+              <span className="text-[11px]" style={{ fontWeight: 600 }}>{q.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => (
+        {stats.map((s, i) => (
           <div key={s.label}
-            className="group rounded-2xl p-4 flex flex-col gap-3 transition-all cursor-default border hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
-            style={{ backgroundColor: `${s.color}0d`, borderColor: `${s.color}33` }}>
-            <div className="flex items-center justify-between gap-2">
-              <p className={`${font} text-[12px] truncate`} style={{ color: s.color, fontWeight: 600 }}>{s.label}</p>
-              <div className="size-9 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shrink-0"
-                style={{ backgroundColor: s.color }}>
-                <s.Icon className="size-4 text-white" strokeWidth={2.4} />
+            className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            style={{ backgroundColor: `${s.accent}0d` }}>
+            <div className="relative">
+              <div className="flex items-center justify-between">
+                <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                  <s.Icon className="size-4" style={{ color: s.accent }} strokeWidth={2.4} />
+                </div>
+              </div>
+              <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                <AnimatedValue value={s.value} />
+              </p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                  style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                  {s.subLabel}
+                </span>
               </div>
             </div>
-            <div className="flex items-end justify-between gap-2">
-              <p className={`${font} text-[22px] text-[#101828] tabular-nums leading-none`} style={{ fontWeight: 700 }}>{s.value}</p>
-              <span className={`${font} text-[11px] tabular-nums`} style={{ color: s.color, fontWeight: 600 }}>{s.change}</span>
-            </div>
-            <p className={`${font} text-[11px]`} style={{ color: `${s.color}cc` }}>{s.hint}</p>
+            <motion.img src={s.img} alt="" aria-hidden="true"
+              className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+              style={{
+                maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+              }}
+              initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 + i * 0.1 }} />
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
-          <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
-            <BarChart3 className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
-            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ยอดขายรายเดือน</p>
+      {/* Sales chart + Pending */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #3197541a, #10b9811a)" }}>
+                <BarChart3 className="size-4 text-[#319754]" strokeWidth={2.4} />
+              </div>
+              <div>
+                <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>ยอดขายรายเดือน</p>
+                <p className={`${font} text-[11px] text-gray-500`}>6 เดือนล่าสุด · ทุกร้านในระบบ</p>
+              </div>
+            </div>
+            <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full bg-[#319754]/10 text-[#319754]`} style={{ fontWeight: 600 }}>
+              <TrendingUp className="size-3" strokeWidth={2.4} />
+              +18%
+            </span>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#999" }} />
-              <YAxis tick={{ fontSize: 12, fill: "#999" }} />
-              <Tooltip cursor={{ fill: "rgba(49,151,84,0.05)" }} />
-              <Bar dataKey="sales" fill={ADMIN_PRIMARY} radius={[8, 8, 0, 0]} />
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={salesData} margin={{ top: 16, right: 16, left: 0, bottom: 8 }} barCategoryGap="22%">
+              <defs>
+                <linearGradient id="dashSalesGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#46c474" />
+                  <stop offset="100%" stopColor="#287745" />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={12} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
+              <Tooltip
+                cursor={{ fill: "rgba(148,163,184,0.08)" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[160px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      <p className="text-[15px] tabular-nums" style={{ fontWeight: 700, color: "#319754" }}>฿{payload[0].value.toLocaleString()}</p>
+                    </div>
+                  );
+                }} />
+              <Bar dataKey="sales" fill="url(#dashSalesGrad)" radius={[8, 8, 0, 0]} maxBarSize={40} animationDuration={700} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3">
-          <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-2">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4 relative overflow-hidden">
+          {/* Decorative blobs */}
+          <div className="absolute -top-16 -right-16 size-48 rounded-full pointer-events-none opacity-[0.08]"
+            style={{ background: "radial-gradient(circle at center, #ef4444, transparent 70%)" }} />
+          <div className="absolute -bottom-20 -left-12 size-40 rounded-full pointer-events-none opacity-[0.06]"
+            style={{ background: "radial-gradient(circle at center, #f59e0b, transparent 70%)" }} />
+
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100 relative z-10">
             <div className="flex items-center gap-2">
-              <AlertCircle className="size-4 text-[#ff9500]" strokeWidth={2.2} />
-              <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>รายการรอดำเนินการ</p>
+              <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #ef44441a, #f59e0b1a)" }}>
+                <AlertCircle className="size-4 text-[#ef4444]" strokeWidth={2.4} />
+              </div>
+              <div>
+                <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>รอดำเนินการ</p>
+                <p className={`${font} text-[11px] text-gray-500`}>ต้องตรวจสอบโดยแอดมิน</p>
+              </div>
             </div>
-            <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>
-              <span style={{ color: "#ff3b30", fontWeight: 600 }}>{pendingActions.reduce((acc, p) => acc + p.count, 0)}</span> รายการ
+            <span className={`${font} inline-flex items-center gap-1 text-[12px] px-3 py-1 rounded-full tabular-nums shadow-[0_2px_6px_rgba(239,68,68,0.25)]`}
+              style={{ background: "linear-gradient(135deg, #f87171, #ef4444)", color: "#fff", fontWeight: 700 }}>
+              <span className="size-1.5 rounded-full bg-white animate-pulse" />
+              {pendingTotal} รายการ
             </span>
           </div>
-          <div className="flex flex-col gap-2">
-            {pendingActions.map((p) => (
-              <motion.button key={p.label}
-                whileTap={{ scale: 0.98 }} whileHover={{ scale: 1.01, x: 2 }}
-                onClick={() => toast.info(p.label)}
-                className="group/row flex items-center gap-3 p-3 rounded-2xl bg-[#fafbfc] hover:bg-white border border-transparent hover:border-gray-200 cursor-pointer transition-all">
-                <div className="size-10 rounded-2xl flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: `${p.color}1a` }}>
-                  <p.Icon className="size-5" style={{ color: p.color }} strokeWidth={2.2} />
-                </div>
-                <p className={`${font} text-[13px] text-black flex-1 text-left`} style={{ fontWeight: 500 }}>{p.label}</p>
-                <span className={`${font} inline-flex items-center justify-center min-w-[28px] h-[24px] px-2 rounded-full tabular-nums text-[12px] text-white shadow-sm transition-transform group-hover/row:scale-110`}
-                  style={{ backgroundColor: p.color, fontWeight: 700 }}>{p.count}</span>
-              </motion.button>
-            ))}
+          <div className="flex flex-col gap-2 relative z-10">
+            {pendingActions.map((p, i) => {
+              const maxCount = Math.max(...pendingActions.map((x) => x.count));
+              const pct = (p.count / maxCount) * 100;
+              return (
+                <motion.button key={p.label}
+                  initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
+                  whileTap={{ scale: 0.98 }} whileHover={{ y: -2 }}
+                  onClick={() => toast.info(p.label)}
+                  className={`${font} group/row relative flex items-stretch gap-3 rounded-xl cursor-pointer transition-all overflow-hidden border border-transparent hover:border-gray-100 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)]`}
+                  style={{ background: `linear-gradient(135deg, ${p.color}10, ${p.color}03)` }}>
+                  {/* Content */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0 py-2.5 px-3">
+                    {/* Icon with glow */}
+                    <span className="relative shrink-0">
+                      {p.urgent && (
+                        <span className="absolute inset-0 rounded-xl animate-ping" style={{ background: `${p.color}40`, animationDuration: "2s" }} />
+                      )}
+                      <span className="size-11 rounded-xl flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.10)] relative"
+                        style={{ background: `linear-gradient(135deg, ${p.color}, ${p.color}cc)` }}>
+                        <p.Icon className="size-5 text-white" strokeWidth={2.4} />
+                      </span>
+                    </span>
+
+                    {/* Text */}
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center gap-1.5">
+                        <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{p.label}</p>
+                        {p.urgent && (
+                          <span className={`${font} inline-flex items-center text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0`}
+                            style={{ backgroundColor: `${p.color}1f`, color: p.color, fontWeight: 700 }}>
+                            ด่วน
+                          </span>
+                        )}
+                      </div>
+                      <p className={`${font} text-[10px] text-gray-500 truncate mt-0.5`}>{p.sub}</p>
+                      <div className="h-1 rounded-full bg-gray-200/50 overflow-hidden mt-1.5">
+                        <motion.div className="h-full rounded-full"
+                          style={{ background: `linear-gradient(90deg, ${p.color}80, ${p.color})` }}
+                          initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                          transition={{ duration: 0.9, delay: 0.1 + i * 0.06, ease: [0.16, 1, 0.3, 1] }} />
+                      </div>
+                    </div>
+
+                    {/* Count + CTA */}
+                    <div className="flex flex-col items-end gap-0.5 shrink-0">
+                      <span className={`${font} text-[22px] tabular-nums leading-none`} style={{ fontWeight: 800, color: p.color }}>
+                        {p.count}
+                      </span>
+                      <span className={`${font} inline-flex items-center gap-0.5 text-[10px] text-gray-500 group-hover/row:text-[#319754] transition-colors`} style={{ fontWeight: 600 }}>
+                        จัดการ <ChevronRight className="size-3" strokeWidth={2.4} />
+                      </span>
+                    </div>
+                  </div>
+                </motion.button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
-          <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
-            <Package className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
-            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>สัดส่วนสินค้าขายดี</p>
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="value">
-                {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-            {categoryData.map((c, i) => (
-              <div key={c.name} className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                <span className={`${font} text-[11px] text-gray-600`}>{c.name}</span>
-                <span className={`${font} text-[11px] text-gray-400 tabular-nums`}>{c.value}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* Activity feed + Category donut */}
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4 relative overflow-hidden">
+          {/* Decorative blob */}
+          <div className="absolute -top-16 -right-16 size-48 rounded-full pointer-events-none opacity-[0.05]"
+            style={{ background: "radial-gradient(circle at center, #6366f1, transparent 70%)" }} />
 
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3">
-          <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100 relative z-10">
             <div className="flex items-center gap-2">
-              <BarChart2 className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
-              <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>กิจกรรมล่าสุด</p>
+              <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #6366f11a, #3b82f61a)" }}>
+                <History className="size-4 text-[#6366f1]" strokeWidth={2.4} />
+              </div>
+              <div>
+                <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>กิจกรรมล่าสุด</p>
+                <p className={`${font} text-[11px] text-gray-500`}>{activities.length} เหตุการณ์ใน 3 ชม. ที่ผ่านมา</p>
+              </div>
             </div>
-            <button className={`${font} text-[12px] hover:underline cursor-pointer`} style={{ color: ADMIN_PRIMARY, fontWeight: 500 }}>ดูทั้งหมด</button>
+            <button className={`${font} text-[12px] hover:underline cursor-pointer inline-flex items-center gap-1`} style={{ color: ADMIN_PRIMARY, fontWeight: 500 }}>
+              ดูทั้งหมด <ChevronRight className="size-3" strokeWidth={2.4} />
+            </button>
           </div>
-          <div className="flex flex-col">
+
+          <div className="flex flex-col gap-2 relative z-10">
             {activities.map((a, i) => (
-              <div key={i} className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-b-0">
-                <div className="size-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${a.color}1a` }}>
-                  <a.Icon className="size-4" style={{ color: a.color }} strokeWidth={2.2} />
-                </div>
+              <motion.div key={i}
+                initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
+                className={`${font} group/act flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] cursor-pointer`}>
+                {/* Avatar with gradient */}
+                <span className="size-10 rounded-xl flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.08)]"
+                  style={{ background: `linear-gradient(135deg, ${a.color}, ${a.color}cc)` }}>
+                  <a.Icon className="size-4 text-white" strokeWidth={2.4} />
+                </span>
+
+                {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{a.actor}</p>
-                  <p className={`${font} text-[11px] text-gray-500 truncate`}>{a.action}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{a.actor}</p>
+                    <span className={`${font} inline-flex items-center text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wider shrink-0`}
+                      style={{ backgroundColor: `${a.color}15`, color: a.color, fontWeight: 700 }}>
+                      {a.typeLabel}
+                    </span>
+                  </div>
+                  <p className={`${font} text-[11px] text-gray-500 truncate mt-0.5`}>{a.action}</p>
                 </div>
-                <span className={`${font} text-[10px] text-gray-400 shrink-0 mt-1`}>{a.time}</span>
+
+                {/* Time + CTA */}
+                <div className="flex flex-col items-end gap-0.5 shrink-0">
+                  <span className={`${font} text-[10px] text-gray-400 tabular-nums whitespace-nowrap`}>{a.time}</span>
+                  {a.cta ? (
+                    <span className={`${font} inline-flex items-center gap-0.5 text-[10px] opacity-0 group-hover/act:opacity-100 transition-opacity`}
+                      style={{ color: a.color, fontWeight: 600 }}>
+                      {a.cta} <ChevronRight className="size-3" strokeWidth={2.4} />
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-transparent">·</span>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3 relative overflow-hidden">
+          <div className="absolute -top-16 -right-16 size-40 rounded-full pointer-events-none opacity-[0.08]"
+            style={{ background: "radial-gradient(circle at center, #3b82f6, transparent 70%)" }} />
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100 relative z-10">
+            <div className="flex items-center gap-2">
+              <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #3b82f61a, #319754/1a)" }}>
+                <Package className="size-4 text-[#3b82f6]" strokeWidth={2.4} />
+              </div>
+              <div>
+                <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>หมวดหมู่ขายดี</p>
+                <p className={`${font} text-[11px] text-gray-500`}>{categoryData.length} หมวด</p>
+              </div>
+            </div>
+          </div>
+          <div className="relative flex items-center justify-center relative z-10">
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <defs>
+                  {categoryData.map((c, i) => (
+                    <linearGradient key={c.name} id={`dashCatGrad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.8} />
+                      <stop offset="100%" stopColor={COLORS[i % COLORS.length]} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={2} cornerRadius={4} dataKey="value" stroke="none">
+                  {categoryData.map((_, i) => <Cell key={i} fill={`url(#dashCatGrad-${i})`} stroke="#fff" strokeWidth={2} />)}
+                </Pie>
+                <Tooltip wrapperStyle={{ zIndex: 50 }} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
+              <p className={`${font} text-[9px] uppercase tracking-[0.18em] text-gray-400`} style={{ fontWeight: 600 }}>หมวดหมู่</p>
+              <p className={`${font} text-[20px] tabular-nums mt-1 leading-none text-black`} style={{ fontWeight: 800 }}>{categoryData.length}</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5 relative z-10">
+            {categoryData.map((c, i) => (
+              <div key={c.name} className="flex items-center justify-between gap-2 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors">
+                <span className={`${font} inline-flex items-center gap-2 text-[12px] text-gray-700`}>
+                  <span className="size-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                  <span style={{ fontWeight: 500 }}>{c.name}</span>
+                </span>
+                <span className={`${font} text-[12px] tabular-nums`} style={{ fontWeight: 700, color: COLORS[i % COLORS.length] }}>{c.value}%</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
-        <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-2">
+      {/* Top shops */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-4">
+        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <TrendingUp className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
-            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ร้านค้ายอดเยี่ยมเดือนนี้</p>
+            <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #f59e0b1a, #ef44441a)" }}>
+              <Trophy className="size-4 text-[#f59e0b]" strokeWidth={2.4} />
+            </div>
+            <div>
+              <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>ร้านค้ายอดเยี่ยมเดือนนี้</p>
+              <p className={`${font} text-[11px] text-gray-500`}>{topShops.length} อันดับแรก</p>
+            </div>
           </div>
           <button className={`${font} text-[12px] hover:underline cursor-pointer`} style={{ color: ADMIN_PRIMARY, fontWeight: 500 }}>ดูทั้งหมด</button>
         </div>
         <table className="w-full table-fixed">
           <colgroup>
-            <col style={{ width: "8%" }} /><col style={{ width: "32%" }} /><col style={{ width: "20%" }} /><col style={{ width: "25%" }} /><col style={{ width: "15%" }} />
+            <col style={{ width: "8%" }} /><col style={{ width: "38%" }} /><col style={{ width: "16%" }} /><col style={{ width: "22%" }} /><col style={{ width: "16%" }} />
           </colgroup>
           <thead>
             <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
@@ -499,28 +727,42 @@ function DashboardContent() {
             </tr>
           </thead>
           <tbody>
-            {topShops.map((s) => (
-              <tr key={s.rank} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
-                <td className="py-3 pr-4 text-center">
-                  <span className={`${font} inline-flex items-center justify-center size-7 rounded-full text-white tabular-nums text-[12px]`}
-                    style={{ backgroundColor: s.color, fontWeight: 700 }}>{s.rank}</span>
-                </td>
-                <td className="py-3 pr-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="size-9 rounded-full flex items-center justify-center text-white text-[12px]"
-                      style={{ backgroundColor: s.color, fontWeight: 700 }}>{s.name.charAt(0)}</div>
-                    <span className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{s.name}</span>
-                  </div>
-                </td>
-                <td className={`${font} py-3 pr-4 text-right text-[13px] text-black tabular-nums`} style={{ fontWeight: 500 }}>{s.orders.toLocaleString()}</td>
-                <td className={`${font} py-3 pr-4 text-right text-[13px] tabular-nums`} style={{ color: "#319754", fontWeight: 600 }}>฿{s.revenue.toLocaleString()}</td>
-                <td className="py-3 text-right">
-                  <span className={`${font} inline-flex items-center gap-1 text-[12px] tabular-nums`} style={{ color: "#319754", fontWeight: 600 }}>
-                    <TrendingUp className="size-3" strokeWidth={2.4} />{s.growth}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {topShops.map((s, i) => {
+              const rankColor = i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : i === 2 ? "#cd7f32" : "#9ca3af";
+              const banner = siteShops.find((x) => x.name === s.name)?.banner;
+              const isTop = i === 0;
+              return (
+                <tr key={s.rank} className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                  <td className="py-3 pr-4 text-center">
+                    <span className={`${font} inline-flex items-center justify-center size-7 rounded-lg text-white tabular-nums text-[12px] shadow-sm`}
+                      style={{ background: `linear-gradient(135deg, ${rankColor}, ${rankColor}cc)`, fontWeight: 700 }}>{s.rank}</span>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="relative shrink-0">
+                        {isTop && (
+                          <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-10"
+                            style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.18))" }}>
+                            <Crown className="size-3" fill="#fbbf24" stroke="#b45309" strokeWidth={1.6} />
+                          </span>
+                        )}
+                        <span className="size-10 rounded-full overflow-hidden bg-gray-100 block ring-2 ring-white shadow-[0_1px_3px_rgba(0,0,0,0.10)]">
+                          {banner ? <ImageWithFallback src={banner} alt={s.name} className="w-full h-full object-cover" /> : <span className="w-full h-full flex items-center justify-center text-gray-500 text-[13px] bg-gray-200" style={{ fontWeight: 700 }}>{s.name.charAt(0)}</span>}
+                        </span>
+                      </span>
+                      <span className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{s.name}</span>
+                    </div>
+                  </td>
+                  <td className={`${font} py-3 pr-4 text-right text-[13px] text-black tabular-nums`} style={{ fontWeight: 500 }}>{s.orders.toLocaleString()}</td>
+                  <td className={`${font} py-3 pr-4 text-right text-[14px] tabular-nums`} style={{ color: "#319754", fontWeight: 700 }}>฿{s.revenue.toLocaleString()}</td>
+                  <td className="py-3 text-right">
+                    <span className={`${font} inline-flex items-center gap-1 text-[12px] tabular-nums px-2 py-0.5 rounded-full bg-[#319754]/10 text-[#319754]`} style={{ fontWeight: 700 }}>
+                      <TrendingUp className="size-3" strokeWidth={2.4} />{s.growth}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -529,6 +771,4089 @@ function DashboardContent() {
 }
 
 /* ========== REPORT CONTENT ========== */
+function AnimatedValue({ value, duration = 1000 }: { value: string; duration?: number }) {
+  const match = value.match(/^([฿]?\s*)([\d,]+(?:\.\d+)?)(.*)$/);
+  const target = match ? parseFloat(match[2].replace(/,/g, "")) : 0;
+  const decimals = match && match[2].includes(".") ? (match[2].split(".")[1] || "").length : 0;
+  const prefix = match ? match[1] : "";
+  const suffix = match ? match[3] : "";
+  const [current, setCurrent] = useState(0);
+  useEffect(() => {
+    if (!match) return;
+    const startTime = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setCurrent(target * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  if (!match) return <>{value}</>;
+  const formatted = decimals > 0
+    ? current.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+    : Math.round(current).toLocaleString();
+  return <>{prefix}{formatted}{suffix}</>;
+}
+
+function AdminSalesReportContent() {
+  type Period = "daily" | "weekly" | "monthly" | "yearly";
+  type ChartKind = "line" | "bar" | "pie";
+
+  const [period, setPeriod] = useState<Period>("monthly");
+  const [chartKind, setChartKind] = useState<ChartKind>("line");
+  const [shopFilter, setShopFilter] = useState<string>("all");
+  const today = new Date();
+  // Per-period date pickers
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const from = new Date(); from.setDate(from.getDate() - 6); from.setHours(0, 0, 0, 0);
+    const to = new Date(); to.setHours(0, 0, 0, 0);
+    return { from, to };
+  });
+  const [weekMonth, setWeekMonth] = useState<Date>(today);
+  const [monthRange, setMonthRange] = useState<{ from: number; to: number; year: number }>({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() });
+  const [monthClickPhase, setMonthClickPhase] = useState<0 | 1>(0);
+  const [yearRange, setYearRange] = useState<{ from: number; to: number }>({ from: today.getFullYear(), to: today.getFullYear() });
+  const [yearClickPhase, setYearClickPhase] = useState<0 | 1>(0);
+  const [calOpen, setCalOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<"sales_desc" | "orders_desc" | "qty_desc">("sales_desc");
+  const [productPage, setProductPage] = useState(1);
+  const [groupsPerPage, setGroupsPerPage] = useState(5);
+
+  const thaiMonthsFull = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  const thaiMonthsShort = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const availableYears = Array.from({ length: 5 }, (_, i) => today.getFullYear() - i);
+
+  const fmtThaiDate = (d?: Date) => d ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear() + 543}` : "—";
+
+  const handleMonthClick = (m: number) => {
+    if (monthClickPhase === 0) {
+      setMonthRange((cur) => ({ ...cur, from: m, to: m }));
+      setMonthClickPhase(1);
+    } else {
+      setMonthRange((cur) => ({ ...cur, from: Math.min(cur.from, m), to: Math.max(cur.from, m) }));
+      setMonthClickPhase(0);
+      setCalOpen(false);
+    }
+  };
+  const handleYearClick = (y: number) => {
+    if (yearClickPhase === 0) {
+      setYearRange({ from: y, to: y });
+      setYearClickPhase(1);
+    } else {
+      setYearRange((cur) => ({ from: Math.min(cur.from, y), to: Math.max(cur.from, y) }));
+      setYearClickPhase(0);
+      setCalOpen(false);
+    }
+  };
+
+  // Date filter label depends on period
+  const dateFilterLabel = (() => {
+    if (period === "daily") {
+      if (!dateRange?.from) return "เลือกช่วงวันที่";
+      if (dateRange.to && dateRange.to.getTime() !== dateRange.from.getTime()) {
+        return `${fmtThaiDate(dateRange.from)} – ${fmtThaiDate(dateRange.to)}`;
+      }
+      return fmtThaiDate(dateRange.from);
+    }
+    if (period === "weekly") {
+      return `เดือน${thaiMonthsFull[weekMonth.getMonth()]} ${weekMonth.getFullYear() + 543}`;
+    }
+    if (period === "monthly") {
+      const yr = monthRange.year + 543;
+      if (monthRange.from === monthRange.to) return `เดือน${thaiMonthsFull[monthRange.from]} ${yr}`;
+      return `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+    }
+    // yearly
+    if (yearRange.from === yearRange.to) return `ปี ${yearRange.from + 543}`;
+    const a = Math.min(yearRange.from, yearRange.to);
+    const b = Math.max(yearRange.from, yearRange.to);
+    return `ปี ${a + 543} – ${b + 543}`;
+  })();
+
+  const allShops = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), []);
+
+  // Shade a hex color by ±percent
+  const shade = (hex: string, percent: number) => {
+    const n = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+    const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
+    return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+  };
+  // 3D bar shape — top face lighter + right face darker
+  const Bar3D = (props: any) => {
+    const { x, y, width, height, fill } = props;
+    if (!height || height <= 0 || !width) return null;
+    const depth = Math.min(Math.max(width * 0.28, 5), 9);
+    const top = shade(fill, 12);
+    const right = shade(fill, -18);
+    return (
+      <g>
+        <path d={`M${x + width},${y} L${x + width + depth},${y - depth} L${x + width + depth},${y + height - depth} L${x + width},${y + height} Z`} fill={right} />
+        <path d={`M${x},${y} L${x + depth},${y - depth} L${x + width + depth},${y - depth} L${x + width},${y} Z`} fill={top} />
+        <rect x={x} y={y} width={width} height={height} fill={fill} />
+      </g>
+    );
+  };
+
+  // ===== Build mock chart series per period =====
+  // Deterministic hash for variation
+  const hash = (s: string) => Array.from(s).reduce((a, ch) => a + ch.charCodeAt(0) * 31, 7);
+
+  const chartSeries = useMemo(() => {
+    const seedFactor = shopFilter === "all" ? 1 : Math.max(0.18, (hash(shopFilter) % 7 + 2) / 12);
+    if (period === "daily") {
+      const from = dateRange?.from ?? today;
+      const to = dateRange?.to ?? from;
+      const isSingleDay = from.toDateString() === to.toDateString();
+      if (isSingleDay) {
+        // 24 hourly buckets for the selected day
+        const daySeed = from.toDateString();
+        return Array.from({ length: 24 }, (_, h) => {
+          // Realistic curve: low at night, lunch bump (11-13), evening peak (18-21)
+          const lunch   = Math.exp(-Math.pow((h - 12) / 1.8, 2)) * 0.55;
+          const evening = Math.exp(-Math.pow((h - 20) / 2.2, 2)) * 1.0;
+          const base    = h >= 7 && h <= 22 ? 0.25 : 0.04;
+          const noise   = ((hash(`${daySeed}-${h}`) % 30) - 15) / 100;
+          const intensity = Math.max(0, base + lunch + evening + noise);
+          return {
+            label: `${String(h).padStart(2, "0")}:00`,
+            sales: Math.round(intensity * 5500 * seedFactor),
+            orders: Math.round(intensity * 14 * seedFactor),
+          };
+        });
+      }
+      // Multi-day range — bucket by day, clamp to a reasonable window
+      const dayMs = 86400000;
+      const totalDays = Math.min(31, Math.max(1, Math.round((to.getTime() - from.getTime()) / dayMs) + 1));
+      return Array.from({ length: totalDays }, (_, i) => {
+        const d = new Date(from); d.setDate(from.getDate() + i);
+        const base = 40000 + ((hash(d.toDateString()) % 32) * 1800);
+        const orders = 80 + (hash(d.toDateString()) % 60);
+        return {
+          label: `${d.getDate()}/${d.getMonth() + 1}`,
+          sales: Math.round(base * seedFactor),
+          orders: Math.round(orders * seedFactor),
+        };
+      });
+    }
+    if (period === "weekly") {
+      return Array.from({ length: 4 }, (_, i) => {
+        const base = 220000 + (i * 35000) + ((hash("wk" + i) % 12) * 5000);
+        const orders = 520 + (i * 90) + (hash("wko" + i) % 80);
+        return { label: `สัปดาห์ ${i + 1}`, sales: Math.round(base * seedFactor), orders: Math.round(orders * seedFactor) };
+      });
+    }
+    if (period === "monthly") {
+      return thaiMonthsShort.slice(0, 12).map((m, i) => {
+        const base = 820000 + (Math.sin(i / 11 * Math.PI) * 450000) + ((hash(m + i) % 30) * 8000);
+        const orders = 1800 + Math.round(Math.sin(i / 11 * Math.PI) * 900) + (hash("o" + m) % 200);
+        return { label: m, sales: Math.round(base * seedFactor), orders: Math.round(orders * seedFactor) };
+      });
+    }
+    // yearly — 5 years
+    return Array.from({ length: 5 }, (_, i) => {
+      const y = today.getFullYear() - 4 + i;
+      const base = 7800000 + i * 1500000 + ((hash("y" + y) % 20) * 60000);
+      const orders = 18000 + i * 4200 + (hash("yo" + y) % 1200);
+      return { label: `${y + 543}`, sales: Math.round(base * seedFactor), orders: Math.round(orders * seedFactor) };
+    });
+  }, [period, shopFilter, dateRange]);
+
+  const PIE_COLORS = ["#319754", "#3b82f6", "#f59e0b", "#9747ff", "#0ea5e9", "#ef4444"];
+
+  // KPIs computed from chart series
+  const kpi = useMemo(() => {
+    const totalSales = chartSeries.reduce((s, d) => s + d.sales, 0);
+    const totalOrders = chartSeries.reduce((s, d) => s + d.orders, 0);
+    const aov = totalOrders > 0 ? Math.round(totalSales / totalOrders) : 0;
+    const cost = Math.round(totalSales * 0.58);
+    const profit = totalSales - cost;
+    const margin = totalSales > 0 ? (profit / totalSales) * 100 : 0;
+    const activeShops = shopFilter === "all" ? allShops.length : 1;
+    const fee = Math.round(totalSales * 0.05); // platform fee 5%
+    return { totalSales, totalOrders, aov, cost, profit, margin, activeShops, fee };
+  }, [chartSeries, shopFilter, allShops.length]);
+
+  // Top shops widget (system-wide only)
+  const topShops = useMemo(() => {
+    return allShops.map((s) => {
+      const ps = siteProducts.filter((p) => p.shopName === s);
+      const baseSales = ps.reduce((sum, p) => sum + (parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0) * p.price, 0);
+      const scale = period === "daily" ? 1 / 30 : period === "weekly" ? 1 / 4 : period === "monthly" ? 1 : 12;
+      const sales = Math.round(baseSales * scale * (0.8 + (hash(s) % 40) / 100));
+      const orders = Math.round(ps.reduce((sum, p) => sum + (parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0), 0) * scale * (0.85 + (hash(s + "o") % 30) / 100));
+      // top 3 best-selling products of this shop (for podium thumbnails)
+      const topProducts = [...ps]
+        .sort((a, b) => (parseInt((b.sold || "").replace(/[^0-9]/g, ""), 10) || 0) - (parseInt((a.sold || "").replace(/[^0-9]/g, ""), 10) || 0))
+        .slice(0, 3)
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          image: p.image && p.image.trim() ? p.image : `https://picsum.photos/seed/metaherb-product-${p.id}/120`,
+        }));
+      return { shopName: s, sales, orders, topProducts };
+    }).sort((a, b) => b.sales - a.sales).slice(0, 5);
+  }, [allShops, period]);
+
+  // Top products table (admin sees shop attribution)
+  const productRows = useMemo(() => {
+    const base = siteProducts.filter((p) => shopFilter === "all" || p.shopName === shopFilter);
+    const scale = period === "daily" ? 1 / 30 : period === "weekly" ? 1 / 4 : period === "monthly" ? 1 : 12;
+    return base.map((p) => {
+      const sold = parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0;
+      const orders = Math.max(1, Math.round(sold * scale * (0.6 + (hash(p.id + "p") % 50) / 100)));
+      const qty = Math.round(orders * (1.5 + (hash(p.id + "q") % 20) / 10));
+      const sales = qty * p.price;
+      const margin = Math.round(((p.price * 0.42) / p.price) * 100);
+      const image = p.image && p.image.trim() ? p.image : `https://picsum.photos/seed/metaherb-product-${p.id}/120`;
+      return { id: p.id, name: p.name, shopName: p.shopName, image, category: p.category, price: p.price, sales, orders, qty, margin };
+    });
+  }, [shopFilter, period]);
+
+  const sortedRows = useMemo(() => {
+    const arr = [...productRows];
+    if (sortKey === "sales_desc") arr.sort((a, b) => b.sales - a.sales);
+    if (sortKey === "orders_desc") arr.sort((a, b) => b.orders - a.orders);
+    if (sortKey === "qty_desc") arr.sort((a, b) => b.qty - a.qty);
+    return arr;
+  }, [productRows, sortKey]);
+
+
+  const periodTabs: { id: Period; label: string }[] = [
+    { id: "daily",   label: "รายวัน" },
+    { id: "weekly",  label: "รายสัปดาห์" },
+    { id: "monthly", label: "รายเดือน" },
+    { id: "yearly",  label: "รายปี" },
+  ];
+
+  const chartTabs: { id: ChartKind; label: string; Icon: any }[] = [
+    { id: "line", label: "กราฟเส้น",  Icon: TrendingUp },
+    { id: "bar",  label: "กราฟแท่ง",  Icon: BarChart2  },
+    { id: "pie",  label: "กราฟวงกลม", Icon: PieIcon    },
+  ];
+
+  const scopeLabel = shopFilter === "all" ? "ทุกร้านในระบบ" : shopFilter;
+  const fmt = (n: number) => "฿" + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+  const trendIcon = (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  );
+  const checkIcon = (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/>
+    </svg>
+  );
+
+  const kpiBgArt = (src: string, delay: number) => (
+    <motion.img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+      style={{
+        maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+      }}
+      initial={{ y: 40, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay }}
+    />
+  );
+
+  const kpiCards = [
+    {
+      label: `รายได้รวม · ${scopeLabel}`, value: fmt(kpi.totalSales),
+      subLabel: `เฉลี่ย ${fmt(Math.round(kpi.totalSales / Math.max(1, chartSeries.length)))} / ${period === "daily" ? "วัน" : period === "weekly" ? "สัปดาห์" : period === "monthly" ? "เดือน" : "ปี"}`,
+      subIcon: trendIcon,
+      accent: "#10b981", Icon: DollarSign,
+      bgArt: kpiBgArt(imgCoin, 0.15),
+    },
+    {
+      label: `จำนวนคำสั่งซื้อ · ${scopeLabel}`, value: kpi.totalOrders.toLocaleString() + " ออเดอร์",
+      subLabel: `เฉลี่ย ฿${kpi.aov.toLocaleString()} / ออเดอร์`,
+      subIcon: trendIcon,
+      accent: "#0ea5e9", Icon: ShoppingCart,
+      bgArt: kpiBgArt(imgBox, 0.25),
+    },
+    {
+      label: "ร้านค้าที่มียอดขาย", value: kpi.activeShops.toLocaleString() + " ร้าน",
+      subLabel: shopFilter === "all" ? `จาก ${allShops.length} ร้านในระบบ` : "ร้านที่เลือก",
+      subIcon: checkIcon,
+      accent: "#6366f1", Icon: Store,
+      bgArt: kpiBgArt(imgBestStore, 0.35),
+    },
+    {
+      label: "ค่าธรรมเนียมแพลตฟอร์ม", value: fmt(kpi.fee),
+      subLabel: `~5% ของรายได้รวม`,
+      subIcon: trendIcon,
+      accent: "#f59e0b", Icon: Wallet,
+      bgArt: kpiBgArt(imgPlatformFees, 0.45),
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานผลยอดขาย</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวมยอดขายของทั้งระบบ Metaherb · กรองตามร้านค้าได้</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Shop filter */}
+          <div className="relative">
+            <select value={shopFilter} onChange={(e) => setShopFilter(e.target.value)}
+              className={`${font} text-[13px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] h-[40px] pl-4 pr-9 rounded-full appearance-none cursor-pointer hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow`}
+              style={{ fontWeight: 500 }}>
+              <option value="all">ทุกร้านในระบบ ({allShops.length})</option>
+              {allShops.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <ChevronDown className="size-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+          {/* Date picker */}
+          <Popover open={calOpen} onOpenChange={setCalOpen}>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}>
+                <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
+                <span style={{ fontWeight: 500 }}>{dateFilterLabel}</span>
+                <ChevronDown className="size-3.5 text-gray-400 group-hover:text-[#319754]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              {period === "daily" && (
+                <>
+                  <Calendar mode="range" numberOfMonths={2} selected={dateRange} onSelect={setDateRange} defaultMonth={dateRange?.from} />
+                  <div className="flex items-center justify-between gap-2 p-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิกวันเดียวหรือคลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setDateRange({ from: today, to: today })} className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>วันนี้</button>
+                      <button onClick={() => setCalOpen(false)} className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
+                    </div>
+                  </div>
+                </>
+              )}
+              {period === "weekly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setWeekMonth(new Date(weekMonth.getFullYear() - 1, weekMonth.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronLeft className="size-4 text-gray-600" />
+                    </button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {weekMonth.getFullYear() + 543}</span>
+                    <button onClick={() => setWeekMonth(new Date(weekMonth.getFullYear() + 1, weekMonth.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronRight className="size-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const isActive = weekMonth.getMonth() === i;
+                      return (
+                        <button key={m} onClick={() => { setWeekMonth(new Date(weekMonth.getFullYear(), i, 1)); setCalOpen(false); }}
+                          className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isActive ? "bg-[#319754] text-white" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isActive ? 600 : 500 }}>
+                          {m}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-3 mt-3 border-t">
+                    <button onClick={() => { setWeekMonth(today); setCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
+                  </div>
+                </div>
+              )}
+              {period === "monthly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year - 1 }))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronLeft className="size-4 text-gray-600" />
+                    </button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {monthRange.year + 543}</span>
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year + 1 }))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronRight className="size-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const inRange = i >= Math.min(monthRange.from, monthRange.to) && i <= Math.max(monthRange.from, monthRange.to);
+                      const isEdge = i === monthRange.from || i === monthRange.to;
+                      return (
+                        <button key={m} onClick={() => handleMonthClick(i)}
+                          className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isEdge ? 600 : 500 }}>
+                          {m}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <button onClick={() => { setMonthRange({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() }); setMonthClickPhase(0); setCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>เดือนนี้</button>
+                  </div>
+                </div>
+              )}
+              {period === "yearly" && (
+                <div className="p-3 w-[200px]">
+                  <p className={`${font} text-[11px] text-gray-400 mb-2`}>ย้อนหลังได้ถึง 5 ปี</p>
+                  <div className="flex flex-col gap-1">
+                    {availableYears.map((y) => {
+                      const inRange = y >= Math.min(yearRange.from, yearRange.to) && y <= Math.max(yearRange.from, yearRange.to);
+                      const isEdge = y === yearRange.from || y === yearRange.to;
+                      return (
+                        <button key={y} onClick={() => handleYearClick(y)}
+                          className={`${font} text-[13px] py-2 px-3 rounded-lg cursor-pointer transition-colors text-left ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isEdge ? 600 : 500 }}>
+                          ปี {y + 543}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 2 ครั้งเพื่อเลือกช่วง</span>
+                    <button onClick={() => { setYearRange({ from: today.getFullYear(), to: today.getFullYear() }); setYearClickPhase(0); setCalOpen(false); }}
+                      className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>ปีนี้</button>
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          {/* Period tabs */}
+          <div className="inline-flex items-center bg-white rounded-full p-1 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+            {periodTabs.map((t) => (
+              <button key={t.id} onClick={() => setPeriod(t.id)}
+                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                {period === t.id && <motion.div layoutId="admin-report-period-bg" className="absolute inset-0 bg-[#319754] rounded-full" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
+                <span className="relative z-10">{t.label}</span>
+              </button>
+            ))}
+          </div>
+          {/* Export */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+                <Download className="size-4" />ส่งออก
+                <ChevronDown className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-44 p-1">
+              <button onClick={() => toast.success("ส่งออก Excel แล้ว")}
+                className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileSpreadsheet className="size-4 text-[#0f7a3a]" /><span>Excel (.xlsx)</span>
+              </button>
+              <button onClick={() => toast.success("ส่งออก PDF แล้ว")}
+                className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileText className="size-4 text-[#dc2626]" /><span>PDF (.pdf)</span>
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {/* KPI + Chart — one section (owner-style wrapper) */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {kpiCards.map((s) => (
+            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+              style={{ backgroundColor: `${s.accent}0d` }}>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                    <s.Icon className="size-4" style={{ color: s.accent }} strokeWidth={2.4} />
+                  </div>
+                </div>
+                <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                  <AnimatedValue value={s.value} />
+                </p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                    style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                    {s.subIcon}
+                    {s.subLabel}
+                  </span>
+                </div>
+              </div>
+              {s.bgArt}
+            </div>
+          ))}
+        </div>
+
+        <h3 className={`${font} text-[18px] mb-5`} style={{ fontWeight: 600 }}>รายงานผลยอดขาย</h3>
+
+        <ResponsiveContainer width="100%" height={340}>
+          {chartKind === "line" ? (
+            <ComposedChart data={chartSeries} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+              <defs>
+                <filter id="adminGlowGreen" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter id="adminGlowOrange" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                cursor={{ stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4 4" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {payload.map((p: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                              <span className="text-gray-600">{p.name}</span>
+                            </span>
+                            <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>
+                              {p.dataKey === "sales" ? `฿${p.value.toLocaleString()}` : p.value.toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }} />
+              <Legend
+                wrapperStyle={{ paddingTop: 20 }}
+                content={({ payload }: any) => (
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    {payload?.map((entry: any, i: number) => (
+                      <div key={i}
+                        className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px] transition-shadow cursor-default`}
+                        style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                        <span className="block rounded-full"
+                          style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                        <span>{entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+              <Line yAxisId="left" type="monotone" dataKey="sales" stroke="#319754" strokeWidth={3} name="ยอดขาย (฿)"
+                style={{ filter: "url(#adminGlowGreen)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#319754", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#319754", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(49,151,84,0.35))" } }}
+                animationDuration={800}
+              />
+              <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#f7931d" strokeWidth={3} name="จำนวนคำสั่งซื้อ"
+                style={{ filter: "url(#adminGlowOrange)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#f7931d", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#f7931d", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(247,147,29,0.35))" } }}
+                animationDuration={800}
+              />
+            </ComposedChart>
+          ) : chartKind === "bar" ? (
+            <BarChart data={chartSeries} margin={{ top: 20, right: 30, left: 10, bottom: 10 }} barCategoryGap="22%" barGap={6}>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip
+                cursor={{ fill: "rgba(148,163,184,0.08)" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {payload.map((p: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                              <span className="text-gray-600">{p.name}</span>
+                            </span>
+                            <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>
+                              {p.dataKey === "sales" ? `฿${p.value.toLocaleString()}` : p.value.toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }} />
+              <Legend
+                wrapperStyle={{ paddingTop: 20 }}
+                content={({ payload }: any) => (
+                  <div className="flex items-center justify-center gap-3 flex-wrap">
+                    {payload?.map((entry: any, i: number) => (
+                      <div key={i}
+                        className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                        style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                        <span className="block rounded-full"
+                          style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                        <span>{entry.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              />
+              <Bar yAxisId="left"  dataKey="sales"  name="ยอดขาย (฿)"     fill="#319754" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+              <Bar yAxisId="right" dataKey="orders" name="จำนวนคำสั่งซื้อ" fill="#f7931d" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+            </BarChart>
+          ) : (
+            (() => {
+              const total = chartSeries.reduce((s, d) => s + d.sales, 0);
+              return (
+                <PieChart>
+                  <Pie data={chartSeries} cx="50%" cy="50%" innerRadius={72} outerRadius={120} paddingAngle={2}
+                    dataKey="sales" nameKey="label" labelLine={false}
+                    label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }: any) => {
+                      if (percent < 0.06) return null;
+                      const RADIAN = Math.PI / 180;
+                      const r = innerRadius + (outerRadius - innerRadius) * 0.55;
+                      const x = cx + r * Math.cos(-midAngle * RADIAN);
+                      const y = cy + r * Math.sin(-midAngle * RADIAN);
+                      return <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 600 }}>{(percent * 100).toFixed(0)}%</text>;
+                    }}>
+                    {chartSeries.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="#fff" strokeWidth={3} />)}
+                  </Pie>
+                  <text x="50%" y="38%" textAnchor="middle" style={{ fontSize: 11, fill: "#9ca3af" }}>ยอดขายรวม</text>
+                  <text x="50%" y="46%" textAnchor="middle" style={{ fontSize: 20, fill: "#1a1a1a", fontWeight: 700 }}>฿{total.toLocaleString()}</text>
+                  <Tooltip />
+                </PieChart>
+              );
+            })()
+          )}
+        </ResponsiveContainer>
+
+        {/* Chart-type tabs — centered pill, below chart (owner-style) */}
+        <div className="flex justify-center mt-5 overflow-x-auto">
+          <div className="inline-flex items-center bg-gray-50 rounded-full p-1">
+            {chartTabs.map((t) => (
+              <button key={t.id} onClick={() => setChartKind(t.id)}
+                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${chartKind === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                {chartKind === t.id && (
+                  <motion.div layoutId="admin-report-chart-bg" className="absolute inset-0 bg-[#319754] rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                )}
+                <span className="relative z-10">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 2 columns: Top shops + Top products header */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Top shops — podium stage layout */}
+        {(() => {
+          const top3 = topShops.slice(0, 3);
+          const rest = topShops.slice(3);
+          // Order on display: #2 left, #1 center, #3 right
+          const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+          const podiumMeta = (rank: number) => {
+            if (rank === 0) return { color: "#f59e0b", grad: "linear-gradient(180deg, #fde68a 0%, #f59e0b 100%)", barH: 96, label: "อันดับ 1" };
+            if (rank === 1) return { color: "#94a3b8", grad: "linear-gradient(180deg, #e2e8f0 0%, #94a3b8 100%)", barH: 72, label: "อันดับ 2" };
+            return            { color: "#cd7f32", grad: "linear-gradient(180deg, #fbbf24 0%, #b45309 100%)", barH: 56, label: "อันดับ 3" };
+          };
+          const shopBanner = (shopName: string) => siteShops.find((s) => s.name === shopName)?.banner;
+          return (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4 relative overflow-hidden">
+              {/* decorative gold blob */}
+              <div className="absolute -top-20 -right-20 size-56 rounded-full pointer-events-none opacity-[0.06]"
+                style={{ background: "radial-gradient(circle at center, #f59e0b, transparent 70%)" }} />
+
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-2">
+                  <Trophy className="size-4 text-[#f59e0b]" strokeWidth={2.4} />
+                  <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>Top 5 ร้านค้า · ยอดขาย</p>
+                </div>
+                <button onClick={() => toast.info("ดูร้านค้าทั้งหมด — เร็ว ๆ นี้")}
+                  className={`${font} text-[12px] text-[#319754] hover:text-[#287745] cursor-pointer`} style={{ fontWeight: 500 }}>
+                  ดูทั้งหมด
+                </button>
+              </div>
+
+              {/* Podium — top 3 */}
+              <div className="grid grid-cols-3 gap-3 items-end pt-2 relative z-10">
+                {podiumOrder.map((s) => {
+                  const actualRank = topShops.findIndex((x) => x.shopName === s.shopName);
+                  const meta = podiumMeta(actualRank);
+                  const isFirst = actualRank === 0;
+                  const avatarSize = isFirst ? "size-14" : "size-12";
+                  const banner = shopBanner(s.shopName);
+                  return (
+                    <button key={s.shopName} onClick={() => setShopFilter(s.shopName)}
+                      className="group/p flex flex-col items-center gap-2 cursor-pointer">
+                      {/* Shop info card */}
+                      <motion.div
+                        initial={{ y: 16, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: actualRank * 0.1, type: "spring", stiffness: 380, damping: 26 }}
+                        className="w-full flex flex-col items-center gap-1 px-2"
+                      >
+                        {/* Profile picture with crown overlay for #1 */}
+                        <span className="relative shrink-0">
+                          {isFirst && (
+                            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10"
+                              style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.18))" }}>
+                              <Crown className="size-5" fill="#fbbf24" stroke="#b45309" strokeWidth={1.6} />
+                            </span>
+                          )}
+                          <span className={`${avatarSize} rounded-full overflow-hidden block bg-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.10)]`}
+                            style={{ boxShadow: `0 0 0 3px #fff, 0 0 0 5px ${meta.color}, 0 4px 12px rgba(0,0,0,0.12)` }}>
+                            {banner ? (
+                              <ImageWithFallback src={banner} alt={s.shopName} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="w-full h-full flex items-center justify-center text-white text-[18px]" style={{ background: meta.grad, fontWeight: 700 }}>
+                                {s.shopName.charAt(0)}
+                              </span>
+                            )}
+                          </span>
+                        </span>
+                        <span className={`${font} text-[12px] text-black text-center line-clamp-2 leading-tight px-1 mt-1`}
+                          style={{ fontWeight: 600 }} title={s.shopName}>{s.shopName}</span>
+                        <span className={`${font} text-[13px] tabular-nums`} style={{ fontWeight: 700, color: "#319754" }}>฿{s.sales.toLocaleString()}</span>
+                        <span className={`${font} text-[10px] text-gray-500 tabular-nums`}>{s.orders.toLocaleString()} ออเดอร์</span>
+
+                        {/* Top products thumbnails */}
+                        {s.topProducts && s.topProducts.length > 0 && (
+                          <div className="flex items-center -space-x-2 mt-1.5">
+                            {s.topProducts.map((p, pi) => (
+                              <span key={p.id}
+                                className={`${isFirst ? "size-7" : "size-6"} rounded-full overflow-hidden bg-gray-100 ring-2 ring-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]`}
+                                style={{ zIndex: 10 - pi }}
+                                title={p.name}>
+                                <ImageWithFallback src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </motion.div>
+
+                      {/* Podium bar */}
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: meta.barH }}
+                        transition={{ delay: actualRank * 0.1 + 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                        className="w-full rounded-t-xl flex items-start justify-center pt-2 transition-transform group-hover/p:scale-[1.02] origin-bottom"
+                        style={{
+                          background: meta.grad,
+                          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.6), 0 4px 14px ${meta.color}33`,
+                        }}>
+                        <span className={`${font} text-white text-[20px] tabular-nums`}
+                          style={{ fontWeight: 800, textShadow: "0 1px 2px rgba(0,0,0,0.2)" }}>
+                          {actualRank + 1}
+                        </span>
+                      </motion.div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Rest: #4, #5 — compact rows with shop avatar + product thumbnails */}
+              {rest.length > 0 && (
+                <div className="flex flex-col gap-1.5 pt-3 border-t border-gray-100 relative z-10">
+                  {rest.map((s) => {
+                    const actualRank = topShops.findIndex((x) => x.shopName === s.shopName);
+                    const maxSales = topShops[0]?.sales || 1;
+                    const pct = (s.sales / maxSales) * 100;
+                    const banner = shopBanner(s.shopName);
+                    return (
+                      <button key={s.shopName} onClick={() => setShopFilter(s.shopName)}
+                        className={`${font} flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left`}>
+                        {/* Shop profile picture + rank badge */}
+                        <span className="relative shrink-0">
+                          <span className="size-10 rounded-full overflow-hidden block bg-gray-100 ring-2 ring-white shadow-[0_1px_4px_rgba(0,0,0,0.10)]">
+                            {banner ? (
+                              <ImageWithFallback src={banner} alt={s.shopName} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="w-full h-full flex items-center justify-center text-gray-500 text-[14px] bg-gray-200" style={{ fontWeight: 700 }}>
+                                {s.shopName.charAt(0)}
+                              </span>
+                            )}
+                          </span>
+                          <span className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full inline-flex items-center justify-center text-white text-[9px] tabular-nums bg-gray-500 ring-2 ring-white" style={{ fontWeight: 700 }}>
+                            {actualRank + 1}
+                          </span>
+                        </span>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[13px] text-black truncate" style={{ fontWeight: 500 }}>{s.shopName}</span>
+                            <span className="tabular-nums text-[13px] text-[#319754] shrink-0" style={{ fontWeight: 700 }}>฿{s.sales.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex-1 h-1 rounded-full bg-gray-100 overflow-hidden">
+                              <div className="h-full bg-gray-400 rounded-full" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="text-[10px] text-gray-400 tabular-nums whitespace-nowrap">{s.orders.toLocaleString()} ออเดอร์</span>
+                          </div>
+                        </div>
+
+                        {/* Product thumbnails */}
+                        {s.topProducts && s.topProducts.length > 0 && (
+                          <div className="flex items-center -space-x-2 shrink-0">
+                            {s.topProducts.map((p, pi) => (
+                              <span key={p.id}
+                                className="size-7 rounded-full overflow-hidden bg-gray-100 ring-2 ring-white shadow-[0_1px_3px_rgba(0,0,0,0.10)]"
+                                style={{ zIndex: 10 - pi }}
+                                title={p.name}>
+                                <ImageWithFallback src={p.image} alt={p.name} className="w-full h-full object-cover" />
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Order breakdown by category (donut) — beautified */}
+        {(() => {
+          const totalPct = categoryData.reduce((s, c) => s + c.value, 0) || 1;
+          const catRows = categoryData.map((c, i) => ({
+            ...c,
+            color: PIE_COLORS[i % PIE_COLORS.length],
+            sales: Math.round(kpi.totalSales * (c.value / totalPct)),
+            pct: c.value,
+          })).sort((a, b) => b.pct - a.pct);
+          const topCat = catRows[0];
+          const lighten = (hex: string, pct: number) => {
+            const n = parseInt(hex.replace("#", ""), 16);
+            const amt = Math.round(2.55 * pct);
+            const r = Math.min(255, (n >> 16) + amt);
+            const g = Math.min(255, ((n >> 8) & 0xff) + amt);
+            const b = Math.min(255, (n & 0xff) + amt);
+            return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+          };
+          return (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-5 relative overflow-hidden">
+              {/* Decorative blob backgrounds */}
+              <div className="absolute -top-16 -right-16 size-48 rounded-full pointer-events-none opacity-[0.08]"
+                style={{ background: `radial-gradient(circle at center, ${topCat?.color}, transparent 70%)` }} />
+              <div className="absolute -bottom-20 -left-12 size-44 rounded-full pointer-events-none opacity-[0.06]"
+                style={{ background: `radial-gradient(circle at center, ${catRows[1]?.color}, transparent 70%)` }} />
+
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #3b82f61a, #6366f11a)" }}>
+                    <PieIcon className="size-4 text-[#3b82f6]" strokeWidth={2.4} />
+                  </div>
+                  <div>
+                    <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>สัดส่วนยอดขาย</p>
+                    <p className={`${font} text-[11px] text-gray-500`}>แบ่งตามหมวดหมู่ · {catRows.length} หมวด</p>
+                  </div>
+                </div>
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full tabular-nums`}
+                  style={{ backgroundColor: `${topCat.color}15`, color: topCat.color, fontWeight: 600 }}>
+                  <Crown className="size-3" strokeWidth={2.4} />
+                  {topCat?.name}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-5 items-center relative z-10">
+                {/* Donut */}
+                <div className="relative flex items-center justify-center">
+                  {/* Soft outer ring */}
+                  <div className="absolute inset-3 rounded-full pointer-events-none"
+                    style={{
+                      background: `conic-gradient(from -90deg, ${catRows.map((c, i, a) => {
+                        const acc = a.slice(0, i).reduce((s, x) => s + x.pct, 0);
+                        return `${c.color}22 ${acc}% ${acc + c.pct}%`;
+                      }).join(", ")})`,
+                      filter: "blur(14px)",
+                      opacity: 0.7,
+                    }} />
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <defs>
+                        {catRows.map((c, i) => (
+                          <linearGradient key={c.name} id={`adminCatGrad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={lighten(c.color, 18)} />
+                            <stop offset="100%" stopColor={c.color} />
+                          </linearGradient>
+                        ))}
+                        <filter id="adminCatShadow" x="-50%" y="-50%" width="200%" height="200%">
+                          <feGaussianBlur stdDeviation="3" />
+                        </filter>
+                      </defs>
+                      <Pie data={catRows} cx="50%" cy="50%" innerRadius={66} outerRadius={96} paddingAngle={3}
+                        cornerRadius={6}
+                        dataKey="value" nameKey="name" labelLine={false} stroke="none">
+                        {catRows.map((c, i) => (
+                          <Cell key={c.name} fill={`url(#adminCatGrad-${i})`} stroke="#fff" strokeWidth={3} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        wrapperStyle={{ zIndex: 50 }}
+                        content={({ active, payload }: any) => {
+                          if (!active || !payload?.length) return null;
+                          const p = payload[0];
+                          const row = catRows.find((c) => c.name === p.name);
+                          if (!row) return null;
+                          return (
+                            <div className={`${font} bg-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.14)] border border-gray-100 p-3 min-w-[170px]`}>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <span className="size-2.5 rounded-full" style={{ background: `linear-gradient(135deg, ${lighten(row.color, 18)}, ${row.color})` }} />
+                                <span className="text-[12px] text-gray-700" style={{ fontWeight: 600 }}>{row.name}</span>
+                              </div>
+                              <p className={`text-[15px] tabular-nums`} style={{ fontWeight: 700, color: row.color }}>฿{row.sales.toLocaleString()}</p>
+                              <p className={`text-[11px] text-gray-500 tabular-nums mt-0.5`}>{row.pct}% ของรายได้รวม</p>
+                            </div>
+                          );
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center label */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
+                    <p className={`${font} text-[9px] uppercase tracking-[0.18em] text-gray-400`} style={{ fontWeight: 600 }}>ยอดรวม</p>
+                    <p className={`${font} text-[20px] tabular-nums mt-1 leading-none bg-clip-text text-transparent`}
+                      style={{
+                        backgroundImage: `linear-gradient(135deg, ${lighten(topCat.color, 8)}, ${topCat.color})`,
+                        fontWeight: 800,
+                      }}>
+                      ฿{(kpi.totalSales / 1000).toFixed(0)}k
+                    </p>
+                    <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: `${topCat.color}15` }}>
+                      <span className="size-1.5 rounded-full" style={{ backgroundColor: topCat.color }} />
+                      <span className={`${font} text-[10px] tabular-nums`} style={{ color: topCat.color, fontWeight: 700 }}>
+                        Top {topCat.pct}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Legend rows — chips with gradient strip */}
+                <div className="flex flex-col gap-1.5">
+                  {catRows.map((c, i) => (
+                    <div key={c.name}
+                      className="group/cat flex items-center gap-3 pl-2 pr-3 py-2 rounded-xl hover:bg-gray-50 transition-colors relative">
+                      {/* Color strip + rank */}
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        <span className={`${font} size-5 rounded-md inline-flex items-center justify-center text-[10px] tabular-nums`}
+                          style={{ backgroundColor: `${c.color}1a`, color: c.color, fontWeight: 700 }}>
+                          {i + 1}
+                        </span>
+                        <span className="block w-1 h-7 rounded-full"
+                          style={{ background: `linear-gradient(180deg, ${lighten(c.color, 15)}, ${c.color})` }} />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{c.name}</span>
+                          <span className={`${font} text-[12px] tabular-nums shrink-0`} style={{ fontWeight: 700, color: c.color }}>฿{c.sales.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                            <motion.div
+                              className="h-full rounded-full"
+                              style={{ background: `linear-gradient(90deg, ${lighten(c.color, 15)}, ${c.color})` }}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${c.pct}%` }}
+                              transition={{ duration: 0.9, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                            />
+                          </div>
+                          <span className={`${font} text-[10px] tabular-nums text-gray-400 w-8 text-right`}>{c.pct}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Flash Sale revenue + Coupon stats — 2 columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+        {/* Flash Sale event revenue — only events that have ended */}
+        {(() => {
+          const endedEvents = seedFlashEvents()
+            .filter((e) => adminFlashStatus(e) === "ended")
+            .map((e) => {
+              const acceptedShops = e.invites.filter((i) => i.status === "accepted").length;
+              const totalShops = e.invites.length;
+              const baseRev = acceptedShops * 28000;
+              const revenue = Math.round(baseRev * (0.85 + (hash(e.id) % 50) / 100));
+              const orders  = Math.round(acceptedShops * 110 * (0.9 + (hash(e.id + "o") % 30) / 100));
+              const discount = Math.round(revenue * 0.18);
+              // 6-point sparkline showing event hour-by-hour shape (peak in middle)
+              const spark = Array.from({ length: 6 }, (_, i) => {
+                const peak = Math.exp(-Math.pow((i - 2.5) / 1.6, 2));
+                return Math.max(0, Math.round((revenue / 6) * (1 + peak * 1.2) + (hash(e.id + i) % 1500) - 500));
+              });
+              return { ...e, acceptedShops, totalShops, revenue, orders, discount, spark };
+            });
+          // Most recent first, then by revenue
+          const events = [...endedEvents].sort((a, b) => new Date(b.endsAt).getTime() - new Date(a.endsAt).getTime()).slice(0, 5);
+
+          const totalRevenue = endedEvents.reduce((s, e) => s + e.revenue, 0);
+          const totalOrders  = endedEvents.reduce((s, e) => s + e.orders, 0);
+          const totalShopsParticipated = endedEvents.reduce((s, e) => s + e.acceptedShops, 0);
+          const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+          const avgPerEvent = endedEvents.length > 0 ? Math.round(totalRevenue / endedEvents.length) : 0;
+
+          const Sparkline = ({ values, color }: { values: number[]; color: string }) => {
+            if (values.every((v) => v === 0)) return <span className="text-[10px] text-gray-300">—</span>;
+            const min = Math.min(...values), max = Math.max(...values), range = max - min || 1;
+            const w = 54, h = 18;
+            const pts = values.map((v, i) => `${(i / (values.length - 1)) * w},${h - ((v - min) / range) * h}`).join(" ");
+            const areaPts = `0,${h} ${pts} ${w},${h}`;
+            return (
+              <svg width={w} height={h} className="inline-block shrink-0">
+                <polyline points={areaPts} fill={`${color}22`} stroke="none" />
+                <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            );
+          };
+
+          const fmtDay = (iso: string) => {
+            const d = new Date(iso);
+            const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+            return `${d.getDate()} ${months[d.getMonth()]}`;
+          };
+
+          return (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4 relative overflow-hidden">
+              {/* Decorative red blob */}
+              <div className="absolute -top-16 -right-16 size-40 rounded-full pointer-events-none opacity-[0.08]"
+                style={{ background: "radial-gradient(circle at center, #e62e05, transparent 70%)" }} />
+
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #e62e051a, #f59e0b1a)" }}>
+                    <Zap className="size-4 text-[#e62e05]" strokeWidth={2.4} />
+                  </div>
+                  <div>
+                    <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>รายได้จาก Flash Sale</p>
+                    <p className={`${font} text-[11px] text-gray-500`}>event ที่ผ่านมาแล้ว · {endedEvents.length} events</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hero summary — gradient red */}
+              <div className="relative z-10 rounded-2xl p-4 text-white relative overflow-hidden"
+                style={{ background: "linear-gradient(135deg, rgba(230,46,5,0.92) 0%, #bc1b06 100%)" }}>
+                <img src={imgFlash} alt="" aria-hidden="true"
+                  className="absolute -right-4 -bottom-4 w-[120px] h-[110px] object-contain pointer-events-none select-none opacity-90" />
+                <div className="relative z-10">
+                  <p className={`${font} text-[10px] uppercase tracking-wider text-white/80`} style={{ fontWeight: 600 }}>รายได้รวม Flash Sale</p>
+                  <p className={`${font} text-[28px] tabular-nums leading-none mt-1`} style={{ fontWeight: 800 }}>
+                    ฿{totalRevenue.toLocaleString()}
+                  </p>
+                  <p className={`${font} text-[11px] text-white/85 tabular-nums mt-1`}>
+                    {totalOrders.toLocaleString()} ออเดอร์ · เฉลี่ย ฿{avgOrderValue.toLocaleString()} / ออเดอร์
+                  </p>
+                </div>
+                <div className="relative z-10 flex items-center gap-1.5 mt-3 flex-wrap">
+                  <span className={`${font} inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white border border-white/30 tabular-nums`} style={{ fontWeight: 600 }}>
+                    <Store className="size-2.5" strokeWidth={2.4} />
+                    {totalShopsParticipated.toLocaleString()} ร้านเข้าร่วม
+                  </span>
+                  <span className={`${font} inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white border border-white/25 tabular-nums`} style={{ fontWeight: 500 }}>
+                    เฉลี่ย ฿{(avgPerEvent / 1000).toFixed(0)}k / event
+                  </span>
+                </div>
+              </div>
+
+              {/* Summary stats grid — 3 stat cards with icons */}
+              <div className="grid grid-cols-3 gap-2 relative z-10">
+                {[
+                  { label: "Events ทั้งหมด", value: endedEvents.length.toLocaleString(), sub: "ที่ผ่านมาแล้ว",     color: "#e62e05", Icon: Zap        },
+                  { label: "ส่วนลดรวม",      value: `฿${(endedEvents.reduce((s, e) => s + e.discount, 0) / 1000).toFixed(0)}k`, sub: "รวมทุก event", color: "#f59e0b", Icon: Percent },
+                  { label: "ร้านเข้าร่วม",    value: totalShopsParticipated.toLocaleString(), sub: "ครั้งสะสม", color: "#319754", Icon: Store    },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-xl p-3 relative overflow-hidden"
+                    style={{ background: `linear-gradient(135deg, ${s.color}14, ${s.color}06)` }}>
+                    <div className="flex items-start justify-between gap-1.5">
+                      <p className={`${font} text-[10px] text-gray-600 line-clamp-1`} style={{ fontWeight: 500 }}>{s.label}</p>
+                      <span className="size-6 rounded-md inline-flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${s.color}1f` }}>
+                        <s.Icon className="size-3" style={{ color: s.color }} strokeWidth={2.4} />
+                      </span>
+                    </div>
+                    <p className={`${font} text-[20px] tabular-nums leading-none mt-2`} style={{ fontWeight: 800, color: s.color }}>{s.value}</p>
+                    <p className={`${font} text-[10px] text-gray-500 mt-1`}>{s.sub}</p>
+                  </div>
+                ))}
+              </div>
+
+              {events.length === 0 && (
+                <p className={`${font} text-center py-2 text-[12px] text-gray-400 relative z-10`}>ยังไม่มี Flash Sale event ที่ผ่านมา</p>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Coupon & Discount stats — beautified */}
+        {(() => {
+          const totalOrders = kpi.totalOrders;
+          const ordersWithCoupon = Math.round(totalOrders * 0.32);
+          const usageRate = totalOrders > 0 ? (ordersWithCoupon / totalOrders) * 100 : 0;
+          const totalDiscount = Math.round(kpi.totalSales * 0.045);
+          const platformSubsidized = Math.round(totalDiscount * 0.4);
+          const shopSubsidized = totalDiscount - platformSubsidized;
+          const discountRate = kpi.totalSales > 0 ? (totalDiscount / kpi.totalSales) * 100 : 0;
+          const topCoupons = [
+            { code: "METAHERB100", usage: Math.round(ordersWithCoupon * 0.42), discount: Math.round(totalDiscount * 0.38), type: "system" as const },
+            { code: "FREESHIPALL", usage: Math.round(ordersWithCoupon * 0.28), discount: Math.round(totalDiscount * 0.20), type: "system" as const },
+            { code: "HERB15",       usage: Math.round(ordersWithCoupon * 0.13), discount: Math.round(totalDiscount * 0.15), type: "shop" as const,   shop: "Organic Thai Farm" },
+            { code: "WELCOME10",    usage: Math.round(ordersWithCoupon * 0.10), discount: Math.round(totalDiscount * 0.12), type: "shop" as const,   shop: "METAHERB Store" },
+            { code: "BIG12",        usage: Math.round(ordersWithCoupon * 0.07), discount: Math.round(totalDiscount * 0.15), type: "system" as const },
+          ];
+          const maxUsage = topCoupons[0]?.usage || 1;
+          return (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4 relative overflow-hidden">
+              {/* Decorative blob */}
+              <div className="absolute -top-16 -right-16 size-40 rounded-full pointer-events-none opacity-[0.06]"
+                style={{ background: "radial-gradient(circle at center, #3b82f6, transparent 70%)" }} />
+
+              <div className="flex items-center gap-2 relative z-10">
+                <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #3b82f61a, #6366f11a)" }}>
+                  <Ticket className="size-4 text-[#3b82f6]" strokeWidth={2.4} />
+                </div>
+                <div>
+                  <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>คูปอง & ส่วนลดที่ใช้</p>
+                  <p className={`${font} text-[11px] text-gray-500`}>คำสั่งซื้อที่ใช้คูปอง · ยอด subsidize</p>
+                </div>
+              </div>
+
+              {/* Hero — usage rate + total discount */}
+              <div className="relative z-10 grid grid-cols-2 gap-2">
+                <div className="rounded-2xl p-4 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #3b82f61f, #3b82f608)" }}>
+                  <Ticket className="absolute -bottom-2 -right-2 size-16 text-[#3b82f6]/10" strokeWidth={1.6} />
+                  <p className={`${font} text-[10px] uppercase tracking-wider text-gray-600`} style={{ fontWeight: 600 }}>อัตราใช้คูปอง</p>
+                  <p className={`${font} text-[28px] tabular-nums leading-none mt-1`} style={{ fontWeight: 800, color: "#3b82f6" }}>{usageRate.toFixed(1)}%</p>
+                  <p className={`${font} text-[10px] text-gray-500 mt-1 tabular-nums`}>{ordersWithCoupon.toLocaleString()} จาก {totalOrders.toLocaleString()} ออเดอร์</p>
+                </div>
+                <div className="rounded-2xl p-4 relative overflow-hidden" style={{ background: "linear-gradient(135deg, #ef44441f, #ef444408)" }}>
+                  <Percent className="absolute -bottom-2 -right-2 size-16 text-[#ef4444]/10" strokeWidth={1.6} />
+                  <p className={`${font} text-[10px] uppercase tracking-wider text-gray-600`} style={{ fontWeight: 600 }}>ส่วนลดรวม</p>
+                  <p className={`${font} text-[28px] tabular-nums leading-none mt-1`} style={{ fontWeight: 800, color: "#ef4444" }}>฿{(totalDiscount / 1000).toFixed(0)}k</p>
+                  <p className={`${font} text-[10px] text-gray-500 mt-1 tabular-nums`}>~{discountRate.toFixed(1)}% ของยอดขาย</p>
+                </div>
+              </div>
+
+              {/* Discount split bar — richer */}
+              <div className="relative z-10 bg-[#fafafa] rounded-2xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className={`${font} text-[11px] uppercase tracking-wider text-gray-600`} style={{ fontWeight: 600 }}>ผู้รับภาระส่วนลด</span>
+                  <span className={`${font} text-[12px] tabular-nums text-black`} style={{ fontWeight: 700 }}>฿{totalDiscount.toLocaleString()}</span>
+                </div>
+                <div className="flex h-3 rounded-full bg-gray-200/50 overflow-hidden shadow-inner">
+                  <motion.div className="h-full" style={{ background: "linear-gradient(90deg, #fbbf24, #f59e0b)" }}
+                    initial={{ width: 0 }} animate={{ width: `${(platformSubsidized / totalDiscount) * 100}%` }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} />
+                  <motion.div className="h-full" style={{ background: "linear-gradient(90deg, #60a5fa, #3b82f6)" }}
+                    initial={{ width: 0 }} animate={{ width: `${(shopSubsidized / totalDiscount) * 100}%` }} transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }} />
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="flex items-center justify-between bg-white rounded-lg px-2.5 py-1.5">
+                    <span className={`${font} inline-flex items-center gap-1.5`}>
+                      <span className="size-2 rounded-full bg-[#f59e0b]" /><span className="text-gray-600">ระบบ</span>
+                    </span>
+                    <span className={`${font} tabular-nums text-[#f59e0b]`} style={{ fontWeight: 700 }}>฿{(platformSubsidized / 1000).toFixed(0)}k</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-white rounded-lg px-2.5 py-1.5">
+                    <span className={`${font} inline-flex items-center gap-1.5`}>
+                      <span className="size-2 rounded-full bg-[#3b82f6]" /><span className="text-gray-600">ร้านค้า</span>
+                    </span>
+                    <span className={`${font} tabular-nums text-[#3b82f6]`} style={{ fontWeight: 700 }}>฿{(shopSubsidized / 1000).toFixed(0)}k</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary stats grid — 3 stat cards with icons */}
+              <div className="grid grid-cols-3 gap-2 relative z-10">
+                {[
+                  { label: "คูปองที่ใช้", value: topCoupons.length.toLocaleString(), sub: "โค้ดต่างกัน", color: "#3b82f6", Icon: Ticket     },
+                  { label: "ลดเฉลี่ย",   value: `฿${ordersWithCoupon > 0 ? Math.round(totalDiscount / ordersWithCoupon).toLocaleString() : 0}`, sub: "ต่อออเดอร์", color: "#ef4444", Icon: DollarSign },
+                  { label: "ภาระระบบ",   value: `${totalDiscount > 0 ? Math.round((platformSubsidized / totalDiscount) * 100) : 0}%`, sub: "ของส่วนลดรวม", color: "#f59e0b", Icon: Shield     },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-xl p-3 relative overflow-hidden"
+                    style={{ background: `linear-gradient(135deg, ${s.color}14, ${s.color}06)` }}>
+                    <div className="flex items-start justify-between gap-1.5">
+                      <p className={`${font} text-[10px] text-gray-600 line-clamp-1`} style={{ fontWeight: 500 }}>{s.label}</p>
+                      <span className="size-6 rounded-md inline-flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${s.color}1f` }}>
+                        <s.Icon className="size-3" style={{ color: s.color }} strokeWidth={2.4} />
+                      </span>
+                    </div>
+                    <p className={`${font} text-[20px] tabular-nums leading-none mt-2`} style={{ fontWeight: 800, color: s.color }}>{s.value}</p>
+                    <p className={`${font} text-[10px] text-gray-500 mt-1`}>{s.sub}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Top products table — grouped by date, owner-style */}
+      {(() => {
+        // Build N date groups; chunk the sorted product rows into them
+        const groupCount = period === "daily" ? Math.min(7, chartSeries.length) : period === "weekly" ? 4 : period === "monthly" ? 6 : 5;
+        const dateLabels = chartSeries.slice(-groupCount).map((s) => s.label).reverse();
+        const itemsPerGroup = Math.max(2, Math.ceil(sortedRows.length / Math.max(1, dateLabels.length)));
+        const dateGroups = dateLabels.map((label, gi) => {
+          const groupItems = sortedRows.slice(gi * itemsPerGroup, gi * itemsPerGroup + itemsPerGroup).map((p) => {
+            const cost = Math.round(p.sales * 0.58);
+            const profit = p.sales - cost;
+            return { ...p, cost, profit };
+          });
+          const totalQty   = groupItems.reduce((s, p) => s + p.qty, 0);
+          const totalSales = groupItems.reduce((s, p) => s + p.sales, 0);
+          const totalCost  = groupItems.reduce((s, p) => s + p.cost, 0);
+          const totalProfit = totalSales - totalCost;
+          const margin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
+          return { label, items: groupItems, totalQty, totalSales, totalCost, totalProfit, margin };
+        }).filter((g) => g.items.length > 0);
+
+        const groupTotalPages = Math.max(1, Math.ceil(dateGroups.length / groupsPerPage));
+        const groupSafePage = Math.min(productPage, groupTotalPages);
+        const groupPageStart = (groupSafePage - 1) * groupsPerPage;
+        const pageGroups = dateGroups.slice(groupPageStart, groupPageStart + groupsPerPage);
+
+        const pageTotalQty   = pageGroups.reduce((s, g) => s + g.totalQty, 0);
+        const pageTotalSales = pageGroups.reduce((s, g) => s + g.totalSales, 0);
+        const pageTotalCost  = pageGroups.reduce((s, g) => s + g.totalCost, 0);
+        const pageTotalProfit = pageTotalSales - pageTotalCost;
+        const pageMargin = pageTotalSales > 0 ? (pageTotalProfit / pageTotalSales) * 100 : 0;
+        const totalRows = pageGroups.reduce((s, g) => s + g.items.length, 0);
+
+        return (
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+              <div>
+                <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>รายงานการขายสินค้า</h3>
+                <p className={`${font} text-[12px] text-gray-400 mt-1 inline-flex items-center gap-1.5`}>
+                  <CalendarIcon className="size-3.5" />
+                  <span>ข้อมูล <span className="text-gray-600" style={{ fontWeight: 500 }}>{scopeLabel}</span> · {dateGroups.length} กลุ่ม ({sortedRows.length} รายการ) · แสดง {pageGroups.length === 0 ? 0 : groupPageStart + 1}–{groupPageStart + pageGroups.length}</span>
+                </p>
+              </div>
+              <div className="relative">
+                <select value={sortKey} onChange={(e) => { setSortKey(e.target.value as any); setProductPage(1); }}
+                  className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                  <option value="sales_desc">เรียงในกลุ่ม: ยอดขายสูงสุด</option>
+                  <option value="orders_desc">เรียงในกลุ่ม: คำสั่งซื้อสูงสุด</option>
+                  <option value="qty_desc">เรียงในกลุ่ม: จำนวนชิ้นสูงสุด</option>
+                </select>
+                <ChevronDown className="size-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            <table className="w-full table-fixed">
+              <colgroup>
+                <col style={{ width: "14%" }} />{/* วันที่ */}
+                <col style={{ width: "28%" }} />{/* สินค้า */}
+                <col style={{ width: "14%" }} />{/* ร้านค้า */}
+                <col style={{ width: "10%" }} />{/* จำนวนขาย */}
+                <col style={{ width: "11%" }} />{/* ยอดขาย */}
+                <col style={{ width: "10%" }} />{/* ต้นทุน */}
+                <col style={{ width: "13%" }} />{/* กำไร/มาร์จิ้น */}
+              </colgroup>
+              <thead>
+                <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+                  <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>วันที่</th>
+                  <th className="text-left pb-3 pr-3 pl-5" style={{ fontWeight: 500 }}>สินค้า</th>
+                  <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ร้านค้า</th>
+                  <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>จำนวนขาย</th>
+                  <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดขาย</th>
+                  <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ต้นทุน</th>
+                  <th className="text-right pb-3" style={{ fontWeight: 500 }}>กำไร / มาร์จิ้น</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageGroups.map((group, gi) => {
+                  const groupMargin = group.margin;
+                  return (
+                    <Fragment key={gi}>
+                      {group.items.map((p, i) => {
+                        const profit = p.profit;
+                        const margin = p.sales > 0 ? (profit / p.sales) * 100 : 0;
+                        const profitDown = margin < 35 && profit > 0;
+                        const isFirst = i === 0;
+                        const isLast = i === group.items.length - 1;
+                        return (
+                          <tr key={p.id} className={`hover:bg-gray-50/50 transition-colors ${isLast ? "border-b-2 border-gray-100" : "border-b border-gray-50"}`}>
+                            {isFirst && (
+                              <td rowSpan={group.items.length} className="py-3 pr-3 align-top bg-[#f0faf3]/50 border-r border-gray-100">
+                                <div className="flex flex-col gap-1.5 px-2 py-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <CalendarIcon className="size-3.5 text-[#319754] shrink-0" />
+                                    <span className={`${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>{group.label}</span>
+                                  </div>
+                                  <div className={`${font} text-[10px] text-gray-500 flex flex-col gap-0.5 pl-5`}>
+                                    <span>{group.items.length} รายการ · {group.totalQty.toLocaleString()} ชิ้น</span>
+                                    <span className="text-[#319754]" style={{ fontWeight: 600 }}>฿{group.totalSales.toLocaleString()}</span>
+                                    <span className={group.totalProfit >= 0 ? "text-[#15803d]" : "text-[#dc2626]"}>กำไร {groupMargin.toFixed(1)}%</span>
+                                  </div>
+                                </div>
+                              </td>
+                            )}
+                            <td className="py-3 pr-3 pl-5">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <ImageWithFallback src={p.image} alt={p.name} className="size-9 rounded-lg object-cover bg-gray-100 shrink-0" />
+                                <div className="flex flex-col min-w-0">
+                                  <p className={`${font} text-[13px] text-[#1a1a1a] truncate`} style={{ fontWeight: 500 }} title={p.name}>{p.name}</p>
+                                  <p className={`${font} text-[11px] text-gray-400 truncate`}>{p.category}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 pr-3">
+                              <span className={`${font} inline-flex items-center gap-1.5 text-[12px] text-gray-700 truncate max-w-full`} title={p.shopName} style={{ fontWeight: 500 }}>
+                                <Store className="size-3.5 text-gray-400 shrink-0" strokeWidth={2.2} />
+                                <span className="truncate">{p.shopName}</span>
+                              </span>
+                            </td>
+                            <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
+                              {p.qty.toLocaleString()} <span className="text-gray-400 text-[11px]">ชิ้น</span>
+                            </td>
+                            <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
+                            <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-600`}>฿{p.cost.toLocaleString()}</td>
+                            <td className="py-3 text-right">
+                              <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
+                                ฿{profit.toLocaleString()}
+                              </p>
+                              <p className={`${font} text-[11px] tabular-nums`} style={{ color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
+                                {p.sales > 0 ? `${margin.toFixed(1)}%` : "-"}
+                              </p>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </Fragment>
+                  );
+                })}
+                {pageGroups.length === 0 && (
+                  <tr><td colSpan={7} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</td></tr>
+                )}
+              </tbody>
+              {pageGroups.length > 0 && (
+                <tfoot>
+                  <tr className="border-t-2 border-gray-100">
+                    <td className={`pt-3 pr-3 ${font} text-[12px]`} style={{ fontWeight: 600 }}>{pageGroups.length} กลุ่ม</td>
+                    <td className={`pt-3 pr-3 pl-5 ${font} text-[12px]`} style={{ fontWeight: 600 }}>รวม {totalRows} รายการ</td>
+                    <td className={`pt-3 pr-3 ${font} text-[12px] text-gray-500`}>—</td>
+                    <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[13px]`} style={{ fontWeight: 700 }}>{pageTotalQty.toLocaleString()} <span className="text-gray-400 text-[11px]">ชิ้น</span></td>
+                    <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 700 }}>฿{pageTotalSales.toLocaleString()}</td>
+                    <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-600`} style={{ fontWeight: 600 }}>฿{pageTotalCost.toLocaleString()}</td>
+                    <td className={`pt-3 text-right ${font} text-[14px] text-[#15803d] tabular-nums`} style={{ fontWeight: 700 }}>
+                      ฿{pageTotalProfit.toLocaleString()}
+                      <span className={`${font} text-[11px] block`} style={{ fontWeight: 500 }}>{pageMargin.toFixed(1)}%</span>
+                    </td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+
+            {/* Pagination */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+              <div className="flex items-center gap-2">
+                <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+                <div className="relative">
+                  <select value={groupsPerPage} onChange={(e) => { setGroupsPerPage(Number(e.target.value)); setProductPage(1); }}
+                    className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                    {[3, 5, 10, 20].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                  <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+                <span className={`${font} text-[12px] text-gray-500`}>
+                  กลุ่มต่อหน้า · {pageGroups.length === 0 ? 0 : groupPageStart + 1}–{groupPageStart + pageGroups.length} จาก {dateGroups.length} กลุ่ม
+                </span>
+              </div>
+              <div className="flex items-center gap-1 flex-wrap">
+                <button disabled={groupSafePage === 1} onClick={() => setProductPage((p) => p - 1)}
+                  aria-label="หน้าก่อน"
+                  className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${groupSafePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                  <ChevronLeft className="size-4" strokeWidth={2.4} />
+                </button>
+                {Array.from({ length: groupTotalPages }, (_, i) => i + 1).map((p) => (
+                  <button key={p} onClick={() => setProductPage(p)}
+                    className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${groupSafePage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                    style={{ fontWeight: groupSafePage === p ? 600 : 400 }}>{p}</button>
+                ))}
+                <button disabled={groupSafePage === groupTotalPages} onClick={() => setProductPage((p) => p + 1)}
+                  aria-label="หน้าถัดไป"
+                  className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${groupSafePage === groupTotalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                  <ChevronRight className="size-4" strokeWidth={2.4} />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+function AdminCustomersReportContent() {
+  type Period = "daily" | "weekly" | "monthly" | "yearly";
+  type ChartKind = "line" | "bar" | "pie";
+
+  const [period, setPeriod] = useState<Period>("monthly");
+  const [chartKind, setChartKind] = useState<ChartKind>("line");
+  const [shopFilter, setShopFilter] = useState<string>("all");
+  const today = new Date();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const from = new Date(); from.setDate(from.getDate() - 6); from.setHours(0, 0, 0, 0);
+    const to = new Date(); to.setHours(0, 0, 0, 0);
+    return { from, to };
+  });
+  const [weekMonth, setWeekMonth] = useState<Date>(today);
+  const [monthRange, setMonthRange] = useState<{ from: number; to: number; year: number }>({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() });
+  const [monthClickPhase, setMonthClickPhase] = useState<0 | 1>(0);
+  const [yearRange, setYearRange] = useState<{ from: number; to: number }>({ from: today.getFullYear(), to: today.getFullYear() });
+  const [yearClickPhase, setYearClickPhase] = useState<0 | 1>(0);
+  const [calOpen, setCalOpen] = useState(false);
+  const [custSort, setCustSort] = useState<"total_desc" | "orders_desc" | "recent" | "oldest">("total_desc");
+  const [custPage, setCustPage] = useState(1);
+  const [custPerPage, setCustPerPage] = useState(10);
+
+  const thaiMonthsFull = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  const thaiMonthsShort = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const availableYears = Array.from({ length: 5 }, (_, i) => today.getFullYear() - i);
+
+  const fmtThaiDate = (d?: Date) => d ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear() + 543}` : "—";
+
+  const handleMonthClick = (m: number) => {
+    if (monthClickPhase === 0) { setMonthRange((cur) => ({ ...cur, from: m, to: m })); setMonthClickPhase(1); }
+    else { setMonthRange((cur) => ({ ...cur, from: Math.min(cur.from, m), to: Math.max(cur.from, m) })); setMonthClickPhase(0); setCalOpen(false); }
+  };
+  const handleYearClick = (y: number) => {
+    if (yearClickPhase === 0) { setYearRange({ from: y, to: y }); setYearClickPhase(1); }
+    else { setYearRange((cur) => ({ from: Math.min(cur.from, y), to: Math.max(cur.from, y) })); setYearClickPhase(0); setCalOpen(false); }
+  };
+
+  const dateFilterLabel = (() => {
+    if (period === "daily") {
+      if (!dateRange?.from) return "เลือกช่วงวันที่";
+      if (dateRange.to && dateRange.to.getTime() !== dateRange.from.getTime()) return `${fmtThaiDate(dateRange.from)} – ${fmtThaiDate(dateRange.to)}`;
+      return fmtThaiDate(dateRange.from);
+    }
+    if (period === "weekly") return `เดือน${thaiMonthsFull[weekMonth.getMonth()]} ${weekMonth.getFullYear() + 543}`;
+    if (period === "monthly") {
+      const yr = monthRange.year + 543;
+      if (monthRange.from === monthRange.to) return `เดือน${thaiMonthsFull[monthRange.from]} ${yr}`;
+      return `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+    }
+    if (yearRange.from === yearRange.to) return `ปี ${yearRange.from + 543}`;
+    const a = Math.min(yearRange.from, yearRange.to);
+    const b = Math.max(yearRange.from, yearRange.to);
+    return `ปี ${a + 543} – ${b + 543}`;
+  })();
+
+  const allShops = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), []);
+
+  // Bar3D + shade
+  const shade = (hex: string, percent: number) => {
+    const n = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+    const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
+    return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+  };
+  const Bar3D = (props: any) => {
+    const { x, y, width, height, fill } = props;
+    if (!height || height <= 0 || !width) return null;
+    const depth = Math.min(Math.max(width * 0.28, 5), 9);
+    const top = shade(fill, 12);
+    const right = shade(fill, -18);
+    return (
+      <g>
+        <path d={`M${x + width},${y} L${x + width + depth},${y - depth} L${x + width + depth},${y + height - depth} L${x + width},${y + height} Z`} fill={right} />
+        <path d={`M${x},${y} L${x + depth},${y - depth} L${x + width + depth},${y - depth} L${x + width},${y} Z`} fill={top} />
+        <rect x={x} y={y} width={width} height={height} fill={fill} />
+      </g>
+    );
+  };
+
+  // Hash for deterministic mock
+  const hash = (s: string) => Array.from(s).reduce((a, ch) => a + ch.charCodeAt(0) * 31, 7);
+
+  // Chart series: newCust + repeat per period
+  const chartSeries = useMemo(() => {
+    const seedFactor = shopFilter === "all" ? 1 : Math.max(0.2, (hash(shopFilter) % 7 + 2) / 12);
+    if (period === "daily") {
+      const from = dateRange?.from ?? today;
+      const to = dateRange?.to ?? from;
+      const isSingleDay = from.toDateString() === to.toDateString();
+      if (isSingleDay) {
+        const daySeed = from.toDateString();
+        return Array.from({ length: 24 }, (_, h) => {
+          const lunch = Math.exp(-Math.pow((h - 12) / 1.8, 2)) * 0.55;
+          const evening = Math.exp(-Math.pow((h - 20) / 2.2, 2)) * 1.0;
+          const base = h >= 7 && h <= 22 ? 0.25 : 0.04;
+          const noise = ((hash(`${daySeed}-${h}`) % 30) - 15) / 100;
+          const intensity = Math.max(0, base + lunch + evening + noise);
+          return {
+            label: `${String(h).padStart(2, "0")}:00`,
+            newCust: Math.round(intensity * 8 * seedFactor),
+            repeat: Math.round(intensity * 18 * seedFactor),
+          };
+        });
+      }
+      const totalDays = Math.min(31, Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1));
+      return Array.from({ length: totalDays }, (_, i) => {
+        const d = new Date(from); d.setDate(from.getDate() + i);
+        const seed = d.toDateString();
+        return {
+          label: `${d.getDate()}/${d.getMonth() + 1}`,
+          newCust: Math.round((35 + (hash(seed) % 30)) * seedFactor),
+          repeat: Math.round((85 + (hash(seed + "r") % 50)) * seedFactor),
+        };
+      });
+    }
+    if (period === "weekly") {
+      return Array.from({ length: 4 }, (_, i) => ({
+        label: `สัปดาห์ ${i + 1}`,
+        newCust: Math.round((180 + i * 25 + (hash("wn" + i) % 60)) * seedFactor),
+        repeat: Math.round((420 + i * 50 + (hash("wr" + i) % 90)) * seedFactor),
+      }));
+    }
+    if (period === "monthly") {
+      return thaiMonthsShort.slice(0, 12).map((m, i) => ({
+        label: m,
+        newCust: Math.round((650 + Math.sin(i / 11 * Math.PI) * 280 + (hash(m + "n") % 80)) * seedFactor),
+        repeat: Math.round((1500 + Math.sin(i / 11 * Math.PI) * 600 + (hash(m + "r") % 120)) * seedFactor),
+      }));
+    }
+    return Array.from({ length: 5 }, (_, i) => {
+      const y = today.getFullYear() - 4 + i;
+      return {
+        label: `${y + 543}`,
+        newCust: Math.round((6500 + i * 1300 + (hash("yn" + y) % 600)) * seedFactor),
+        repeat: Math.round((15000 + i * 3200 + (hash("yr" + y) % 1200)) * seedFactor),
+      };
+    });
+  }, [period, shopFilter, dateRange]);
+
+  // KPIs
+  const kpi = useMemo(() => {
+    const newCust = chartSeries.reduce((s, d) => s + d.newCust, 0);
+    const repeat = chartSeries.reduce((s, d) => s + d.repeat, 0);
+    const total = newCust + repeat;
+    const repeatRate = total > 0 ? (repeat / total) * 100 : 0;
+    // Mock LTV - average customer lifetime value
+    const ltv = 1850 + (hash(shopFilter) % 600);
+    // Total registered customers in the system (system-wide)
+    const totalRegistered = shopFilter === "all" ? 18420 + (today.getMonth() * 35) : Math.round((1200 + (hash(shopFilter) % 800)));
+    return { newCust, repeat, total, repeatRate, ltv, totalRegistered };
+  }, [chartSeries, shopFilter]);
+
+  const scopeLabel = shopFilter === "all" ? "ทุกร้านในระบบ" : shopFilter;
+  const fmt = (n: number) => n.toLocaleString();
+
+  // Customer segments — marketplace-wide
+  const segments = useMemo(() => {
+    const totalCust = kpi.totalRegistered;
+    return [
+      { name: "ประจำ",     value: Math.round(totalCust * 0.30), color: "#319754" },
+      { name: "ใหม่",       value: Math.round(totalCust * 0.34), color: "#3b82f6" },
+      { name: "เสี่ยงหาย", value: Math.round(totalCust * 0.18), color: "#ef4444" },
+      { name: "หายไป",     value: Math.round(totalCust * 0.18), color: "#94a3b8" },
+    ];
+  }, [kpi.totalRegistered]);
+
+  // Top shops by customer count (admin's wider view)
+  const topShopsByCust = useMemo(() => {
+    return allShops.map((s) => {
+      const ps = siteProducts.filter((p) => p.shopName === s);
+      const baseCount = ps.length * 280 + (hash(s + "cust") % 400);
+      const totalCust = Math.round(baseCount * (shopFilter === "all" || shopFilter === s ? 1 : 0.1));
+      const newCust = Math.round(totalCust * (0.25 + (hash(s + "n") % 20) / 100));
+      const repeat = totalCust - newCust;
+      return { shopName: s, totalCust, newCust, repeat };
+    }).sort((a, b) => b.totalCust - a.totalCust).slice(0, 5);
+  }, [allShops, shopFilter]);
+
+  // Top customers (system-wide, with shopName attribution)
+  const customers = useMemo(() => {
+    const baseList = [
+      { id: "CST-001", name: "สมชาย ใจดี",       email: "somchai.j@gmail.com",    group: "ประจำ", favShop: "METAHERB Store",   orders: 8, total: 14200, lastBuy: "2 พ.ค.",  daysAgo: 12 },
+      { id: "CST-007", name: "มาลี สดใส",         email: "malee.s@hotmail.com",     group: "ประจำ", favShop: "Organic Thai Farm", orders: 7, total: 12480, lastBuy: "28 เม.ย.", daysAgo: 16 },
+      { id: "CST-002", name: "อดิเทพ พงษ์เพชร",   email: "adithep.p@yahoo.com",     group: "ประจำ",     favShop: "ธรรมชาติพรีเมียม",  orders: 5, total: 9420,  lastBuy: "30 เม.ย.", daysAgo: 14 },
+      { id: "CST-003", name: "วราภรณ์ ทองดี",     email: "warapron.t@gmail.com",    group: "ประจำ",     favShop: "ร้านป่าหมอก",       orders: 6, total: 8720,  lastBuy: "1 พ.ค.",  daysAgo: 13 },
+      { id: "CST-008", name: "ธนพล ศรีสุข",       email: "thanaphol.s@gmail.com",   group: "ประจำ", favShop: "METAHERB Store",   orders: 9, total: 8880,  lastBuy: "5 พ.ค.",  daysAgo: 9 },
+      { id: "CST-005", name: "พิชญา รุ่งเรือง",   email: "pichaya.r@hotmail.com",   group: "ประจำ",     favShop: "สมุนไพรบ้านสวน",   orders: 4, total: 6540,  lastBuy: "3 พ.ค.",  daysAgo: 11 },
+      { id: "CST-010", name: "ภูริ ทองเนื้อเก้า", email: "phuri.t@gmail.com",        group: "ประจำ",     favShop: "Organic Thai Farm", orders: 5, total: 6200,  lastBuy: "30 เม.ย.", daysAgo: 14 },
+      { id: "CST-012", name: "ปรียา แก้วใส",       email: "preeya.k@gmail.com",      group: "ใหม่",       favShop: "METAHERB Store",   orders: 2, total: 5800,  lastBuy: "8 พ.ค.",  daysAgo: 6 },
+      { id: "CST-011", name: "นภาพร ดวงดี",       email: "naphaporn.d@gmail.com",   group: "ใหม่",       favShop: "ธรรมชาติพรีเมียม",  orders: 1, total: 4620,  lastBuy: "10 พ.ค.", daysAgo: 4 },
+      { id: "CST-006", name: "กิตติ ภักดี",        email: "kitti.p@yahoo.com",       group: "เสี่ยงหาย", favShop: "METAHERB Store",   orders: 3, total: 4380,  lastBuy: "ก.พ.",    daysAgo: 75 },
+      { id: "CST-014", name: "สุดารัตน์ มีโชค",   email: "sudarat.m@gmail.com",     group: "ใหม่",       favShop: "ร้านป่าหมอก",       orders: 2, total: 3280,  lastBuy: "9 พ.ค.",  daysAgo: 5 },
+      { id: "CST-009", name: "วรรณวิภา จงเจริญ",  email: "wanwipa.j@hotmail.com",   group: "หายไป",     favShop: "สมุนไพรบ้านสวน",   orders: 1, total: 1880,  lastBuy: "ม.ค.",    daysAgo: 120 },
+      { id: "CST-013", name: "ชัยพร แสงสว่าง",     email: "chaiporn.s@gmail.com",     group: "ประจำ", favShop: "Organic Thai Farm", orders: 6, total: 7920,  lastBuy: "6 พ.ค.",  daysAgo: 8 },
+      { id: "CST-015", name: "อรทัย รุ่งโรจน์",   email: "orathai.r@gmail.com",      group: "ประจำ",     favShop: "ธรรมชาติพรีเมียม",  orders: 4, total: 5460,  lastBuy: "4 พ.ค.",  daysAgo: 10 },
+      { id: "CST-016", name: "ธีรพล ทองอินทร์",   email: "thirapol.t@gmail.com",      group: "ใหม่",       favShop: "METAHERB Store",   orders: 1, total: 2150,  lastBuy: "11 พ.ค.", daysAgo: 3 },
+      { id: "CST-017", name: "ลักษมี สุขสมบูรณ์", email: "luksami.s@hotmail.com",     group: "เสี่ยงหาย", favShop: "ร้านป่าหมอก",       orders: 2, total: 1980,  lastBuy: "มี.ค.",   daysAgo: 65 },
+    ];
+    return baseList.filter((c) => shopFilter === "all" || c.favShop === shopFilter);
+  }, [shopFilter]);
+
+  const sortedCust = useMemo(() => {
+    const arr = [...customers];
+    if (custSort === "total_desc") arr.sort((a, b) => b.total - a.total);
+    if (custSort === "orders_desc") arr.sort((a, b) => b.orders - a.orders);
+    if (custSort === "recent") arr.sort((a, b) => a.daysAgo - b.daysAgo);
+    if (custSort === "oldest") arr.sort((a, b) => b.daysAgo - a.daysAgo);
+    return arr;
+  }, [customers, custSort]);
+
+  const custTotalPages = Math.max(1, Math.ceil(sortedCust.length / custPerPage));
+  const custSafePage = Math.min(custPage, custTotalPages);
+  const custPageStart = (custSafePage - 1) * custPerPage;
+  const pagedCust = sortedCust.slice(custPageStart, custPageStart + custPerPage);
+
+  const segmentChipBg = (group: string): { bg: string; fg: string } => {
+    if (group === "ประจำ")     return { bg: "#dcfce7", fg: "#15803d" };
+    if (group === "ใหม่")       return { bg: "#dbeafe", fg: "#1e40af" };
+    if (group === "เสี่ยงหาย") return { bg: "#fee2e2", fg: "#b91c1c" };
+    return                       { bg: "#f3f4f6", fg: "#525252" };
+  };
+
+  const periodTabs: { id: Period; label: string }[] = [
+    { id: "daily",   label: "รายวัน" },
+    { id: "weekly",  label: "รายสัปดาห์" },
+    { id: "monthly", label: "รายเดือน" },
+    { id: "yearly",  label: "รายปี" },
+  ];
+  const chartTabs: { id: ChartKind; label: string; Icon: any }[] = [
+    { id: "line", label: "กราฟเส้น",  Icon: TrendingUp },
+    { id: "bar",  label: "กราฟแท่ง",  Icon: BarChart2  },
+    { id: "pie",  label: "กราฟวงกลม", Icon: PieIcon    },
+  ];
+
+  const trendIcon = (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  );
+
+  const kpiBgArt = (src: string, delay: number) => (
+    <motion.img src={src} alt="" aria-hidden="true"
+      className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+      style={{
+        maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+      }}
+      initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay }} />
+  );
+
+  const kpiCards = [
+    { label: `ลูกค้าใหม่ · ${scopeLabel}`,    value: `${fmt(kpi.newCust)} คน`,        subLabel: `เฉลี่ย ${fmt(Math.round(kpi.newCust / Math.max(1, chartSeries.length)))} คน / ช่วง`, accent: "#3b82f6", Icon: UserPlus, bgArt: kpiBgArt(imgNewCustomer, 0.15) },
+    { label: `ลูกค้าซื้อซ้ำ · ${scopeLabel}`,  value: `${fmt(kpi.repeat)} คน`,         subLabel: `Repeat rate ${kpi.repeatRate.toFixed(1)}%`, accent: "#319754", Icon: RotateCcw, bgArt: kpiBgArt(imgRepeatCustomers, 0.25) },
+    { label: "สมาชิกในระบบทั้งหมด",          value: `${fmt(kpi.totalRegistered)} คน`, subLabel: `+${fmt(kpi.newCust)} ใหม่ในช่วงนี้`, accent: "#0ea5e9", Icon: Users, bgArt: kpiBgArt(imgGroupCustomer, 0.35) },
+    { label: "LTV เฉลี่ย",                     value: `฿${fmt(kpi.ltv)}`,               subLabel: "Customer Lifetime Value", accent: "#10b981", Icon: Heart, bgArt: kpiBgArt(imgMember, 0.45) },
+  ];
+
+  const PIE_COLORS = ["#f59e0b", "#319754", "#3b82f6", "#ef4444", "#94a3b8"];
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานข้อมูลลูกค้า</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวมลูกค้าทั้งระบบ Metaherb · แบ่งกลุ่มและจัดอันดับร้านที่ดึงลูกค้า</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Shop filter */}
+          <div className="relative">
+            <select value={shopFilter} onChange={(e) => setShopFilter(e.target.value)}
+              className={`${font} text-[13px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] h-[40px] pl-4 pr-9 rounded-full appearance-none cursor-pointer hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow`}
+              style={{ fontWeight: 500 }}>
+              <option value="all">ทุกร้านในระบบ ({allShops.length})</option>
+              {allShops.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <ChevronDown className="size-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+          {/* Date picker */}
+          <Popover open={calOpen} onOpenChange={setCalOpen}>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}>
+                <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
+                <span style={{ fontWeight: 500 }}>{dateFilterLabel}</span>
+                <ChevronDown className="size-3.5 text-gray-400 group-hover:text-[#319754]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              {period === "daily" && (
+                <>
+                  <Calendar mode="range" numberOfMonths={2} selected={dateRange} onSelect={setDateRange} defaultMonth={dateRange?.from} />
+                  <div className="flex items-center justify-between gap-2 p-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 1 ครั้งสำหรับวันเดียว หรือ 2 ครั้งสำหรับช่วง</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setDateRange({ from: today, to: today })} className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>วันนี้</button>
+                      <button onClick={() => setCalOpen(false)} className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
+                    </div>
+                  </div>
+                </>
+              )}
+              {period === "weekly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setWeekMonth(new Date(weekMonth.getFullYear() - 1, weekMonth.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronLeft className="size-4 text-gray-600" />
+                    </button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {weekMonth.getFullYear() + 543}</span>
+                    <button onClick={() => setWeekMonth(new Date(weekMonth.getFullYear() + 1, weekMonth.getMonth(), 1))}
+                      className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronRight className="size-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const isActive = weekMonth.getMonth() === i;
+                      return (
+                        <button key={m} onClick={() => { setWeekMonth(new Date(weekMonth.getFullYear(), i, 1)); setCalOpen(false); }}
+                          className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isActive ? "bg-[#319754] text-white" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isActive ? 600 : 500 }}>{m}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {period === "monthly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year - 1 }))} className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronLeft className="size-4 text-gray-600" />
+                    </button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {monthRange.year + 543}</span>
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year + 1 }))} className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronRight className="size-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const inRange = i >= Math.min(monthRange.from, monthRange.to) && i <= Math.max(monthRange.from, monthRange.to);
+                      const isEdge = i === monthRange.from || i === monthRange.to;
+                      return (
+                        <button key={m} onClick={() => handleMonthClick(i)}
+                          className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isEdge ? 600 : 500 }}>{m}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {period === "yearly" && (
+                <div className="p-3 w-[200px]">
+                  <p className={`${font} text-[11px] text-gray-400 mb-2`}>ย้อนหลังได้ถึง 5 ปี</p>
+                  <div className="flex flex-col gap-1">
+                    {availableYears.map((y) => {
+                      const inRange = y >= Math.min(yearRange.from, yearRange.to) && y <= Math.max(yearRange.from, yearRange.to);
+                      const isEdge = y === yearRange.from || y === yearRange.to;
+                      return (
+                        <button key={y} onClick={() => handleYearClick(y)}
+                          className={`${font} text-[13px] py-2 px-3 rounded-lg cursor-pointer transition-colors text-left ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isEdge ? 600 : 500 }}>ปี {y + 543}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          {/* Period tabs */}
+          <div className="inline-flex items-center bg-white rounded-full p-1 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+            {periodTabs.map((t) => (
+              <button key={t.id} onClick={() => setPeriod(t.id)}
+                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                {period === t.id && <motion.div layoutId="admin-cust-period-bg" className="absolute inset-0 bg-[#319754] rounded-full" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
+                <span className="relative z-10">{t.label}</span>
+              </button>
+            ))}
+          </div>
+          {/* Export */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+                <Download className="size-4" />ส่งออก
+                <ChevronDown className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-44 p-1">
+              <button onClick={() => toast.success("ส่งออก Excel แล้ว")} className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileSpreadsheet className="size-4 text-[#0f7a3a]" /><span>Excel (.xlsx)</span>
+              </button>
+              <button onClick={() => toast.success("ส่งออก PDF แล้ว")} className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileText className="size-4 text-[#dc2626]" /><span>PDF (.pdf)</span>
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {/* KPI + Chart */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {kpiCards.map((s) => (
+            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+              style={{ backgroundColor: `${s.accent}0d` }}>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                    <s.Icon className="size-4" style={{ color: s.accent }} strokeWidth={2.4} />
+                  </div>
+                </div>
+                <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                  <AnimatedValue value={s.value} />
+                </p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`} style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                    {trendIcon}
+                    {s.subLabel}
+                  </span>
+                </div>
+              </div>
+              {s.bgArt}
+            </div>
+          ))}
+        </div>
+
+        <h3 className={`${font} text-[18px] mb-5`} style={{ fontWeight: 600 }}>รายงานข้อมูลลูกค้า</h3>
+
+        <ResponsiveContainer width="100%" height={340}>
+          {chartKind === "line" ? (
+            <ComposedChart data={chartSeries} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+              <defs>
+                <filter id="adminCustGlowBlue" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="adminCustGlowGreen" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip cursor={{ stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4 4" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {payload.map((p: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                              <span className="text-gray-600">{p.name}</span>
+                            </span>
+                            <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.value.toLocaleString()} คน</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }} />
+              <Legend wrapperStyle={{ paddingTop: 20 }} content={({ payload }: any) => (
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  {payload?.map((entry: any, i: number) => (
+                    <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                      <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )} />
+              <Line type="monotone" dataKey="newCust" stroke="#3b82f6" strokeWidth={3} name="ลูกค้าใหม่ (คน)"
+                style={{ filter: "url(#adminCustGlowBlue)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#3b82f6", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#3b82f6", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(59,130,246,0.35))" } }}
+                animationDuration={800} />
+              <Line type="monotone" dataKey="repeat" stroke="#319754" strokeWidth={3} name="ซื้อซ้ำ (คน)"
+                style={{ filter: "url(#adminCustGlowGreen)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#319754", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#319754", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(49,151,84,0.35))" } }}
+                animationDuration={800} />
+            </ComposedChart>
+          ) : chartKind === "bar" ? (
+            <BarChart data={chartSeries} margin={{ top: 20, right: 30, left: 10, bottom: 10 }} barCategoryGap="22%" barGap={6}>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip cursor={{ fill: "rgba(148,163,184,0.08)" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      <div className="flex flex-col gap-1.5">
+                        {payload.map((p: any, i: number) => (
+                          <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                            <span className="flex items-center gap-1.5">
+                              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+                              <span className="text-gray-600">{p.name}</span>
+                            </span>
+                            <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.value.toLocaleString()} คน</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }} />
+              <Legend wrapperStyle={{ paddingTop: 20 }} content={({ payload }: any) => (
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  {payload?.map((entry: any, i: number) => (
+                    <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                      <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )} />
+              <Bar dataKey="newCust" name="ลูกค้าใหม่ (คน)" fill="#3b82f6" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+              <Bar dataKey="repeat"  name="ซื้อซ้ำ (คน)"      fill="#319754" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+            </BarChart>
+          ) : (
+            (() => {
+              const total = chartSeries.reduce((s, d) => s + d.newCust, 0);
+              return (
+                <PieChart>
+                  <Pie data={chartSeries} cx="50%" cy="50%" innerRadius={72} outerRadius={120} paddingAngle={2}
+                    dataKey="newCust" nameKey="label" labelLine={false}
+                    label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }: any) => {
+                      if (percent < 0.06) return null;
+                      const RADIAN = Math.PI / 180;
+                      const r = innerRadius + (outerRadius - innerRadius) * 0.55;
+                      const x = cx + r * Math.cos(-midAngle * RADIAN);
+                      const y = cy + r * Math.sin(-midAngle * RADIAN);
+                      return <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 600 }}>{(percent * 100).toFixed(0)}%</text>;
+                    }}>
+                    {chartSeries.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="#fff" strokeWidth={3} />)}
+                  </Pie>
+                  <text x="50%" y="38%" textAnchor="middle" style={{ fontSize: 11, fill: "#9ca3af" }}>ลูกค้าใหม่รวม</text>
+                  <text x="50%" y="46%" textAnchor="middle" style={{ fontSize: 20, fill: "#1a1a1a", fontWeight: 700 }}>{total.toLocaleString()} คน</text>
+                  <Tooltip />
+                </PieChart>
+              );
+            })()
+          )}
+        </ResponsiveContainer>
+
+        <div className="flex justify-center mt-5 overflow-x-auto">
+          <div className="inline-flex items-center bg-gray-50 rounded-full p-1">
+            {chartTabs.map((t) => (
+              <button key={t.id} onClick={() => setChartKind(t.id)}
+                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${chartKind === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                {chartKind === t.id && <motion.div layoutId="admin-cust-chart-bg" className="absolute inset-0 bg-[#319754] rounded-full" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
+                <span className="relative z-10">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 2 cols: Segments donut + Top shops by customer count */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+        {/* Segments — beautified */}
+        {(() => {
+          const segRows = [...segments].sort((a, b) => b.value - a.value);
+          const topSeg = segRows[0];
+          const lighten = (hex: string, pct: number) => {
+            const n = parseInt(hex.replace("#", ""), 16);
+            const amt = Math.round(2.55 * pct);
+            const r = Math.min(255, (n >> 16) + amt);
+            const g = Math.min(255, ((n >> 8) & 0xff) + amt);
+            const b = Math.min(255, (n & 0xff) + amt);
+            return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+          };
+          return (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-5 relative overflow-hidden lg:order-2">
+              {/* Decorative blobs */}
+              <div className="absolute -top-16 -right-16 size-48 rounded-full pointer-events-none opacity-[0.08]"
+                style={{ background: `radial-gradient(circle at center, ${topSeg.color}, transparent 70%)` }} />
+              <div className="absolute -bottom-20 -left-12 size-44 rounded-full pointer-events-none opacity-[0.06]"
+                style={{ background: `radial-gradient(circle at center, ${segRows[1]?.color}, transparent 70%)` }} />
+
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #f59e0b1a, #ef44441a)" }}>
+                    <Users className="size-4 text-[#f59e0b]" strokeWidth={2.4} />
+                  </div>
+                  <div>
+                    <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>กลุ่มลูกค้าทั้งระบบ</p>
+                    <p className={`${font} text-[11px] text-gray-500`}>{kpi.totalRegistered.toLocaleString()} สมาชิก · {segRows.length} กลุ่ม</p>
+                  </div>
+                </div>
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full tabular-nums`}
+                  style={{ backgroundColor: `${topSeg.color}15`, color: topSeg.color, fontWeight: 600 }}>
+                  <Crown className="size-3" strokeWidth={2.4} />
+                  {topSeg.name}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-5 items-center relative z-10">
+                {/* Donut */}
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute inset-3 rounded-full pointer-events-none"
+                    style={{
+                      background: `conic-gradient(from -90deg, ${segRows.map((s, i, a) => {
+                        const totalVal = a.reduce((sum, x) => sum + x.value, 0) || 1;
+                        const acc = a.slice(0, i).reduce((sum, x) => sum + x.value, 0) / totalVal * 100;
+                        const own = (s.value / totalVal) * 100;
+                        return `${s.color}22 ${acc}% ${acc + own}%`;
+                      }).join(", ")})`,
+                      filter: "blur(14px)",
+                      opacity: 0.7,
+                    }} />
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <defs>
+                        {segRows.map((s, i) => (
+                          <linearGradient key={s.name} id={`adminSegGrad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={lighten(s.color, 18)} />
+                            <stop offset="100%" stopColor={s.color} />
+                          </linearGradient>
+                        ))}
+                      </defs>
+                      <Pie data={segRows} cx="50%" cy="50%" innerRadius={66} outerRadius={96} paddingAngle={3}
+                        cornerRadius={6} dataKey="value" nameKey="name" labelLine={false} stroke="none">
+                        {segRows.map((s, i) => <Cell key={s.name} fill={`url(#adminSegGrad-${i})`} stroke="#fff" strokeWidth={3} />)}
+                      </Pie>
+                      <Tooltip
+                        wrapperStyle={{ zIndex: 50 }}
+                        content={({ active, payload }: any) => {
+                          if (!active || !payload?.length) return null;
+                          const p = payload[0];
+                          const row = segRows.find((s) => s.name === p.name);
+                          if (!row) return null;
+                          const pct = (row.value / kpi.totalRegistered) * 100;
+                          return (
+                            <div className={`${font} bg-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.14)] border border-gray-100 p-3 min-w-[170px]`}>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <span className="size-2.5 rounded-full" style={{ background: `linear-gradient(135deg, ${lighten(row.color, 18)}, ${row.color})` }} />
+                                <span className="text-[12px] text-gray-700" style={{ fontWeight: 600 }}>{row.name}</span>
+                              </div>
+                              <p className="text-[15px] tabular-nums" style={{ fontWeight: 700, color: row.color }}>{row.value.toLocaleString()} คน</p>
+                              <p className="text-[11px] text-gray-500 tabular-nums mt-0.5">{pct.toFixed(1)}% ของทั้งหมด</p>
+                            </div>
+                          );
+                        }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center text */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
+                    <p className={`${font} text-[9px] uppercase tracking-[0.18em] text-gray-400`} style={{ fontWeight: 600 }}>สมาชิก</p>
+                    <p className={`${font} text-[22px] tabular-nums mt-1 leading-none bg-clip-text text-transparent`}
+                      style={{
+                        backgroundImage: `linear-gradient(135deg, ${lighten(topSeg.color, 8)}, ${topSeg.color})`,
+                        fontWeight: 800,
+                      }}>
+                      {(kpi.totalRegistered / 1000).toFixed(1)}k
+                    </p>
+                    <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: `${topSeg.color}15` }}>
+                      <span className="size-1.5 rounded-full" style={{ backgroundColor: topSeg.color }} />
+                      <span className={`${font} text-[10px] tabular-nums`} style={{ color: topSeg.color, fontWeight: 700 }}>
+                        Top {((topSeg.value / kpi.totalRegistered) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Legend rows */}
+                <div className="flex flex-col gap-1.5">
+                  {segRows.map((c, i) => {
+                    const pct = (c.value / kpi.totalRegistered) * 100;
+                    return (
+                      <div key={c.name}
+                        className="group/seg flex items-center gap-3 pl-2 pr-3 py-2 rounded-xl hover:bg-gray-50 transition-colors">
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <span className={`${font} size-5 rounded-md inline-flex items-center justify-center text-[10px] tabular-nums`}
+                            style={{ backgroundColor: `${c.color}1a`, color: c.color, fontWeight: 700 }}>
+                            {i + 1}
+                          </span>
+                          <span className="block w-1 h-7 rounded-full"
+                            style={{ background: `linear-gradient(180deg, ${lighten(c.color, 15)}, ${c.color})` }} />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{c.name}</span>
+                            <span className={`${font} text-[12px] tabular-nums shrink-0`} style={{ fontWeight: 700, color: c.color }}>{c.value.toLocaleString()} คน</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{ background: `linear-gradient(90deg, ${lighten(c.color, 15)}, ${c.color})` }}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.9, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                              />
+                            </div>
+                            <span className={`${font} text-[10px] tabular-nums text-gray-400 w-9 text-right`}>{pct.toFixed(1)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Top shops by customer count — beautified */}
+        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-5 relative overflow-hidden lg:order-1">
+          {/* Decorative blobs */}
+          <div className="absolute -top-16 -right-16 size-48 rounded-full pointer-events-none opacity-[0.08]"
+            style={{ background: "radial-gradient(circle at center, #0ea5e9, transparent 70%)" }} />
+          <div className="absolute -bottom-20 -left-12 size-40 rounded-full pointer-events-none opacity-[0.06]"
+            style={{ background: "radial-gradient(circle at center, #3b82f6, transparent 70%)" }} />
+
+          <div className="flex items-center justify-between relative z-10">
+            <div className="flex items-center gap-2">
+              <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0ea5e91a, #3b82f61a)" }}>
+                <Store className="size-4 text-[#0ea5e9]" strokeWidth={2.4} />
+              </div>
+              <div>
+                <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>Top ร้านค้า · ฐานลูกค้า</p>
+                <p className={`${font} text-[11px] text-gray-500`}>ร้านที่ดึงลูกค้าได้มากที่สุด</p>
+              </div>
+            </div>
+            <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full tabular-nums bg-[#0ea5e9]/10 text-[#0ea5e9]`} style={{ fontWeight: 600 }}>
+              <Users className="size-3" strokeWidth={2.4} />
+              {topShopsByCust.reduce((s, x) => s + x.totalCust, 0).toLocaleString()} คน
+            </span>
+          </div>
+          <div className="flex flex-col gap-2 relative z-10">
+            {topShopsByCust.map((s, i) => {
+              const maxCust = topShopsByCust[0]?.totalCust || 1;
+              const pct = (s.totalCust / maxCust) * 100;
+              const newPct  = s.totalCust > 0 ? (s.newCust  / s.totalCust) * 100 : 0;
+              const repPct  = s.totalCust > 0 ? (s.repeat   / s.totalCust) * 100 : 0;
+              const rankColor = i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : i === 2 ? "#cd7f32" : "#9ca3af";
+              const banner = siteShops.find((x) => x.name === s.shopName)?.banner;
+              const isTop = i === 0;
+              return (
+                <button key={s.shopName} onClick={() => setShopFilter(s.shopName)}
+                  className={`${font} group/shop relative flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-all text-left border border-transparent hover:border-gray-100`}>
+                  {/* Avatar + crown for #1 + rank badge */}
+                  <span className="relative shrink-0">
+                    {isTop && (
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-10"
+                        style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.18))" }}>
+                        <Crown className="size-3.5" fill="#fbbf24" stroke="#b45309" strokeWidth={1.6} />
+                      </span>
+                    )}
+                    <span className="size-11 rounded-full overflow-hidden block bg-gray-100"
+                      style={{ boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${rankColor}, 0 2px 6px rgba(0,0,0,0.10)` }}>
+                      {banner ? <ImageWithFallback src={banner} alt={s.shopName} className="w-full h-full object-cover" /> : <span className="w-full h-full flex items-center justify-center text-gray-500 text-[14px] bg-gray-200" style={{ fontWeight: 700 }}>{s.shopName.charAt(0)}</span>}
+                    </span>
+                    <span className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full inline-flex items-center justify-center text-white text-[10px] tabular-nums ring-2 ring-white shadow-sm"
+                      style={{ background: `linear-gradient(135deg, ${rankColor}, ${rankColor}dd)`, fontWeight: 700 }}>
+                      {i + 1}
+                    </span>
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[13px] text-black truncate" style={{ fontWeight: 600 }}>{s.shopName}</span>
+                      <span className="tabular-nums text-[14px] shrink-0" style={{ fontWeight: 800, color: "#0ea5e9" }}>{s.totalCust.toLocaleString()} <span className="text-[10px] text-gray-500" style={{ fontWeight: 500 }}>คน</span></span>
+                    </div>
+                    {/* Stacked progress: new (blue) + repeat (green) */}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden flex">
+                        <motion.div className="h-full" style={{ background: "linear-gradient(90deg, #60a5fa, #3b82f6)" }}
+                          initial={{ width: 0 }} animate={{ width: `${(newPct / 100) * pct}%` }} transition={{ duration: 0.9, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }} />
+                        <motion.div className="h-full" style={{ background: "linear-gradient(90deg, #34d399, #10b981)" }}
+                          initial={{ width: 0 }} animate={{ width: `${(repPct / 100) * pct}%` }} transition={{ duration: 0.9, delay: i * 0.08 + 0.1, ease: [0.16, 1, 0.3, 1] }} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5 text-[10px] tabular-nums">
+                      <span className="inline-flex items-center gap-1 text-[#3b82f6]" style={{ fontWeight: 600 }}>
+                        <span className="size-1.5 rounded-full bg-[#3b82f6]" />
+                        ใหม่ {s.newCust.toLocaleString()}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[#10b981]" style={{ fontWeight: 600 }}>
+                        <span className="size-1.5 rounded-full bg-[#10b981]" />
+                        ซ้ำ {s.repeat.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Top customers table */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+          <div>
+            <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>ลูกค้ายอดซื้อสูงสุด</h3>
+            <p className={`${font} text-[12px] text-gray-400 mt-1 inline-flex items-center gap-1.5`}>
+              <Users className="size-3.5" />
+              <span>ข้อมูล <span className="text-gray-600" style={{ fontWeight: 500 }}>{scopeLabel}</span> · {sortedCust.length} คน · แสดง {pagedCust.length === 0 ? 0 : custPageStart + 1}–{custPageStart + pagedCust.length}</span>
+            </p>
+          </div>
+          <div className="relative">
+            <select value={custSort} onChange={(e) => { setCustSort(e.target.value as any); setCustPage(1); }}
+              className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+              <option value="total_desc">เรียง: ยอดซื้อรวม</option>
+              <option value="orders_desc">เรียง: ออเดอร์มากสุด</option>
+              <option value="recent">เรียง: ซื้อล่าสุด</option>
+              <option value="oldest">เรียง: ห่างจากซื้อ</option>
+            </select>
+            <ChevronDown className="size-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "26%" }} />
+            <col style={{ width: "18%" }} />
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "8%" }} />
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}>#</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ลูกค้า</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ร้านโปรด</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>กลุ่ม</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ออเดอร์</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดซื้อรวม</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ซื้อล่าสุด</th>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}>AOV</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pagedCust.length === 0 && (
+              <tr><td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบลูกค้า</td></tr>
+            )}
+            {pagedCust.map((c, idx) => {
+              const chip = segmentChipBg(c.group);
+              const banner = siteShops.find((x) => x.name === c.favShop)?.banner;
+              const aov = c.orders > 0 ? Math.round(c.total / c.orders) : 0;
+              return (
+                <tr key={c.id} className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                  <td className={`py-3 text-center ${font} text-[11px] text-gray-400 tabular-nums`} style={{ fontWeight: 500 }}>{custPageStart + idx + 1}</td>
+                  <td className="py-3 pr-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="size-9 rounded-full inline-flex items-center justify-center text-white text-[11px] shrink-0"
+                        style={{ background: "linear-gradient(135deg, #6b7280, #374151)", fontWeight: 700 }}>
+                        {c.name.charAt(0)}
+                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{c.name}</p>
+                        <p className={`${font} text-[11px] text-gray-400 truncate`}>{c.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 pr-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="size-7 rounded-full overflow-hidden bg-gray-100 shrink-0">
+                        {banner ? <ImageWithFallback src={banner} alt={c.favShop} className="w-full h-full object-cover" /> : <Store className="size-3.5 text-gray-400 mt-1.5 mx-auto" />}
+                      </span>
+                      <span className={`${font} text-[12px] text-gray-700 truncate`} style={{ fontWeight: 500 }} title={c.favShop}>{c.favShop}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 pr-3">
+                    <span className={`${font} inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px]`}
+                      style={{ backgroundColor: chip.bg, color: chip.fg, fontWeight: 600 }}>
+                      {c.group}
+                    </span>
+                  </td>
+                  <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-700`}>{c.orders}</td>
+                  <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 700, color: "#319754" }}>฿{c.total.toLocaleString()}</td>
+                  <td className={`py-3 pr-3 text-right ${font} text-[12px] text-gray-500`}>{c.lastBuy}</td>
+                  <td className={`py-3 text-center tabular-nums ${font} text-[12px] text-gray-600`}>฿{aov.toLocaleString()}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* Pagination */}
+        {sortedCust.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select value={custPerPage} onChange={(e) => { setCustPerPage(Number(e.target.value)); setCustPage(1); }}
+                  className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>คนต่อหน้า · {sortedCust.length} คน</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={custSafePage === 1} onClick={() => setCustPage((p) => p - 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${custSafePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: custTotalPages }, (_, i) => i + 1).map((p) => (
+                <button key={p} onClick={() => setCustPage(p)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${custSafePage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: custSafePage === p ? 600 : 400 }}>{p}</button>
+              ))}
+              <button disabled={custSafePage === custTotalPages} onClick={() => setCustPage((p) => p + 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${custSafePage === custTotalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminProductsReportContent() {
+  type Period = "daily" | "weekly" | "monthly" | "yearly";
+  type ChartKind = "line" | "bar" | "pie";
+
+  const [period, setPeriod] = useState<Period>("monthly");
+  const [chartKind, setChartKind] = useState<ChartKind>("line");
+  const [shopFilter, setShopFilter] = useState<string>("all");
+  const today = new Date();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const from = new Date(); from.setDate(from.getDate() - 6); from.setHours(0, 0, 0, 0);
+    const to = new Date(); to.setHours(0, 0, 0, 0);
+    return { from, to };
+  });
+  const [weekMonth, setWeekMonth] = useState<Date>(today);
+  const [monthRange, setMonthRange] = useState<{ from: number; to: number; year: number }>({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() });
+  const [monthClickPhase, setMonthClickPhase] = useState<0 | 1>(0);
+  const [yearRange, setYearRange] = useState<{ from: number; to: number }>({ from: today.getFullYear(), to: today.getFullYear() });
+  const [yearClickPhase, setYearClickPhase] = useState<0 | 1>(0);
+  const [calOpen, setCalOpen] = useState(false);
+  const [prodSort, setProdSort] = useState<"sold_desc" | "revenue_desc" | "rating_desc" | "stock_asc">("sold_desc");
+  const [prodPage, setProdPage] = useState(1);
+  const [prodPerPage, setProdPerPage] = useState(10);
+
+  const thaiMonthsFull = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  const thaiMonthsShort = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const availableYears = Array.from({ length: 5 }, (_, i) => today.getFullYear() - i);
+
+  const fmtThaiDate = (d?: Date) => d ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear() + 543}` : "—";
+
+  const handleMonthClick = (m: number) => {
+    if (monthClickPhase === 0) { setMonthRange((cur) => ({ ...cur, from: m, to: m })); setMonthClickPhase(1); }
+    else { setMonthRange((cur) => ({ ...cur, from: Math.min(cur.from, m), to: Math.max(cur.from, m) })); setMonthClickPhase(0); setCalOpen(false); }
+  };
+  const handleYearClick = (y: number) => {
+    if (yearClickPhase === 0) { setYearRange({ from: y, to: y }); setYearClickPhase(1); }
+    else { setYearRange((cur) => ({ from: Math.min(cur.from, y), to: Math.max(cur.from, y) })); setYearClickPhase(0); setCalOpen(false); }
+  };
+
+  const dateFilterLabel = (() => {
+    if (period === "daily") {
+      if (!dateRange?.from) return "เลือกช่วงวันที่";
+      if (dateRange.to && dateRange.to.getTime() !== dateRange.from.getTime()) return `${fmtThaiDate(dateRange.from)} – ${fmtThaiDate(dateRange.to)}`;
+      return fmtThaiDate(dateRange.from);
+    }
+    if (period === "weekly") return `เดือน${thaiMonthsFull[weekMonth.getMonth()]} ${weekMonth.getFullYear() + 543}`;
+    if (period === "monthly") {
+      const yr = monthRange.year + 543;
+      if (monthRange.from === monthRange.to) return `เดือน${thaiMonthsFull[monthRange.from]} ${yr}`;
+      return `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+    }
+    if (yearRange.from === yearRange.to) return `ปี ${yearRange.from + 543}`;
+    const a = Math.min(yearRange.from, yearRange.to);
+    const b = Math.max(yearRange.from, yearRange.to);
+    return `ปี ${a + 543} – ${b + 543}`;
+  })();
+
+  const allShops = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), []);
+
+  // Bar3D
+  const shade = (hex: string, percent: number) => {
+    const n = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+    const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
+    return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+  };
+  const Bar3D = (props: any) => {
+    const { x, y, width, height, fill } = props;
+    if (!height || height <= 0 || !width) return null;
+    const depth = Math.min(Math.max(width * 0.28, 5), 9);
+    return (
+      <g>
+        <path d={`M${x + width},${y} L${x + width + depth},${y - depth} L${x + width + depth},${y + height - depth} L${x + width},${y + height} Z`} fill={shade(fill, -18)} />
+        <path d={`M${x},${y} L${x + depth},${y - depth} L${x + width + depth},${y - depth} L${x + width},${y} Z`} fill={shade(fill, 12)} />
+        <rect x={x} y={y} width={width} height={height} fill={fill} />
+      </g>
+    );
+  };
+
+  const hash = (s: string) => Array.from(s).reduce((a, ch) => a + ch.charCodeAt(0) * 31, 7);
+
+  // Chart series: units sold per period
+  const chartSeries = useMemo(() => {
+    const seedFactor = shopFilter === "all" ? 1 : Math.max(0.18, (hash(shopFilter) % 7 + 2) / 12);
+    if (period === "daily") {
+      const from = dateRange?.from ?? today;
+      const to = dateRange?.to ?? from;
+      const isSingleDay = from.toDateString() === to.toDateString();
+      if (isSingleDay) {
+        const daySeed = from.toDateString();
+        return Array.from({ length: 24 }, (_, h) => {
+          const lunch = Math.exp(-Math.pow((h - 12) / 1.8, 2)) * 0.55;
+          const evening = Math.exp(-Math.pow((h - 20) / 2.2, 2)) * 1.0;
+          const base = h >= 7 && h <= 22 ? 0.25 : 0.04;
+          const noise = ((hash(`p-${daySeed}-${h}`) % 30) - 15) / 100;
+          const intensity = Math.max(0, base + lunch + evening + noise);
+          return { label: `${String(h).padStart(2, "0")}:00`, units: Math.round(intensity * 32 * seedFactor) };
+        });
+      }
+      const totalDays = Math.min(31, Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1));
+      return Array.from({ length: totalDays }, (_, i) => {
+        const d = new Date(from); d.setDate(from.getDate() + i);
+        return { label: `${d.getDate()}/${d.getMonth() + 1}`, units: Math.round((180 + (hash(d.toDateString()) % 80)) * seedFactor) };
+      });
+    }
+    if (period === "weekly") {
+      return Array.from({ length: 4 }, (_, i) => ({
+        label: `สัปดาห์ ${i + 1}`,
+        units: Math.round((950 + i * 120 + (hash("wp" + i) % 200)) * seedFactor),
+      }));
+    }
+    if (period === "monthly") {
+      return thaiMonthsShort.slice(0, 12).map((m, i) => ({
+        label: m,
+        units: Math.round((3600 + Math.sin(i / 11 * Math.PI) * 1400 + (hash(m + "p") % 250)) * seedFactor),
+      }));
+    }
+    return Array.from({ length: 5 }, (_, i) => {
+      const y = today.getFullYear() - 4 + i;
+      return { label: `${y + 543}`, units: Math.round((35000 + i * 7500 + (hash("yp" + y) % 1800)) * seedFactor) };
+    });
+  }, [period, shopFilter, dateRange]);
+
+  // KPIs
+  const kpi = useMemo(() => {
+    const units = chartSeries.reduce((s, d) => s + d.units, 0);
+    const avgUnits = Math.round(units / Math.max(1, chartSeries.length));
+    // Marketplace-wide stats
+    const totalProducts = siteProducts.filter((p) => shopFilter === "all" || p.shopName === shopFilter).length;
+    const totalCategories = new Set(siteProducts.filter((p) => shopFilter === "all" || p.shopName === shopFilter).map((p) => p.category)).size;
+    const lowStock = siteProducts.filter((p) => (shopFilter === "all" || p.shopName === shopFilter) && p.stock > 0 && p.stock <= 10).length;
+    const outOfStock = siteProducts.filter((p) => (shopFilter === "all" || p.shopName === shopFilter) && p.stock === 0).length;
+    const ratings = siteProducts.filter((p) => shopFilter === "all" || p.shopName === shopFilter).map((p) => p.rating);
+    const avgRating = ratings.length > 0 ? ratings.reduce((s, r) => s + r, 0) / ratings.length : 0;
+    const reviewCount = siteProducts.filter((p) => shopFilter === "all" || p.shopName === shopFilter).reduce((s, p) => s + p.reviews.length, 0);
+    return { units, avgUnits, totalProducts, totalCategories, lowStock, outOfStock, avgRating, reviewCount };
+  }, [chartSeries, shopFilter]);
+
+  const scopeLabel = shopFilter === "all" ? "ทุกร้านในระบบ" : shopFilter;
+  const fmt = (n: number) => n.toLocaleString();
+
+  // Top categories by sales
+  const topCategories = useMemo(() => {
+    const filtered = siteProducts.filter((p) => shopFilter === "all" || p.shopName === shopFilter);
+    const catMap: Record<string, { sales: number; units: number; count: number }> = {};
+    filtered.forEach((p) => {
+      const sold = parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0;
+      const scale = period === "daily" ? 1 / 30 : period === "weekly" ? 1 / 4 : period === "monthly" ? 1 : 12;
+      const units = Math.round(sold * scale);
+      const sales = units * p.price;
+      if (!catMap[p.category]) catMap[p.category] = { sales: 0, units: 0, count: 0 };
+      catMap[p.category].sales += sales;
+      catMap[p.category].units += units;
+      catMap[p.category].count += 1;
+    });
+    const PIE_COLORS = ["#319754", "#3b82f6", "#f59e0b", "#9747ff", "#0ea5e9", "#ef4444", "#10b981", "#6366f1"];
+    return Object.entries(catMap).map(([name, v], i) => ({ name, ...v, color: PIE_COLORS[i % PIE_COLORS.length] })).sort((a, b) => b.sales - a.sales).slice(0, 6);
+  }, [shopFilter, period]);
+
+  // Top shops by product revenue
+  const topShopsByProduct = useMemo(() => {
+    return allShops.map((s) => {
+      const ps = siteProducts.filter((p) => p.shopName === s);
+      const baseSold = ps.reduce((sum, p) => sum + (parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0), 0);
+      const scale = period === "daily" ? 1 / 30 : period === "weekly" ? 1 / 4 : period === "monthly" ? 1 : 12;
+      const units = Math.round(baseSold * scale * (0.85 + (hash(s) % 30) / 100));
+      const revenue = ps.reduce((sum, p) => sum + (parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0) * p.price, 0);
+      const scaledRev = Math.round(revenue * scale * (0.85 + (hash(s + "r") % 30) / 100));
+      return { shopName: s, productCount: ps.length, units, revenue: scaledRev };
+    }).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  }, [allShops, period]);
+
+  // Products table — best sellers with shop attribution
+  const productRows = useMemo(() => {
+    const base = siteProducts.filter((p) => shopFilter === "all" || p.shopName === shopFilter);
+    const scale = period === "daily" ? 1 / 30 : period === "weekly" ? 1 / 4 : period === "monthly" ? 1 : 12;
+    return base.map((p) => {
+      const sold = parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0;
+      const units = Math.max(0, Math.round(sold * scale * (0.7 + (hash(p.id + "u") % 60) / 100)));
+      const revenue = units * p.price;
+      const image = p.image && p.image.trim() ? p.image : `https://picsum.photos/seed/metaherb-product-${p.id}/120`;
+      return { id: p.id, name: p.name, shopName: p.shopName, image, category: p.category, price: p.price, rating: p.rating, reviews: p.reviews.length, stock: p.stock, units, revenue };
+    });
+  }, [shopFilter, period]);
+
+  const sortedProds = useMemo(() => {
+    const arr = [...productRows];
+    if (prodSort === "sold_desc") arr.sort((a, b) => b.units - a.units);
+    if (prodSort === "revenue_desc") arr.sort((a, b) => b.revenue - a.revenue);
+    if (prodSort === "rating_desc") arr.sort((a, b) => b.rating - a.rating);
+    if (prodSort === "stock_asc") arr.sort((a, b) => a.stock - b.stock);
+    return arr;
+  }, [productRows, prodSort]);
+
+  const prodTotalPages = Math.max(1, Math.ceil(sortedProds.length / prodPerPage));
+  const prodSafePage = Math.min(prodPage, prodTotalPages);
+  const prodPageStart = (prodSafePage - 1) * prodPerPage;
+  const pagedProds = sortedProds.slice(prodPageStart, prodPageStart + prodPerPage);
+
+  const stockBadge = (stock: number): { bg: string; fg: string; label: string } => {
+    if (stock === 0)   return { bg: "#fee2e2", fg: "#b91c1c", label: "หมด" };
+    if (stock <= 5)    return { bg: "#fee2e2", fg: "#b91c1c", label: "ต่ำมาก" };
+    if (stock <= 15)   return { bg: "#fef3c7", fg: "#92400e", label: "ต่ำ" };
+    return                { bg: "#dcfce7", fg: "#15803d", label: "ปกติ" };
+  };
+
+  const periodTabs: { id: Period; label: string }[] = [
+    { id: "daily", label: "รายวัน" },
+    { id: "weekly", label: "รายสัปดาห์" },
+    { id: "monthly", label: "รายเดือน" },
+    { id: "yearly", label: "รายปี" },
+  ];
+  const chartTabs: { id: ChartKind; label: string; Icon: any }[] = [
+    { id: "line", label: "กราฟเส้น",  Icon: TrendingUp },
+    { id: "bar",  label: "กราฟแท่ง",  Icon: BarChart2  },
+    { id: "pie",  label: "กราฟวงกลม", Icon: PieIcon    },
+  ];
+
+  const trendIcon = (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  );
+
+  const kpiBgArt = (src: string, delay: number) => (
+    <motion.img src={src} alt="" aria-hidden="true"
+      className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+      style={{
+        maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+      }}
+      initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay }} />
+  );
+
+  const kpiCards = [
+    { label: `จำนวนขาย · ${scopeLabel}`,  value: `${fmt(kpi.units)} ชิ้น`,         subLabel: `เฉลี่ย ${fmt(kpi.avgUnits)} ชิ้น / ${period === "daily" ? "วัน" : period === "weekly" ? "สัปดาห์" : period === "monthly" ? "เดือน" : "ปี"}`, accent: "#319754", Icon: Package, bgArt: kpiBgArt(imgProductsSold, 0.15) },
+    { label: "สินค้าทั้งหมดในระบบ",      value: `${fmt(kpi.totalProducts)} รายการ`, subLabel: `${kpi.totalCategories} หมวดหมู่`, accent: "#0ea5e9", Icon: ShoppingBag, bgArt: kpiBgArt(imgProductsStore, 0.25) },
+    { label: "สต็อกต่ำ / หมด",            value: `${fmt(kpi.lowStock + kpi.outOfStock)} รายการ`, subLabel: `หมด ${kpi.outOfStock} · ต่ำ ${kpi.lowStock}`, accent: "#dc2626", Icon: AlertTriangle, bgArt: kpiBgArt(imgStock, 0.35) },
+    { label: "รีวิวเฉลี่ย",                value: `${kpi.avgRating.toFixed(1)} ★`,     subLabel: `${fmt(kpi.reviewCount)} รีวิวรวม`, accent: "#f59e0b", Icon: Star, bgArt: kpiBgArt(imgRating, 0.45) },
+  ];
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานข้อมูลสินค้า</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวมสินค้าทั้งระบบ Metaherb · หมวดหมู่ขายดี · ร้านขายเก่ง</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <select value={shopFilter} onChange={(e) => setShopFilter(e.target.value)}
+              className={`${font} text-[13px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] h-[40px] pl-4 pr-9 rounded-full appearance-none cursor-pointer hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow`}
+              style={{ fontWeight: 500 }}>
+              <option value="all">ทุกร้านในระบบ ({allShops.length})</option>
+              {allShops.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <ChevronDown className="size-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+          <Popover open={calOpen} onOpenChange={setCalOpen}>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}>
+                <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
+                <span style={{ fontWeight: 500 }}>{dateFilterLabel}</span>
+                <ChevronDown className="size-3.5 text-gray-400 group-hover:text-[#319754]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              {period === "daily" && (
+                <>
+                  <Calendar mode="range" numberOfMonths={2} selected={dateRange} onSelect={setDateRange} defaultMonth={dateRange?.from} />
+                  <div className="flex items-center justify-between gap-2 p-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 1 ครั้งสำหรับวันเดียว หรือ 2 ครั้งสำหรับช่วง</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setDateRange({ from: today, to: today })} className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>วันนี้</button>
+                      <button onClick={() => setCalOpen(false)} className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
+                    </div>
+                  </div>
+                </>
+              )}
+              {period === "weekly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setWeekMonth(new Date(weekMonth.getFullYear() - 1, weekMonth.getMonth(), 1))} className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronLeft className="size-4 text-gray-600" />
+                    </button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {weekMonth.getFullYear() + 543}</span>
+                    <button onClick={() => setWeekMonth(new Date(weekMonth.getFullYear() + 1, weekMonth.getMonth(), 1))} className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronRight className="size-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const isActive = weekMonth.getMonth() === i;
+                      return (
+                        <button key={m} onClick={() => { setWeekMonth(new Date(weekMonth.getFullYear(), i, 1)); setCalOpen(false); }}
+                          className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isActive ? "bg-[#319754] text-white" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isActive ? 600 : 500 }}>{m}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {period === "monthly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year - 1 }))} className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronLeft className="size-4 text-gray-600" />
+                    </button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {monthRange.year + 543}</span>
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year + 1 }))} className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer">
+                      <ChevronRight className="size-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const inRange = i >= Math.min(monthRange.from, monthRange.to) && i <= Math.max(monthRange.from, monthRange.to);
+                      const isEdge = i === monthRange.from || i === monthRange.to;
+                      return (
+                        <button key={m} onClick={() => handleMonthClick(i)}
+                          className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isEdge ? 600 : 500 }}>{m}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {period === "yearly" && (
+                <div className="p-3 w-[200px]">
+                  <p className={`${font} text-[11px] text-gray-400 mb-2`}>ย้อนหลังได้ถึง 5 ปี</p>
+                  <div className="flex flex-col gap-1">
+                    {availableYears.map((y) => {
+                      const inRange = y >= Math.min(yearRange.from, yearRange.to) && y <= Math.max(yearRange.from, yearRange.to);
+                      const isEdge = y === yearRange.from || y === yearRange.to;
+                      return (
+                        <button key={y} onClick={() => handleYearClick(y)}
+                          className={`${font} text-[13px] py-2 px-3 rounded-lg cursor-pointer transition-colors text-left ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`}
+                          style={{ fontWeight: isEdge ? 600 : 500 }}>ปี {y + 543}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          <div className="inline-flex items-center bg-white rounded-full p-1 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+            {periodTabs.map((t) => (
+              <button key={t.id} onClick={() => setPeriod(t.id)}
+                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                {period === t.id && <motion.div layoutId="admin-prod-period-bg" className="absolute inset-0 bg-[#319754] rounded-full" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
+                <span className="relative z-10">{t.label}</span>
+              </button>
+            ))}
+          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+                <Download className="size-4" />ส่งออก<ChevronDown className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-44 p-1">
+              <button onClick={() => toast.success("ส่งออก Excel แล้ว")} className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileSpreadsheet className="size-4 text-[#0f7a3a]" /><span>Excel (.xlsx)</span>
+              </button>
+              <button onClick={() => toast.success("ส่งออก PDF แล้ว")} className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileText className="size-4 text-[#dc2626]" /><span>PDF (.pdf)</span>
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {/* KPI + Chart in single card */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {kpiCards.map((s) => (
+            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+              style={{ backgroundColor: `${s.accent}0d` }}>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                    <s.Icon className="size-4" style={{ color: s.accent }} strokeWidth={2.4} />
+                  </div>
+                </div>
+                <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                  <AnimatedValue value={s.value} />
+                </p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`} style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                    {trendIcon}{s.subLabel}
+                  </span>
+                </div>
+              </div>
+              {s.bgArt}
+            </div>
+          ))}
+        </div>
+
+        <h3 className={`${font} text-[18px] mb-5`} style={{ fontWeight: 600 }}>รายงานข้อมูลสินค้า</h3>
+
+        <ResponsiveContainer width="100%" height={340}>
+          {chartKind === "line" ? (
+            <ComposedChart data={chartSeries} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+              <defs>
+                <filter id="adminProdGlow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`} />
+              <Tooltip cursor={{ stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4 4" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      {payload.map((p: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                          <span className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ backgroundColor: p.color }} /><span className="text-gray-600">{p.name}</span></span>
+                          <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.value.toLocaleString()} ชิ้น</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }} />
+              <Legend wrapperStyle={{ paddingTop: 20 }} content={({ payload }: any) => (
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  {payload?.map((entry: any, i: number) => (
+                    <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                      <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )} />
+              <Line type="monotone" dataKey="units" stroke="#319754" strokeWidth={3} name="จำนวนขาย (ชิ้น)"
+                style={{ filter: "url(#adminProdGlow)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#319754", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#319754", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(49,151,84,0.35))" } }}
+                animationDuration={800} />
+            </ComposedChart>
+          ) : chartKind === "bar" ? (
+            <BarChart data={chartSeries} margin={{ top: 20, right: 30, left: 10, bottom: 10 }} barCategoryGap="22%">
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`} />
+              <Tooltip cursor={{ fill: "rgba(148,163,184,0.08)" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      {payload.map((p: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                          <span className="flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ backgroundColor: p.color }} /><span className="text-gray-600">{p.name}</span></span>
+                          <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.value.toLocaleString()} ชิ้น</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }} />
+              <Legend wrapperStyle={{ paddingTop: 20 }} content={({ payload }: any) => (
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  {payload?.map((entry: any, i: number) => (
+                    <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                      <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )} />
+              <Bar dataKey="units" name="จำนวนขาย (ชิ้น)" fill="#319754" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+            </BarChart>
+          ) : (
+            (() => {
+              const total = chartSeries.reduce((s, d) => s + d.units, 0);
+              const PIE = ["#319754", "#46A165", "#7bc290", "#aedab8", "#10b981", "#34d399"];
+              return (
+                <PieChart>
+                  <Pie data={chartSeries} cx="50%" cy="50%" innerRadius={72} outerRadius={120} paddingAngle={2}
+                    dataKey="units" nameKey="label" labelLine={false}
+                    label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }: any) => {
+                      if (percent < 0.06) return null;
+                      const RADIAN = Math.PI / 180;
+                      const r = innerRadius + (outerRadius - innerRadius) * 0.55;
+                      const x = cx + r * Math.cos(-midAngle * RADIAN);
+                      const y = cy + r * Math.sin(-midAngle * RADIAN);
+                      return <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 600 }}>{(percent * 100).toFixed(0)}%</text>;
+                    }}>
+                    {chartSeries.map((_, i) => <Cell key={i} fill={PIE[i % PIE.length]} stroke="#fff" strokeWidth={3} />)}
+                  </Pie>
+                  <text x="50%" y="38%" textAnchor="middle" style={{ fontSize: 11, fill: "#9ca3af" }}>จำนวนขายรวม</text>
+                  <text x="50%" y="46%" textAnchor="middle" style={{ fontSize: 20, fill: "#1a1a1a", fontWeight: 700 }}>{total.toLocaleString()} ชิ้น</text>
+                  <Tooltip />
+                </PieChart>
+              );
+            })()
+          )}
+        </ResponsiveContainer>
+
+        <div className="flex justify-center mt-5 overflow-x-auto">
+          <div className="inline-flex items-center bg-gray-50 rounded-full p-1">
+            {chartTabs.map((t) => (
+              <button key={t.id} onClick={() => setChartKind(t.id)}
+                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${chartKind === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                {chartKind === t.id && <motion.div layoutId="admin-prod-chart-bg" className="absolute inset-0 bg-[#319754] rounded-full" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
+                <span className="relative z-10">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 2 cols: Top categories + Top shops by product revenue */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+        {/* Top shops by product revenue */}
+        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-5 relative overflow-hidden">
+          <div className="absolute -top-16 -right-16 size-48 rounded-full pointer-events-none opacity-[0.08]"
+            style={{ background: "radial-gradient(circle at center, #319754, transparent 70%)" }} />
+          <div className="flex items-center justify-between relative z-10">
+            <div className="flex items-center gap-2">
+              <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #3197541a, #10b9811a)" }}>
+                <Store className="size-4 text-[#319754]" strokeWidth={2.4} />
+              </div>
+              <div>
+                <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>Top ร้านค้า · ขายสินค้า</p>
+                <p className={`${font} text-[11px] text-gray-500`}>ร้านที่ขายสินค้าได้มากที่สุด</p>
+              </div>
+            </div>
+            <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full tabular-nums bg-[#319754]/10 text-[#319754]`} style={{ fontWeight: 600 }}>
+              <Package className="size-3" strokeWidth={2.4} />
+              {topShopsByProduct.reduce((s, x) => s + x.units, 0).toLocaleString()} ชิ้น
+            </span>
+          </div>
+          <div className="flex flex-col gap-2 relative z-10">
+            {topShopsByProduct.map((s, i) => {
+              const maxRev = topShopsByProduct[0]?.revenue || 1;
+              const pct = (s.revenue / maxRev) * 100;
+              const rankColor = i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : i === 2 ? "#cd7f32" : "#9ca3af";
+              const banner = siteShops.find((x) => x.name === s.shopName)?.banner;
+              const isTop = i === 0;
+              return (
+                <button key={s.shopName} onClick={() => setShopFilter(s.shopName)}
+                  className={`${font} group/shop relative flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)] transition-all text-left border border-transparent hover:border-gray-100`}>
+                  <span className="relative shrink-0">
+                    {isTop && (
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-10"
+                        style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.18))" }}>
+                        <Crown className="size-3.5" fill="#fbbf24" stroke="#b45309" strokeWidth={1.6} />
+                      </span>
+                    )}
+                    <span className="size-11 rounded-full overflow-hidden block bg-gray-100"
+                      style={{ boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${rankColor}, 0 2px 6px rgba(0,0,0,0.10)` }}>
+                      {banner ? <ImageWithFallback src={banner} alt={s.shopName} className="w-full h-full object-cover" /> : <span className="w-full h-full flex items-center justify-center text-gray-500 text-[14px] bg-gray-200" style={{ fontWeight: 700 }}>{s.shopName.charAt(0)}</span>}
+                    </span>
+                    <span className="absolute -bottom-0.5 -right-0.5 size-5 rounded-full inline-flex items-center justify-center text-white text-[10px] tabular-nums ring-2 ring-white shadow-sm"
+                      style={{ background: `linear-gradient(135deg, ${rankColor}, ${rankColor}dd)`, fontWeight: 700 }}>
+                      {i + 1}
+                    </span>
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[13px] text-black truncate" style={{ fontWeight: 600 }}>{s.shopName}</span>
+                      <span className="tabular-nums text-[14px] shrink-0" style={{ fontWeight: 800, color: "#319754" }}>฿{(s.revenue / 1000).toFixed(0)}<span className="text-[10px] text-gray-500" style={{ fontWeight: 500 }}>k</span></span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                        <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, #34d399, ${rankColor})` }}
+                          initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5 text-[10px] tabular-nums text-gray-500">
+                      <span className="inline-flex items-center gap-1"><Package className="size-2.5" strokeWidth={2.4} /> {s.units.toLocaleString()} ชิ้น</span>
+                      <span className="inline-flex items-center gap-1"><ShoppingBag className="size-2.5" strokeWidth={2.4} /> {s.productCount} รายการ</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Top categories — beautified donut */}
+        {(() => {
+          const totalCatSales = topCategories.reduce((s, c) => s + c.sales, 0) || 1;
+          const topCat = topCategories[0];
+          const lighten = (hex: string, pct: number) => {
+            const n = parseInt(hex.replace("#", ""), 16);
+            const amt = Math.round(2.55 * pct);
+            const r = Math.min(255, (n >> 16) + amt);
+            const g = Math.min(255, ((n >> 8) & 0xff) + amt);
+            const b = Math.min(255, (n & 0xff) + amt);
+            return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+          };
+          return (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-5 relative overflow-hidden">
+              <div className="absolute -top-16 -right-16 size-48 rounded-full pointer-events-none opacity-[0.08]"
+                style={{ background: `radial-gradient(circle at center, ${topCat?.color ?? "#3b82f6"}, transparent 70%)` }} />
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #3b82f61a, #6366f11a)" }}>
+                    <Folder className="size-4 text-[#3b82f6]" strokeWidth={2.4} />
+                  </div>
+                  <div>
+                    <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>หมวดหมู่ขายดี</p>
+                    <p className={`${font} text-[11px] text-gray-500`}>{kpi.totalCategories} หมวด · เรียงตามยอดขาย</p>
+                  </div>
+                </div>
+                {topCat && (
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full tabular-nums`}
+                    style={{ backgroundColor: `${topCat.color}15`, color: topCat.color, fontWeight: 600 }}>
+                    <Crown className="size-3" strokeWidth={2.4} />
+                    {topCat.name}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-5 items-center relative z-10">
+                <div className="relative flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <defs>
+                        {topCategories.map((c, i) => (
+                          <linearGradient key={c.name} id={`adminProdCatGrad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={lighten(c.color, 18)} />
+                            <stop offset="100%" stopColor={c.color} />
+                          </linearGradient>
+                        ))}
+                      </defs>
+                      <Pie data={topCategories} cx="50%" cy="50%" innerRadius={62} outerRadius={90} paddingAngle={3}
+                        cornerRadius={6} dataKey="sales" nameKey="name" labelLine={false} stroke="none">
+                        {topCategories.map((c, i) => <Cell key={c.name} fill={`url(#adminProdCatGrad-${i})`} stroke="#fff" strokeWidth={3} />)}
+                      </Pie>
+                      <Tooltip
+                        wrapperStyle={{ zIndex: 50 }}
+                        content={({ active, payload }: any) => {
+                          if (!active || !payload?.length) return null;
+                          const p = payload[0];
+                          const row = topCategories.find((c) => c.name === p.name);
+                          if (!row) return null;
+                          const pct = (row.sales / totalCatSales) * 100;
+                          return (
+                            <div className={`${font} bg-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.14)] border border-gray-100 p-3 min-w-[170px]`}>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <span className="size-2.5 rounded-full" style={{ background: `linear-gradient(135deg, ${lighten(row.color, 18)}, ${row.color})` }} />
+                                <span className="text-[12px] text-gray-700" style={{ fontWeight: 600 }}>{row.name}</span>
+                              </div>
+                              <p className="text-[15px] tabular-nums" style={{ fontWeight: 700, color: row.color }}>฿{row.sales.toLocaleString()}</p>
+                              <p className="text-[11px] text-gray-500 tabular-nums mt-0.5">{pct.toFixed(1)}% · {row.units.toLocaleString()} ชิ้น · {row.count} รายการ</p>
+                            </div>
+                          );
+                        }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {topCat && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
+                      <p className={`${font} text-[9px] uppercase tracking-[0.18em] text-gray-400`} style={{ fontWeight: 600 }}>รวม</p>
+                      <p className={`${font} text-[18px] tabular-nums mt-1 leading-none bg-clip-text text-transparent`}
+                        style={{ backgroundImage: `linear-gradient(135deg, ${lighten(topCat.color, 8)}, ${topCat.color})`, fontWeight: 800 }}>
+                        ฿{(totalCatSales / 1000).toFixed(0)}k
+                      </p>
+                      <p className={`${font} text-[10px] text-gray-500 mt-0.5`}>{topCategories.length} หมวด</p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {topCategories.map((c, i) => {
+                    const pct = (c.sales / totalCatSales) * 100;
+                    return (
+                      <div key={c.name} className="flex items-center gap-3 pl-1 pr-2 py-1.5 rounded-xl hover:bg-gray-50 transition-colors">
+                        <span className={`${font} size-5 rounded-md inline-flex items-center justify-center text-[10px] tabular-nums shrink-0`}
+                          style={{ backgroundColor: `${c.color}1a`, color: c.color, fontWeight: 700 }}>
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className={`${font} text-[12px] text-black truncate`} style={{ fontWeight: 600 }}>{c.name}</span>
+                            <span className={`${font} text-[11px] tabular-nums shrink-0`} style={{ fontWeight: 700, color: c.color }}>฿{(c.sales / 1000).toFixed(0)}k</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex-1 h-1 rounded-full bg-gray-100 overflow-hidden">
+                              <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${lighten(c.color, 15)}, ${c.color})` }}
+                                initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }} />
+                            </div>
+                            <span className={`${font} text-[9px] tabular-nums text-gray-400 w-8 text-right`}>{pct.toFixed(0)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Promotion activity */}
+      <div>
+        {/* Promotion / Flash Sale activity — beautified hero + 4 cards */}
+        {(() => {
+          const filtered = siteProducts.filter((p) => shopFilter === "all" || p.shopName === shopFilter);
+          const inFlash = filtered.filter((p) => p.isFlashSale);
+          const recommended = filtered.filter((p) => p.isRecommended);
+          const withCoupon = filtered.filter((p) => p.hasCoupon);
+          const onSale = filtered.filter((p) => p.discountPercent && p.discountPercent > 0);
+          const totalInAny = new Set([...inFlash, ...recommended, ...withCoupon, ...onSale].map((p) => p.id)).size;
+          const promoCoverage = filtered.length > 0 ? (totalInAny / filtered.length) * 100 : 0;
+          const avgDiscount = onSale.length > 0
+            ? Math.round(onSale.reduce((s, p) => s + (p.discountPercent || 0), 0) / onSale.length)
+            : 0;
+          const cards = [
+            { label: "Flash Sale",   value: inFlash.length,     total: filtered.length, color: "#e62e05", Icon: Zap,       desc: "อยู่ใน flash event" },
+            { label: "สินค้าแนะนำ", value: recommended.length, total: filtered.length, color: "#319754", Icon: Award,     desc: "ติดธงแนะนำ" },
+            { label: "มีคูปอง",      value: withCoupon.length,  total: filtered.length, color: "#3b82f6", Icon: Ticket,    desc: "เข้าคูปองใช้ได้" },
+            { label: "ลดราคา",       value: onSale.length,      total: filtered.length, color: "#f59e0b", Icon: Percent,   desc: `ลดเฉลี่ย ${avgDiscount}%` },
+          ];
+          return (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-5 relative overflow-hidden">
+              {/* Decorative blobs */}
+              <div className="absolute -top-20 -right-20 size-56 rounded-full pointer-events-none opacity-[0.08]"
+                style={{ background: "radial-gradient(circle at center, #e62e05, transparent 70%)" }} />
+              <div className="absolute -bottom-24 -left-16 size-48 rounded-full pointer-events-none opacity-[0.06]"
+                style={{ background: "radial-gradient(circle at center, #f59e0b, transparent 70%)" }} />
+
+              <div className="flex items-center justify-between relative z-10 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #e62e051a, #f59e0b1a)" }}>
+                    <Megaphone className="size-4 text-[#e62e05]" strokeWidth={2.4} />
+                  </div>
+                  <div>
+                    <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>กิจกรรมโปรโมชั่น</p>
+                    <p className={`${font} text-[11px] text-gray-500`}>{filtered.length.toLocaleString()} สินค้าทั้งหมด · {totalInAny.toLocaleString()} ตัวอยู่ในแคมเปญ</p>
+                  </div>
+                </div>
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full tabular-nums bg-[#e62e05]/10 text-[#e62e05]`} style={{ fontWeight: 600 }}>
+                  <Flame className="size-3" strokeWidth={2.4} />
+                  Coverage {promoCoverage.toFixed(0)}%
+                </span>
+              </div>
+
+              {/* 4 cards horizontal */}
+              <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {cards.map((c) => {
+                  const pct = c.total > 0 ? (c.value / c.total) * 100 : 0;
+                  return (
+                    <div key={c.label}
+                      className="group/promo rounded-2xl p-4 relative overflow-hidden transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)]"
+                      style={{ background: `linear-gradient(135deg, ${c.color}14, ${c.color}04)` }}>
+                      {/* Decorative big icon — ghost */}
+                      <c.Icon className="absolute -bottom-3 -right-3 size-20 pointer-events-none transition-transform duration-500 ease-out group-hover/promo:scale-110 group-hover/promo:-rotate-6"
+                        style={{ color: c.color, opacity: 0.08 }} strokeWidth={1.8} />
+
+                      <div className="relative flex items-start justify-between gap-2">
+                        <div className="flex flex-col min-w-0">
+                          <p className={`${font} text-[11px] text-gray-600`} style={{ fontWeight: 500 }}>{c.label}</p>
+                          <p className={`${font} text-[28px] tabular-nums leading-none mt-2`} style={{ fontWeight: 800, color: c.color }}>
+                            <AnimatedValue value={String(c.value)} />
+                          </p>
+                          <p className={`${font} text-[10px] text-gray-500 mt-1 truncate`}>{c.desc}</p>
+                        </div>
+                        <span className="size-9 rounded-xl inline-flex items-center justify-center shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.08)]"
+                          style={{ background: `linear-gradient(135deg, ${c.color}, ${c.color}cc)` }}>
+                          <c.Icon className="size-4 text-white" strokeWidth={2.4} />
+                        </span>
+                      </div>
+
+                      <div className="relative flex items-center gap-2 mt-3">
+                        <div className="flex-1 h-1.5 rounded-full bg-white/60 overflow-hidden">
+                          <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${c.color}80, ${c.color})` }}
+                            initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} />
+                        </div>
+                        <span className={`${font} inline-flex items-center text-[10px] px-1.5 py-0.5 rounded-full tabular-nums`}
+                          style={{ backgroundColor: `${c.color}1f`, color: c.color, fontWeight: 700 }}>
+                          {pct.toFixed(0)}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Products table — top sellers with shop attribution */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+          <div>
+            <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>สินค้าขายดีในระบบ</h3>
+            <p className={`${font} text-[12px] text-gray-400 mt-1 inline-flex items-center gap-1.5`}>
+              <Package className="size-3.5" />
+              <span>ข้อมูล <span className="text-gray-600" style={{ fontWeight: 500 }}>{scopeLabel}</span> · {sortedProds.length} รายการ · แสดง {pagedProds.length === 0 ? 0 : prodPageStart + 1}–{prodPageStart + pagedProds.length}</span>
+            </p>
+          </div>
+          <div className="relative">
+            <select value={prodSort} onChange={(e) => { setProdSort(e.target.value as any); setProdPage(1); }}
+              className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+              <option value="sold_desc">เรียง: ขายดีสุด</option>
+              <option value="revenue_desc">เรียง: ยอดขายสูงสุด</option>
+              <option value="rating_desc">เรียง: รีวิวดีสุด</option>
+              <option value="stock_asc">เรียง: สต็อกใกล้หมด</option>
+            </select>
+            <ChevronDown className="size-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "30%" }} />
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "8%" }} />
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}>#</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>สินค้า</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ร้านค้า</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ขายแล้ว</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ราคา</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดขาย</th>
+              <th className="text-center pb-3 pr-3" style={{ fontWeight: 500 }}>รีวิว</th>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}>สต็อก</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pagedProds.length === 0 && (
+              <tr><td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบสินค้า</td></tr>
+            )}
+            {pagedProds.map((p, idx) => {
+              const sb = stockBadge(p.stock);
+              return (
+                <tr key={p.id} className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                  <td className={`py-3 text-center ${font} text-[11px] text-gray-400 tabular-nums`} style={{ fontWeight: 500 }}>{prodPageStart + idx + 1}</td>
+                  <td className="py-3 pr-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <ImageWithFallback src={p.image} alt={p.name} className="size-10 rounded-lg object-cover bg-gray-100 shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }} title={p.name}>{p.name}</p>
+                        <p className={`${font} text-[11px] text-gray-400 truncate`}>{p.category}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 pr-3">
+                    <span className={`${font} inline-flex items-center gap-1.5 text-[12px] text-gray-700 truncate max-w-full`} title={p.shopName} style={{ fontWeight: 500 }}>
+                      <Store className="size-3.5 text-gray-400 shrink-0" strokeWidth={2.2} />
+                      <span className="truncate">{p.shopName}</span>
+                    </span>
+                  </td>
+                  <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-700`}>{p.units.toLocaleString()} <span className="text-[10px] text-gray-400">ชิ้น</span></td>
+                  <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[12px] text-gray-500`}>฿{p.price.toLocaleString()}</td>
+                  <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 700, color: "#319754" }}>฿{p.revenue.toLocaleString()}</td>
+                  <td className="py-3 pr-3 text-center">
+                    <span className={`${font} inline-flex items-center gap-1 text-[12px] text-[#f59e0b] tabular-nums`} style={{ fontWeight: 600 }}>
+                      <Star className="size-3 fill-[#f59e0b]" strokeWidth={0} />
+                      {p.rating.toFixed(1)}
+                    </span>
+                    <p className={`${font} text-[10px] text-gray-400 tabular-nums`}>{p.reviews} รีวิว</p>
+                  </td>
+                  <td className="py-3 text-center">
+                    <span className={`${font} inline-flex items-center px-2 py-0.5 rounded-full text-[11px] tabular-nums`}
+                      style={{ backgroundColor: sb.bg, color: sb.fg, fontWeight: 600 }}>
+                      {p.stock} · {sb.label}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {sortedProds.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select value={prodPerPage} onChange={(e) => { setProdPerPage(Number(e.target.value)); setProdPage(1); }}
+                  className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า · {sortedProds.length} รายการ</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={prodSafePage === 1} onClick={() => setProdPage((p) => p - 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${prodSafePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: prodTotalPages }, (_, i) => i + 1).map((p) => (
+                <button key={p} onClick={() => setProdPage(p)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${prodSafePage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: prodSafePage === p ? 600 : 400 }}>{p}</button>
+              ))}
+              <button disabled={prodSafePage === prodTotalPages} onClick={() => setProdPage((p) => p + 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${prodSafePage === prodTotalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminMarketingReportContent() {
+  type Period = "daily" | "weekly" | "monthly" | "yearly";
+  type ChartKind = "line" | "bar" | "pie";
+
+  const [period, setPeriod] = useState<Period>("monthly");
+  const [chartKind, setChartKind] = useState<ChartKind>("line");
+  const [shopFilter, setShopFilter] = useState<string>("all");
+  const today = new Date();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const from = new Date(); from.setDate(from.getDate() - 6); from.setHours(0, 0, 0, 0);
+    const to = new Date(); to.setHours(0, 0, 0, 0);
+    return { from, to };
+  });
+  const [weekMonth, setWeekMonth] = useState<Date>(today);
+  const [monthRange, setMonthRange] = useState<{ from: number; to: number; year: number }>({ from: today.getMonth(), to: today.getMonth(), year: today.getFullYear() });
+  const [monthClickPhase, setMonthClickPhase] = useState<0 | 1>(0);
+  const [yearRange, setYearRange] = useState<{ from: number; to: number }>({ from: today.getFullYear(), to: today.getFullYear() });
+  const [yearClickPhase, setYearClickPhase] = useState<0 | 1>(0);
+  const [calOpen, setCalOpen] = useState(false);
+  const [chSort, setChSort] = useState<"revenue_desc" | "visits_desc" | "conv_desc">("revenue_desc");
+  const [chPage, setChPage] = useState(1);
+  const [chPerPage, setChPerPage] = useState(10);
+
+  const thaiMonthsFull = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+  const thaiMonthsShort = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const availableYears = Array.from({ length: 5 }, (_, i) => today.getFullYear() - i);
+
+  const fmtThaiDate = (d?: Date) => d ? `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear() + 543}` : "—";
+
+  const handleMonthClick = (m: number) => {
+    if (monthClickPhase === 0) { setMonthRange((cur) => ({ ...cur, from: m, to: m })); setMonthClickPhase(1); }
+    else { setMonthRange((cur) => ({ ...cur, from: Math.min(cur.from, m), to: Math.max(cur.from, m) })); setMonthClickPhase(0); setCalOpen(false); }
+  };
+  const handleYearClick = (y: number) => {
+    if (yearClickPhase === 0) { setYearRange({ from: y, to: y }); setYearClickPhase(1); }
+    else { setYearRange((cur) => ({ from: Math.min(cur.from, y), to: Math.max(cur.from, y) })); setYearClickPhase(0); setCalOpen(false); }
+  };
+
+  const dateFilterLabel = (() => {
+    if (period === "daily") {
+      if (!dateRange?.from) return "เลือกช่วงวันที่";
+      if (dateRange.to && dateRange.to.getTime() !== dateRange.from.getTime()) return `${fmtThaiDate(dateRange.from)} – ${fmtThaiDate(dateRange.to)}`;
+      return fmtThaiDate(dateRange.from);
+    }
+    if (period === "weekly") return `เดือน${thaiMonthsFull[weekMonth.getMonth()]} ${weekMonth.getFullYear() + 543}`;
+    if (period === "monthly") {
+      const yr = monthRange.year + 543;
+      if (monthRange.from === monthRange.to) return `เดือน${thaiMonthsFull[monthRange.from]} ${yr}`;
+      return `${thaiMonthsShort[monthRange.from]} – ${thaiMonthsShort[monthRange.to]} ${yr}`;
+    }
+    if (yearRange.from === yearRange.to) return `ปี ${yearRange.from + 543}`;
+    const a = Math.min(yearRange.from, yearRange.to);
+    const b = Math.max(yearRange.from, yearRange.to);
+    return `ปี ${a + 543} – ${b + 543}`;
+  })();
+
+  const allShops = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), []);
+
+  // Bar3D
+  const shade = (hex: string, percent: number) => {
+    const n = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const r = Math.max(0, Math.min(255, (n >> 16) + amt));
+    const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
+    const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
+    return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+  };
+  const Bar3D = (props: any) => {
+    const { x, y, width, height, fill } = props;
+    if (!height || height <= 0 || !width) return null;
+    const depth = Math.min(Math.max(width * 0.28, 5), 9);
+    return (
+      <g>
+        <path d={`M${x + width},${y} L${x + width + depth},${y - depth} L${x + width + depth},${y + height - depth} L${x + width},${y + height} Z`} fill={shade(fill, -18)} />
+        <path d={`M${x},${y} L${x + depth},${y - depth} L${x + width + depth},${y - depth} L${x + width},${y} Z`} fill={shade(fill, 12)} />
+        <rect x={x} y={y} width={width} height={height} fill={fill} />
+      </g>
+    );
+  };
+
+  const hash = (s: string) => Array.from(s).reduce((a, ch) => a + ch.charCodeAt(0) * 31, 7);
+
+  // Chart series: visits + orders per period
+  const chartSeries = useMemo(() => {
+    const seedFactor = shopFilter === "all" ? 1 : Math.max(0.18, (hash(shopFilter) % 7 + 2) / 12);
+    if (period === "daily") {
+      const from = dateRange?.from ?? today;
+      const to = dateRange?.to ?? from;
+      const isSingleDay = from.toDateString() === to.toDateString();
+      if (isSingleDay) {
+        const daySeed = from.toDateString();
+        return Array.from({ length: 24 }, (_, h) => {
+          const lunch = Math.exp(-Math.pow((h - 12) / 1.8, 2)) * 0.55;
+          const evening = Math.exp(-Math.pow((h - 20) / 2.2, 2)) * 1.0;
+          const base = h >= 7 && h <= 22 ? 0.25 : 0.04;
+          const noise = ((hash(`m-${daySeed}-${h}`) % 30) - 15) / 100;
+          const intensity = Math.max(0, base + lunch + evening + noise);
+          return { label: `${String(h).padStart(2, "0")}:00`, visits: Math.round(intensity * 350 * seedFactor), orders: Math.round(intensity * 15 * seedFactor) };
+        });
+      }
+      const totalDays = Math.min(31, Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1));
+      return Array.from({ length: totalDays }, (_, i) => {
+        const d = new Date(from); d.setDate(from.getDate() + i);
+        return { label: `${d.getDate()}/${d.getMonth() + 1}`,
+          visits: Math.round((2800 + (hash(d.toDateString()) % 800)) * seedFactor),
+          orders: Math.round((85 + (hash(d.toDateString() + "o") % 50)) * seedFactor) };
+      });
+    }
+    if (period === "weekly") {
+      return Array.from({ length: 4 }, (_, i) => ({
+        label: `สัปดาห์ ${i + 1}`,
+        visits: Math.round((18500 + i * 2200 + (hash("wm" + i) % 1500)) * seedFactor),
+        orders: Math.round((620 + i * 80 + (hash("wmo" + i) % 90)) * seedFactor),
+      }));
+    }
+    if (period === "monthly") {
+      return thaiMonthsShort.slice(0, 12).map((m, i) => ({
+        label: m,
+        visits: Math.round((72000 + Math.sin(i / 11 * Math.PI) * 22000 + (hash(m + "m") % 4500)) * seedFactor),
+        orders: Math.round((2400 + Math.sin(i / 11 * Math.PI) * 850 + (hash(m + "mo") % 250)) * seedFactor),
+      }));
+    }
+    return Array.from({ length: 5 }, (_, i) => {
+      const y = today.getFullYear() - 4 + i;
+      return { label: `${y + 543}`,
+        visits: Math.round((620000 + i * 145000 + (hash("ym" + y) % 28000)) * seedFactor),
+        orders: Math.round((22000 + i * 5200 + (hash("ymo" + y) % 1800)) * seedFactor) };
+    });
+  }, [period, shopFilter, dateRange]);
+
+  // KPIs
+  const kpi = useMemo(() => {
+    const visits = chartSeries.reduce((s, d) => s + d.visits, 0);
+    const orders = chartSeries.reduce((s, d) => s + d.orders, 0);
+    const conv = visits > 0 ? (orders / visits) * 100 : 0;
+    const avgVisits = Math.round(visits / Math.max(1, chartSeries.length));
+    const avgOrders = Math.round(orders / Math.max(1, chartSeries.length));
+    // Coupon usage estimate
+    const couponsUsed = Math.round(orders * 0.32);
+    const aov = orders > 0 ? Math.round((visits * 0.85) / orders) : 0; // mock AOV
+    return { visits, orders, conv, avgVisits, avgOrders, couponsUsed, aov };
+  }, [chartSeries]);
+
+  const scopeLabel = shopFilter === "all" ? "ทุกร้านในระบบ" : shopFilter;
+  const fmt = (n: number) => n.toLocaleString();
+
+  // Traffic sources — marketplace-wide
+  const trafficSources = useMemo(() => {
+    const PIE_COLORS = ["#7c3aed", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#0ea5e9"];
+    return [
+      { name: "ค้นหา (Search)",  value: Math.round(kpi.visits * 0.38), color: PIE_COLORS[0] },
+      { name: "ตรง (Direct)",     value: Math.round(kpi.visits * 0.27), color: PIE_COLORS[1] },
+      { name: "Social Media",      value: Math.round(kpi.visits * 0.18), color: PIE_COLORS[2] },
+      { name: "Ads / Paid",        value: Math.round(kpi.visits * 0.10), color: PIE_COLORS[3] },
+      { name: "Referral",           value: Math.round(kpi.visits * 0.05), color: PIE_COLORS[4] },
+      { name: "Email",              value: Math.round(kpi.visits * 0.02), color: PIE_COLORS[5] },
+    ];
+  }, [kpi.visits]);
+
+  // Top campaigns / events with ROI
+  const topCampaigns = useMemo(() => {
+    const events = seedFlashEvents().filter((e) => adminFlashStatus(e) === "ended" || adminFlashStatus(e) === "active");
+    return events.slice(0, 5).map((e) => {
+      const accepted = e.invites.filter((i) => i.status === "accepted").length;
+      const spend = Math.round(accepted * 4500 + (hash(e.id + "sp") % 20000));
+      const revenue = Math.round(spend * (2.4 + (hash(e.id + "rv") % 80) / 100));
+      const roas = spend > 0 ? revenue / spend : 0;
+      const orders = Math.round(accepted * 110 * (0.9 + (hash(e.id + "or") % 30) / 100));
+      return { id: e.id, name: e.name, status: adminFlashStatus(e), accepted, spend, revenue, roas, orders };
+    });
+  }, []);
+
+  // Channel performance table — admin sees all channels
+  const channelRows = useMemo(() => {
+    const channels = [
+      { name: "ค้นหา (Organic Search)",  type: "Organic",       color: "#7c3aed", icon: "🔍" },
+      { name: "Google Ads",               type: "Paid",          color: "#3b82f6", icon: "🎯" },
+      { name: "Facebook / Instagram",     type: "Social",        color: "#1877f2", icon: "📱" },
+      { name: "TikTok",                    type: "Social",        color: "#ff0050", icon: "🎵" },
+      { name: "LINE Official",             type: "Messaging",     color: "#06c755", icon: "💬" },
+      { name: "Email Newsletter",          type: "Email",         color: "#10b981", icon: "✉️" },
+      { name: "Direct / Bookmark",         type: "Direct",        color: "#94a3b8", icon: "🔗" },
+      { name: "Affiliate / Influencer",    type: "Referral",      color: "#f59e0b", icon: "🤝" },
+      { name: "YouTube",                    type: "Social",        color: "#ff0000", icon: "🎥" },
+    ];
+    return channels.map((c, i) => {
+      const visits = Math.round((kpi.visits * (0.32 - i * 0.035)) * (0.85 + (hash(c.name) % 30) / 100));
+      const orders = Math.round((kpi.orders * (0.32 - i * 0.035)) * (0.85 + (hash(c.name + "o") % 30) / 100));
+      const conv = visits > 0 ? (orders / visits) * 100 : 0;
+      const revenue = orders * (220 + (hash(c.name + "r") % 80));
+      const spend = c.type === "Paid" || c.type === "Social" ? Math.round(revenue * (0.25 + (hash(c.name + "s") % 20) / 100)) : 0;
+      const roas = spend > 0 ? revenue / spend : 0;
+      return { ...c, visits: Math.max(0, visits), orders: Math.max(0, orders), conv, revenue, spend, roas };
+    }).filter((c) => c.visits > 0);
+  }, [kpi.visits, kpi.orders]);
+
+  const sortedChannels = useMemo(() => {
+    const arr = [...channelRows];
+    if (chSort === "revenue_desc") arr.sort((a, b) => b.revenue - a.revenue);
+    if (chSort === "visits_desc")  arr.sort((a, b) => b.visits - a.visits);
+    if (chSort === "conv_desc")    arr.sort((a, b) => b.conv - a.conv);
+    return arr;
+  }, [channelRows, chSort]);
+
+  const chTotalPages = Math.max(1, Math.ceil(sortedChannels.length / chPerPage));
+  const chSafePage = Math.min(chPage, chTotalPages);
+  const chPageStart = (chSafePage - 1) * chPerPage;
+  const pagedChannels = sortedChannels.slice(chPageStart, chPageStart + chPerPage);
+
+  const periodTabs: { id: Period; label: string }[] = [
+    { id: "daily", label: "รายวัน" },
+    { id: "weekly", label: "รายสัปดาห์" },
+    { id: "monthly", label: "รายเดือน" },
+    { id: "yearly", label: "รายปี" },
+  ];
+  const chartTabs: { id: ChartKind; label: string; Icon: any }[] = [
+    { id: "line", label: "กราฟเส้น",  Icon: TrendingUp },
+    { id: "bar",  label: "กราฟแท่ง",  Icon: BarChart2  },
+    { id: "pie",  label: "กราฟวงกลม", Icon: PieIcon    },
+  ];
+
+  const trendIcon = (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  );
+
+  const kpiBgArt = (src: string, delay: number) => (
+    <motion.img src={src} alt="" aria-hidden="true"
+      className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+      style={{
+        maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+      }}
+      initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay }} />
+  );
+
+  const kpiCards = [
+    { label: `ผู้เข้าชม · ${scopeLabel}`,   value: `${fmt(kpi.visits)} ครั้ง`,  subLabel: `เฉลี่ย ${fmt(kpi.avgVisits)} / ช่วง`, accent: "#7c3aed", Icon: Eye,          bgArt: kpiBgArt(imgVisitors, 0.15) },
+    { label: `ออเดอร์ · ${scopeLabel}`,    value: `${fmt(kpi.orders)} รายการ`, subLabel: `เฉลี่ย ${fmt(kpi.avgOrders)} / ช่วง`, accent: "#f59e0b", Icon: ShoppingCart, bgArt: kpiBgArt(imgBagInCart, 0.25) },
+    { label: `อัตราคอนเวิร์ต`,              value: `${kpi.conv.toFixed(2)}%`,    subLabel: `${fmt(kpi.orders)} / ${fmt(kpi.visits)} ครั้ง`, accent: "#10b981", Icon: TrendingUp, bgArt: kpiBgArt(imgConvert, 0.35) },
+    { label: `คูปองที่ใช้`,                  value: `${fmt(kpi.couponsUsed)} ครั้ง`, subLabel: `~32% ของออเดอร์`,                      accent: "#ec4899", Icon: Ticket,       bgArt: kpiBgArt(imgCoupon, 0.45) },
+  ];
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานผลการตลาด</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวม traffic · channels · campaign ROI ทั้งระบบ Metaherb</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <select value={shopFilter} onChange={(e) => setShopFilter(e.target.value)}
+              className={`${font} text-[13px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] h-[40px] pl-4 pr-9 rounded-full appearance-none cursor-pointer hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow`}
+              style={{ fontWeight: 500 }}>
+              <option value="all">ทุกร้านในระบบ ({allShops.length})</option>
+              {allShops.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <ChevronDown className="size-3.5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+          <Popover open={calOpen} onOpenChange={setCalOpen}>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}>
+                <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
+                <span style={{ fontWeight: 500 }}>{dateFilterLabel}</span>
+                <ChevronDown className="size-3.5 text-gray-400 group-hover:text-[#319754]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              {period === "daily" && (
+                <>
+                  <Calendar mode="range" numberOfMonths={2} selected={dateRange} onSelect={setDateRange} defaultMonth={dateRange?.from} />
+                  <div className="flex items-center justify-between gap-2 p-3 border-t">
+                    <span className={`${font} text-[11px] text-gray-400`}>คลิก 1 ครั้งสำหรับวันเดียว หรือ 2 ครั้งสำหรับช่วง</span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => setDateRange({ from: today, to: today })} className={`${font} text-[13px] text-gray-600 hover:text-black px-3 py-1.5 rounded-lg cursor-pointer`}>วันนี้</button>
+                      <button onClick={() => setCalOpen(false)} className={`${font} text-[13px] bg-[#319754] hover:bg-[#287745] text-white px-3 py-1.5 rounded-lg cursor-pointer`}>เสร็จ</button>
+                    </div>
+                  </div>
+                </>
+              )}
+              {period === "weekly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setWeekMonth(new Date(weekMonth.getFullYear() - 1, weekMonth.getMonth(), 1))} className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronLeft className="size-4 text-gray-600" /></button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {weekMonth.getFullYear() + 543}</span>
+                    <button onClick={() => setWeekMonth(new Date(weekMonth.getFullYear() + 1, weekMonth.getMonth(), 1))} className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronRight className="size-4 text-gray-600" /></button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const isActive = weekMonth.getMonth() === i;
+                      return <button key={m} onClick={() => { setWeekMonth(new Date(weekMonth.getFullYear(), i, 1)); setCalOpen(false); }}
+                        className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isActive ? "bg-[#319754] text-white" : "hover:bg-gray-100 text-gray-700"}`} style={{ fontWeight: isActive ? 600 : 500 }}>{m}</button>;
+                    })}
+                  </div>
+                </div>
+              )}
+              {period === "monthly" && (
+                <div className="p-3 w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year - 1 }))} className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronLeft className="size-4 text-gray-600" /></button>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ปี {monthRange.year + 543}</span>
+                    <button onClick={() => setMonthRange((c) => ({ ...c, year: c.year + 1 }))} className="size-7 rounded-full hover:bg-gray-100 inline-flex items-center justify-center cursor-pointer"><ChevronRight className="size-4 text-gray-600" /></button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {thaiMonthsShort.map((m, i) => {
+                      const inRange = i >= Math.min(monthRange.from, monthRange.to) && i <= Math.max(monthRange.from, monthRange.to);
+                      const isEdge = i === monthRange.from || i === monthRange.to;
+                      return <button key={m} onClick={() => handleMonthClick(i)}
+                        className={`${font} text-[13px] py-2 rounded-lg cursor-pointer transition-colors ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`} style={{ fontWeight: isEdge ? 600 : 500 }}>{m}</button>;
+                    })}
+                  </div>
+                </div>
+              )}
+              {period === "yearly" && (
+                <div className="p-3 w-[200px]">
+                  <p className={`${font} text-[11px] text-gray-400 mb-2`}>ย้อนหลังได้ถึง 5 ปี</p>
+                  <div className="flex flex-col gap-1">
+                    {availableYears.map((y) => {
+                      const inRange = y >= Math.min(yearRange.from, yearRange.to) && y <= Math.max(yearRange.from, yearRange.to);
+                      const isEdge = y === yearRange.from || y === yearRange.to;
+                      return <button key={y} onClick={() => handleYearClick(y)}
+                        className={`${font} text-[13px] py-2 px-3 rounded-lg cursor-pointer transition-colors text-left ${isEdge ? "bg-[#319754] text-white" : inRange ? "bg-[#319754]/15 text-[#319754]" : "hover:bg-gray-100 text-gray-700"}`} style={{ fontWeight: isEdge ? 600 : 500 }}>ปี {y + 543}</button>;
+                    })}
+                  </div>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          <div className="inline-flex items-center bg-white rounded-full p-1 shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
+            {periodTabs.map((t) => (
+              <button key={t.id} onClick={() => setPeriod(t.id)}
+                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                {period === t.id && <motion.div layoutId="admin-mkt-period-bg" className="absolute inset-0 bg-[#319754] rounded-full" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
+                <span className="relative z-10">{t.label}</span>
+              </button>
+            ))}
+          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+                <Download className="size-4" />ส่งออก<ChevronDown className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-44 p-1">
+              <button onClick={() => toast.success("ส่งออก Excel แล้ว")} className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileSpreadsheet className="size-4 text-[#0f7a3a]" /><span>Excel (.xlsx)</span>
+              </button>
+              <button onClick={() => toast.success("ส่งออก PDF แล้ว")} className={`${font} text-[13px] w-full flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer`}>
+                <FileText className="size-4 text-[#dc2626]" /><span>PDF (.pdf)</span>
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {/* KPI + Chart */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {kpiCards.map((s) => (
+            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+              style={{ backgroundColor: `${s.accent}0d` }}>
+              <div className="relative">
+                <div className="flex items-center justify-between">
+                  <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                    <s.Icon className="size-4" style={{ color: s.accent }} strokeWidth={2.4} />
+                  </div>
+                </div>
+                <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                  <AnimatedValue value={s.value} />
+                </p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`} style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                    {trendIcon}{s.subLabel}
+                  </span>
+                </div>
+              </div>
+              {s.bgArt}
+            </div>
+          ))}
+        </div>
+
+        <h3 className={`${font} text-[18px] mb-5`} style={{ fontWeight: 600 }}>การเข้าชม & คอนเวิร์ต</h3>
+
+        <ResponsiveContainer width="100%" height={340}>
+          {chartKind === "line" ? (
+            <ComposedChart data={chartSeries} margin={{ top: 20, right: 30, left: 10, bottom: 10 }}>
+              <defs>
+                <filter id="adminMktGlowPurple" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="adminMktGlowOrange" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="1.8" result="b" />
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip cursor={{ stroke: "#cbd5e1", strokeWidth: 1, strokeDasharray: "4 4" }}
+                content={({ active, payload, label }: any) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div className={`${font} bg-white rounded-xl shadow-[0_8px_28px_rgba(0,0,0,0.12)] border border-gray-100 p-3 min-w-[180px]`}>
+                      <p className="text-[12px] text-gray-500 mb-2" style={{ fontWeight: 500 }}>{label}</p>
+                      {payload.map((p: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between gap-4 text-[13px]">
+                          <span className="flex items-center gap-1.5"><span className="size-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} /><span className="text-gray-600">{p.name}</span></span>
+                          <span className="tabular-nums" style={{ fontWeight: 600, color: p.color }}>{p.value.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }} />
+              <Legend wrapperStyle={{ paddingTop: 20 }} content={({ payload }: any) => (
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  {payload?.map((entry: any, i: number) => (
+                    <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                      <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )} />
+              <Line yAxisId="left" type="monotone" dataKey="visits" stroke="#7c3aed" strokeWidth={3} name="ผู้เข้าชม"
+                style={{ filter: "url(#adminMktGlowPurple)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#7c3aed", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#7c3aed", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(124,58,237,0.35))" } }}
+                animationDuration={800} />
+              <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#f59e0b" strokeWidth={3} name="ออเดอร์"
+                style={{ filter: "url(#adminMktGlowOrange)" }}
+                dot={{ r: 4, fill: "#fff", stroke: "#f59e0b", strokeWidth: 2 }}
+                activeDot={{ r: 7, fill: "#f59e0b", stroke: "#fff", strokeWidth: 3, style: { filter: "drop-shadow(0 0 4px rgba(245,158,11,0.35))" } }}
+                animationDuration={800} />
+            </ComposedChart>
+          ) : chartKind === "bar" ? (
+            <BarChart data={chartSeries} margin={{ top: 20, right: 30, left: 10, bottom: 10 }} barCategoryGap="22%" barGap={6}>
+              <CartesianGrid strokeDasharray="4 6" stroke="#eef2f6" vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickMargin={16} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false}
+                tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+              <Tooltip cursor={{ fill: "rgba(148,163,184,0.08)" }} />
+              <Legend wrapperStyle={{ paddingTop: 20 }} content={({ payload }: any) => (
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  {payload?.map((entry: any, i: number) => (
+                    <div key={i} className={`${font} inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[12px]`}
+                      style={{ backgroundColor: `${entry.color}10`, color: entry.color, fontWeight: 600, boxShadow: `0 1px 3px ${entry.color}1a` }}>
+                      <span className="block rounded-full" style={{ width: 10, height: 10, backgroundColor: entry.color, boxShadow: `0 0 0 3px ${entry.color}25` }} />
+                      <span>{entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )} />
+              <Bar yAxisId="left"  dataKey="visits" name="ผู้เข้าชม" fill="#7c3aed" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+              <Bar yAxisId="right" dataKey="orders" name="ออเดอร์"   fill="#f59e0b" maxBarSize={36} animationDuration={700} shape={<Bar3D />} />
+            </BarChart>
+          ) : (
+            (() => {
+              const total = chartSeries.reduce((s, d) => s + d.visits, 0);
+              const PIE = ["#7c3aed", "#a78bfa", "#c4b5fd", "#6366f1", "#818cf8", "#f59e0b"];
+              return (
+                <PieChart>
+                  <Pie data={chartSeries} cx="50%" cy="50%" innerRadius={72} outerRadius={120} paddingAngle={2}
+                    dataKey="visits" nameKey="label" labelLine={false}
+                    label={({ percent, cx, cy, midAngle, innerRadius, outerRadius }: any) => {
+                      if (percent < 0.06) return null;
+                      const RADIAN = Math.PI / 180;
+                      const r = innerRadius + (outerRadius - innerRadius) * 0.55;
+                      const x = cx + r * Math.cos(-midAngle * RADIAN);
+                      const y = cy + r * Math.sin(-midAngle * RADIAN);
+                      return <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" style={{ fontSize: 12, fontWeight: 600 }}>{(percent * 100).toFixed(0)}%</text>;
+                    }}>
+                    {chartSeries.map((_, i) => <Cell key={i} fill={PIE[i % PIE.length]} stroke="#fff" strokeWidth={3} />)}
+                  </Pie>
+                  <text x="50%" y="38%" textAnchor="middle" style={{ fontSize: 11, fill: "#9ca3af" }}>ผู้เข้าชมรวม</text>
+                  <text x="50%" y="46%" textAnchor="middle" style={{ fontSize: 20, fill: "#1a1a1a", fontWeight: 700 }}>{total.toLocaleString()} ครั้ง</text>
+                  <Tooltip />
+                </PieChart>
+              );
+            })()
+          )}
+        </ResponsiveContainer>
+
+        <div className="flex justify-center mt-5 overflow-x-auto">
+          <div className="inline-flex items-center bg-gray-50 rounded-full p-1">
+            {chartTabs.map((t) => (
+              <button key={t.id} onClick={() => setChartKind(t.id)}
+                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${chartKind === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                {chartKind === t.id && <motion.div layoutId="admin-mkt-chart-bg" className="absolute inset-0 bg-[#319754] rounded-full" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
+                <span className="relative z-10">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 2 cols: Traffic sources donut + Top campaigns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+        {/* Traffic sources */}
+        {(() => {
+          const totalTraffic = trafficSources.reduce((s, t) => s + t.value, 0) || 1;
+          const topSrc = trafficSources[0];
+          const lighten = (hex: string, pct: number) => {
+            const n = parseInt(hex.replace("#", ""), 16);
+            const amt = Math.round(2.55 * pct);
+            const r = Math.min(255, (n >> 16) + amt);
+            const g = Math.min(255, ((n >> 8) & 0xff) + amt);
+            const b = Math.min(255, (n & 0xff) + amt);
+            return `#${(0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1)}`;
+          };
+          return (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-5 relative overflow-hidden">
+              <div className="absolute -top-16 -right-16 size-48 rounded-full pointer-events-none opacity-[0.08]"
+                style={{ background: `radial-gradient(circle at center, ${topSrc.color}, transparent 70%)` }} />
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #7c3aed1a, #3b82f61a)" }}>
+                    <Globe className="size-4 text-[#7c3aed]" strokeWidth={2.4} />
+                  </div>
+                  <div>
+                    <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>แหล่งที่มาของ Traffic</p>
+                    <p className={`${font} text-[11px] text-gray-500`}>{totalTraffic.toLocaleString()} ครั้ง · {trafficSources.length} ช่องทาง</p>
+                  </div>
+                </div>
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full tabular-nums`}
+                  style={{ backgroundColor: `${topSrc.color}15`, color: topSrc.color, fontWeight: 600 }}>
+                  <Crown className="size-3" strokeWidth={2.4} />
+                  {topSrc.name}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-5 items-center relative z-10">
+                <div className="relative flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <defs>
+                        {trafficSources.map((s, i) => (
+                          <linearGradient key={s.name} id={`adminMktTrafficGrad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={lighten(s.color, 18)} />
+                            <stop offset="100%" stopColor={s.color} />
+                          </linearGradient>
+                        ))}
+                      </defs>
+                      <Pie data={trafficSources} cx="50%" cy="50%" innerRadius={62} outerRadius={90} paddingAngle={3}
+                        cornerRadius={6} dataKey="value" nameKey="name" labelLine={false} stroke="none">
+                        {trafficSources.map((s, i) => <Cell key={s.name} fill={`url(#adminMktTrafficGrad-${i})`} stroke="#fff" strokeWidth={3} />)}
+                      </Pie>
+                      <Tooltip
+                        wrapperStyle={{ zIndex: 50 }}
+                        content={({ active, payload }: any) => {
+                          if (!active || !payload?.length) return null;
+                          const p = payload[0];
+                          const row = trafficSources.find((s) => s.name === p.name);
+                          if (!row) return null;
+                          const pct = (row.value / totalTraffic) * 100;
+                          return (
+                            <div className={`${font} bg-white rounded-xl shadow-[0_12px_32px_rgba(0,0,0,0.14)] border border-gray-100 p-3 min-w-[170px]`}>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <span className="size-2.5 rounded-full" style={{ background: `linear-gradient(135deg, ${lighten(row.color, 18)}, ${row.color})` }} />
+                                <span className="text-[12px] text-gray-700" style={{ fontWeight: 600 }}>{row.name}</span>
+                              </div>
+                              <p className="text-[15px] tabular-nums" style={{ fontWeight: 700, color: row.color }}>{row.value.toLocaleString()} ครั้ง</p>
+                              <p className="text-[11px] text-gray-500 tabular-nums mt-0.5">{pct.toFixed(1)}% ของทั้งหมด</p>
+                            </div>
+                          );
+                        }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
+                    <p className={`${font} text-[9px] uppercase tracking-[0.18em] text-gray-400`} style={{ fontWeight: 600 }}>รวม</p>
+                    <p className={`${font} text-[20px] tabular-nums mt-1 leading-none bg-clip-text text-transparent`}
+                      style={{ backgroundImage: `linear-gradient(135deg, ${lighten(topSrc.color, 8)}, ${topSrc.color})`, fontWeight: 800 }}>
+                      {(totalTraffic / 1000).toFixed(0)}k
+                    </p>
+                    <p className={`${font} text-[10px] text-gray-500 mt-0.5`}>ครั้ง</p>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {trafficSources.map((c, i) => {
+                    const pct = (c.value / totalTraffic) * 100;
+                    return (
+                      <div key={c.name} className="flex items-center gap-3 px-2 py-1.5 rounded-xl hover:bg-gray-50 transition-colors">
+                        <span className={`${font} size-5 rounded-md inline-flex items-center justify-center text-[10px] tabular-nums shrink-0`}
+                          style={{ backgroundColor: `${c.color}1a`, color: c.color, fontWeight: 700 }}>
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className={`${font} text-[12px] text-black truncate`} style={{ fontWeight: 600 }}>{c.name}</span>
+                            <span className={`${font} text-[12px] tabular-nums shrink-0`} style={{ fontWeight: 700, color: c.color }}>{c.value.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                              <motion.div className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${lighten(c.color, 15)}, ${c.color})` }}
+                                initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }} />
+                            </div>
+                            <span className={`${font} text-[10px] tabular-nums text-gray-400 w-9 text-right`}>{pct.toFixed(1)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Top campaigns / events */}
+        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4 relative overflow-hidden">
+          <div className="absolute -top-16 -right-16 size-48 rounded-full pointer-events-none opacity-[0.08]"
+            style={{ background: "radial-gradient(circle at center, #e62e05, transparent 70%)" }} />
+          <div className="flex items-center justify-between relative z-10">
+            <div className="flex items-center gap-2">
+              <div className="size-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #e62e051a, #f59e0b1a)" }}>
+                <Megaphone className="size-4 text-[#e62e05]" strokeWidth={2.4} />
+              </div>
+              <div>
+                <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>Campaign Performance</p>
+                <p className={`${font} text-[11px] text-gray-500`}>Flash Sale events · ROAS รวม</p>
+              </div>
+            </div>
+            <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full tabular-nums bg-[#e62e05]/10 text-[#e62e05]`} style={{ fontWeight: 600 }}>
+              <Flame className="size-3" strokeWidth={2.4} />
+              {topCampaigns.length} campaigns
+            </span>
+          </div>
+          <div className="flex flex-col gap-2 relative z-10">
+            {topCampaigns.length === 0 && (
+              <p className={`${font} text-center py-6 text-[12px] text-gray-400`}>ยังไม่มี campaign</p>
+            )}
+            {topCampaigns.map((c, i) => {
+              const isActive = c.status === "active";
+              const roasColor = c.roas >= 3 ? "#319754" : c.roas >= 2 ? "#f59e0b" : "#ef4444";
+              const rankColor = i === 0 ? "#f59e0b" : i === 1 ? "#94a3b8" : i === 2 ? "#cd7f32" : "#9ca3af";
+              return (
+                <div key={c.id} className={`${font} group/cmp flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100`}>
+                  <span className="size-10 rounded-xl flex items-center justify-center shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.10)] relative"
+                    style={{ background: isActive ? "linear-gradient(135deg, #ff6b35, #e62e05)" : "linear-gradient(135deg, #d1d5db, #6b7280)" }}>
+                    <Zap className="size-4 text-white" fill="white" strokeWidth={2.4} />
+                    <span className="absolute -bottom-0.5 -right-0.5 size-4 rounded-full inline-flex items-center justify-center text-white text-[9px] tabular-nums ring-2 ring-white shadow-sm"
+                      style={{ background: `linear-gradient(135deg, ${rankColor}, ${rankColor}dd)`, fontWeight: 700 }}>
+                      {i + 1}
+                    </span>
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[13px] text-black truncate" style={{ fontWeight: 600 }}>{c.name}</span>
+                      <span className={`${font} inline-flex items-center text-[10px] px-2 py-0.5 rounded-full tabular-nums shrink-0`}
+                        style={{ backgroundColor: `${roasColor}1a`, color: roasColor, fontWeight: 700 }}>
+                        ROAS {c.roas.toFixed(1)}x
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-[10px] tabular-nums text-gray-500">
+                      <span className="inline-flex items-center gap-1"><DollarSign className="size-2.5" strokeWidth={2.4} /> รายได้ ฿{(c.revenue / 1000).toFixed(0)}k</span>
+                      <span className="inline-flex items-center gap-1"><Wallet className="size-2.5" strokeWidth={2.4} /> ต้นทุน ฿{(c.spend / 1000).toFixed(0)}k</span>
+                      <span className="inline-flex items-center gap-1"><ShoppingCart className="size-2.5" strokeWidth={2.4} /> {c.orders.toLocaleString()} ออเดอร์</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Channel performance table */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+          <div>
+            <h3 className={`${font} text-[18px]`} style={{ fontWeight: 600 }}>ประสิทธิภาพ Channel</h3>
+            <p className={`${font} text-[12px] text-gray-400 mt-1 inline-flex items-center gap-1.5`}>
+              <BarChart2 className="size-3.5" />
+              <span>ข้อมูล <span className="text-gray-600" style={{ fontWeight: 500 }}>{scopeLabel}</span> · {sortedChannels.length} channels · แสดง {pagedChannels.length === 0 ? 0 : chPageStart + 1}–{chPageStart + pagedChannels.length}</span>
+            </p>
+          </div>
+          <div className="relative">
+            <select value={chSort} onChange={(e) => { setChSort(e.target.value as any); setChPage(1); }}
+              className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+              <option value="revenue_desc">เรียง: รายได้สูงสุด</option>
+              <option value="visits_desc">เรียง: Traffic สูงสุด</option>
+              <option value="conv_desc">เรียง: Conversion สูงสุด</option>
+            </select>
+            <ChevronDown className="size-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "26%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "12%" }} />
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}>#</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>Channel</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ประเภท</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ผู้เข้าชม</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ออเดอร์</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>Conv.</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>รายได้</th>
+              <th className="text-right pb-3" style={{ fontWeight: 500 }}>ROAS / ต้นทุน</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pagedChannels.length === 0 && (
+              <tr><td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบ channel</td></tr>
+            )}
+            {pagedChannels.map((c, idx) => (
+              <tr key={c.name} className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                <td className={`py-3 text-center ${font} text-[11px] text-gray-400 tabular-nums`} style={{ fontWeight: 500 }}>{chPageStart + idx + 1}</td>
+                <td className="py-3 pr-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="size-9 rounded-xl inline-flex items-center justify-center text-[16px] shrink-0"
+                      style={{ background: `${c.color}1a` }}>{c.icon}</span>
+                    <span className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }} title={c.name}>{c.name}</span>
+                  </div>
+                </td>
+                <td className="py-3 pr-3">
+                  <span className={`${font} inline-flex items-center px-2 py-0.5 rounded-full text-[11px]`}
+                    style={{ backgroundColor: `${c.color}1a`, color: c.color, fontWeight: 600 }}>
+                    {c.type}
+                  </span>
+                </td>
+                <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-700`}>{c.visits.toLocaleString()}</td>
+                <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-700`}>{c.orders.toLocaleString()}</td>
+                <td className="py-3 pr-3 text-right">
+                  <span className={`${font} inline-flex items-center px-2 py-0.5 rounded-full text-[11px] tabular-nums`}
+                    style={{ backgroundColor: `${c.conv >= 3 ? "#319754" : c.conv >= 1.5 ? "#f59e0b" : "#ef4444"}1a`, color: c.conv >= 3 ? "#319754" : c.conv >= 1.5 ? "#f59e0b" : "#ef4444", fontWeight: 700 }}>
+                    {c.conv.toFixed(2)}%
+                  </span>
+                </td>
+                <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 700, color: "#319754" }}>฿{c.revenue.toLocaleString()}</td>
+                <td className="py-3 text-right">
+                  {c.spend > 0 ? (
+                    <>
+                      <p className={`${font} text-[12px] tabular-nums`} style={{ fontWeight: 700, color: c.roas >= 3 ? "#319754" : c.roas >= 2 ? "#f59e0b" : "#ef4444" }}>
+                        {c.roas.toFixed(2)}x
+                      </p>
+                      <p className={`${font} text-[10px] text-gray-400 tabular-nums`}>฿{c.spend.toLocaleString()}</p>
+                    </>
+                  ) : (
+                    <span className={`${font} text-[11px] text-gray-400 italic`}>—</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {sortedChannels.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select value={chPerPage} onChange={(e) => { setChPerPage(Number(e.target.value)); setChPage(1); }}
+                  className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                  {[5, 10, 20].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>ต่อหน้า · {sortedChannels.length} channels</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={chSafePage === 1} onClick={() => setChPage((p) => p - 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${chSafePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: chTotalPages }, (_, i) => i + 1).map((p) => (
+                <button key={p} onClick={() => setChPage(p)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${chSafePage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: chSafePage === p ? 600 : 400 }}>{p}</button>
+              ))}
+              <button disabled={chSafePage === chTotalPages} onClick={() => setChPage((p) => p + 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${chSafePage === chTotalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ReportContent({ tab }: { tab: "report_sales" | "report_customers" | "report_products" | "report_marketing" }) {
   const isCustomer  = tab === "report_customers";
   const isProduct   = tab === "report_products";
@@ -8295,7 +12620,7 @@ const itemLabels: Record<string, { title: string; subtitle: string }> = {
   complaints_list:     { title: "รายการการร้องเรียน",         subtitle: "รายละเอียดคำร้องเรียนทุกร้านค้า พร้อมการจัดสรรผู้ดูแลและบันทึกภายใน" },
   complaints_appeals:  { title: "ข้ออุทธรณ์",                  subtitle: "เคสที่ลูกค้าขอโต้แย้งผลการตัดสินของผู้ดูแล (เคสที่ถูกปฏิเสธ)" },
   products_manage:     { title: "จัดการสินค้า",                subtitle: "รายการสินค้าทั้งระบบจากร้านค้าทุกร้าน" },
-  products_categories: { title: "จัดการหมวดหมู่สินค้า",     subtitle: "จัดหมวดหมู่และโครงสร้างสินค้า" },
+  products_categories: { title: "หมวดหมู่สินค้า",     subtitle: "จัดหมวดหมู่และโครงสร้างสินค้า" },
   products_promotions: { title: "จัดการโปรโมชั่น",            subtitle: "แคมเปญส่วนลดและโปรโมชั่นในระบบ" },
   products_flash:      { title: "Flash Sale Events",          subtitle: "จัดการ event ลดราคาแฟลชเซลล์" },
   products_coupons:    { title: "คูปอง",                       subtitle: "คูปองส่วนลดที่ออกโดยระบบและร้านค้า" },
@@ -9355,6 +13680,7 @@ function ProductsCategoriesContent() {
   const [editing, setEditing] = useState<CategoryRow | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [previewPage, setPreviewPage] = useState(0);
+  const [previewView, setPreviewView] = useState<"desktop" | "tablet" | "mobile">("desktop");
   type CategoryFilterTab = "all" | "active" | "hidden";
   const [filterTab, setFilterTab] = useState<CategoryFilterTab>("all");
   const [dragId, setDragId] = useState<string | null>(null);
@@ -9459,7 +13785,7 @@ function ProductsCategoriesContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการหมวดหมู่สินค้า</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>หมวดหมู่สินค้า</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดหมวดสินค้าและกำหนดสีไอคอนที่ใช้บนเว็บไซต์</p>
         </div>
         <motion.button
@@ -9483,14 +13809,35 @@ function ProductsCategoriesContent() {
               <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ตัวอย่างหมวดหมู่ที่กำลังแสดงอยู่หน้าเว็บ</p>
               <span className={`${font} text-[11px] text-gray-400`}>(แสดงเฉพาะหมวดที่เปิด)</span>
             </div>
-            <span className={`${font} inline-flex items-center gap-1.5 text-[11px] bg-[#319754]/10 text-[#319754] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
-              <span className="size-1.5 rounded-full bg-[#319754] animate-pulse" />
-              Live
-            </span>
+            <div className="flex items-center gap-3">
+              {/* View mode toggle — Desktop / Tablet / Mobile (same pattern as Page Builders) */}
+              <div className="inline-flex items-center bg-[#f5f5f5] rounded-full p-0.5">
+                {([
+                  { id: "desktop" as const, label: "Desktop", Icon: Monitor },
+                  { id: "tablet"  as const, label: "Tablet",  Icon: Tablet },
+                  { id: "mobile"  as const, label: "Mobile",  Icon: Smartphone },
+                ]).map((m) => {
+                  const isAct = previewView === m.id;
+                  return (
+                    <button key={m.id} onClick={() => setPreviewView(m.id)} title={m.label}
+                      className={`${font} inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-[12px] transition-all cursor-pointer ${isAct ? "bg-white shadow-sm" : "text-gray-500 hover:text-black"}`}
+                      style={{ color: isAct ? "#319754" : undefined, fontWeight: 500 }}>
+                      <m.Icon className="size-3.5" strokeWidth={2.2} />
+                      <span className="hidden sm:inline">{m.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <span className={`${font} inline-flex items-center gap-1.5 text-[11px] bg-[#319754]/10 text-[#319754] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                <span className="size-1.5 rounded-full bg-[#319754] animate-pulse" />
+                Live
+              </span>
+            </div>
           </div>
 
-          {/* Browser-like frame */}
-          <div className="rounded-xl border border-gray-200 overflow-hidden bg-[#fafafa]">
+          {/* Browser-like frame — width responds to viewport toggle */}
+          <div className="rounded-xl border border-gray-200 overflow-hidden bg-[#fafafa] mx-auto w-full transition-[max-width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+            style={{ maxWidth: previewView === "mobile" ? 420 : previewView === "tablet" ? 820 : 1600 }}>
             <div className="flex items-center gap-2 bg-white border-b border-gray-100 px-3 py-2">
               <div className="flex gap-1.5">
                 <span className="size-2.5 rounded-full bg-[#ff5f57]" />
@@ -9511,25 +13858,35 @@ function ProductsCategoriesContent() {
                 </div>
               ) : (() => {
                 const activeCats = categories.filter((c) => c.active);
-                const pageCount = Math.max(1, Math.ceil(activeCats.length / 9));
+                // Per-page count adapts to viewport (mobile shows 4, tablet 6, desktop 9) — matches a real phone layout
+                const perPage = previewView === "mobile" ? 4 : previewView === "tablet" ? 6 : 9;
+                const pageCount = Math.max(1, Math.ceil(activeCats.length / perPage));
                 const safePage = Math.min(previewPage, pageCount - 1);
-                const pageCats = activeCats.slice(safePage * 9, safePage * 9 + 9);
+                const pageCats = activeCats.slice(safePage * perPage, safePage * perPage + perPage);
+                // Sizing follows previewView (not screen breakpoints) so the preview reflects the chosen device
+                const isMobile = previewView === "mobile";
+                const circle = isMobile ? "size-[40px]" : "size-[56px]";
+                const itemMin = isMobile ? "min-w-[64px]" : "min-w-[80px]";
+                const gapRow  = isMobile ? "gap-3" : "gap-4";
+                const itemGap = isMobile ? "gap-1.5" : "gap-2";
+                const txtSize = isMobile ? "text-[11px]" : "text-[12px]";
+                const iconSize = isMobile ? 18 : 20;
                 return (
                   <div className="relative">
                     <motion.div
-                      key={safePage}
+                      key={`${safePage}-${previewView}`}
                       initial={{ opacity: 0, x: 8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                      className="flex items-center justify-center gap-3 sm:gap-4 py-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden w-full">
+                      className={`flex items-center justify-center ${gapRow} py-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden w-full`}>
                       {pageCats.map((cat) => (
                         <button key={cat.id}
-                          className="flex flex-col items-center gap-1.5 sm:gap-2 min-w-[64px] sm:min-w-[80px] cursor-default group/cat shrink-0">
-                          <div className="size-[40px] sm:size-[56px] rounded-full flex items-center justify-center transition-all duration-300 group-hover/cat:scale-110 overflow-hidden"
+                          className={`flex flex-col items-center ${itemGap} ${itemMin} cursor-default group/cat shrink-0`}>
+                          <div className={`${circle} rounded-full flex items-center justify-center transition-all duration-300 group-hover/cat:scale-110 overflow-hidden`}
                             style={{ backgroundColor: `${cat.color}1a` }}>
-                            <CategoryIcon cat={cat} size={20} strokeWidth={1.8} />
+                            <CategoryIcon cat={cat} size={iconSize} strokeWidth={1.8} />
                           </div>
-                          <span className={`${font} text-[11px] sm:text-[12px] text-gray-600 whitespace-nowrap transition-colors duration-300`}>
+                          <span className={`${font} ${txtSize} text-gray-600 whitespace-nowrap transition-colors duration-300`}>
                             {cat.name}
                           </span>
                         </button>
@@ -9560,19 +13917,14 @@ function ProductsCategoriesContent() {
           </p>
         </div>
 
-        {/* Filter pill — same pattern as จัดการสินค้า */}
-        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 flex items-center gap-2">
-          <FilterTabPills tabs={categoryFilterTabs} active={filterTab} onChange={setFilterTab} pillId="adminCategoriesPill" />
-          {/* Search */}
-          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px]">
-            <input value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="ค้นหา ชื่อหมวด, คำอธิบาย..."
-              className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
-            <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
-              <Search className="size-4 text-white" />
-            </button>
+        {/* Drag-to-reorder hint */}
+        {reorderEnabled && filtered.length > 1 && (
+          <div className={`${font} inline-flex items-center gap-1.5 text-[11px] text-gray-500 bg-gray-50 px-3 py-1.5 rounded-full self-start`}
+            style={{ fontWeight: 500 }}>
+            <GripVertical className="size-3 text-gray-400" strokeWidth={2.2} />
+            <span>คลิกที่ไอคอน <GripVertical className="size-3 inline-block align-middle text-gray-400" strokeWidth={2.2} /> ค้างแล้วลาก เพื่อจัดเรียงลำดับการ์ด</span>
           </div>
-        </div>
+        )}
 
         {/* Category grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
@@ -9595,7 +13947,6 @@ function ProductsCategoriesContent() {
                   if (!reorderEnabled) return;
                   setDragId(cat.id);
                   e.dataTransfer.effectAllowed = "move";
-                  // Firefox needs setData to start drag
                   try { e.dataTransfer.setData("text/plain", cat.id); } catch {}
                 }}
                 onDragOver={(e: any) => {
@@ -9613,26 +13964,35 @@ function ProductsCategoriesContent() {
                   setDragOverId(null);
                 }}
                 onDragEnd={() => { setDragId(null); setDragOverId(null); }}
-                className={`group bg-white border rounded-2xl p-4 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all relative overflow-hidden ${!cat.active ? "opacity-60" : ""} ${isDragging ? "opacity-40 scale-95" : ""} ${isDropTarget ? "border-[#319754] ring-2 ring-[#319754]/30 -translate-y-1" : "border-[#e8e8e8]"}`}>
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                whileHover={{ y: -2 }}
+                className={`group bg-white border rounded-2xl p-3.5 hover:shadow-[0_6px_18px_-8px_rgba(0,0,0,0.10)] transition-shadow relative overflow-hidden flex flex-col gap-2.5 min-h-[140px] ${!cat.active ? "opacity-60" : ""} ${isDragging ? "opacity-40 scale-95" : ""} ${isDropTarget ? "border-[#319754] ring-2 ring-[#319754]/30" : "border-gray-100"}`}>
+
+                {/* Decorative background icon — bottom-right, fades from category color */}
+                <div className="absolute -bottom-3 -right-3 size-20 pointer-events-none select-none opacity-[0.08] transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-6"
+                  style={{ color: cat.color, maskImage: "linear-gradient(to bottom, black 40%, rgba(0,0,0,0.4) 80%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 40%, rgba(0,0,0,0.4) 80%, transparent 100%)" }}>
+                  <CategoryIcon cat={cat} size={80} strokeWidth={1.4} />
+                </div>
+
+                {/* Top: drag handle + icon + name + description */}
+                <div className="relative z-10 flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2 min-w-0 flex-1">
                     {reorderEnabled && (
-                      <div title="ลากเพื่อจัดเรียงตำแหน่ง"
-                        className="size-5 -ml-1 shrink-0 flex items-center justify-center text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing transition-colors">
+                      <div title="ลากการ์ดเพื่อจัดเรียงตำแหน่ง"
+                        className="size-9 flex items-center justify-center text-gray-300 group-hover:text-gray-500 cursor-grab active:cursor-grabbing transition-colors shrink-0 -ml-1">
                         <GripVertical className="size-4" strokeWidth={2.2} />
                       </div>
                     )}
-                    <div className="size-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: `${cat.color}1a` }}>
-                      <CategoryIcon cat={cat} size={26} />
+                    <div className="size-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.06)]" style={{ backgroundColor: cat.color }}>
+                      <CategoryIcon cat={{ ...cat, color: "#ffffff" }} size={18} strokeWidth={2.2} />
                     </div>
-                    <div className="min-w-0">
-                      <p className={`${font} text-[15px] text-black truncate`} style={{ fontWeight: 600 }}>{cat.name}</p>
-                      <p className={`${font} text-[11px] text-gray-400 truncate`}>{cat.description}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{cat.name}</p>
+                      <p className={`${font} text-[10px] text-gray-400 line-clamp-2 mt-0.5 leading-snug`}>{cat.description}</p>
                     </div>
                   </div>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                      <button className="size-7 rounded-full inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors cursor-pointer shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
                         <MoreHorizontal className="size-4" />
                       </button>
                     </PopoverTrigger>
@@ -9671,15 +14031,15 @@ function ProductsCategoriesContent() {
                   </Popover>
                 </div>
 
-                {/* Stats row */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div className="flex flex-col">
+                {/* Bottom: count + status — pushed to bottom */}
+                <div className="relative z-10 flex items-end justify-between gap-2 mt-auto">
+                  <div className="flex items-baseline gap-1">
                     <p className={`${font} text-[20px] tabular-nums leading-none`} style={{ fontWeight: 700, color: cat.color }}>
                       {pc.toLocaleString()}
                     </p>
-                    <p className={`${font} text-[10px] text-gray-400 mt-1`}>สินค้าในหมวด</p>
+                    <p className={`${font} text-[10px] text-gray-500`}>สินค้า</p>
                   </div>
-                  <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]`}
+                  <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px]`}
                     style={{ backgroundColor: cat.active ? "#3197541a" : "#9ca3af1a", color: cat.active ? "#319754" : "#737373", fontWeight: 600 }}>
                     <span className="size-1.5 rounded-full" style={{ backgroundColor: cat.active ? "#319754" : "#737373" }} />
                     {cat.active ? "แสดง" : "ซ่อน"}
@@ -13850,6 +18210,4348 @@ function PageAboutBuilder() {
   );
 }
 
+/* ========== Admin Promotions ========== */
+type AdminPromoStatus = "active" | "scheduled" | "ended";
+type AdminPromoDiscountType = "percent" | "baht";
+type ShopInviteStatus = "pending" | "accepted" | "declined";
+
+interface AdminPromoInvite { shopName: string; status: ShopInviteStatus; respondedAt?: string }
+
+// Shop profile images — keyed by shopName (matches siteProducts.shopName values)
+const SHOP_PROFILE_IMAGES: Record<string, string> = {
+  "METAHERB Store":     "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=200&q=80", // green herb shop
+  "Organic Thai Farm":  "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=200&q=80", // farm field
+  "ธรรมชาติพรีเมียม":    "https://images.unsplash.com/photo-1543362906-acfc16c67564?w=200&q=80",   // premium nature
+  "ร้านป่าหมอก":         "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=200&q=80", // misty forest
+  "สมุนไพรบ้านสวน":      "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?w=200&q=80", // garden
+};
+const getShopImage = (name: string) => SHOP_PROFILE_IMAGES[name] || "";
+
+// Promotion themes — holidays, festivals, or trending campaigns (long-running, unlike Flash Sale's date-numeric events)
+type PromoTheme = "valentine" | "songkran" | "mother" | "father" | "christmas" | "newyear" | "loykrathong" | "wellness" | "earth";
+const adminPromoThemeMeta: Record<PromoTheme, { label: string; color: string }> = {
+  valentine:   { label: "วันวาเลนไทน์",  color: "#ec4899" },
+  songkran:    { label: "สงกรานต์",      color: "#06b6d4" },
+  mother:      { label: "วันแม่",        color: "#0ea5e9" },
+  father:      { label: "วันพ่อ",        color: "#f59e0b" },
+  christmas:   { label: "คริสต์มาส",     color: "#dc2626" },
+  newyear:     { label: "ปีใหม่",        color: "#9333ea" },
+  loykrathong: { label: "ลอยกระทง",      color: "#d97706" },
+  wellness:    { label: "Wellness Trend", color: "#319754" },
+  earth:       { label: "Earth Day",     color: "#65a30d" },
+};
+
+interface AdminPromotion {
+  id: string;
+  name: string;
+  description: string;
+  theme: PromoTheme;
+  discountType: AdminPromoDiscountType;
+  discountValue: number;
+  maxDiscount?: number;
+  startsAt: string; // ISO
+  endsAt?: string;  // ISO — undefined when noExpiry
+  noExpiry?: boolean;
+  enabled?: boolean; // true = visible, false = hidden draft
+  invites: AdminPromoInvite[];
+}
+
+const _adminPromoDay = (offset: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+};
+
+// Seeded mock — 6 promotions tied to holidays/trends (long-running campaigns, unlike single-day Flash Sales)
+const initialAdminPromotions: AdminPromotion[] = [
+  // Active — Wellness trend (ongoing health awareness campaign)
+  {
+    id: "AP-001",
+    name: "Wellness Month สุขภาพดีทั้งเดือน ลด 15%",
+    description: "แคมเปญส่งเสริมสุขภาพประจำเดือน — ลดราคาสมุนไพรและอาหารเสริมทุกชิ้น สูงสุด 250 บาท",
+    theme: "wellness",
+    discountType: "percent", discountValue: 15, maxDiscount: 250,
+    startsAt: _adminPromoDay(-5), endsAt: _adminPromoDay(25),
+    invites: [
+      { shopName: "METAHERB Store",      status: "accepted",  respondedAt: _adminPromoDay(-5) },
+      { shopName: "Organic Thai Farm",   status: "accepted",  respondedAt: _adminPromoDay(-5) },
+      { shopName: "ธรรมชาติพรีเมียม",     status: "accepted",  respondedAt: _adminPromoDay(-4) },
+      { shopName: "ร้านป่าหมอก",          status: "pending"                                    },
+      { shopName: "สมุนไพรบ้านสวน",       status: "declined",  respondedAt: _adminPromoDay(-4) },
+    ],
+  },
+  // Active — Earth Day (April 22, multi-day eco campaign)
+  {
+    id: "AP-002",
+    name: "Earth Day รักษ์โลก ลด ฿50",
+    description: "วันคุ้มครองโลก — ส่วนลด 50 บาท เมื่อช้อปสินค้าออร์แกนิกครบ 500 บาท",
+    theme: "earth",
+    discountType: "baht", discountValue: 50,
+    startsAt: _adminPromoDay(-3), endsAt: _adminPromoDay(10),
+    invites: [
+      { shopName: "METAHERB Store",      status: "accepted",  respondedAt: _adminPromoDay(-3) },
+      { shopName: "Organic Thai Farm",   status: "accepted",  respondedAt: _adminPromoDay(-3) },
+      { shopName: "ธรรมชาติพรีเมียม",     status: "pending"                                    },
+      { shopName: "ร้านป่าหมอก",          status: "accepted",  respondedAt: _adminPromoDay(-2) },
+      { shopName: "สมุนไพรบ้านสวน",       status: "accepted",  respondedAt: _adminPromoDay(-3) },
+    ],
+  },
+  // Scheduled — Mother's Day (Aug 12, long lead-up campaign)
+  {
+    id: "AP-003",
+    name: "วันแม่แห่งชาติ มอบของดีให้แม่ ลด ฿80",
+    description: "ฉลองวันแม่ 12 สิงหา — ลด 80 บาท เมื่อช้อปครบ 800 บาท เน้นเซ็ตของขวัญ สมุนไพร",
+    theme: "mother",
+    discountType: "baht", discountValue: 80,
+    startsAt: _adminPromoDay(85), endsAt: _adminPromoDay(100),
+    invites: [
+      { shopName: "METAHERB Store",      status: "pending" },
+      { shopName: "Organic Thai Farm",   status: "pending" },
+      { shopName: "ธรรมชาติพรีเมียม",     status: "pending" },
+      { shopName: "ร้านป่าหมอก",          status: "pending" },
+      { shopName: "สมุนไพรบ้านสวน",       status: "pending" },
+    ],
+  },
+  // Scheduled — Loy Krathong (mid-November, week-long campaign)
+  {
+    id: "AP-004",
+    name: "ลอยกระทง คืนความสุข ลด 20%",
+    description: "ฉลองเทศกาลลอยกระทง — ลด 20% สำหรับเครื่องหอมและสมุนไพรบำรุงผิว",
+    theme: "loykrathong",
+    discountType: "percent", discountValue: 20, maxDiscount: 200,
+    startsAt: _adminPromoDay(165), endsAt: _adminPromoDay(175),
+    invites: [
+      { shopName: "METAHERB Store",      status: "pending" },
+      { shopName: "Organic Thai Farm",   status: "pending" },
+      { shopName: "ธรรมชาติพรีเมียม",     status: "pending" },
+      { shopName: "ร้านป่าหมอก",          status: "pending" },
+      { shopName: "สมุนไพรบ้านสวน",       status: "pending" },
+    ],
+  },
+  // Ended — Songkran (April 13-15, just passed)
+  {
+    id: "AP-005",
+    name: "สงกรานต์ Cool Down ลด 25%",
+    description: "ฉลองสงกรานต์ — ลด 25% สำหรับน้ำมันสกัดและสมุนไพรเย็น สูงสุด 300 บาท",
+    theme: "songkran",
+    discountType: "percent", discountValue: 25, maxDiscount: 300,
+    startsAt: _adminPromoDay(-35), endsAt: _adminPromoDay(-25),
+    invites: [
+      { shopName: "METAHERB Store",      status: "accepted",  respondedAt: _adminPromoDay(-36) },
+      { shopName: "Organic Thai Farm",   status: "accepted",  respondedAt: _adminPromoDay(-35) },
+      { shopName: "ธรรมชาติพรีเมียม",     status: "accepted",  respondedAt: _adminPromoDay(-34) },
+      { shopName: "ร้านป่าหมอก",          status: "accepted",  respondedAt: _adminPromoDay(-35) },
+      { shopName: "สมุนไพรบ้านสวน",       status: "declined",  respondedAt: _adminPromoDay(-33) },
+    ],
+  },
+  // Ended — Valentine's Day (Feb 14)
+  {
+    id: "AP-006",
+    name: "วาเลนไทน์ ของขวัญแทนใจ ลด ฿100",
+    description: "วันวาเลนไทน์ — ลด 100 บาท สำหรับเซ็ตของขวัญและเครื่องหอม เมื่อช้อปครบ 1,000 บาท",
+    theme: "valentine",
+    discountType: "baht", discountValue: 100,
+    startsAt: _adminPromoDay(-90), endsAt: _adminPromoDay(-80),
+    invites: [
+      { shopName: "METAHERB Store",      status: "accepted",  respondedAt: _adminPromoDay(-92) },
+      { shopName: "Organic Thai Farm",   status: "declined",  respondedAt: _adminPromoDay(-91) },
+      { shopName: "ธรรมชาติพรีเมียม",     status: "accepted",  respondedAt: _adminPromoDay(-92) },
+      { shopName: "ร้านป่าหมอก",          status: "accepted",  respondedAt: _adminPromoDay(-90) },
+      { shopName: "สมุนไพรบ้านสวน",       status: "accepted",  respondedAt: _adminPromoDay(-91) },
+    ],
+  },
+];
+
+const adminPromoStatus = (p: AdminPromotion): AdminPromoStatus => {
+  const now = Date.now();
+  if (new Date(p.startsAt).getTime() > now) return "scheduled";
+  if (p.noExpiry || !p.endsAt) return "active"; // no end date → always active once started
+  if (new Date(p.endsAt).getTime() < now) return "ended";
+  return "active";
+};
+
+const adminPromoStatusMeta: Record<AdminPromoStatus, { label: string; color: string; Icon: any }> = {
+  active:    { label: "กำลังดำเนินการ", color: "#319754", Icon: Zap },
+  scheduled: { label: "กำหนดไว้",        color: "#f59e0b", Icon: Clock },
+  ended:     { label: "สิ้นสุดแล้ว",     color: "#737373", Icon: Ban },
+};
+
+const adminInviteStatusMeta: Record<ShopInviteStatus, { label: string; color: string; Icon: any }> = {
+  pending:  { label: "รอตอบรับ", color: "#f59e0b", Icon: Clock },
+  accepted: { label: "เข้าร่วม",  color: "#319754", Icon: Check },
+  declined: { label: "ปฏิเสธ",    color: "#ef4444", Icon: X },
+};
+
+function AdminPromotionsContent() {
+  const [promotions, setPromotions] = useState<AdminPromotion[]>(initialAdminPromotions);
+  const [search, setSearch] = useState("");
+  type PromoFilter = "all" | AdminPromoStatus;
+  const [filter, setFilter] = useState<PromoFilter>("all");
+  const [inviteModalFor, setInviteModalFor] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+
+  // All shops in system (derive from siteProducts so it stays in sync)
+  const allShops = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), []);
+
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso);
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear() + 543}`;
+  };
+
+  // KPI
+  const cTotal     = promotions.length;
+  const cActive    = promotions.filter((p) => adminPromoStatus(p) === "active").length;
+  const cScheduled = promotions.filter((p) => adminPromoStatus(p) === "scheduled").length;
+  const cPending   = promotions.reduce((s, p) => s + p.invites.filter((i) => i.status === "pending").length, 0);
+
+  const filterTabs: { id: PromoFilter; label: string; count: number; Icon: any }[] = [
+    { id: "all",       label: "ทั้งหมด",          count: cTotal,     Icon: ClipboardList },
+    { id: "active",    label: "กำลังดำเนินการ",   count: cActive,    Icon: Zap },
+    { id: "scheduled", label: "กำหนดไว้",         count: cScheduled, Icon: Clock },
+    { id: "ended",     label: "สิ้นสุดแล้ว",      count: promotions.filter((p) => adminPromoStatus(p) === "ended").length, Icon: Ban },
+  ];
+
+  const filtered = promotions.filter((p) => {
+    if (filter !== "all" && adminPromoStatus(p) !== filter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      return [p.id, p.name, p.description].some((s) => s.toLowerCase().includes(q));
+    }
+    return true;
+  });
+
+  const setInviteStatus = (promoId: string, shopName: string, newStatus: ShopInviteStatus) => {
+    setPromotions((prev) => prev.map((p) => {
+      if (p.id !== promoId) return p;
+      const exists = p.invites.find((i) => i.shopName === shopName);
+      const next = exists
+        ? p.invites.map((i) => i.shopName === shopName ? { ...i, status: newStatus, respondedAt: new Date().toISOString() } : i)
+        : [...p.invites, { shopName, status: newStatus, respondedAt: new Date().toISOString() }];
+      return { ...p, invites: next };
+    }));
+  };
+
+  const inviteAllShops = (promoId: string) => {
+    setPromotions((prev) => prev.map((p) => {
+      if (p.id !== promoId) return p;
+      const next = allShops.map<AdminPromoInvite>((s) => {
+        const existing = p.invites.find((i) => i.shopName === s);
+        return existing || { shopName: s, status: "pending" };
+      });
+      toast.success(`ส่งคำเชิญถึงร้านค้าทั้งหมด (${next.filter((i) => i.status === "pending").length} ร้าน)`);
+      return { ...p, invites: next };
+    }));
+  };
+
+  const deletePromotion = (id: string) => {
+    const p = promotions.find((x) => x.id === id);
+    if (!p) return;
+    if (!confirm(`ลบโปรโมชั่น "${p.name}"?`)) return;
+    setPromotions((prev) => prev.filter((x) => x.id !== id));
+    toast.success(`ลบ "${p.name}" แล้ว`);
+  };
+
+  const inviteModalPromo = inviteModalFor ? promotions.find((p) => p.id === inviteModalFor) : null;
+
+  // When creating, render the full-page create view instead of the list
+  if (showCreate) {
+    return (
+      <CreateAdminPromotionView
+        allShops={allShops}
+        onCancel={() => setShowCreate(false)}
+        onCreate={(p) => {
+          setPromotions((prev) => [p, ...prev]);
+          setShowCreate(false);
+          toast.success(`สร้างโปรโมชั่น "${p.name}" แล้ว`, { description: `ส่งคำเชิญถึง ${p.invites.length} ร้านค้า` });
+        }}
+      />
+    );
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการโปรโมชั่น</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>สร้างโปรโมชั่นแคมเปญของระบบและเชิญร้านค้าเข้าร่วม</p>
+        </div>
+        <motion.button
+          onClick={() => setShowCreate(true)}
+          whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+          <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
+            <Plus className="size-[14px] text-white" strokeWidth={2.6} />
+          </span>
+          <span style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</span>
+        </motion.button>
+      </div>
+
+      <div className="flex flex-col gap-5">
+        {/* Filter + search pill */}
+        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 flex items-center gap-2">
+          <FilterTabPills tabs={filterTabs} active={filter} onChange={setFilter} pillId="adminPromoPill" />
+          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px]">
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหา ชื่อโปรโมชั่น..."
+              className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+            <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+              <Search className="size-4 text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Grid of promotion cards */}
+        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+          {filtered.length === 0 ? (
+            <p className={`${font} text-center py-16 text-[13px] text-gray-400`}>ไม่พบโปรโมชั่น</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filtered.map((p) => {
+                const status = adminPromoStatus(p);
+                const sMeta = adminPromoStatusMeta[status];
+                const accepted = p.invites.filter((i) => i.status === "accepted").length;
+                const declined = p.invites.filter((i) => i.status === "declined").length;
+                const pending  = p.invites.filter((i) => i.status === "pending").length;
+                const totalInvited = p.invites.length;
+                const acceptPct = totalInvited > 0 ? Math.round((accepted / totalInvited) * 100) : 0;
+                const isEnded = status === "ended";
+                const discountLabel = p.discountType === "percent" ? `-${p.discountValue}%` : `-฿${p.discountValue}`;
+                return (
+                  <motion.div key={p.id}
+                    whileHover={{ y: -3 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 26 }}
+                    className={`group/card relative rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.10)] transition-shadow flex flex-col h-[420px] ${isEnded ? "opacity-75 hover:opacity-100" : ""}`}>
+                    {/* Header — fixed height to keep all cards uniform */}
+                    <div className="relative p-5 overflow-hidden h-[140px] shrink-0" style={{
+                      background: isEnded
+                        ? "linear-gradient(135deg, #f5f5f5 0%, #e5e5e5 100%)"
+                        : status === "scheduled"
+                          ? "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)"
+                          : "linear-gradient(135deg, rgba(255,107,53,0.95) 0%, rgba(230,46,5,0.95) 100%)",
+                    }}>
+                      {/* Decorative watermark — same as owner promo card */}
+                      <img src={imgPromoCard} alt="" aria-hidden="true"
+                        className={`absolute -bottom-3 -right-3 size-28 object-contain pointer-events-none select-none transition-opacity duration-300 group-hover/card:scale-105 ${isEnded ? "opacity-50 grayscale" : "opacity-90"}`} />
+
+                      <div className="relative z-10 flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className={`${font} text-[10px] uppercase tracking-wider mb-1 ${isEnded ? "text-gray-500" : status === "scheduled" ? "text-[#92400e]" : "text-white/85"}`}
+                            style={{ fontWeight: 600 }}>ส่วนลด</p>
+                          <p className={`${font} text-[36px] leading-none tabular-nums ${isEnded ? "text-gray-700" : status === "scheduled" ? "text-[#92400e]" : "text-white"}`}
+                            style={{ fontWeight: 800 }}>{discountLabel}</p>
+                          {p.maxDiscount && (
+                            <p className={`${font} text-[10px] mt-1 ${isEnded ? "text-gray-500" : status === "scheduled" ? "text-[#b45309]" : "text-white/80"}`}>
+                              สูงสุด ฿{p.maxDiscount.toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <span className={`${font} inline-flex items-center gap-1.5 pl-2 pr-3 py-0.5 rounded-full text-[11px] backdrop-blur-sm ${isEnded ? "bg-white/80" : "bg-white/95"}`}
+                            style={{ color: sMeta.color, fontWeight: 500 }}>
+                            <sMeta.Icon className="size-3" strokeWidth={2.4} />
+                            {sMeta.label}
+                          </span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="size-7 rounded-full inline-flex items-center justify-center bg-white/80 backdrop-blur-sm hover:bg-white text-gray-700 transition-colors cursor-pointer shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                                <MoreHorizontal className="size-4" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end" sideOffset={6} className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                              <button onClick={() => setInviteModalFor(p.id)}
+                                className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                                <UserPlus className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                                <span style={{ fontWeight: 500 }}>จัดการร้านค้า</span>
+                              </button>
+                              <button onClick={() => toast.info(`แก้ไขโปรโมชั่น: ${p.name}`)}
+                                className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                                <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                                <span style={{ fontWeight: 500 }}>แก้ไข</span>
+                              </button>
+                              <div className="h-px bg-gray-100 my-1" />
+                              <button onClick={() => deletePromotion(p.id)}
+                                className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer text-left text-[13px] text-[#ff3b30]`}>
+                                <Trash2 className="size-3.5" strokeWidth={2.2} />
+                                <span style={{ fontWeight: 500 }}>ลบ</span>
+                              </button>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Body — flex-1 fills remaining height, sub-sections fixed */}
+                    <div className="p-4 flex flex-col gap-3 flex-1 min-h-0">
+                      {/* Title block — fixed height for theme badge + 1-line name + 2-line desc */}
+                      <div className="min-w-0 h-[78px] shrink-0">
+                        {(() => {
+                          const tMeta = adminPromoThemeMeta[p.theme];
+                          return (
+                            <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] mb-1.5`}
+                              style={{ backgroundColor: `${tMeta.color}1a`, color: tMeta.color, fontWeight: 600 }}>
+                              <span className="size-1.5 rounded-full" style={{ backgroundColor: tMeta.color }} />
+                              {tMeta.label}
+                            </span>
+                          );
+                        })()}
+                        <p className={`${font} text-[14px] text-black line-clamp-1`} style={{ fontWeight: 600 }}>{p.name}</p>
+                        <p className={`${font} text-[11px] text-gray-500 line-clamp-2 mt-0.5`}>{p.description}</p>
+                      </div>
+
+                      {/* Date range — fixed line */}
+                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500 shrink-0">
+                        <Clock className="size-3 shrink-0" strokeWidth={2.2} />
+                        <span className={`${font} tabular-nums`}>
+                          {fmtDate(p.startsAt)} → {p.noExpiry || !p.endsAt ? "ไม่มีกำหนด" : fmtDate(p.endsAt)}
+                        </span>
+                      </div>
+
+                      {/* Shop participation — pushed to bottom */}
+                      <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-100 mt-auto shrink-0">
+                        <div className="flex items-center justify-between">
+                          <span className={`${font} text-[11px] text-gray-500`} style={{ fontWeight: 500 }}>ร้านค้าเข้าร่วม</span>
+                          <span className={`${font} text-[11px] tabular-nums`} style={{ fontWeight: 600, color: "#319754" }}>
+                            {accepted}/{totalInvited}
+                          </span>
+                        </div>
+                        <div className="flex h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                          {accepted > 0 && <div className="bg-[#319754] h-full transition-all" style={{ width: `${(accepted / totalInvited) * 100}%` }} />}
+                          {declined > 0 && <div className="bg-[#ef4444] h-full transition-all" style={{ width: `${(declined / totalInvited) * 100}%` }} />}
+                          {pending > 0 && <div className="bg-[#f59e0b] h-full transition-all" style={{ width: `${(pending / totalInvited) * 100}%` }} />}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap text-[10px] tabular-nums h-[14px]">
+                          {accepted > 0 && <span className={`${font} inline-flex items-center gap-1`} style={{ color: "#319754" }}>
+                            <span className="size-1.5 rounded-full bg-[#319754]" />{accepted} เข้าร่วม
+                          </span>}
+                          {pending > 0 && <span className={`${font} inline-flex items-center gap-1`} style={{ color: "#f59e0b" }}>
+                            <span className="size-1.5 rounded-full bg-[#f59e0b]" />{pending} รอตอบ
+                          </span>}
+                          {declined > 0 && <span className={`${font} inline-flex items-center gap-1`} style={{ color: "#ef4444" }}>
+                            <span className="size-1.5 rounded-full bg-[#ef4444]" />{declined} ปฏิเสธ
+                          </span>}
+                        </div>
+                      </div>
+
+                      {/* Action button — fixed at bottom */}
+                      <button onClick={() => setInviteModalFor(p.id)}
+                        className={`${font} w-full h-9 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] text-[12px] flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0`}
+                        style={{ fontWeight: 600 }}>
+                        <UserPlus className="size-3.5" strokeWidth={2.4} />
+                        จัดการร้านค้าเข้าร่วม
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Shop invitation modal */}
+      <AnimatePresence>
+        {inviteModalPromo && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setInviteModalFor(null)}
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 12 }}
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl w-full max-w-[560px] max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+              {/* Header */}
+              <div className="border-b border-gray-100 px-5 py-4 flex items-start justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                    <UserPlus className="size-5 text-[#319754]" strokeWidth={2.2} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>จัดการร้านค้าเข้าร่วมโปรโมชั่น</p>
+                    <p className={`${font} text-[12px] text-gray-500 truncate`}>{inviteModalPromo.name}</p>
+                  </div>
+                </div>
+                <button onClick={() => setInviteModalFor(null)} className="size-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
+                  <X className="size-4 text-gray-600" strokeWidth={2.2} />
+                </button>
+              </div>
+
+              {/* Bulk actions */}
+              <div className="border-b border-gray-100 px-5 py-3 flex items-center justify-between gap-3 shrink-0">
+                <p className={`${font} text-[12px] text-gray-500`}>
+                  ทั้งหมด {allShops.length} ร้านในระบบ ·{" "}
+                  <span className="text-[#319754] tabular-nums" style={{ fontWeight: 600 }}>
+                    เข้าร่วม {inviteModalPromo.invites.filter((i) => i.status === "accepted").length}
+                  </span>
+                </p>
+                <button onClick={() => inviteAllShops(inviteModalPromo.id)}
+                  className={`${font} text-[12px] inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-[#319754] hover:bg-[#287745] text-white cursor-pointer transition-colors`}
+                  style={{ fontWeight: 600 }}>
+                  <Send className="size-3.5" strokeWidth={2.4} />
+                  เชิญทั้งหมด
+                </button>
+              </div>
+
+              {/* Shop list */}
+              <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-2">
+                {allShops.map((shop) => {
+                  const invite = inviteModalPromo.invites.find((i) => i.shopName === shop);
+                  const status = invite?.status;
+                  const sMeta = status ? adminInviteStatusMeta[status] : null;
+                  return (
+                    <div key={shop} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                          <Store className="size-4 text-[#319754]" strokeWidth={2.2} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{shop}</p>
+                          {sMeta ? (
+                            <p className={`${font} text-[11px] inline-flex items-center gap-1 mt-0.5`} style={{ color: sMeta.color, fontWeight: 600 }}>
+                              <sMeta.Icon className="size-3" strokeWidth={2.4} />
+                              {sMeta.label}
+                              {invite?.respondedAt && status !== "pending" && (
+                                <span className="text-gray-400 ml-1" style={{ fontWeight: 400 }}>· {fmtDate(invite.respondedAt)}</span>
+                              )}
+                            </p>
+                          ) : (
+                            <p className={`${font} text-[11px] text-gray-400 mt-0.5`}>ยังไม่ได้เชิญ</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {!invite ? (
+                          <button onClick={() => setInviteStatus(inviteModalPromo.id, shop, "pending")}
+                            className={`${font} text-[11px] inline-flex items-center gap-1 px-3 h-7 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] cursor-pointer transition-colors`}
+                            style={{ fontWeight: 600 }}>
+                            <Send className="size-3" strokeWidth={2.4} /> เชิญ
+                          </button>
+                        ) : status === "pending" ? (
+                          <>
+                            <button onClick={() => setInviteStatus(inviteModalPromo.id, shop, "accepted")}
+                              className={`${font} text-[11px] inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] cursor-pointer transition-colors`}
+                              style={{ fontWeight: 600 }}
+                              title="ทำเครื่องหมายว่ายอมรับ (จำลอง)">
+                              <Check className="size-3" strokeWidth={2.4} />
+                            </button>
+                            <button onClick={() => setInviteStatus(inviteModalPromo.id, shop, "declined")}
+                              className={`${font} text-[11px] inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-[#ef4444]/10 hover:bg-[#ef4444]/20 text-[#ef4444] cursor-pointer transition-colors`}
+                              style={{ fontWeight: 600 }}
+                              title="ทำเครื่องหมายว่าปฏิเสธ (จำลอง)">
+                              <X className="size-3" strokeWidth={2.4} />
+                            </button>
+                          </>
+                        ) : (
+                          <button onClick={() => setInviteStatus(inviteModalPromo.id, shop, "pending")}
+                            className={`${font} text-[11px] inline-flex items-center gap-1 px-3 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 cursor-pointer transition-colors`}
+                            style={{ fontWeight: 600 }}>
+                            <RotateCcw className="size-3" strokeWidth={2.4} /> รีเซ็ต
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function CreateAdminPromotionView({ allShops, onCancel, onCreate }: {
+  allShops: string[];
+  onCancel: () => void;
+  onCreate: (p: AdminPromotion) => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [theme] = useState<PromoTheme>("wellness");
+  const [discountType, setDiscountType] = useState<AdminPromoDiscountType>("percent");
+  const [discountValue, setDiscountValue] = useState(15);
+  const [maxDiscount, setMaxDiscount] = useState(0);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const end = new Date(); end.setDate(end.getDate() + 14); end.setHours(0, 0, 0, 0);
+    return { from: start, to: end };
+  });
+  const [selectedShops, setSelectedShops] = useState<Set<string>>(() => new Set(allShops));
+  const [showShopPicker, setShowShopPicker] = useState(false);
+  const [enabled, setEnabled] = useState(true);
+  const [noExpiry, setNoExpiry] = useState(false);
+
+  const canSubmit = name.trim().length >= 4 && discountValue > 0 && !!dateRange?.from && (noExpiry || !!dateRange?.to) && selectedShops.size > 0;
+
+  // Shop metrics — derive for sorting & display
+  const shopMetrics = useMemo(() => {
+    const m: Record<string, { productCount: number; totalOrders: number; avgMonthlyRevenue: number }> = {};
+    allShops.forEach((s) => {
+      const ps = siteProducts.filter((p) => p.shopName === s);
+      const orders = ps.reduce((sum, p) => sum + (parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0), 0);
+      const revenue = ps.reduce((sum, p) => sum + (parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0) * p.price, 0);
+      m[s] = { productCount: ps.length, totalOrders: orders, avgMonthlyRevenue: Math.round(revenue / 12) };
+    });
+    return m;
+  }, [allShops]);
+
+  const toggleShop = (s: string) => {
+    setSelectedShops((prev) => {
+      const n = new Set(prev);
+      if (n.has(s)) n.delete(s); else n.add(s);
+      return n;
+    });
+  };
+  const toggleAll = () => {
+    setSelectedShops((prev) => prev.size === allShops.length ? new Set() : new Set(allShops));
+  };
+
+  const submit = () => {
+    if (!canSubmit || !dateRange?.from) return;
+    const from = new Date(dateRange.from); from.setHours(0, 0, 0, 0);
+    const endsAt = noExpiry || !dateRange.to
+      ? undefined
+      : (() => { const d = new Date(dateRange.to); d.setHours(23, 59, 59, 0); return d.toISOString(); })();
+    onCreate({
+      id: `AP-${Date.now().toString(36).toUpperCase().slice(-6)}`,
+      name: name.trim(),
+      description: description.trim() || `แคมเปญ${adminPromoThemeMeta[theme].label} — ระบบจัดให้`,
+      theme,
+      discountType,
+      discountValue,
+      maxDiscount: maxDiscount > 0 ? maxDiscount : undefined,
+      startsAt: from.toISOString(),
+      endsAt,
+      noExpiry,
+      enabled,
+      invites: Array.from(selectedShops).map((shopName) => ({ shopName, status: "pending" })),
+    });
+  };
+
+  return (
+    <div>
+      {/* Back button — matches existing admin pattern */}
+      <div className="mb-5">
+        <button onClick={onCancel}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+      </div>
+
+      {/* Header — title left, action buttons right */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>สร้างโปรโมชั่นใหม่</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>แคมเปญตามเทศกาลหรือเทรนด์ — เชิญร้านค้าเข้าร่วม</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onCancel}
+            className={`${font} h-[38px] px-5 rounded-full text-[13px] text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            ยกเลิก
+          </button>
+          <motion.button onClick={submit} disabled={!canSubmit}
+            whileTap={{ scale: 0.96 }} whileHover={canSubmit ? { y: -1 } : undefined}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
+              <Send className="size-[14px] text-white" strokeWidth={2.6} />
+            </span>
+            <span style={{ fontWeight: 600 }}>สร้างและส่งคำเชิญ</span>
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Sections — 2 columns on lg+ (form left, shop invites right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-start">
+        <div className="space-y-4 min-w-0">
+          {/* ── Section 1: ข้อมูลโปรโมชั่น ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Megaphone className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ข้อมูลโปรโมชั่น</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>ชื่อและรายละเอียดของแคมเปญ</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ชื่อโปรโมชั่น <span className="text-[#ff3b30]">*</span></label>
+              <input value={name} onChange={(e) => setName(e.target.value)}
+                placeholder="เช่น Wellness Month ลด 15%"
+                className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>รายละเอียด</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                placeholder="อธิบายแคมเปญ เช่น เทศกาล สินค้าที่ลด เงื่อนไข (ไม่บังคับ)"
+                rows={2}
+                className={`${font} bg-[#fafafa] rounded-2xl px-5 py-3 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3] resize-none`} />
+            </div>
+          </section>
+
+          {/* ── Section 2: การลดราคา ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#ff3b30]/10 flex items-center justify-center shrink-0">
+                <Percent className="size-4 text-[#ff3b30]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>การลดราคา</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>ประเภทและมูลค่าส่วนลด</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ประเภทส่วนลด <span className="text-[#ff3b30]">*</span></label>
+                <div className="relative">
+                  <select value={discountType} onChange={(e) => setDiscountType(e.target.value as AdminPromoDiscountType)}
+                    className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-5 pr-10 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
+                    <option value="percent">ลดเปอร์เซ็นต์ (%)</option>
+                    <option value="baht">ลดเป็นบาท (฿)</option>
+                  </select>
+                  <ChevronDown className="size-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>{discountType === "percent" ? "เปอร์เซ็นต์" : "มูลค่า (฿)"} <span className="text-[#ff3b30]">*</span></label>
+                <input type="number" value={discountValue} onChange={(e) => setDiscountValue(Math.max(0, parseInt(e.target.value) || 0))}
+                  min={0} max={discountType === "percent" ? 100 : 100000}
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+              </div>
+              <div className={`flex flex-col gap-1.5 transition-opacity ${discountType === "baht" ? "opacity-40 pointer-events-none" : ""}`}>
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ส่วนลดสูงสุด (฿)</label>
+                <input type="number" value={maxDiscount} onChange={(e) => setMaxDiscount(Math.max(0, parseInt(e.target.value) || 0))}
+                  min={0} placeholder="0 = ไม่จำกัด"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+              </div>
+            </div>
+          </section>
+
+          {/* ── Section 3: ระยะเวลา ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-[#f59e0b]/10 flex items-center justify-center shrink-0">
+                  <CalendarIcon className="size-4 text-[#f59e0b]" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ระยะเวลา <span className="text-[#ff3b30]">*</span></p>
+                  <p className={`${font} text-[11px] text-[#8e8e93]`}>เลือกช่วงเวลาที่แคมเปญใช้งานได้</p>
+                </div>
+              </div>
+              <label className={`${font} flex items-center gap-2 text-[13px] cursor-pointer shrink-0`}>
+                <span className="text-gray-700">ไม่มีวันหมดอายุ</span>
+                <button onClick={() => setNoExpiry((v) => !v)} type="button"
+                  className={`relative inline-flex items-center w-11 h-6 rounded-full transition-colors cursor-pointer shrink-0 ${noExpiry ? "bg-[#319754]" : "bg-gray-300"}`}>
+                  <span className={`absolute size-5 bg-white rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-transform ${noExpiry ? "translate-x-[22px]" : "translate-x-[2px]"}`} />
+                </button>
+              </label>
+            </div>
+
+            {/* 2-column: calendar left, summary preview right (50/50) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+              {/* Calendar */}
+              <div className="bg-white rounded-2xl flex items-start justify-center overflow-x-auto">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={2}
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  defaultMonth={dateRange?.from}
+                  className={`${font}`}
+                  classNames={{
+                    months: "flex flex-col sm:flex-row gap-6",
+                    month: "flex flex-col gap-3",
+                    caption: "flex justify-center pt-1 relative items-center w-full",
+                    caption_label: `${font} text-[14px] text-black`,
+                    nav: "flex items-center gap-1",
+                    nav_button: "size-7 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] flex items-center justify-center p-0 cursor-pointer transition-colors",
+                    nav_button_previous: "absolute left-1",
+                    nav_button_next: "absolute right-1",
+                    table: "w-full border-collapse",
+                    head_row: "flex",
+                    head_cell: `${font} text-gray-400 w-9 font-normal text-[11px]`,
+                    row: "flex w-full mt-1",
+                    cell: "relative p-0 text-center text-[13px] focus-within:relative focus-within:z-20 has-[[aria-selected]]:bg-[#319754]/12 first:has-[[aria-selected]]:rounded-l-full last:has-[[aria-selected]]:rounded-r-full [&:has(.day-range-start)]:rounded-l-full [&:has(.day-range-end)]:rounded-r-full",
+                    day: `${font} size-9 p-0 font-normal text-[13px] rounded-full hover:bg-[#319754]/15 hover:text-[#319754] aria-selected:opacity-100 cursor-pointer transition-colors`,
+                    day_range_start: "day-range-start aria-selected:bg-[#319754] aria-selected:text-white aria-selected:hover:bg-[#287745] rounded-full",
+                    day_range_end:   "day-range-end aria-selected:bg-[#319754] aria-selected:text-white aria-selected:hover:bg-[#287745] rounded-full",
+                    day_selected:    "bg-[#319754] text-white hover:bg-[#287745] focus:bg-[#319754]",
+                    day_today:       "bg-[#319754]/8 text-[#319754] font-semibold",
+                    day_outside:     "day-outside text-gray-300 aria-selected:text-gray-400",
+                    day_disabled:    "text-gray-300 opacity-50",
+                    day_range_middle: "aria-selected:bg-transparent aria-selected:text-[#319754] aria-selected:font-semibold",
+                    day_hidden: "invisible",
+                  }}
+                />
+              </div>
+
+              {/* Summary preview — visual layout in gray theme */}
+              {(() => {
+                const hasEnd = !!(dateRange?.to && !noExpiry);
+                const totalDays = dateRange?.from && hasEnd
+                  ? Math.max(1, Math.ceil((dateRange.to!.getTime() - dateRange.from.getTime()) / 86400000) + 1)
+                  : 0;
+                const startsToday = dateRange?.from ? (new Date().setHours(0,0,0,0) === new Date(dateRange.from).setHours(0,0,0,0)) : false;
+                const daysToStart = dateRange?.from ? Math.ceil((dateRange.from.getTime() - new Date().setHours(0,0,0,0)) / 86400000) : 0;
+                return (
+                  <div className="bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden">
+                    {/* Decorative calendar icon background */}
+                    <CalendarIcon className="absolute -bottom-4 -right-4 size-32 text-gray-300/40 pointer-events-none" strokeWidth={1.5} />
+
+                    {/* Header */}
+                    <div className="relative z-10 flex items-center justify-between gap-2">
+                      <p className={`${font} text-[11px] uppercase tracking-wider text-gray-600`} style={{ fontWeight: 700 }}>สรุประยะเวลา</p>
+                      {dateRange?.from && (hasEnd || noExpiry) && (
+                        <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/80 text-gray-700 text-[10px] tabular-nums`} style={{ fontWeight: 600 }}>
+                          <span className="size-1.5 rounded-full bg-gray-500 animate-pulse" />
+                          {startsToday ? "เริ่มวันนี้" : daysToStart > 0 ? `อีก ${daysToStart} วันเริ่ม` : "กำลังดำเนินการ"}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Date timeline — from → to with arrow */}
+                    <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                      {/* From */}
+                      <div className="flex flex-col items-center text-center bg-white/80 rounded-xl p-3 backdrop-blur-sm">
+                        <p className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>เริ่มต้น</p>
+                        {dateRange?.from ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none tabular-nums text-gray-900 mt-1`} style={{ fontWeight: 800 }}>
+                              {dateRange.from.getDate()}
+                            </p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>
+                              {dateRange.from.toLocaleDateString("th-TH", { month: "short" })} {dateRange.from.getFullYear() + 543}
+                            </p>
+                          </>
+                        ) : (
+                          <p className={`${font} text-[11px] text-gray-400 italic mt-3 mb-1`}>—</p>
+                        )}
+                      </div>
+                      {/* Arrow */}
+                      <div className="flex flex-col items-center gap-0.5 px-1">
+                        <ArrowRight className="size-5 text-gray-500" strokeWidth={2.4} />
+                        {totalDays > 0 && (
+                          <span className={`${font} text-[9px] text-gray-600 tabular-nums whitespace-nowrap`} style={{ fontWeight: 600 }}>
+                            {totalDays} วัน
+                          </span>
+                        )}
+                      </div>
+                      {/* To */}
+                      <div className="flex flex-col items-center text-center bg-white/80 rounded-xl p-3 backdrop-blur-sm">
+                        <p className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>สิ้นสุด</p>
+                        {noExpiry ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none text-gray-900 mt-1`} style={{ fontWeight: 800 }}>∞</p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>ไม่มีกำหนด</p>
+                          </>
+                        ) : dateRange?.to ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none tabular-nums text-gray-900 mt-1`} style={{ fontWeight: 800 }}>
+                              {dateRange.to.getDate()}
+                            </p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>
+                              {dateRange.to.toLocaleDateString("th-TH", { month: "short" })} {dateRange.to.getFullYear() + 543}
+                            </p>
+                          </>
+                        ) : (
+                          <p className={`${font} text-[11px] text-gray-400 italic mt-3 mb-1`}>—</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Total days callout */}
+                    <div className="relative z-10 flex items-center justify-between gap-3 bg-white/80 rounded-xl px-4 py-3 backdrop-blur-sm">
+                      <div className="flex items-center gap-2">
+                        <Clock className="size-4 text-gray-500" strokeWidth={2.4} />
+                        <p className={`${font} text-[12px] text-gray-700`} style={{ fontWeight: 600 }}>ระยะเวลารวม</p>
+                      </div>
+                      {noExpiry ? (
+                        <p className={`${font} text-[18px] text-gray-900 leading-none`} style={{ fontWeight: 800 }}>ไม่มีกำหนด</p>
+                      ) : totalDays > 0 ? (
+                        <p className={`${font} text-[22px] text-gray-900 tabular-nums leading-none`} style={{ fontWeight: 800 }}>
+                          {totalDays.toLocaleString()} <span className="text-[12px]" style={{ fontWeight: 500 }}>วัน</span>
+                        </p>
+                      ) : (
+                        <p className={`${font} text-[12px] text-gray-400 italic`}>ยังไม่กำหนด</p>
+                      )}
+                    </div>
+
+                    {/* Full date display */}
+                    {dateRange?.from && (hasEnd || noExpiry) && (
+                      <div className="relative z-10 flex items-start gap-2 text-[11px] text-gray-600 pt-1">
+                        <Info className="size-3 text-gray-500 shrink-0 mt-0.5" strokeWidth={2.4} />
+                        <p className={`${font} leading-relaxed`}>
+                          แคมเปญจะเปิดให้ใช้งานตั้งแต่
+                          <span className="text-gray-900" style={{ fontWeight: 600 }}> {dateRange.from.toLocaleDateString("th-TH", { day: "2-digit", month: "long" })} </span>
+                          {noExpiry ? (
+                            <span className="text-gray-900" style={{ fontWeight: 600 }}>โดยไม่มีวันหมดอายุ</span>
+                          ) : (
+                            <>
+                              ถึง
+                              <span className="text-gray-900" style={{ fontWeight: 600 }}> {dateRange.to!.toLocaleDateString("th-TH", { day: "2-digit", month: "long", year: "numeric" })}</span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    )}
+
+                    {!dateRange?.from && (
+                      <div className="relative z-10 flex items-center gap-2 text-[11px] text-gray-500 italic">
+                        <Info className="size-3 shrink-0" strokeWidth={2.4} />
+                        คลิกวันที่เริ่ม → วันที่สิ้นสุดในปฏิทินด้านซ้าย
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </section>
+
+          {/* ── Section 5: ตั้งค่า (in left column so width matches ระยะเวลา) ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center shrink-0">
+                <Settings className="size-4 text-[#8b5cf6]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตั้งค่า</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>การตั้งค่าโปรโมชั่น</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 px-4 h-14 bg-[#fafafa] rounded-2xl">
+              <div className="flex flex-col min-w-0">
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เปิดใช้งานโปรโมชั่น</span>
+                <span className={`${font} text-[11px] text-gray-500`}>{enabled ? "โปรโมชั่นจะแสดงและใช้งานได้" : "โปรโมชั่นถูกซ่อน ไม่ใช้งาน"}</span>
+              </div>
+              <button onClick={() => setEnabled((v) => !v)}
+                className={`relative inline-flex items-center w-11 h-6 rounded-full transition-colors cursor-pointer shrink-0 ${enabled ? "bg-[#319754]" : "bg-gray-300"}`}>
+                <span className={`absolute size-5 bg-white rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-transform ${enabled ? "translate-x-[22px]" : "translate-x-[2px]"}`} />
+              </button>
+            </div>
+          </section>
+        </div>
+
+        {/* Right column — shop invites */}
+        <div className="space-y-4 lg:sticky lg:top-4 min-w-0">
+          {/* ── Section 4: ร้านค้าที่จะเชิญ ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="size-9 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+                  <Store className="size-4 text-[#3b82f6]" strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ร้านค้าที่จะเชิญ <span className="text-[#ff3b30]">*</span></p>
+                  <p className={`${font} text-[11px] text-[#8e8e93]`}>เลือกร้านค้าเข้าร่วม ({selectedShops.size}/{allShops.length})</p>
+                </div>
+              </div>
+              <button onClick={() => setShowShopPicker(true)}
+                className={`${font} text-[12px] inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-[#319754] hover:bg-[#287745] text-white cursor-pointer transition-colors shrink-0 shadow-[0_2px_6px_rgba(49,151,84,0.2)]`}
+                style={{ fontWeight: 600 }}>
+                <Plus className="size-3.5" strokeWidth={2.6} />
+                เพิ่มร้านค้า
+              </button>
+            </div>
+
+            {/* Selected shops compact list */}
+            {selectedShops.size === 0 ? (
+              <button onClick={() => setShowShopPicker(true)}
+                className="w-full border-2 border-dashed border-gray-200 hover:border-[#319754]/40 rounded-2xl py-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors">
+                <div className="size-10 rounded-full bg-gray-100 flex items-center justify-center">
+                  <UserPlus className="size-5 text-gray-400" strokeWidth={2.2} />
+                </div>
+                <span className={`${font} text-[13px] text-gray-500`}>ยังไม่ได้เลือกร้านค้า — คลิกเพื่อเลือก</span>
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {Array.from(selectedShops).map((s) => {
+                  const m = shopMetrics[s];
+                  return (
+                    <div key={s} className="group/sel flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-white border border-gray-200">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="relative size-9 rounded-full overflow-hidden shrink-0 ring-1 ring-gray-200">
+                          <ImageWithFallback src={getShopImage(s)} alt={s} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{s}</p>
+                          <div className="flex items-center flex-wrap gap-x-2 gap-y-0 mt-0.5">
+                            <span className={`${font} text-[11px] inline-flex items-center gap-1 tabular-nums text-gray-500`}>
+                              <ShoppingCart className="size-2.5 shrink-0" strokeWidth={2.2} />
+                              {m.totalOrders.toLocaleString()} ออเดอร์
+                            </span>
+                            <span className="text-gray-300">·</span>
+                            <span className={`${font} text-[11px] inline-flex items-center gap-1 tabular-nums text-gray-600`} style={{ fontWeight: 600 }}>
+                              ฿{m.avgMonthlyRevenue.toLocaleString()}/เดือน
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <button onClick={() => toggleShop(s)}
+                        title="เอาออก"
+                        className="size-7 rounded-full hover:bg-[#ff3b30]/10 text-gray-400 hover:text-[#ff3b30] flex items-center justify-center cursor-pointer transition-colors shrink-0">
+                        <X className="size-3.5" strokeWidth={2.4} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+
+      {/* Shop picker modal */}
+      <AnimatePresence>
+        {showShopPicker && (
+          <ShopPickerModal
+            allShops={allShops}
+            selectedShops={selectedShops}
+            shopMetrics={shopMetrics}
+            onClose={() => setShowShopPicker(false)}
+            onToggle={toggleShop}
+            onToggleAll={toggleAll}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ─── Shop picker (popup with search + sort + select-all) ─── */
+type ShopSortKey = "revenue" | "orders" | "products" | "name";
+function ShopPickerModal({ allShops, selectedShops, shopMetrics, onClose, onToggle, onToggleAll }: {
+  allShops: string[];
+  selectedShops: Set<string>;
+  shopMetrics: Record<string, { productCount: number; totalOrders: number; avgMonthlyRevenue: number }>;
+  onClose: () => void;
+  onToggle: (s: string) => void;
+  onToggleAll: () => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<ShopSortKey>("revenue");
+
+  const sortOptions: { id: ShopSortKey; label: string; Icon: any }[] = [
+    { id: "revenue",  label: "รายได้",     Icon: TrendingUp },
+    { id: "orders",   label: "ออเดอร์",     Icon: ShoppingCart },
+    { id: "products", label: "สินค้า",      Icon: Package },
+    { id: "name",     label: "ชื่อ A→Z",   Icon: Filter },
+  ];
+
+  const filtered = allShops
+    .filter((s) => !search.trim() || s.toLowerCase().includes(search.trim().toLowerCase()))
+    .sort((a, b) => {
+      const ma = shopMetrics[a], mb = shopMetrics[b];
+      if (sort === "revenue")  return mb.avgMonthlyRevenue - ma.avgMonthlyRevenue;
+      if (sort === "orders")   return mb.totalOrders - ma.totalOrders;
+      if (sort === "products") return mb.productCount - ma.productCount;
+      return a.localeCompare(b, "th");
+    });
+
+  const allSelected = selectedShops.size === allShops.length;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 12 }}
+        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl w-full max-w-[560px] h-[720px] max-h-[92vh] overflow-hidden shadow-2xl flex flex-col">
+        {/* Header */}
+        <div className="border-b border-gray-100 px-5 py-4 flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="size-10 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+              <Store className="size-5 text-[#3b82f6]" strokeWidth={2.2} />
+            </div>
+            <div className="min-w-0">
+              <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>เลือกร้านค้าเข้าร่วม</p>
+              <p className={`${font} text-[12px] text-gray-500 tabular-nums`}>เลือกแล้ว {selectedShops.size} / {allShops.length} ร้าน</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="size-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
+            <X className="size-4 text-gray-600" strokeWidth={2.2} />
+          </button>
+        </div>
+
+        {/* Search + select all */}
+        <div className="border-b border-gray-100 px-5 py-3 space-y-3 shrink-0">
+          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[40px]">
+            <Search className="size-4 text-gray-400 shrink-0 mr-2" strokeWidth={2.2} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหาชื่อร้าน..."
+              className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+            {search && (
+              <button onClick={() => setSearch("")} className="size-6 rounded-full hover:bg-gray-200 flex items-center justify-center shrink-0">
+                <X className="size-3 text-gray-500" strokeWidth={2.4} />
+              </button>
+            )}
+          </div>
+          {/* Sort + select all */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className={`${font} text-[11px] text-gray-500 mr-1`}>เรียงตาม:</span>
+              {sortOptions.map((opt) => {
+                const isAct = sort === opt.id;
+                return (
+                  <button key={opt.id} onClick={() => setSort(opt.id)}
+                    className={`${font} text-[11px] inline-flex items-center gap-1 px-2.5 h-7 rounded-full cursor-pointer transition-colors ${isAct ? "bg-[#319754] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                    style={{ fontWeight: isAct ? 600 : 500 }}>
+                    <opt.Icon className="size-3" strokeWidth={2.4} />
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <button onClick={onToggleAll}
+              className={`${font} text-[11px] inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] cursor-pointer transition-colors`}
+              style={{ fontWeight: 600 }}>
+              <Check className="size-3" strokeWidth={2.6} />
+              {allSelected ? "ยกเลิกทั้งหมด" : "เลือกทั้งหมด"}
+            </button>
+          </div>
+        </div>
+
+        {/* Shop list */}
+        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+          {filtered.length === 0 ? (
+            <div className="py-12 text-center">
+              <Store className="size-10 text-gray-300 mx-auto mb-2" strokeWidth={1.5} />
+              <p className={`${font} text-[13px] text-gray-400`}>ไม่พบร้านค้าที่ค้นหา</p>
+            </div>
+          ) : filtered.map((s) => {
+            const isSel = selectedShops.has(s);
+            const m = shopMetrics[s];
+            return (
+              <button key={s} onClick={() => onToggle(s)}
+                className={`${font} group/sel flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all text-left ${isSel
+                  ? "bg-[#319754]/5 ring-1 ring-[#319754]/30"
+                  : "bg-white ring-1 ring-gray-100 hover:ring-gray-200"}`}>
+                {/* Avatar */}
+                <div className="size-12 rounded-full overflow-hidden ring-1 ring-gray-100 shrink-0">
+                  <ImageWithFallback src={getShopImage(s)} alt={s} className="w-full h-full object-cover" />
+                </div>
+
+                {/* Body — name + metrics in single dot-separated row */}
+                <div className="flex-1 min-w-0">
+                  <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>{s}</p>
+                  <div className={`${font} text-[11px] text-gray-500 mt-0.5 truncate`}>
+                    <span className="tabular-nums">{m.productCount.toLocaleString()} รายการ</span>
+                    <span className="text-gray-300 mx-1.5">·</span>
+                    <span className="tabular-nums">{m.totalOrders.toLocaleString()} ออเดอร์</span>
+                    <span className="text-gray-300 mx-1.5">·</span>
+                    <span className="tabular-nums text-[#319754]" style={{ fontWeight: 600 }}>฿{m.avgMonthlyRevenue.toLocaleString()}/เดือน</span>
+                  </div>
+                </div>
+
+                {/* Check indicator */}
+                <div className={`size-5 rounded-full flex items-center justify-center shrink-0 transition-all ${isSel ? "bg-[#319754]" : "bg-white ring-1 ring-gray-300 group-hover/sel:ring-gray-400"}`}>
+                  {isSel && <Check className="size-3 text-white" strokeWidth={3} />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-gray-100 px-5 py-3 flex items-center justify-between gap-3 shrink-0">
+          <p className={`${font} text-[12px] text-gray-500 tabular-nums`}>
+            <span className="text-[#319754]" style={{ fontWeight: 600 }}>{selectedShops.size}</span> ร้านถูกเลือก
+          </p>
+          <button onClick={onClose}
+            className={`${font} h-[40px] px-5 rounded-full text-[13px] text-white bg-[#319754] hover:bg-[#287745] cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+            style={{ fontWeight: 600 }}>
+            เสร็จสิ้น
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ========== Admin Flash Sale Events ========== */
+type AdminFlashStatus = "active" | "scheduled" | "ended";
+
+interface AdminFlashEvent {
+  id: string;
+  name: string;        // e.g. "Flash Sale 5.5"
+  description: string;
+  startsAt: string;    // ISO datetime
+  endsAt: string;      // ISO datetime (usually same day, partial)
+  enabled?: boolean;
+  invites: AdminPromoInvite[]; // reuse same invite shape as promotion
+}
+
+function seedFlashEvents(): AdminFlashEvent[] {
+  const dayMs = 86400000;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const Y = today.getFullYear();
+
+  const at = (base: Date, hour: number, minute = 0) => {
+    const d = new Date(base);
+    d.setHours(hour, minute, 0, 0);
+    return d.toISOString();
+  };
+  const offset = (n: number) => new Date(today.getTime() + n * dayMs);
+  const monthDay = (m: number, d: number) => new Date(Y, m - 1, d);
+
+  const SHOPS = ["METAHERB Store", "Organic Thai Farm", "ธรรมชาติพรีเมียม", "ร้านป่าหมอก", "สมุนไพรบ้านสวน"];
+  const mkInvites = (pattern: ShopInviteStatus[], respondedDaysAgo: number): AdminPromoInvite[] =>
+    pattern.map((status, i) => ({
+      shopName: SHOPS[i] ?? `Shop ${i + 1}`,
+      status,
+      respondedAt: status === "pending" ? undefined : at(offset(-respondedDaysAgo), 10 + i, 30),
+    }));
+
+  return [
+    // ===== Active right now =====
+    {
+      id: "AF-MEGA-MAY",
+      name: "Flash Sale Mid-Month Mega",
+      description: "แคมเปญใหญ่กลางเดือน ลดสูงสุด 70% ทุกหมวด",
+      startsAt: at(offset(-3),  0),
+      endsAt:   at(offset(+2), 23, 59),
+      enabled: true,
+      invites: mkInvites(["accepted", "accepted", "accepted", "accepted", "accepted"], 10),
+    },
+    {
+      id: "AF-WKND-50",
+      name: "Flash Sale Weekend ลด 50%",
+      description: "โปรเสาร์-อาทิตย์ ลดทันที 50% เฉพาะหมวดที่ร่วมรายการ",
+      startsAt: at(offset(-1),  0),
+      endsAt:   at(offset(+1), 23, 59),
+      enabled: true,
+      invites: mkInvites(["accepted", "accepted", "pending", "accepted", "declined"], 7),
+    },
+
+    // ===== Scheduled (future) =====
+    {
+      id: "AF-EOM-MAY",
+      name: "Flash Sale 5.20",
+      description: "ฟแลชเซลล์ปลายเดือน ลดราคา 1 วันเต็ม",
+      startsAt: at(offset(+7),  0),
+      endsAt:   at(offset(+7), 23, 59),
+      enabled: true,
+      invites: mkInvites(["accepted", "accepted", "pending", "pending", "pending"], 2),
+    },
+    {
+      id: "AF-6-6",
+      name: "Flash Sale 6.6",
+      description: "ฟแลชเซลล์ 6.6 เลขซ้ำประจำเดือน 6",
+      startsAt: at(monthDay(6, 6),  0),
+      endsAt:   at(monthDay(6, 6), 23, 59),
+      enabled: true,
+      invites: mkInvites(["accepted", "pending", "accepted", "pending", "pending"], 1),
+    },
+    {
+      id: "AF-7-7",
+      name: "Flash Sale 7.7",
+      description: "ฟแลชเซลล์ 7.7 โปรเลขซ้ำเดือน 7",
+      startsAt: at(monthDay(7, 7),  0),
+      endsAt:   at(monthDay(7, 7), 23, 59),
+      enabled: true,
+      invites: mkInvites(["pending", "accepted", "pending", "pending", "pending"], 0),
+    },
+    {
+      id: "AF-8-8",
+      name: "Flash Sale 8.8",
+      description: "ฟแลชเซลล์ 8.8 แคมเปญใหญ่กลางปี",
+      startsAt: at(monthDay(8, 8),  0),
+      endsAt:   at(monthDay(8, 8), 23, 59),
+      enabled: true,
+      invites: mkInvites(["pending", "pending", "pending", "pending", "pending"], 0),
+    },
+    {
+      id: "AF-9-9",
+      name: "Flash Sale 9.9",
+      description: "ฟแลชเซลล์ 9.9 เปิดตัวคอลเล็คชั่นใหม่",
+      startsAt: at(monthDay(9, 9),  0),
+      endsAt:   at(monthDay(9, 9), 23, 59),
+      enabled: true,
+      invites: mkInvites(["pending", "pending", "pending", "pending", "pending"], 0),
+    },
+
+    // ===== Ended (within last 90 days) =====
+    {
+      id: "AF-5-5",
+      name: "Flash Sale 5.5",
+      description: "ฟแลชเซลล์ 5.5 เลขซ้ำประจำเดือน 5",
+      startsAt: at(monthDay(5, 5),  0),
+      endsAt:   at(monthDay(5, 5), 23, 59),
+      enabled: false,
+      invites: mkInvites(["accepted", "accepted", "declined", "accepted", "accepted"], 12),
+    },
+    {
+      id: "AF-4-4",
+      name: "Flash Sale 4.4",
+      description: "ฟแลชเซลล์ 4.4 เลขซ้ำประจำเดือน 4",
+      startsAt: at(monthDay(4, 4),  0),
+      endsAt:   at(monthDay(4, 4), 23, 59),
+      enabled: false,
+      invites: mkInvites(["accepted", "accepted", "accepted", "declined", "accepted"], 45),
+    },
+    {
+      id: "AF-3-3",
+      name: "Flash Sale 3.3",
+      description: "ฟแลชเซลล์ 3.3 เลขซ้ำประจำเดือน 3",
+      startsAt: at(monthDay(3, 3),  0),
+      endsAt:   at(monthDay(3, 3), 23, 59),
+      enabled: false,
+      invites: mkInvites(["accepted", "declined", "accepted", "accepted", "accepted"], 75),
+    },
+  ];
+}
+
+function useFlashCountdown(endsAt?: string) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!endsAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [endsAt]);
+  if (!endsAt) return { h: "00", m: "00", s: "00" };
+  const diff = Math.max(0, new Date(endsAt).getTime() - now);
+  const total = Math.floor(diff / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return {
+    h: String(h).padStart(2, "0"),
+    m: String(m).padStart(2, "0"),
+    s: String(s).padStart(2, "0"),
+  };
+}
+
+const adminFlashStatus = (e: AdminFlashEvent): AdminFlashStatus => {
+  const now = Date.now();
+  if (new Date(e.startsAt).getTime() > now) return "scheduled";
+  if (new Date(e.endsAt).getTime() < now) return "ended";
+  return "active";
+};
+
+const adminFlashStatusMeta: Record<AdminFlashStatus, { label: string; color: string; Icon: any }> = {
+  active:    { label: "กำลังดำเนินการ", color: "#319754", Icon: Zap },
+  scheduled: { label: "กำหนดไว้",        color: "#f59e0b", Icon: Clock },
+  ended:     { label: "สิ้นสุดแล้ว",     color: "#737373", Icon: Ban },
+};
+
+function AdminFlashEventCard({
+  event,
+  onManageInvites,
+  onEdit,
+  onDelete,
+  fmtDate,
+}: {
+  event: AdminFlashEvent;
+  onManageInvites: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  fmtDate: (iso: string) => string;
+}) {
+  const status = adminFlashStatus(event);
+  const sMeta = adminFlashStatusMeta[status];
+  const accepted = event.invites.filter((i) => i.status === "accepted").length;
+  const declined = event.invites.filter((i) => i.status === "declined").length;
+  const pending  = event.invites.filter((i) => i.status === "pending").length;
+  const totalInvited = event.invites.length;
+  const isActive    = status === "active";
+  const isScheduled = status === "scheduled";
+  const isEnded     = status === "ended";
+  const countdown = useFlashCountdown(isActive ? event.endsAt : undefined);
+
+  const headerBg = isEnded
+    ? "linear-gradient(135deg, #a3a3a3 0%, #525252 100%)"
+    : "linear-gradient(135deg, rgba(255,107,53,0.95) 0%, rgba(230,46,5,0.95) 100%)";
+
+  const daysUntilStart = Math.max(0, Math.ceil((new Date(event.startsAt).getTime() - Date.now()) / 86400000));
+  const daysSinceEnded = Math.max(0, Math.ceil((Date.now() - new Date(event.endsAt).getTime()) / 86400000));
+
+  return (
+    <motion.div
+      whileHover={{ y: -3 }}
+      transition={{ type: "spring", stiffness: 380, damping: 26 }}
+      className={`group/card relative rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.10)] transition-shadow flex flex-col h-[420px] ${isEnded ? "opacity-75 hover:opacity-100" : ""}`}
+    >
+      {/* Header — fixed height to match promotion card */}
+      <div className="relative p-5 overflow-hidden h-[140px] shrink-0" style={{ background: headerBg }}>
+        {/* Flash watermark */}
+        <img
+          src={imgFlash}
+          alt=""
+          aria-hidden="true"
+          className={`pointer-events-none absolute -right-2 -bottom-2 w-[120px] h-[112px] object-contain select-none transition-transform duration-300 group-hover/card:scale-105 ${isEnded ? "grayscale opacity-60" : "opacity-95"}`}
+        />
+
+        <div className="relative z-10 flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className={`${font} text-[10px] uppercase tracking-wider mb-1 text-white/85`} style={{ fontWeight: 600 }}>
+              {isActive ? "เหลือเวลา" : isScheduled ? "เริ่มในอีก" : "สิ้นสุดเมื่อ"}
+            </p>
+            {isActive ? (
+              <div className="flex items-center gap-1">
+                {[countdown.h, countdown.m, countdown.s].map((v, i, arr) => (
+                  <Fragment key={i}>
+                    <span
+                      className={`${font} text-white text-[16px] w-[36px] h-[36px] rounded-lg flex items-center justify-center tabular-nums`}
+                      style={{
+                        background:
+                          "linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), linear-gradient(180deg, #e62e05 0%, #bc1b06 100%)",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {v}
+                    </span>
+                    {i < arr.length - 1 && (
+                      <span className={`${font} text-white text-[18px] leading-none`} style={{ fontWeight: 600 }}>:</span>
+                    )}
+                  </Fragment>
+                ))}
+              </div>
+            ) : isScheduled ? (
+              <p className={`${font} text-[36px] leading-none tabular-nums text-white`} style={{ fontWeight: 800 }}>
+                {daysUntilStart}<span className={`${font} text-[14px] ml-1`} style={{ fontWeight: 500 }}>วัน</span>
+              </p>
+            ) : (
+              <p className={`${font} text-[36px] leading-none tabular-nums text-white`} style={{ fontWeight: 800 }}>
+                {daysSinceEnded}<span className={`${font} text-[14px] ml-1`} style={{ fontWeight: 500 }}>วันก่อน</span>
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <span className={`${font} inline-flex items-center gap-1.5 pl-2 pr-3 py-0.5 rounded-full text-[11px] backdrop-blur-sm ${isEnded ? "bg-white/80" : "bg-white/95"}`}
+              style={{ color: sMeta.color, fontWeight: 500 }}>
+              <sMeta.Icon className="size-3" strokeWidth={2.4} />
+              {sMeta.label}
+            </span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="size-7 rounded-full inline-flex items-center justify-center bg-white/80 backdrop-blur-sm hover:bg-white text-gray-700 transition-colors cursor-pointer shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                  <MoreHorizontal className="size-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={6} className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                <button onClick={onManageInvites}
+                  className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                  <UserPlus className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                  <span style={{ fontWeight: 500 }}>จัดการร้านค้า</span>
+                </button>
+                <button onClick={onEdit}
+                  className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                  <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                  <span style={{ fontWeight: 500 }}>แก้ไข</span>
+                </button>
+                <div className="h-px bg-gray-100 my-1" />
+                <button onClick={onDelete}
+                  className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer text-left text-[13px] text-[#ff3b30]`}>
+                  <Trash2 className="size-3.5" strokeWidth={2.2} />
+                  <span style={{ fontWeight: 500 }}>ลบ</span>
+                </button>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-4 flex flex-col gap-3 flex-1 min-h-0">
+        <div className="min-w-0 h-[78px] shrink-0">
+          <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] mb-1.5`}
+            style={{ backgroundColor: "#e62e051a", color: "#e62e05", fontWeight: 600 }}>
+            <Zap className="size-2.5" strokeWidth={2.6} />
+            Flash Sale
+          </span>
+          <p className={`${font} text-[14px] text-black line-clamp-1`} style={{ fontWeight: 600 }}>{event.name}</p>
+          <p className={`${font} text-[11px] text-gray-500 line-clamp-2 mt-0.5`}>{event.description}</p>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-500 shrink-0">
+          <Clock className="size-3 shrink-0" strokeWidth={2.2} />
+          <span className={`${font} tabular-nums`}>{fmtDate(event.startsAt)} → {fmtDate(event.endsAt)}</span>
+        </div>
+
+        <div className="flex flex-col gap-1.5 pt-2 border-t border-gray-100 mt-auto shrink-0">
+          <div className="flex items-center justify-between">
+            <span className={`${font} text-[11px] text-gray-500`} style={{ fontWeight: 500 }}>ร้านค้าเข้าร่วม</span>
+            <span className={`${font} text-[11px] tabular-nums`} style={{ fontWeight: 600, color: "#319754" }}>
+              {accepted}/{totalInvited}
+            </span>
+          </div>
+          <div className="flex h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            {accepted > 0 && <div className="bg-[#319754] h-full transition-all" style={{ width: `${(accepted / totalInvited) * 100}%` }} />}
+            {declined > 0 && <div className="bg-[#ef4444] h-full transition-all" style={{ width: `${(declined / totalInvited) * 100}%` }} />}
+            {pending > 0 && <div className="bg-[#f59e0b] h-full transition-all" style={{ width: `${(pending / totalInvited) * 100}%` }} />}
+          </div>
+          <div className="flex items-center gap-2 flex-wrap text-[10px] tabular-nums h-[14px]">
+            {accepted > 0 && <span className={`${font} inline-flex items-center gap-1`} style={{ color: "#319754" }}>
+              <span className="size-1.5 rounded-full bg-[#319754]" />{accepted} เข้าร่วม
+            </span>}
+            {pending > 0 && <span className={`${font} inline-flex items-center gap-1`} style={{ color: "#f59e0b" }}>
+              <span className="size-1.5 rounded-full bg-[#f59e0b]" />{pending} รอตอบ
+            </span>}
+            {declined > 0 && <span className={`${font} inline-flex items-center gap-1`} style={{ color: "#ef4444" }}>
+              <span className="size-1.5 rounded-full bg-[#ef4444]" />{declined} ปฏิเสธ
+            </span>}
+          </div>
+        </div>
+
+        <button onClick={onManageInvites}
+          className={`${font} w-full h-9 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] text-[12px] flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0`}
+          style={{ fontWeight: 600 }}>
+          <UserPlus className="size-3.5" strokeWidth={2.4} />
+          จัดการร้านค้าเข้าร่วม
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function AdminFlashSaleEventsContent() {
+  const [events, setEvents] = useState<AdminFlashEvent[]>(() => seedFlashEvents());
+  const [search, setSearch] = useState("");
+  type FlashFilter = "all" | AdminFlashStatus;
+  const [filter, setFilter] = useState<FlashFilter>("all");
+  const [inviteModalFor, setInviteModalFor] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+
+  const allShops = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), []);
+
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso);
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear() + 543}`;
+  };
+
+  const cTotal     = events.length;
+  const cActive    = events.filter((e) => adminFlashStatus(e) === "active").length;
+  const cScheduled = events.filter((e) => adminFlashStatus(e) === "scheduled").length;
+  const cEnded     = events.filter((e) => adminFlashStatus(e) === "ended").length;
+
+  const filterTabs: { id: FlashFilter; label: string; count: number; Icon: any }[] = [
+    { id: "all",       label: "ทั้งหมด",          count: cTotal,     Icon: ClipboardList },
+    { id: "active",    label: "กำลังดำเนินการ",   count: cActive,    Icon: Zap },
+    { id: "scheduled", label: "กำหนดไว้",         count: cScheduled, Icon: Clock },
+    { id: "ended",     label: "สิ้นสุดแล้ว",      count: cEnded,     Icon: Ban },
+  ];
+
+  const filtered = events.filter((e) => {
+    if (filter !== "all" && adminFlashStatus(e) !== filter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      return [e.id, e.name, e.description].some((s) => s.toLowerCase().includes(q));
+    }
+    return true;
+  });
+
+  const setInviteStatus = (eventId: string, shopName: string, newStatus: ShopInviteStatus) => {
+    setEvents((prev) => prev.map((e) => {
+      if (e.id !== eventId) return e;
+      const exists = e.invites.find((i) => i.shopName === shopName);
+      const next = exists
+        ? e.invites.map((i) => i.shopName === shopName ? { ...i, status: newStatus, respondedAt: new Date().toISOString() } : i)
+        : [...e.invites, { shopName, status: newStatus, respondedAt: new Date().toISOString() }];
+      return { ...e, invites: next };
+    }));
+  };
+
+  const inviteAllShops = (eventId: string) => {
+    setEvents((prev) => prev.map((e) => {
+      if (e.id !== eventId) return e;
+      const next = allShops.map<AdminPromoInvite>((s) => e.invites.find((i) => i.shopName === s) || { shopName: s, status: "pending" });
+      toast.success(`ส่งคำเชิญถึงร้านค้าทั้งหมด (${next.filter((i) => i.status === "pending").length} ร้าน)`);
+      return { ...e, invites: next };
+    }));
+  };
+
+  const deleteEvent = (id: string) => {
+    const e = events.find((x) => x.id === id);
+    if (!e) return;
+    if (!confirm(`ลบ ${e.name}?`)) return;
+    setEvents((prev) => prev.filter((x) => x.id !== id));
+    toast.success(`ลบ "${e.name}" แล้ว`);
+  };
+
+  const inviteModalEvent = inviteModalFor ? events.find((e) => e.id === inviteModalFor) : null;
+
+  if (showCreate) {
+    return (
+      <CreateAdminFlashEventView
+        allShops={allShops}
+        onCancel={() => setShowCreate(false)}
+        onCreate={(e) => {
+          setEvents((prev) => [e, ...prev]);
+          setShowCreate(false);
+          toast.success(`สร้าง ${e.name} แล้ว`, { description: `ส่งคำเชิญถึง ${e.invites.length} ร้านค้า` });
+        }}
+      />
+    );
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>Flash Sale Events</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>สร้างกิจกรรมฟแลชเซลล์ของระบบและเชิญร้านค้าเข้าร่วม</p>
+        </div>
+        <motion.button onClick={() => setShowCreate(true)}
+          whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+          <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
+            <Plus className="size-[14px] text-white" strokeWidth={2.6} />
+          </span>
+          <span style={{ fontWeight: 600 }}>สร้าง Flash Sale</span>
+        </motion.button>
+      </div>
+
+      <div className="flex flex-col gap-5">
+        {/* Filter + search pill */}
+        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 flex items-center gap-2">
+          <FilterTabPills tabs={filterTabs} active={filter} onChange={setFilter} pillId="adminFlashPill" />
+          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px]">
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหา ชื่อ event..."
+              className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+            <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+              <Search className="size-4 text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+          {filtered.length === 0 ? (
+            <p className={`${font} text-center py-16 text-[13px] text-gray-400`}>ไม่พบ Flash Sale Event</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filtered.map((e) => (
+                <AdminFlashEventCard
+                  key={e.id}
+                  event={e}
+                  fmtDate={fmtDate}
+                  onManageInvites={() => setInviteModalFor(e.id)}
+                  onEdit={() => toast.info(`แก้ไข: ${e.name}`)}
+                  onDelete={() => deleteEvent(e.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Shop invitation modal — same shape as promotion */}
+      <AnimatePresence>
+        {inviteModalEvent && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setInviteModalFor(null)}
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 12 }}
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              onClick={(ev) => ev.stopPropagation()}
+              className="bg-white rounded-2xl w-full max-w-[560px] max-h-[85vh] overflow-hidden shadow-2xl flex flex-col">
+              <div className="border-b border-gray-100 px-5 py-4 flex items-start justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                    <UserPlus className="size-5 text-[#319754]" strokeWidth={2.2} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>จัดการร้านค้าเข้าร่วม Flash Sale</p>
+                    <p className={`${font} text-[12px] text-gray-500 truncate`}>{inviteModalEvent.name}</p>
+                  </div>
+                </div>
+                <button onClick={() => setInviteModalFor(null)} className="size-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center cursor-pointer shrink-0 transition-colors">
+                  <X className="size-4 text-gray-600" strokeWidth={2.2} />
+                </button>
+              </div>
+              <div className="border-b border-gray-100 px-5 py-3 flex items-center justify-between gap-3 shrink-0">
+                <p className={`${font} text-[12px] text-gray-500`}>
+                  ทั้งหมด {allShops.length} ร้านในระบบ ·{" "}
+                  <span className="text-[#319754] tabular-nums" style={{ fontWeight: 600 }}>
+                    เข้าร่วม {inviteModalEvent.invites.filter((i) => i.status === "accepted").length}
+                  </span>
+                </p>
+                <button onClick={() => inviteAllShops(inviteModalEvent.id)}
+                  className={`${font} text-[12px] inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-[#319754] hover:bg-[#287745] text-white cursor-pointer transition-colors`}
+                  style={{ fontWeight: 600 }}>
+                  <Send className="size-3.5" strokeWidth={2.4} />
+                  เชิญทั้งหมด
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-2">
+                {allShops.map((shop) => {
+                  const invite = inviteModalEvent.invites.find((i) => i.shopName === shop);
+                  const status = invite?.status;
+                  const sMeta = status ? adminInviteStatusMeta[status] : null;
+                  return (
+                    <div key={shop} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="size-9 rounded-full overflow-hidden ring-1 ring-gray-200 shrink-0">
+                          <ImageWithFallback src={getShopImage(shop)} alt={shop} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{shop}</p>
+                          {sMeta ? (
+                            <p className={`${font} text-[11px] inline-flex items-center gap-1 mt-0.5`} style={{ color: sMeta.color, fontWeight: 600 }}>
+                              <sMeta.Icon className="size-3" strokeWidth={2.4} />
+                              {sMeta.label}
+                            </p>
+                          ) : (
+                            <p className={`${font} text-[11px] text-gray-400 mt-0.5`}>ยังไม่ได้เชิญ</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {!invite ? (
+                          <button onClick={() => setInviteStatus(inviteModalEvent.id, shop, "pending")}
+                            className={`${font} text-[11px] inline-flex items-center gap-1 px-3 h-7 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] cursor-pointer transition-colors`}
+                            style={{ fontWeight: 600 }}>
+                            <Send className="size-3" strokeWidth={2.4} /> เชิญ
+                          </button>
+                        ) : status === "pending" ? (
+                          <>
+                            <button onClick={() => setInviteStatus(inviteModalEvent.id, shop, "accepted")}
+                              className={`${font} text-[11px] inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] cursor-pointer transition-colors`}
+                              style={{ fontWeight: 600 }}>
+                              <Check className="size-3" strokeWidth={2.4} />
+                            </button>
+                            <button onClick={() => setInviteStatus(inviteModalEvent.id, shop, "declined")}
+                              className={`${font} text-[11px] inline-flex items-center gap-1 px-2.5 h-7 rounded-full bg-[#ef4444]/10 hover:bg-[#ef4444]/20 text-[#ef4444] cursor-pointer transition-colors`}
+                              style={{ fontWeight: 600 }}>
+                              <X className="size-3" strokeWidth={2.4} />
+                            </button>
+                          </>
+                        ) : (
+                          <button onClick={() => setInviteStatus(inviteModalEvent.id, shop, "pending")}
+                            className={`${font} text-[11px] inline-flex items-center gap-1 px-3 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 cursor-pointer transition-colors`}
+                            style={{ fontWeight: 600 }}>
+                            <RotateCcw className="size-3" strokeWidth={2.4} /> รีเซ็ต
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function CreateAdminFlashEventView({ allShops, onCancel, onCreate }: {
+  allShops: string[];
+  onCancel: () => void;
+  onCreate: (e: AdminFlashEvent) => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    return { from: d, to: d };
+  });
+  const [startTime, setStartTime] = useState("00:00");
+  const [endTime, setEndTime] = useState("23:59");
+  const [enabled, setEnabled] = useState(true);
+  const [selectedShops, setSelectedShops] = useState<Set<string>>(() => new Set(allShops));
+  const [showShopPicker, setShowShopPicker] = useState(false);
+
+  const canSubmit = name.trim().length >= 4 && !!dateRange?.from && !!startTime && !!endTime && selectedShops.size > 0;
+
+  const shopMetrics = useMemo(() => {
+    const m: Record<string, { productCount: number; totalOrders: number; avgMonthlyRevenue: number }> = {};
+    allShops.forEach((s) => {
+      const ps = siteProducts.filter((p) => p.shopName === s);
+      const orders = ps.reduce((sum, p) => sum + (parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0), 0);
+      const revenue = ps.reduce((sum, p) => sum + (parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0) * p.price, 0);
+      m[s] = { productCount: ps.length, totalOrders: orders, avgMonthlyRevenue: Math.round(revenue / 12) };
+    });
+    return m;
+  }, [allShops]);
+
+  const toggleShop = (s: string) => {
+    setSelectedShops((prev) => { const n = new Set(prev); if (n.has(s)) n.delete(s); else n.add(s); return n; });
+  };
+  const toggleAll = () => setSelectedShops((prev) => prev.size === allShops.length ? new Set() : new Set(allShops));
+
+  const submit = () => {
+    if (!canSubmit || !dateRange?.from) return;
+    const [sh, sm] = startTime.split(":").map((n) => parseInt(n, 10) || 0);
+    const [eh, em] = endTime.split(":").map((n) => parseInt(n, 10) || 0);
+    const fromDate = dateRange.from;
+    const toDate = dateRange.to ?? dateRange.from;
+    const startsAt = new Date(fromDate); startsAt.setHours(sh, sm, 0, 0);
+    const endsAt = new Date(toDate);     endsAt.setHours(eh, em, 0, 0);
+    onCreate({
+      id: `AF-${Date.now().toString(36).toUpperCase().slice(-6)}`,
+      name: name.trim(),
+      description: description.trim() || `Flash Sale ลดราคา ${Math.max(1, Math.ceil((endsAt.getTime() - startsAt.getTime()) / 3600000))} ชั่วโมง`,
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+      enabled,
+      invites: Array.from(selectedShops).map((shopName) => ({ shopName, status: "pending" })),
+    });
+  };
+
+  // Auto-suggest name on date change (e.g., date = 5/5 → "Flash Sale 5.5")
+  useEffect(() => {
+    if (!name.trim() && dateRange?.from) {
+      const d = dateRange.from;
+      const day = d.getDate();
+      const month = d.getMonth() + 1;
+      if (day === month) setName(`Flash Sale ${day}.${month}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange?.from]);
+
+  return (
+    <div>
+      {/* Back button */}
+      <div className="mb-5">
+        <button onClick={onCancel}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+      </div>
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>สร้าง Flash Sale Event</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>แคมเปญฟแลชเซลล์เลขซ้ำ (เช่น 5.5, 10.10) — เชิญร้านค้าเข้าร่วม</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onCancel}
+            className={`${font} h-[38px] px-5 rounded-full text-[13px] text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            ยกเลิก
+          </button>
+          <motion.button onClick={submit} disabled={!canSubmit}
+            whileTap={{ scale: 0.96 }} whileHover={canSubmit ? { y: -1 } : undefined}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
+              <Send className="size-[14px] text-white" strokeWidth={2.6} />
+            </span>
+            <span style={{ fontWeight: 600 }}>สร้างและส่งคำเชิญ</span>
+          </motion.button>
+        </div>
+      </div>
+
+      {/* 2-col grid: left form, right shop invites */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-start">
+        <div className="space-y-4 min-w-0">
+          {/* Section 1: ข้อมูล Event */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#ef4444]/10 flex items-center justify-center shrink-0">
+                <Zap className="size-4 text-[#ef4444]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ข้อมูล Event</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>ชื่อและรายละเอียดของฟแลชเซลล์</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ชื่อ Event <span className="text-[#ff3b30]">*</span></label>
+              <input value={name} onChange={(e) => setName(e.target.value)}
+                placeholder="เช่น Flash Sale 5.5"
+                className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+              <p className={`${font} text-[10px] text-gray-400`}>ระบบจะแนะนำชื่ออัตโนมัติเมื่อวันที่เป็น M.M (เช่น 5/5 → Flash Sale 5.5)</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>รายละเอียด</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                placeholder="อธิบายแคมเปญ เช่น สินค้าที่ลด เงื่อนไข (ไม่บังคับ)"
+                rows={2}
+                className={`${font} bg-[#fafafa] rounded-2xl px-5 py-3 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3] resize-none`} />
+            </div>
+          </section>
+
+          {/* Section 2: วันและช่วงเวลา */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#f59e0b]/10 flex items-center justify-center shrink-0">
+                <CalendarIcon className="size-4 text-[#f59e0b]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>วันและช่วงเวลา <span className="text-[#ff3b30]">*</span></p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>เลือกช่วงวันที่จัด Flash Sale และเวลาเริ่ม–สิ้นสุด</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+              {/* Calendar (date range) */}
+              <div className="bg-white rounded-2xl flex items-start justify-center overflow-x-auto">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={2}
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  defaultMonth={dateRange?.from}
+                  className={`${font}`}
+                  classNames={{
+                    months: "flex flex-col sm:flex-row gap-6",
+                    month: "flex flex-col gap-3",
+                    caption: "flex justify-center pt-1 relative items-center w-full",
+                    caption_label: `${font} text-[14px] text-black`,
+                    nav: "flex items-center gap-1",
+                    nav_button: "size-7 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] flex items-center justify-center p-0 cursor-pointer transition-colors",
+                    nav_button_previous: "absolute left-1",
+                    nav_button_next: "absolute right-1",
+                    table: "w-full border-collapse",
+                    head_row: "flex",
+                    head_cell: `${font} text-gray-400 w-9 font-normal text-[11px]`,
+                    row: "flex w-full mt-1",
+                    cell: "relative p-0 text-center text-[13px] focus-within:relative focus-within:z-20 has-[[aria-selected]]:bg-[#319754]/12 first:has-[[aria-selected]]:rounded-l-full last:has-[[aria-selected]]:rounded-r-full [&:has(.day-range-start)]:rounded-l-full [&:has(.day-range-end)]:rounded-r-full",
+                    day: `${font} size-9 p-0 font-normal text-[13px] rounded-full hover:bg-[#319754]/15 hover:text-[#319754] aria-selected:opacity-100 cursor-pointer transition-colors`,
+                    day_range_start: "day-range-start aria-selected:bg-[#319754] aria-selected:text-white aria-selected:hover:bg-[#287745] rounded-full",
+                    day_range_end:   "day-range-end aria-selected:bg-[#319754] aria-selected:text-white aria-selected:hover:bg-[#287745] rounded-full",
+                    day_selected:    "bg-[#319754] text-white hover:bg-[#287745] focus:bg-[#319754]",
+                    day_today:       "bg-[#319754]/8 text-[#319754] font-semibold",
+                    day_outside:     "day-outside text-gray-300 aria-selected:text-gray-400",
+                    day_disabled:    "text-gray-300 opacity-50",
+                    day_range_middle: "aria-selected:bg-transparent aria-selected:text-[#319754] aria-selected:font-semibold",
+                    day_hidden: "invisible",
+                  }}
+                />
+              </div>
+
+              {/* Summary preview — gray theme like promotion */}
+              {(() => {
+                const fromDate = dateRange?.from ?? null;
+                const toDate = dateRange?.to ?? dateRange?.from ?? null;
+                const totalDays = fromDate && toDate
+                  ? Math.max(1, Math.ceil((toDate.getTime() - fromDate.getTime()) / 86400000) + 1)
+                  : 0;
+                const [sh, sm] = startTime.split(":").map((n) => parseInt(n, 10) || 0);
+                const [eh, em] = endTime.split(":").map((n) => parseInt(n, 10) || 0);
+                const startMin = sh * 60 + sm;
+                const endMin = eh * 60 + em;
+                const perDayMin = Math.max(0, endMin - startMin);
+                const perDayH = Math.floor(perDayMin / 60);
+                const perDayMM = perDayMin % 60;
+                const perDayLabel = perDayMin > 0
+                  ? perDayMM === 0 ? `${perDayH} ชม.` : `${perDayH} ชม. ${perDayMM} น.`
+                  : "";
+                const startsToday = fromDate ? new Date().setHours(0,0,0,0) === fromDate.getTime() : false;
+                const daysToStart = fromDate ? Math.ceil((fromDate.getTime() - new Date().setHours(0,0,0,0)) / 86400000) : 0;
+                return (
+                  <div className="bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden">
+                    <CalendarIcon className="absolute -bottom-4 -right-4 size-32 text-gray-300/40 pointer-events-none" strokeWidth={1.5} />
+
+                    {/* Header */}
+                    <div className="relative z-10 flex items-center justify-between gap-2">
+                      <p className={`${font} text-[11px] uppercase tracking-wider text-gray-600`} style={{ fontWeight: 700 }}>สรุปวันและเวลา</p>
+                      {fromDate && (
+                        <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/80 text-gray-700 text-[10px] tabular-nums`} style={{ fontWeight: 600 }}>
+                          <span className="size-1.5 rounded-full bg-gray-500 animate-pulse" />
+                          {startsToday ? "เริ่มวันนี้" : daysToStart > 0 ? `อีก ${daysToStart} วันเริ่ม` : "กำลังดำเนินการ"}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Date range timeline — from → to with arrow */}
+                    <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                      <div className="flex flex-col items-center text-center bg-white/80 rounded-xl p-3 backdrop-blur-sm">
+                        <p className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>เริ่มต้น</p>
+                        {fromDate ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none tabular-nums text-gray-900 mt-1`} style={{ fontWeight: 800 }}>
+                              {fromDate.getDate()}
+                            </p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>
+                              {fromDate.toLocaleDateString("th-TH", { month: "short" })} {fromDate.getFullYear() + 543}
+                            </p>
+                          </>
+                        ) : (
+                          <p className={`${font} text-[11px] text-gray-400 italic mt-3 mb-1`}>—</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 px-1">
+                        <ArrowRight className="size-5 text-gray-500" strokeWidth={2.4} />
+                        {totalDays > 0 && (
+                          <span className={`${font} text-[9px] text-gray-600 tabular-nums whitespace-nowrap`} style={{ fontWeight: 600 }}>
+                            {totalDays} วัน
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-center text-center bg-white/80 rounded-xl p-3 backdrop-blur-sm">
+                        <p className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>สิ้นสุด</p>
+                        {toDate ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none tabular-nums text-gray-900 mt-1`} style={{ fontWeight: 800 }}>
+                              {toDate.getDate()}
+                            </p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>
+                              {toDate.toLocaleDateString("th-TH", { month: "short" })} {toDate.getFullYear() + 543}
+                            </p>
+                          </>
+                        ) : (
+                          <p className={`${font} text-[11px] text-gray-400 italic mt-3 mb-1`}>—</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Time range pickers */}
+                    <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                      <div className="flex flex-col gap-1 bg-white/80 rounded-xl p-2.5 backdrop-blur-sm">
+                        <label className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>เวลาเริ่ม</label>
+                        <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)}
+                          className={`${font} bg-transparent text-[16px] outline-none tabular-nums text-gray-900`} style={{ fontWeight: 700 }} />
+                      </div>
+                      <ArrowRight className="size-5 text-gray-500" strokeWidth={2.4} />
+                      <div className="flex flex-col gap-1 bg-white/80 rounded-xl p-2.5 backdrop-blur-sm">
+                        <label className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>เวลาสิ้นสุด</label>
+                        <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)}
+                          className={`${font} bg-transparent text-[16px] outline-none tabular-nums text-gray-900`} style={{ fontWeight: 700 }} />
+                      </div>
+                    </div>
+
+                    {/* Total duration callout */}
+                    <div className="relative z-10 flex items-center justify-between gap-3 bg-white/80 rounded-xl px-4 py-3 backdrop-blur-sm">
+                      <div className="flex items-center gap-2">
+                        <Clock className="size-4 text-gray-500" strokeWidth={2.4} />
+                        <p className={`${font} text-[12px] text-gray-700`} style={{ fontWeight: 600 }}>{totalDays > 1 ? "ระยะเวลาต่อวัน" : "ระยะเวลารวม"}</p>
+                      </div>
+                      {perDayLabel ? (
+                        <p className={`${font} text-[22px] text-gray-900 tabular-nums leading-none`} style={{ fontWeight: 800 }}>{perDayLabel}</p>
+                      ) : (
+                        <p className={`${font} text-[12px] text-gray-400 italic`}>ยังไม่กำหนด</p>
+                      )}
+                    </div>
+
+                    {/* Full description */}
+                    {fromDate && toDate && perDayMin > 0 && (
+                      <div className="relative z-10 flex items-start gap-2 text-[11px] text-gray-600 pt-1">
+                        <Info className="size-3 text-gray-500 shrink-0 mt-0.5" strokeWidth={2.4} />
+                        <p className={`${font} leading-relaxed`}>
+                          Flash Sale จะจัดตั้งแต่
+                          <span className="text-gray-900" style={{ fontWeight: 600 }}> {fromDate.toLocaleDateString("th-TH", { day: "2-digit", month: "long" })} </span>
+                          ถึง
+                          <span className="text-gray-900" style={{ fontWeight: 600 }}> {toDate.toLocaleDateString("th-TH", { day: "2-digit", month: "long", year: "numeric" })} </span>
+                          เวลา
+                          <span className="text-gray-900 tabular-nums" style={{ fontWeight: 600 }}> {startTime}–{endTime} น.</span> ของแต่ละวัน
+                        </p>
+                      </div>
+                    )}
+
+                    {!fromDate && (
+                      <div className="relative z-10 flex items-center gap-2 text-[11px] text-gray-500 italic">
+                        <Info className="size-3 shrink-0" strokeWidth={2.4} />
+                        คลิกวันที่เริ่ม → วันที่สิ้นสุดในปฏิทินด้านซ้าย
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </section>
+
+          {/* Section 3: ตั้งค่า */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center shrink-0">
+                <Settings className="size-4 text-[#8b5cf6]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตั้งค่า</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>การตั้งค่า Event</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 px-4 h-14 bg-[#fafafa] rounded-2xl">
+              <div className="flex flex-col min-w-0">
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เปิดใช้งาน Event</span>
+                <span className={`${font} text-[11px] text-gray-500`}>{enabled ? "Event จะแสดงและใช้งานได้" : "Event ถูกซ่อน ไม่ใช้งาน"}</span>
+              </div>
+              <button onClick={() => setEnabled((v) => !v)}
+                className={`relative inline-flex items-center w-11 h-6 rounded-full transition-colors cursor-pointer shrink-0 ${enabled ? "bg-[#319754]" : "bg-gray-300"}`}>
+                <span className={`absolute size-5 bg-white rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-transform ${enabled ? "translate-x-[22px]" : "translate-x-[2px]"}`} />
+              </button>
+            </div>
+          </section>
+        </div>
+
+        {/* Right column — shop invites */}
+        <div className="space-y-4 lg:sticky lg:top-4 min-w-0">
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="size-9 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+                  <Store className="size-4 text-[#3b82f6]" strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ร้านค้าที่จะเชิญ <span className="text-[#ff3b30]">*</span></p>
+                  <p className={`${font} text-[11px] text-[#8e8e93]`}>เลือกร้านค้าเข้าร่วม ({selectedShops.size}/{allShops.length})</p>
+                </div>
+              </div>
+              <button onClick={() => setShowShopPicker(true)}
+                className={`${font} text-[12px] inline-flex items-center gap-1.5 px-3 h-8 rounded-full bg-[#319754] hover:bg-[#287745] text-white cursor-pointer transition-colors shrink-0 shadow-[0_2px_6px_rgba(49,151,84,0.2)]`}
+                style={{ fontWeight: 600 }}>
+                <Plus className="size-3.5" strokeWidth={2.6} />
+                เพิ่มร้านค้า
+              </button>
+            </div>
+
+            {selectedShops.size === 0 ? (
+              <button onClick={() => setShowShopPicker(true)}
+                className="w-full border-2 border-dashed border-gray-200 hover:border-[#319754]/40 rounded-2xl py-8 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors">
+                <div className="size-10 rounded-full bg-gray-100 flex items-center justify-center">
+                  <UserPlus className="size-5 text-gray-400" strokeWidth={2.2} />
+                </div>
+                <span className={`${font} text-[13px] text-gray-500`}>ยังไม่ได้เลือกร้านค้า — คลิกเพื่อเลือก</span>
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {Array.from(selectedShops).map((s) => {
+                  const m = shopMetrics[s];
+                  return (
+                    <div key={s} className="group/sel flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-white border border-gray-200">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="relative size-9 rounded-full overflow-hidden shrink-0 ring-1 ring-gray-200">
+                          <ImageWithFallback src={getShopImage(s)} alt={s} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{s}</p>
+                          <div className="flex items-center flex-wrap gap-x-2 gap-y-0 mt-0.5">
+                            <span className={`${font} text-[11px] inline-flex items-center gap-1 tabular-nums text-gray-500`}>
+                              <ShoppingCart className="size-2.5 shrink-0" strokeWidth={2.2} />
+                              {m.totalOrders.toLocaleString()} ออเดอร์
+                            </span>
+                            <span className="text-gray-300">·</span>
+                            <span className={`${font} text-[11px] inline-flex items-center gap-1 tabular-nums text-gray-600`} style={{ fontWeight: 600 }}>
+                              ฿{m.avgMonthlyRevenue.toLocaleString()}/เดือน
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <button onClick={() => toggleShop(s)} title="เอาออก"
+                        className="size-7 rounded-full hover:bg-[#ff3b30]/10 text-gray-400 hover:text-[#ff3b30] flex items-center justify-center cursor-pointer transition-colors shrink-0">
+                        <X className="size-3.5" strokeWidth={2.4} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {showShopPicker && (
+          <ShopPickerModal
+            allShops={allShops}
+            selectedShops={selectedShops}
+            shopMetrics={shopMetrics}
+            onClose={() => setShowShopPicker(false)}
+            onToggle={toggleShop}
+            onToggleAll={toggleAll}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ========== Admin Coupons ========== */
+type AdminCouponStatus = "active" | "expired" | "disabled";
+type AdminCouponDiscountType = "percent" | "baht" | "freeship";
+type AdminCouponIssuer = "system" | "shop";
+
+interface AdminCoupon {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  discountType: AdminCouponDiscountType;
+  discountValue: number;
+  maxDiscount?: number;
+  minOrder?: number;
+  usageLimit?: number;
+  perUserLimit?: number;
+  startsAt: string;
+  endsAt: string;
+  membersOnly?: boolean;
+  firstOrderOnly?: boolean;
+  used: number;
+  status: AdminCouponStatus;
+  issuer: AdminCouponIssuer;
+  shopName?: string; // when issuer = "shop"
+}
+
+const _adminCouponDay = (offset: number, h = 0, m = 0): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+};
+
+const mockAdminCoupons: AdminCoupon[] = [
+  // ===== System (Metaherb) =====
+  {
+    id: "sys-a1", code: "METAHERB100", name: "ลด 100 บาท เปิดตัวระบบ",
+    description: "คูปองต้อนรับสมาชิกใหม่ ใช้ทุกร้านในระบบ",
+    discountType: "baht", discountValue: 100,
+    minOrder: 500, usageLimit: 5000, perUserLimit: 1,
+    startsAt: _adminCouponDay(-7, 0, 0), endsAt: _adminCouponDay(30, 23, 59),
+    membersOnly: true, firstOrderOnly: true,
+    used: 1247, status: "active", issuer: "system",
+  },
+  {
+    id: "sys-a2", code: "FREESHIPALL", name: "ส่งฟรีทั้งระบบ",
+    description: "ส่งฟรีไม่จำกัดร้าน",
+    discountType: "freeship", discountValue: 0,
+    minOrder: 200, usageLimit: 0, perUserLimit: 5,
+    startsAt: _adminCouponDay(-3, 0, 0), endsAt: _adminCouponDay(60, 23, 59),
+    used: 3082, status: "active", issuer: "system",
+  },
+  {
+    id: "sys-a3", code: "BIG12", name: "ลด 12% สูงสุด 300 บาท",
+    description: "แคมเปญ 12.12 ลดทั่วระบบ",
+    discountType: "percent", discountValue: 12, maxDiscount: 300,
+    minOrder: 800, usageLimit: 2000, perUserLimit: 2,
+    startsAt: _adminCouponDay(-1, 0, 0), endsAt: _adminCouponDay(7, 23, 59),
+    used: 489, status: "active", issuer: "system",
+  },
+  {
+    id: "sys-e1", code: "NEWYEAR67", name: "ลด 8% ปีใหม่",
+    description: "คูปองสำหรับเทศกาลปีใหม่ที่ผ่านมา",
+    discountType: "percent", discountValue: 8, maxDiscount: 150,
+    minOrder: 400, usageLimit: 1000, perUserLimit: 1,
+    startsAt: _adminCouponDay(-60, 0, 0), endsAt: _adminCouponDay(-35, 23, 59),
+    used: 712, status: "expired", issuer: "system",
+  },
+
+  // ===== Shop-level =====
+  {
+    id: "shp-a1", code: "WELCOME10", name: "ลด 10% สมาชิกใหม่",
+    description: "ใช้กับคำสั่งซื้อแรกเท่านั้น",
+    discountType: "percent", discountValue: 10, maxDiscount: 100,
+    minOrder: 300, usageLimit: 500, perUserLimit: 1,
+    startsAt: _adminCouponDay(-3, 0, 0), endsAt: _adminCouponDay(27, 23, 59),
+    membersOnly: true, firstOrderOnly: true,
+    used: 87, status: "active", issuer: "shop", shopName: "METAHERB Store",
+  },
+  {
+    id: "shp-a2", code: "HERB15", name: "ลด 15% สมุนไพรทุกชนิด",
+    discountType: "percent", discountValue: 15, maxDiscount: 200,
+    minOrder: 0, usageLimit: 1000, perUserLimit: 5,
+    startsAt: _adminCouponDay(-2, 9, 0), endsAt: _adminCouponDay(7, 23, 59),
+    used: 234, status: "active", issuer: "shop", shopName: "Organic Thai Farm",
+  },
+  {
+    id: "shp-a3", code: "FARM50", name: "ลด 50 บาท ข้าวสารใหม่",
+    discountType: "baht", discountValue: 50,
+    minOrder: 500, usageLimit: 200, perUserLimit: 2,
+    startsAt: _adminCouponDay(-5, 0, 0), endsAt: _adminCouponDay(14, 23, 59),
+    used: 42, status: "active", issuer: "shop", shopName: "ธรรมชาติพรีเมียม",
+  },
+  {
+    id: "shp-a4", code: "MIST20", name: "ลด 20% น้ำมันหอม",
+    description: "ลดทุกขวด ไม่จำกัดสมาชิก",
+    discountType: "percent", discountValue: 20, maxDiscount: 250,
+    minOrder: 200, usageLimit: 300, perUserLimit: 3,
+    startsAt: _adminCouponDay(-4, 0, 0), endsAt: _adminCouponDay(10, 23, 59),
+    used: 18, status: "active", issuer: "shop", shopName: "ร้านป่าหมอก",
+  },
+  {
+    id: "shp-e1", code: "TEA20", name: "ส่วนลด 20 บาท ชาสมุนไพร",
+    discountType: "baht", discountValue: 20,
+    minOrder: 150, usageLimit: 100, perUserLimit: 1,
+    startsAt: _adminCouponDay(-45, 0, 0), endsAt: _adminCouponDay(-15, 23, 59),
+    used: 31, status: "expired", issuer: "shop", shopName: "สมุนไพรบ้านสวน",
+  },
+  {
+    id: "shp-d1", code: "TRYME20", name: "ลด 20% ทดลองรหัส",
+    description: "คูปองทดลอง — ปิดใช้งานชั่วคราว",
+    discountType: "percent", discountValue: 20, maxDiscount: 150,
+    minOrder: 200, usageLimit: 50, perUserLimit: 1,
+    startsAt: _adminCouponDay(-5, 0, 0), endsAt: _adminCouponDay(20, 23, 59),
+    used: 12, status: "disabled", issuer: "shop", shopName: "METAHERB Store",
+  },
+];
+
+function fmtAdminCouponThaiDateTime(iso: string): string {
+  const d = new Date(iso);
+  const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function fmtAdminCouponDiscount(c: AdminCoupon): { label: string; color: string } {
+  if (c.discountType === "freeship") return { label: "ส่งฟรี", color: "#3b82f6" };
+  if (c.discountType === "percent")  return { label: `${c.discountValue}%`, color: "#319754" };
+  return { label: `฿${c.discountValue}`, color: "#319754" };
+}
+
+/* ========== Admin Orders ========== */
+type AdminOrderStatus = "pending_payment" | "paid" | "preparing" | "shipping" | "delivered" | "cancelled" | "refunded";
+type AdminPaymentMethod = "credit_card" | "bank_transfer" | "cod" | "promptpay" | "wallet";
+
+interface AdminOrderItem {
+  productId: string;
+  name: string;
+  image: string;
+  qty: number;
+  price: number;
+}
+
+interface AdminOrder {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  shopName: string;
+  items: AdminOrderItem[];
+  itemCount: number;
+  total: number;
+  payment: AdminPaymentMethod;
+  status: AdminOrderStatus;
+  createdAt: string;
+  shippingProvince: string;
+}
+
+const adminOrderStatusMeta: Record<AdminOrderStatus, { label: string; color: string; bg: string; Icon: any }> = {
+  pending_payment: { label: "รอชำระ",     color: "#f59e0b", bg: "#fef3c7", Icon: Clock        },
+  paid:            { label: "ชำระแล้ว",    color: "#3b82f6", bg: "#dbeafe", Icon: Wallet       },
+  preparing:       { label: "เตรียมส่ง",   color: "#9747ff", bg: "#ede9fe", Icon: PackageOpen  },
+  shipping:        { label: "กำลังส่ง",    color: "#0ea5e9", bg: "#e0f2fe", Icon: Truck        },
+  delivered:       { label: "สำเร็จ",       color: "#319754", bg: "#dcfce7", Icon: Check        },
+  cancelled:       { label: "ยกเลิก",       color: "#737373", bg: "#f3f4f6", Icon: Ban          },
+  refunded:        { label: "คืนเงิน",      color: "#ef4444", bg: "#fee2e2", Icon: RotateCcw    },
+};
+
+const adminPaymentMeta: Record<AdminPaymentMethod, { label: string; color: string; icon: string }> = {
+  credit_card:    { label: "บัตรเครดิต",   color: "#6366f1", icon: "💳" },
+  bank_transfer:  { label: "โอนธนาคาร",   color: "#0ea5e9", icon: "🏦" },
+  cod:            { label: "ปลายทาง",      color: "#f59e0b", icon: "💵" },
+  promptpay:      { label: "พร้อมเพย์",    color: "#319754", icon: "📱" },
+  wallet:         { label: "Wallet",        color: "#ec4899", icon: "👛" },
+};
+
+function seedAdminOrders(): AdminOrder[] {
+  const customers = [
+    { name: "สมชาย ใจดี",       email: "somchai.j@gmail.com" },
+    { name: "มาลี สดใส",         email: "malee.s@hotmail.com" },
+    { name: "อดิเทพ พงษ์เพชร",   email: "adithep.p@yahoo.com" },
+    { name: "วราภรณ์ ทองดี",     email: "warapron.t@gmail.com" },
+    { name: "ธนพล ศรีสุข",       email: "thanaphol.s@gmail.com" },
+    { name: "พิชญา รุ่งเรือง",   email: "pichaya.r@hotmail.com" },
+    { name: "ภูริ ทองเนื้อเก้า", email: "phuri.t@gmail.com" },
+    { name: "ปรียา แก้วใส",       email: "preeya.k@gmail.com" },
+    { name: "นภาพร ดวงดี",       email: "naphaporn.d@gmail.com" },
+    { name: "กิตติ ภักดี",        email: "kitti.p@yahoo.com" },
+    { name: "สุดารัตน์ มีโชค",   email: "sudarat.m@gmail.com" },
+    { name: "ชัยพร แสงสว่าง",     email: "chaiporn.s@gmail.com" },
+    { name: "อรทัย รุ่งโรจน์",   email: "orathai.r@gmail.com" },
+    { name: "ธีรพล ทองอินทร์",   email: "thirapol.t@gmail.com" },
+  ];
+  const provinces = ["กรุงเทพฯ", "เชียงใหม่", "ขอนแก่น", "ภูเก็ต", "นครราชสีมา", "สงขลา", "ชลบุรี", "อุดรธานี"];
+  // Controlled status distribution — guarantee ≥6 orders in every tab so admin sees samples for all statuses
+  const statusPlan: AdminOrderStatus[] = [
+    ...Array(7).fill("pending_payment" as AdminOrderStatus),
+    ...Array(8).fill("paid"            as AdminOrderStatus),
+    ...Array(8).fill("preparing"       as AdminOrderStatus),
+    ...Array(9).fill("shipping"        as AdminOrderStatus),
+    ...Array(18).fill("delivered"      as AdminOrderStatus),
+    ...Array(7).fill("cancelled"       as AdminOrderStatus),
+    ...Array(7).fill("refunded"        as AdminOrderStatus),
+  ];
+  const payments: AdminPaymentMethod[] = ["credit_card", "bank_transfer", "cod", "promptpay", "wallet"];
+
+  const hashStr = (s: string) => Array.from(s).reduce((a, ch) => a + ch.charCodeAt(0) * 17, 13);
+  const orders: AdminOrder[] = [];
+  for (let i = 0; i < 64; i++) {
+    const seed = hashStr(`order-${i}`);
+    const customer = customers[seed % customers.length];
+    // Pick a shop and grab 1-3 items from its products
+    const shopIdx = seed % 5;
+    const shopProducts = siteProducts.filter((_, j) => j % 5 === shopIdx);
+    const shopName = shopProducts[0]?.shopName ?? "METAHERB Store";
+    const itemCount = 1 + ((seed >> 2) % 3); // 1-3 different products
+    const pickedProducts: typeof siteProducts = [];
+    for (let k = 0; k < itemCount; k++) {
+      const p = shopProducts[(seed + k * 7) % shopProducts.length];
+      if (p && !pickedProducts.find((x) => x.id === p.id)) pickedProducts.push(p);
+    }
+    const items: AdminOrderItem[] = pickedProducts.map((p) => ({
+      productId: p.id,
+      name: p.name,
+      image: p.image && p.image.trim() ? p.image : `https://picsum.photos/seed/metaherb-product-${p.id}/120`,
+      qty: 1 + ((seed + p.id.charCodeAt(0)) % 3),
+      price: p.price,
+    }));
+    const total = items.reduce((s, x) => s + x.qty * x.price, 0);
+    // Spread orders across last 30 days
+    const daysAgo = (seed >> 4) % 30;
+    const hour = (seed >> 6) % 24;
+    const minute = (seed >> 8) % 60;
+    const createdAt = new Date(); createdAt.setDate(createdAt.getDate() - daysAgo); createdAt.setHours(hour, minute, 0, 0);
+    orders.push({
+      id: `ORD-${String(2400000 + i).padStart(8, "0")}`,
+      customerName: customer.name,
+      customerEmail: customer.email,
+      shopName,
+      items,
+      itemCount: items.reduce((s, x) => s + x.qty, 0),
+      total,
+      payment: payments[seed % payments.length],
+      status: statusPlan[i % statusPlan.length],
+      createdAt: createdAt.toISOString(),
+      shippingProvince: provinces[seed % provinces.length],
+    });
+  }
+  return orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+function fmtAdminOrderDateTime(iso: string): string {
+  const d = new Date(iso);
+  const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543} · ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/* ========== Admin Reviews ========== */
+type AdminReviewStatus = "active" | "hidden" | "reported";
+
+interface AdminReview {
+  id: string;
+  productId: string;
+  productName: string;
+  productImage: string;
+  productCategory: string;
+  shopName: string;
+  user: string;
+  rating: number;
+  date: string;        // original Thai string from siteProducts
+  createdAt: number;   // for sorting — derived
+  tags: string[];
+  comment: string;
+  images: string[];
+  status: AdminReviewStatus;
+  helpfulCount: number;
+}
+
+function seedAdminReviews(): AdminReview[] {
+  const hashStr = (s: string) => Array.from(s).reduce((a, ch) => a + ch.charCodeAt(0) * 31, 11);
+  const out: AdminReview[] = [];
+  siteProducts.forEach((p) => {
+    const productImage = p.image && p.image.trim() ? p.image : `https://picsum.photos/seed/metaherb-product-${p.id}/120`;
+    p.reviews.forEach((r, ri) => {
+      const seed = hashStr(`${p.id}-${ri}-${r.user}`);
+      // Status mix: ~85% active, ~8% reported, ~7% hidden
+      const statusRoll = seed % 100;
+      const status: AdminReviewStatus = statusRoll < 7 ? "hidden" : statusRoll < 15 ? "reported" : "active";
+      // Date — extract day from Thai string or fall back to deterministic offset
+      const dayOffset = (seed % 60) + 1;
+      const created = Date.now() - dayOffset * 86400000 - (seed % 86400000);
+      out.push({
+        id: `RV-${p.id}-${ri}`,
+        productId: p.id,
+        productName: p.name,
+        productImage,
+        productCategory: p.category,
+        shopName: p.shopName,
+        user: r.user,
+        rating: r.rating,
+        date: r.date,
+        createdAt: created,
+        tags: r.tags,
+        comment: r.comment,
+        images: r.images,
+        status,
+        helpfulCount: seed % 25,
+      });
+    });
+  });
+  return out.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function fmtAdminReviewDate(iso: number): string {
+  const d = new Date(iso);
+  const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+
+function AdminReviewsContent() {
+  const [reviews, setReviews] = useState<AdminReview[]>(() => seedAdminReviews());
+  const [ratingFilter, setRatingFilter] = useState<"all" | 5 | 4 | 3 | 2 | 1>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | AdminReviewStatus>("all");
+  const [shopFilter, setShopFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<"recent" | "rating_desc" | "rating_asc" | "helpful_desc">("recent");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+
+  const allShops = useMemo(() => Array.from(new Set(reviews.map((r) => r.shopName))), [reviews]);
+
+  const stats = useMemo(() => {
+    const total = reviews.length;
+    const avg = total > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / total : 0;
+    const reported = reviews.filter((r) => r.status === "reported").length;
+    const hidden = reviews.filter((r) => r.status === "hidden").length;
+    const withImages = reviews.filter((r) => r.images.length > 0).length;
+    return { total, avg, reported, hidden, withImages };
+  }, [reviews]);
+
+  // Rating distribution counts
+  const ratingCounts = useMemo(() => {
+    const c: Record<number | "all", number> = { all: reviews.length, 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    reviews.forEach((r) => { c[Math.round(r.rating)] = (c[Math.round(r.rating)] || 0) + 1; });
+    return c;
+  }, [reviews]);
+
+  const statusCounts = useMemo(() => ({
+    all:      reviews.length,
+    active:   reviews.filter((r) => r.status === "active").length,
+    hidden:   reviews.filter((r) => r.status === "hidden").length,
+    reported: reviews.filter((r) => r.status === "reported").length,
+  }), [reviews]);
+
+  const ratingTabs: { id: "all" | 5 | 4 | 3 | 2 | 1; label: string; count: number; Icon: any }[] = [
+    { id: "all", label: "ทั้งหมด",     count: ratingCounts.all, Icon: ClipboardList },
+    { id: 5,     label: "5 ดาว",        count: ratingCounts[5],   Icon: Star          },
+    { id: 4,     label: "4 ดาว",        count: ratingCounts[4],   Icon: Star          },
+    { id: 3,     label: "3 ดาว",        count: ratingCounts[3],   Icon: Star          },
+    { id: 2,     label: "2 ดาว",        count: ratingCounts[2],   Icon: Star          },
+    { id: 1,     label: "1 ดาว",        count: ratingCounts[1],   Icon: Star          },
+  ];
+
+  const filtered = useMemo(() => {
+    const arr = reviews.filter((r) => {
+      if (ratingFilter !== "all" && Math.round(r.rating) !== ratingFilter) return false;
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (shopFilter !== "all" && r.shopName !== shopFilter) return false;
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        return r.comment.toLowerCase().includes(q)
+          || r.user.toLowerCase().includes(q)
+          || r.productName.toLowerCase().includes(q)
+          || r.shopName.toLowerCase().includes(q);
+      }
+      return true;
+    });
+    if (sortKey === "recent") arr.sort((a, b) => b.createdAt - a.createdAt);
+    if (sortKey === "rating_desc") arr.sort((a, b) => b.rating - a.rating);
+    if (sortKey === "rating_asc") arr.sort((a, b) => a.rating - b.rating);
+    if (sortKey === "helpful_desc") arr.sort((a, b) => b.helpfulCount - a.helpfulCount);
+    return arr;
+  }, [reviews, ratingFilter, statusFilter, shopFilter, search, sortKey]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * perPage;
+  const paged = filtered.slice(pageStart, pageStart + perPage);
+
+  const toggleHide = (id: string) => {
+    setReviews((prev) => prev.map((r) => r.id === id ? { ...r, status: r.status === "hidden" ? "active" : "hidden" } : r));
+    const target = reviews.find((r) => r.id === id);
+    if (target) toast.success(target.status === "hidden" ? "เปิดแสดงรีวิว" : "ซ่อนรีวิวแล้ว");
+  };
+
+  const deleteReview = (id: string) => {
+    const target = reviews.find((r) => r.id === id);
+    if (!target) return;
+    if (!confirm(`ลบรีวิวของ ${target.user}?`)) return;
+    setReviews((prev) => prev.filter((r) => r.id !== id));
+    toast.success("ลบรีวิวแล้ว");
+  };
+
+  const statusBadge = (s: AdminReviewStatus): { bg: string; fg: string; label: string; Icon: any } => {
+    if (s === "active")   return { bg: "#dcfce7", fg: "#15803d", label: "แสดง",      Icon: Check        };
+    if (s === "reported") return { bg: "#fee2e2", fg: "#b91c1c", label: "รายงาน",   Icon: AlertTriangle };
+    return                  { bg: "#f3f4f6", fg: "#525252", label: "ซ่อน",       Icon: EyeOff       };
+  };
+
+  const renderStars = (rating: number, size: "sm" | "md" = "sm") => {
+    const sz = size === "sm" ? "size-3" : "size-3.5";
+    const full = Math.floor(rating);
+    const half = rating - full >= 0.5;
+    return (
+      <span className="inline-flex items-center gap-0.5">
+        {Array.from({ length: 5 }, (_, i) => {
+          const filled = i < full || (i === full && half);
+          return <Star key={i} className={sz} fill={filled ? "#f59e0b" : "transparent"} stroke={filled ? "#f59e0b" : "#d1d5db"} strokeWidth={2} />;
+        })}
+      </span>
+    );
+  };
+
+  const kpiBgArt = (src: string, delay: number) => (
+    <motion.img src={src} alt="" aria-hidden="true"
+      className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+      style={{
+        maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+      }}
+      initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay }} />
+  );
+
+  const kpiCards = [
+    { label: "รีวิวทั้งหมด",       value: stats.total.toLocaleString(),    subLabel: `${stats.withImages.toLocaleString()} รีวิวมีรูป`, accent: "#319754", Icon: MessageSquare, bgArt: kpiBgArt(imgRating, 0.15) },
+    { label: "คะแนนเฉลี่ย",         value: `${stats.avg.toFixed(2)} ★`,     subLabel: `${ratingCounts[5]} รีวิว 5 ดาว`,                accent: "#f59e0b", Icon: Star,           bgArt: kpiBgArt(imgRating, 0.25) },
+    { label: "รายงานปัญหา",         value: stats.reported.toLocaleString(), subLabel: "ต้องตรวจสอบ",                                  accent: "#ef4444", Icon: AlertTriangle,  bgArt: kpiBgArt(imgRating, 0.35) },
+    { label: "ซ่อนแล้ว",              value: stats.hidden.toLocaleString(),   subLabel: "ไม่แสดงต่อสาธารณะ",                           accent: "#737373", Icon: EyeOff,         bgArt: kpiBgArt(imgRating, 0.45) },
+  ];
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการรีวิว</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ตรวจสอบและจัดการรีวิวสินค้าทั้งระบบ · {reviews.length.toLocaleString()} รายการ</p>
+        </div>
+        <button onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
+          className={`${font} inline-flex items-center gap-2 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] text-gray-700 h-[38px] px-4 rounded-full text-[13px] cursor-pointer transition-shadow`}
+          style={{ fontWeight: 500 }}>
+          <Download className="size-3.5" />
+          ส่งออก
+        </button>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        {kpiCards.map((s) => (
+          <div key={s.label}
+            className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            style={{ backgroundColor: `${s.accent}0d` }}>
+            <div className="relative">
+              <div className="flex items-center justify-between">
+                <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                  <s.Icon className="size-4" style={{ color: s.accent }} strokeWidth={2.4} />
+                </div>
+              </div>
+              <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                <AnimatedValue value={s.value} />
+              </p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                  style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                  {s.subLabel}
+                </span>
+              </div>
+            </div>
+            {s.bgArt}
+          </div>
+        ))}
+      </div>
+
+      {/* Rating filter pills + search */}
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-3 flex items-center gap-2">
+        <FilterTabPills tabs={ratingTabs} active={ratingFilter} onChange={(id) => { setRatingFilter(id); setPage(1); }} pillId="adminReviewsRatingPill" />
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[280px] lg:ml-auto">
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="ค้นหา ลูกค้า / สินค้า / ร้าน / ข้อความ..."
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+          <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Sub-filters: status + shop + sort */}
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
+        <span className={`${font} text-[12px] text-gray-500`}>กรอง:</span>
+        {(["all", "active", "reported", "hidden"] as const).map((s) => {
+          const meta = s === "all" ? { label: "ทุกสถานะ", color: "#319754" }
+            : s === "active" ? { label: `แสดง (${statusCounts.active})`, color: "#319754" }
+            : s === "reported" ? { label: `รายงาน (${statusCounts.reported})`, color: "#ef4444" }
+            : { label: `ซ่อน (${statusCounts.hidden})`, color: "#737373" };
+          const active = statusFilter === s;
+          return (
+            <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
+              className={`${font} px-3 h-7 rounded-full text-[12px] cursor-pointer transition-colors ${active ? "text-white" : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"}`}
+              style={{ fontWeight: active ? 600 : 500, backgroundColor: active ? meta.color : undefined }}>
+              {meta.label}
+            </button>
+          );
+        })}
+        <div className="relative">
+          <select value={shopFilter} onChange={(e) => { setShopFilter(e.target.value); setPage(1); }}
+            className={`${font} text-[12px] bg-white border border-gray-200 h-[28px] pl-3 pr-8 rounded-full appearance-none cursor-pointer focus:outline-none focus:border-[#319754]`}
+            style={{ fontWeight: 500 }}>
+            <option value="all">ทุกร้าน ({allShops.length})</option>
+            {allShops.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <ChevronDown className="size-3 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
+        <div className="relative ml-auto">
+          <select value={sortKey} onChange={(e) => setSortKey(e.target.value as any)}
+            className={`${font} text-[12px] bg-white border border-gray-200 h-[28px] pl-3 pr-8 rounded-full appearance-none cursor-pointer focus:outline-none focus:border-[#319754]`}
+            style={{ fontWeight: 500 }}>
+            <option value="recent">เรียงล่าสุด</option>
+            <option value="rating_desc">ดาวมากสุด</option>
+            <option value="rating_asc">ดาวน้อยสุด</option>
+            <option value="helpful_desc">มีประโยชน์มากสุด</option>
+          </select>
+          <ChevronDown className="size-3 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
+      </div>
+
+      {/* Reviews list */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 space-y-2">
+        {paged.length === 0 && (
+          <p className={`${font} text-center py-12 text-[13px] text-gray-400`}>ไม่พบรีวิว</p>
+        )}
+        {paged.map((r) => {
+          const sb = statusBadge(r.status);
+          const isHidden = r.status === "hidden";
+          return (
+            <div key={r.id}
+              className={`group/rv flex items-start gap-4 p-4 rounded-2xl border border-gray-100 hover:border-gray-200 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all ${isHidden ? "bg-gray-50/50 opacity-75" : "bg-white"}`}>
+              {/* Avatar */}
+              <span className="size-10 rounded-full inline-flex items-center justify-center text-white text-[12px] shrink-0"
+                style={{ background: "linear-gradient(135deg, #6b7280, #374151)", fontWeight: 700 }}>
+                {r.user.charAt(0).toUpperCase()}
+              </span>
+
+              <div className="flex-1 min-w-0">
+                {/* Top row: user + rating + date + status */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`${font} text-[13px] text-black`} style={{ fontWeight: 600 }}>{r.user}</span>
+                    {renderStars(r.rating)}
+                    <span className={`${font} text-[11px] text-gray-400 tabular-nums`}>· {fmtAdminReviewDate(r.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px]`}
+                      style={{ backgroundColor: sb.bg, color: sb.fg, fontWeight: 600 }}>
+                      <sb.Icon className="size-2.5" strokeWidth={2.4} />
+                      {sb.label}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Comment */}
+                <p className={`${font} text-[13px] text-gray-700 mt-2 leading-relaxed`}>{r.comment}</p>
+
+                {/* Tags */}
+                {r.tags.length > 0 && (
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    {r.tags.map((t, i) => (
+                      <span key={i} className={`${font} text-[10px] px-2 py-0.5 rounded-full bg-[#319754]/10 text-[#319754]`} style={{ fontWeight: 500 }}>
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Images (if any) */}
+                {r.images.length > 0 && (
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    {r.images.slice(0, 4).map((img, i) => (
+                      <ImageWithFallback key={i} src={img} alt="" className="size-14 rounded-lg object-cover bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity" />
+                    ))}
+                    {r.images.length > 4 && (
+                      <span className={`${font} size-14 rounded-lg bg-gray-100 inline-flex items-center justify-center text-[11px] text-gray-600 tabular-nums`} style={{ fontWeight: 700 }}>
+                        +{r.images.length - 4}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Product + shop chips */}
+                <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-50 flex-wrap">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ImageWithFallback src={r.productImage} alt={r.productName} className="size-8 rounded-lg object-cover bg-gray-100 shrink-0" />
+                    <div className="flex flex-col min-w-0">
+                      <span className={`${font} text-[11px] text-black truncate max-w-[180px]`} style={{ fontWeight: 500 }} title={r.productName}>{r.productName}</span>
+                      <span className={`${font} text-[10px] text-gray-400 truncate max-w-[180px]`}>{r.productCategory}</span>
+                    </div>
+                  </div>
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] text-gray-700 truncate max-w-[160px]`} style={{ fontWeight: 500 }} title={r.shopName}>
+                    <Store className="size-3 text-gray-400 shrink-0" strokeWidth={2.2} />
+                    <span className="truncate">{r.shopName}</span>
+                  </span>
+                  {r.helpfulCount > 0 && (
+                    <span className={`${font} inline-flex items-center gap-1 text-[10px] text-gray-500 ml-auto`}>
+                      <Heart className="size-3" strokeWidth={2.4} />
+                      {r.helpfulCount} เห็นว่ามีประโยชน์
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                    <MoreHorizontal className="size-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" sideOffset={6} className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                  <button onClick={() => toast.info(`ตอบกลับรีวิว: ${r.user}`)}
+                    className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                    <MessageSquare className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                    <span style={{ fontWeight: 500 }}>ตอบกลับรีวิว</span>
+                  </button>
+                  <button onClick={() => toggleHide(r.id)}
+                    className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                    {isHidden ? <Eye className="size-3.5 text-gray-500" strokeWidth={2.2} /> : <EyeOff className="size-3.5 text-gray-500" strokeWidth={2.2} />}
+                    <span style={{ fontWeight: 500 }}>{isHidden ? "เปิดแสดง" : "ซ่อนรีวิว"}</span>
+                  </button>
+                  {r.status === "reported" && (
+                    <button onClick={() => setReviews((prev) => prev.map((x) => x.id === r.id ? { ...x, status: "active" } : x))}
+                      className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                      <Check className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                      <span style={{ fontWeight: 500 }}>อนุมัติว่าปกติ</span>
+                    </button>
+                  )}
+                  <div className="h-px bg-gray-100 my-1" />
+                  <button onClick={() => deleteReview(r.id)}
+                    className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer text-left text-[13px] text-[#ff3b30]`}>
+                    <Trash2 className="size-3.5" strokeWidth={2.2} />
+                    <span style={{ fontWeight: 500 }}>ลบรีวิว</span>
+                  </button>
+                </PopoverContent>
+              </Popover>
+            </div>
+          );
+        })}
+
+        {/* Pagination */}
+        {filtered.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5 pt-3 border-t border-gray-100">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+                  className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า · {pageStart + 1}–{Math.min(pageStart + perPage, filtered.length)} จาก {filtered.length}</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={safePage === 1} onClick={() => setPage((p) => p - 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
+                <button key={p} onClick={() => setPage(p)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safePage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: safePage === p ? 600 : 400 }}>{p}</button>
+              ))}
+              {totalPages > 10 && <span className="text-gray-400 text-[12px]">…</span>}
+              <button disabled={safePage === totalPages} onClick={() => setPage((p) => p + 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminOrderDetailView({ order, onBack }: { order: AdminOrder; onBack: () => void }) {
+  const sMeta = adminOrderStatusMeta[order.status];
+  const pMeta = adminPaymentMeta[order.payment];
+  const shopBanner = siteShops.find((s) => s.name === order.shopName)?.banner;
+
+  // Derived/mock extras
+  const hashStr = (s: string) => Array.from(s).reduce((a, ch) => a + ch.charCodeAt(0) * 17, 13);
+  const phoneSeed = hashStr(order.customerEmail);
+  const phone = `08${String(phoneSeed % 10)}-${String((phoneSeed >> 4) % 1000).padStart(3, "0")}-${String((phoneSeed >> 8) % 10000).padStart(4, "0")}`;
+  const streetTypes = ["ถ.สุขุมวิท", "ถ.พหลโยธิน", "ถ.ลาดพร้าว", "ถ.เพชรบุรี", "ถ.รัชดา", "ถ.พระราม 9"];
+  const addr = `${(phoneSeed % 200) + 1}/${(phoneSeed % 30) + 1} ${streetTypes[phoneSeed % streetTypes.length]} ต.บางกะปิ อ.เมือง ${order.shippingProvince}`;
+  const postalCode = String(10000 + (hashStr(order.shippingProvince) % 90000));
+
+  const subtotal = order.items.reduce((s, it) => s + it.qty * it.price, 0);
+  const shipping = order.payment === "cod" ? 50 : 40;
+  const discount = (hashStr(order.id) % 5) === 0 ? Math.round(subtotal * 0.1) : 0;
+  const grandTotal = subtotal + shipping - discount;
+
+  // Tracking number (mock if shipping/delivered)
+  const trackingNumber = ["shipping", "delivered"].includes(order.status) ? `TH${String(hashStr(order.id) % 1000000000).padStart(10, "0")}` : null;
+
+  // Timeline / status history
+  const buildTimeline = (): { label: string; ts: string; Icon: any; color: string; active: boolean }[] => {
+    const createdMs = new Date(order.createdAt).getTime();
+    const dayMs = 86400000;
+    const events: { label: string; ts: string; Icon: any; color: string; active: boolean }[] = [];
+    const addEvent = (label: string, hoursOffset: number, Icon: any, color: string, active: boolean) => {
+      events.push({ label, ts: new Date(createdMs + hoursOffset * 3600000).toISOString(), Icon, color, active });
+    };
+    addEvent("สร้างออเดอร์",     0,   ShoppingCart, "#319754", true);
+    if (order.status === "cancelled") {
+      addEvent("ลูกค้ายกเลิก",    2,   Ban,          "#737373", true);
+      return events;
+    }
+    addEvent("ชำระเงิน",          0.5, Wallet,       "#3b82f6", order.status !== "pending_payment");
+    addEvent("ร้านยืนยัน + เตรียมส่ง", 12, PackageOpen, "#9747ff", ["preparing","shipping","delivered","refunded"].includes(order.status));
+    addEvent("จัดส่งโดยขนส่ง",   36,  Truck,         "#0ea5e9", ["shipping","delivered","refunded"].includes(order.status));
+    addEvent("ลูกค้าได้รับสินค้า", 72, Check,         "#319754", ["delivered","refunded"].includes(order.status));
+    if (order.status === "refunded") {
+      addEvent("คืนเงิน",          120, RotateCcw,    "#ef4444", true);
+    }
+    return events;
+  };
+  const timeline = buildTimeline();
+
+  return (
+    <div>
+      {/* Back button */}
+      <div className="mb-5">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับไปยังรายการ
+        </button>
+      </div>
+
+      {/* Header */}
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className={`${font} text-[22px] tabular-nums`} style={{ fontWeight: 700 }}>{order.id.replace("ORD-", "#")}</h2>
+              <span className={`${font} inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px]`}
+                style={{ backgroundColor: sMeta.bg, color: sMeta.color, fontWeight: 600 }}>
+                <sMeta.Icon className="size-3" strokeWidth={2.4} />
+                {sMeta.label}
+              </span>
+            </div>
+            <p className={`${font} text-[12px] text-gray-500 mt-1 inline-flex items-center gap-1.5`}>
+              <CalendarIcon className="size-3" /> สั่งซื้อเมื่อ {fmtAdminOrderDateTime(order.createdAt)}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => toast.info(`ติดต่อร้าน: ${order.shopName}`)}
+            className={`${font} inline-flex items-center gap-2 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] text-gray-700 h-[38px] px-4 rounded-full text-[13px] cursor-pointer transition-shadow`}
+            style={{ fontWeight: 500 }}>
+            <MessageSquare className="size-3.5" />
+            ติดต่อร้านค้า
+          </button>
+          <button onClick={() => toast.info(`ติดต่อลูกค้า: ${order.customerName}`)}
+            className={`${font} inline-flex items-center gap-2 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] text-gray-700 h-[38px] px-4 rounded-full text-[13px] cursor-pointer transition-shadow`}
+            style={{ fontWeight: 500 }}>
+            <Mail className="size-3.5" />
+            ติดต่อลูกค้า
+          </button>
+          {order.status !== "refunded" && order.status !== "cancelled" && (
+            <button onClick={() => toast.error(`บังคับคืนเงิน ${order.id}`)}
+              className={`${font} inline-flex items-center gap-2 bg-[#ff3b30]/10 hover:bg-[#ff3b30]/20 text-[#ff3b30] h-[38px] px-4 rounded-full text-[13px] cursor-pointer transition-colors`}
+              style={{ fontWeight: 500 }}>
+              <RotateCcw className="size-3.5" />
+              บังคับคืนเงิน
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 2-col layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-start">
+        <div className="space-y-4 min-w-0">
+          {/* Items */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="size-9 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                  <PackageOpen className="size-4 text-[#319754]" strokeWidth={2.2} />
+                </div>
+                <div>
+                  <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>รายการสินค้า</p>
+                  <p className={`${font} text-[11px] text-gray-500`}>{order.items.length} รายการ · รวม {order.itemCount} ชิ้น</p>
+                </div>
+              </div>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {order.items.map((it) => (
+                <div key={it.productId} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                  <ImageWithFallback src={it.image} alt={it.name} className="size-14 rounded-xl object-cover bg-gray-100 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{it.name}</p>
+                    <p className={`${font} text-[11px] text-gray-400 tabular-nums mt-0.5`}>฿{it.price.toLocaleString()} / ชิ้น</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`${font} text-[12px] text-gray-500 tabular-nums`}>x{it.qty}</p>
+                    <p className={`${font} text-[14px] tabular-nums mt-0.5`} style={{ fontWeight: 700, color: "#319754" }}>฿{(it.qty * it.price).toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Timeline */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#0ea5e9]/10 flex items-center justify-center shrink-0">
+                <Clock className="size-4 text-[#0ea5e9]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>สถานะออเดอร์</p>
+                <p className={`${font} text-[11px] text-gray-500`}>ลำดับเหตุการณ์</p>
+              </div>
+            </div>
+            <div className="relative pl-3">
+              {/* Vertical line */}
+              <div className="absolute left-[18px] top-1 bottom-1 w-px bg-gray-200" />
+              <div className="space-y-3">
+                {timeline.map((ev, i) => (
+                  <div key={i} className="flex items-start gap-3 relative">
+                    <span className={`size-7 rounded-full inline-flex items-center justify-center shrink-0 ring-4 ring-white relative z-10 transition-all`}
+                      style={{ backgroundColor: ev.active ? ev.color : "#e5e7eb", color: "#fff" }}>
+                      <ev.Icon className="size-3.5" strokeWidth={2.4} />
+                    </span>
+                    <div className="flex-1 min-w-0 pt-1">
+                      <p className={`${font} text-[13px]`} style={{ fontWeight: ev.active ? 600 : 500, color: ev.active ? "#1a1a1a" : "#9ca3af" }}>{ev.label}</p>
+                      <p className={`${font} text-[11px] text-gray-400 tabular-nums mt-0.5`}>{ev.active ? fmtAdminOrderDateTime(ev.ts) : "—"}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Payment details */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${pMeta.color}1a` }}>
+                <Wallet className="size-4" style={{ color: pMeta.color }} strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>การชำระเงิน</p>
+                <p className={`${font} text-[11px] text-gray-500`}>{pMeta.icon} {pMeta.label}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[#fafafa] rounded-xl p-3">
+                <p className={`${font} text-[10px] text-gray-500`}>วิธีการชำระเงิน</p>
+                <p className={`${font} text-[13px] text-black mt-1 inline-flex items-center gap-1.5`} style={{ fontWeight: 600 }}>
+                  <span>{pMeta.icon}</span> {pMeta.label}
+                </p>
+              </div>
+              <div className="bg-[#fafafa] rounded-xl p-3">
+                <p className={`${font} text-[10px] text-gray-500`}>เลขอ้างอิงธุรกรรม</p>
+                <p className={`${font} text-[13px] text-black mt-1 tabular-nums truncate`} style={{ fontWeight: 600 }} title={`TXN-${hashStr(order.id).toString(36).toUpperCase()}`}>
+                  TXN-{hashStr(order.id).toString(36).toUpperCase().slice(0, 10)}
+                </p>
+              </div>
+              {trackingNumber && (
+                <div className="bg-[#fafafa] rounded-xl p-3 col-span-2">
+                  <p className={`${font} text-[10px] text-gray-500`}>หมายเลขขนส่ง (Thailand Post)</p>
+                  <p className={`${font} text-[13px] text-black mt-1 tabular-nums`} style={{ fontWeight: 600 }}>{trackingNumber}</p>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {/* Right sidebar */}
+        <div className="space-y-4 lg:sticky lg:top-4">
+          {/* Customer card */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+                <Users className="size-4 text-[#3b82f6]" strokeWidth={2.2} />
+              </div>
+              <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>ข้อมูลลูกค้า</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="size-12 rounded-full inline-flex items-center justify-center text-white text-[16px] shrink-0"
+                style={{ background: "linear-gradient(135deg, #6b7280, #374151)", fontWeight: 700 }}>
+                {order.customerName.charAt(0)}
+              </span>
+              <div className="min-w-0">
+                <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>{order.customerName}</p>
+                <p className={`${font} text-[11px] text-gray-500 truncate`}>{order.customerEmail}</p>
+              </div>
+            </div>
+            <div className="space-y-2 pt-2 border-t border-gray-100">
+              <div className="flex items-start gap-2">
+                <Phone className="size-3.5 text-gray-400 shrink-0 mt-0.5" strokeWidth={2.2} />
+                <span className={`${font} text-[12px] text-gray-700 tabular-nums`}>{phone}</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <MapPin className="size-3.5 text-gray-400 shrink-0 mt-0.5" strokeWidth={2.2} />
+                <div className="flex-1 min-w-0">
+                  <p className={`${font} text-[12px] text-gray-700`}>{addr}</p>
+                  <p className={`${font} text-[11px] text-gray-400 tabular-nums mt-0.5`}>รหัสไปรษณีย์ {postalCode}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Shop card */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Store className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>ร้านค้า</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="size-12 rounded-full overflow-hidden bg-gray-100 shrink-0 ring-2 ring-white shadow-[0_1px_3px_rgba(0,0,0,0.10)]">
+                {shopBanner ? <ImageWithFallback src={shopBanner} alt={order.shopName} className="w-full h-full object-cover" /> : <Store className="size-5 text-gray-400 mt-3 mx-auto" />}
+              </span>
+              <div className="min-w-0">
+                <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>{order.shopName}</p>
+                <p className={`${font} text-[11px] text-gray-500`}>ร้านค้าใน Metaherb</p>
+              </div>
+            </div>
+          </section>
+
+          {/* Summary */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#f59e0b]/10 flex items-center justify-center shrink-0">
+                <ClipboardList className="size-4 text-[#f59e0b]" strokeWidth={2.2} />
+              </div>
+              <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>สรุปยอด</p>
+            </div>
+            <div className="space-y-2 text-[12px]">
+              <div className="flex items-center justify-between">
+                <span className={`${font} text-gray-500`}>ยอดสินค้า</span>
+                <span className={`${font} tabular-nums text-black`} style={{ fontWeight: 500 }}>฿{subtotal.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className={`${font} text-gray-500`}>ค่าจัดส่ง</span>
+                <span className={`${font} tabular-nums text-black`} style={{ fontWeight: 500 }}>฿{shipping.toLocaleString()}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className={`${font} text-gray-500 inline-flex items-center gap-1`}>
+                    <Ticket className="size-3 text-[#319754]" strokeWidth={2.4} />
+                    ส่วนลดคูปอง
+                  </span>
+                  <span className={`${font} tabular-nums text-[#319754]`} style={{ fontWeight: 600 }}>−฿{discount.toLocaleString()}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                <span className={`${font} text-black`} style={{ fontWeight: 700 }}>ยอดรวมทั้งสิ้น</span>
+                <span className={`${font} tabular-nums text-[16px]`} style={{ fontWeight: 800, color: "#319754" }}>฿{grandTotal.toLocaleString()}</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminOrdersContent() {
+  const [orders] = useState<AdminOrder[]>(() => seedAdminOrders());
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | AdminOrderStatus>("all");
+  const [shopFilter, setShopFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<"all" | AdminPaymentMethod>("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+
+  const allShops = useMemo(() => Array.from(new Set(orders.map((o) => o.shopName))), [orders]);
+
+  // KPI summary — today + week + revenue
+  const kpi = useMemo(() => {
+    const todayStr = new Date().toDateString();
+    const todayOrders = orders.filter((o) => new Date(o.createdAt).toDateString() === todayStr);
+    const last7 = Date.now() - 7 * 86400000;
+    const weekOrders = orders.filter((o) => new Date(o.createdAt).getTime() >= last7);
+    const pending = orders.filter((o) => o.status === "pending_payment").length;
+    const toShip = orders.filter((o) => o.status === "paid" || o.status === "preparing").length;
+    const totalRev = orders.filter((o) => o.status !== "cancelled" && o.status !== "refunded").reduce((s, o) => s + o.total, 0);
+    return {
+      todayCount: todayOrders.length,
+      weekCount: weekOrders.length,
+      pending,
+      toShip,
+      totalRev,
+    };
+  }, [orders]);
+
+  // Status counts for filter pills
+  const statusCounts = useMemo(() => {
+    const counts: Record<AdminOrderStatus | "all", number> = { all: orders.length, pending_payment: 0, paid: 0, preparing: 0, shipping: 0, delivered: 0, cancelled: 0, refunded: 0 };
+    orders.forEach((o) => { counts[o.status]++; });
+    return counts;
+  }, [orders]);
+
+  const statusTabs: { id: "all" | AdminOrderStatus; label: string; count: number; Icon: any }[] = [
+    { id: "all",             label: "ทั้งหมด",      count: statusCounts.all,             Icon: ClipboardList },
+    { id: "pending_payment", label: "รอชำระ",      count: statusCounts.pending_payment, Icon: Clock         },
+    { id: "paid",            label: "ชำระแล้ว",     count: statusCounts.paid,            Icon: Wallet        },
+    { id: "preparing",       label: "เตรียมส่ง",    count: statusCounts.preparing,       Icon: PackageOpen   },
+    { id: "shipping",        label: "กำลังส่ง",     count: statusCounts.shipping,        Icon: Truck         },
+    { id: "delivered",       label: "สำเร็จ",        count: statusCounts.delivered,       Icon: Check         },
+    { id: "cancelled",       label: "ยกเลิก",        count: statusCounts.cancelled,       Icon: Ban           },
+    { id: "refunded",        label: "คืนเงิน",       count: statusCounts.refunded,        Icon: RotateCcw     },
+  ];
+
+  const filtered = useMemo(() => orders.filter((o) => {
+    if (statusFilter !== "all" && o.status !== statusFilter) return false;
+    if (shopFilter !== "all" && o.shopName !== shopFilter) return false;
+    if (paymentFilter !== "all" && o.payment !== paymentFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const matches = o.id.toLowerCase().includes(q)
+        || o.customerName.toLowerCase().includes(q)
+        || o.customerEmail.toLowerCase().includes(q)
+        || o.shopName.toLowerCase().includes(q)
+        || o.items.some((it) => it.name.toLowerCase().includes(q));
+      if (!matches) return false;
+    }
+    return true;
+  }), [orders, statusFilter, shopFilter, paymentFilter, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * perPage;
+  const paged = filtered.slice(pageStart, pageStart + perPage);
+
+  const kpiBgArt = (src: string, delay: number) => (
+    <motion.img src={src} alt="" aria-hidden="true"
+      className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+      style={{
+        maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+      }}
+      initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay }} />
+  );
+
+  const kpiCards = [
+    {
+      label: "ออเดอร์วันนี้",  value: kpi.todayCount.toLocaleString(),
+      subLabel: `${kpi.weekCount.toLocaleString()} ใน 7 วัน`,
+      accent: "#319754", Icon: ShoppingCart,
+      bgArt: kpiBgArt(imgBagInCart, 0.15),
+    },
+    {
+      label: "รอชำระ",         value: kpi.pending.toLocaleString(),
+      subLabel: "ต้องติดตามภายในวัน",
+      accent: "#f59e0b", Icon: Clock,
+      bgArt: kpiBgArt(imgCost, 0.25),
+    },
+    {
+      label: "ต้องจัดส่ง",     value: kpi.toShip.toLocaleString(),
+      subLabel: "เตรียม + ชำระแล้ว",
+      accent: "#0ea5e9", Icon: PackageOpen,
+      bgArt: kpiBgArt(imgBox, 0.35),
+    },
+    {
+      label: "ยอดรวมในระบบ",  value: `฿${kpi.totalRev.toLocaleString()}`,
+      subLabel: `${filtered.length.toLocaleString()} ออเดอร์ที่กรอง`,
+      accent: "#6366f1", Icon: Wallet,
+      bgArt: kpiBgArt(imgCoinUp, 0.45),
+    },
+  ];
+
+  if (selectedOrder) {
+    return <AdminOrderDetailView order={selectedOrder} onBack={() => setSelectedOrder(null)} />;
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>คำสั่งซื้อทั้งระบบ</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ออเดอร์ทุกร้านใน Metaherb · {orders.length.toLocaleString()} รายการ</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
+            className={`${font} inline-flex items-center gap-2 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] text-gray-700 h-[38px] px-4 rounded-full text-[13px] cursor-pointer transition-shadow`}
+            style={{ fontWeight: 500 }}>
+            <Download className="size-3.5" />
+            ส่งออก
+          </button>
+        </div>
+      </div>
+
+      {/* KPI cards — beautified with bgArt + animation */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        {kpiCards.map((s) => (
+          <div key={s.label}
+            className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            style={{ backgroundColor: `${s.accent}0d` }}>
+            <div className="relative">
+              <div className="flex items-center justify-between">
+                <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                  <s.Icon className="size-4" style={{ color: s.accent }} strokeWidth={2.4} />
+                </div>
+              </div>
+              <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                <AnimatedValue value={s.value} />
+              </p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                  style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                  {s.subLabel}
+                </span>
+              </div>
+            </div>
+            {s.bgArt}
+          </div>
+        ))}
+      </div>
+
+      {/* Status filter pills + search */}
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-3 flex items-center gap-2">
+        <FilterTabPills tabs={statusTabs} active={statusFilter} onChange={(id) => { setStatusFilter(id); setPage(1); }} pillId="adminOrdersStatusPill" />
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[280px] lg:ml-auto">
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="ค้นหา รหัส / ลูกค้า / ร้าน / สินค้า..."
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+          <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Sub-filters: shop + payment */}
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
+        <span className={`${font} text-[12px] text-gray-500`}>กรองเพิ่ม:</span>
+        <div className="relative">
+          <select value={shopFilter} onChange={(e) => { setShopFilter(e.target.value); setPage(1); }}
+            className={`${font} text-[12px] bg-white border border-gray-200 h-[32px] pl-3 pr-8 rounded-full appearance-none cursor-pointer focus:outline-none focus:border-[#319754]`}
+            style={{ fontWeight: 500 }}>
+            <option value="all">ทุกร้าน ({allShops.length})</option>
+            {allShops.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <ChevronDown className="size-3 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
+        <div className="relative">
+          <select value={paymentFilter} onChange={(e) => { setPaymentFilter(e.target.value as any); setPage(1); }}
+            className={`${font} text-[12px] bg-white border border-gray-200 h-[32px] pl-3 pr-8 rounded-full appearance-none cursor-pointer focus:outline-none focus:border-[#319754]`}
+            style={{ fontWeight: 500 }}>
+            <option value="all">ทุกการชำระเงิน</option>
+            {(Object.keys(adminPaymentMeta) as AdminPaymentMethod[]).map((p) => (
+              <option key={p} value={p}>{adminPaymentMeta[p].icon} {adminPaymentMeta[p].label}</option>
+            ))}
+          </select>
+          <ChevronDown className="size-3 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
+        {(shopFilter !== "all" || paymentFilter !== "all" || search.trim()) && (
+          <button onClick={() => { setShopFilter("all"); setPaymentFilter("all"); setSearch(""); setPage(1); }}
+            className={`${font} text-[12px] text-gray-500 hover:text-[#ef4444] inline-flex items-center gap-1 cursor-pointer`}>
+            <X className="size-3" /> ล้างตัวกรอง
+          </button>
+        )}
+      </div>
+
+      {/* Orders table */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "20%" }} />
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "20%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "4%" }} />
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>รหัสออเดอร์</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ลูกค้า</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ร้านค้า</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>สินค้า</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดรวม</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ชำระ</th>
+              <th className="text-center pb-3 pr-3" style={{ fontWeight: 500 }}>สถานะ</th>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {paged.length === 0 && (
+              <tr><td colSpan={8} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>ไม่พบออเดอร์</td></tr>
+            )}
+            {paged.map((o) => {
+              const sMeta = adminOrderStatusMeta[o.status];
+              const pMeta = adminPaymentMeta[o.payment];
+              const shopBanner = siteShops.find((s) => s.name === o.shopName)?.banner;
+              const firstItem = o.items[0];
+              const remaining = o.items.length - 1;
+              return (
+                <tr key={o.id} className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                  {/* รหัส + วันที่ */}
+                  <td className="py-3 pr-3 align-top">
+                    <p className={`${font} text-[12px] tabular-nums text-black`} style={{ fontWeight: 700 }} title={o.id}>{o.id.replace("ORD-", "#")}</p>
+                    <p className={`${font} text-[10px] text-gray-400 mt-0.5`}>{fmtAdminOrderDateTime(o.createdAt)}</p>
+                  </td>
+                  {/* ลูกค้า */}
+                  <td className="py-3 pr-3 align-top">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="size-8 rounded-full inline-flex items-center justify-center text-white text-[11px] shrink-0"
+                        style={{ background: "linear-gradient(135deg, #6b7280, #374151)", fontWeight: 700 }}>
+                        {o.customerName.charAt(0)}
+                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <p className={`${font} text-[12px] text-black truncate`} style={{ fontWeight: 600 }} title={o.customerName}>{o.customerName}</p>
+                        <p className={`${font} text-[10px] text-gray-400 truncate inline-flex items-center gap-1`} title={o.shippingProvince}>
+                          <MapPin className="size-2.5 shrink-0" strokeWidth={2.4} />{o.shippingProvince}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  {/* ร้านค้า */}
+                  <td className="py-3 pr-3 align-top">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="size-7 rounded-full overflow-hidden bg-gray-100 shrink-0">
+                        {shopBanner ? <ImageWithFallback src={shopBanner} alt={o.shopName} className="w-full h-full object-cover" /> : <Store className="size-3.5 text-gray-400 mt-1.5 mx-auto" />}
+                      </span>
+                      <span className={`${font} text-[12px] text-gray-700 truncate`} style={{ fontWeight: 500 }} title={o.shopName}>{o.shopName}</span>
+                    </div>
+                  </td>
+                  {/* สินค้า — stacked thumbnails + popover เห็นรายการเต็ม */}
+                  <td className="py-3 pr-3 align-top">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="flex items-center gap-2.5 min-w-0 w-full text-left cursor-pointer group/items rounded-lg p-1 -m-1 hover:bg-gray-50 transition-colors">
+                          {/* Stacked thumbnails — up to 3 + counter chip if more */}
+                          <div className="flex items-center -space-x-2 shrink-0">
+                            {o.items.slice(0, 3).map((it, i) => (
+                              <span key={it.productId}
+                                className="size-9 rounded-lg overflow-hidden bg-gray-100 ring-2 ring-white shadow-[0_1px_3px_rgba(0,0,0,0.10)]"
+                                style={{ zIndex: 10 - i }}
+                                title={`${it.name} x${it.qty}`}>
+                                <ImageWithFallback src={it.image} alt={it.name} className="w-full h-full object-cover" />
+                              </span>
+                            ))}
+                            {o.items.length > 3 && (
+                              <span className={`${font} size-9 rounded-lg bg-gray-100 inline-flex items-center justify-center text-[11px] text-gray-600 ring-2 ring-white tabular-nums`}
+                                style={{ zIndex: 6, fontWeight: 700 }}>
+                                +{o.items.length - 3}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            {o.items.length === 1 ? (
+                              <p className={`${font} text-[12px] text-black truncate group-hover/items:text-[#319754] transition-colors`} style={{ fontWeight: 500 }} title={firstItem.name}>{firstItem.name}</p>
+                            ) : (
+                              <p className={`${font} text-[12px] text-black truncate group-hover/items:text-[#319754] transition-colors`} style={{ fontWeight: 600 }}>
+                                {o.items.length} รายการ
+                              </p>
+                            )}
+                            <p className={`${font} text-[10px] text-gray-400 truncate`}>
+                              {o.items.length === 1 ? `x${firstItem.qty}` : `รวม ${o.itemCount} ชิ้น`}
+                            </p>
+                          </div>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" sideOffset={6} className="w-[300px] p-0 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)] overflow-hidden">
+                        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <PackageOpen className="size-3.5 text-[#319754] shrink-0" strokeWidth={2.2} />
+                            <p className={`${font} text-[12px] text-black`} style={{ fontWeight: 600 }}>{o.items.length} รายการในออเดอร์</p>
+                          </div>
+                          <span className={`${font} text-[10px] text-gray-400 tabular-nums shrink-0`}>{o.itemCount} ชิ้นรวม</span>
+                        </div>
+                        <div className="max-h-[280px] overflow-y-auto p-1.5">
+                          {o.items.map((it) => (
+                            <div key={it.productId} className="flex items-start gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                              <ImageWithFallback src={it.image} alt={it.name} className="size-10 rounded-lg object-cover bg-gray-100 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className={`${font} text-[12px] text-black line-clamp-2`} style={{ fontWeight: 500 }}>{it.name}</p>
+                                <div className="flex items-center justify-between gap-2 mt-1">
+                                  <span className={`${font} text-[10px] text-gray-500 tabular-nums`}>x{it.qty} · ฿{it.price.toLocaleString()}/ชิ้น</span>
+                                  <span className={`${font} text-[11px] tabular-nums`} style={{ fontWeight: 700, color: "#319754" }}>฿{(it.qty * it.price).toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="px-4 py-2.5 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
+                          <span className={`${font} text-[11px] text-gray-500`} style={{ fontWeight: 500 }}>ยอดรวมออเดอร์</span>
+                          <span className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: "#319754" }}>฿{o.total.toLocaleString()}</span>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </td>
+                  {/* ยอดรวม */}
+                  <td className="py-3 pr-3 text-right align-top">
+                    <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: "#319754" }}>฿{o.total.toLocaleString()}</p>
+                    <p className={`${font} text-[10px] text-gray-400 tabular-nums`}>{o.itemCount} ชิ้น</p>
+                  </td>
+                  {/* ชำระ */}
+                  <td className="py-3 pr-3 align-top">
+                    <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full`}
+                      style={{ backgroundColor: `${pMeta.color}1a`, color: pMeta.color, fontWeight: 600 }}>
+                      <span>{pMeta.icon}</span>
+                      <span className="truncate max-w-[80px]" title={pMeta.label}>{pMeta.label}</span>
+                    </span>
+                  </td>
+                  {/* สถานะ */}
+                  <td className="py-3 pr-3 text-center align-middle">
+                    <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]`}
+                      style={{ backgroundColor: sMeta.bg, color: sMeta.color, fontWeight: 600 }}>
+                      <sMeta.Icon className="size-2.5" strokeWidth={2.4} />
+                      {sMeta.label}
+                    </span>
+                  </td>
+                  {/* จัดการ */}
+                  <td className="py-3 text-center align-middle">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6} className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                        <button onClick={() => setSelectedOrder(o)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Eye className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>ดูรายละเอียด</span>
+                        </button>
+                        <button onClick={() => toast.info(`ติดต่อร้าน: ${o.shopName}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <MessageSquare className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>ติดต่อร้านค้า</span>
+                        </button>
+                        <button onClick={() => toast.info(`ติดต่อลูกค้า: ${o.customerName}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Mail className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>ติดต่อลูกค้า</span>
+                        </button>
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={() => toast.error(`บังคับคืนเงิน ${o.id}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer text-left text-[13px] text-[#ff3b30]`}>
+                          <RotateCcw className="size-3.5" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>บังคับคืนเงิน</span>
+                        </button>
+                      </PopoverContent>
+                    </Popover>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* Pagination */}
+        {filtered.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+                  className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                  {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า · {pageStart + 1}–{Math.min(pageStart + perPage, filtered.length)} จาก {filtered.length}</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={safePage === 1} onClick={() => setPage((p) => p - 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 10).map((p) => (
+                <button key={p} onClick={() => setPage(p)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safePage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: safePage === p ? 600 : 400 }}>{p}</button>
+              ))}
+              {totalPages > 10 && <span className="text-gray-400 text-[12px]">…</span>}
+              <button disabled={safePage === totalPages} onClick={() => setPage((p) => p + 1)}
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminCouponsContent() {
+  const [coupons, setCoupons] = useState<AdminCoupon[]>(mockAdminCoupons);
+  const [filter, setFilter] = useState<"all" | AdminCouponStatus>("all");
+  const [issuerFilter, setIssuerFilter] = useState<"all" | AdminCouponIssuer>("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [showCreate, setShowCreate] = useState(false);
+
+  const allShops = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), []);
+
+  if (showCreate) {
+    return (
+      <CreateAdminCouponView
+        allShops={allShops}
+        onCancel={() => setShowCreate(false)}
+        onCreate={(c) => {
+          setCoupons((prev) => [c, ...prev]);
+          setShowCreate(false);
+          toast.success(`สร้างคูปอง ${c.code} แล้ว`);
+        }}
+      />
+    );
+  }
+
+  const now = Date.now();
+  const computedStatus = (c: AdminCoupon): AdminCouponStatus => {
+    if (c.status === "disabled") return "disabled";
+    if (new Date(c.endsAt).getTime() < now) return "expired";
+    return "active";
+  };
+
+  const cnAll = coupons.length;
+  const cnActive   = coupons.filter((c) => computedStatus(c) === "active").length;
+  const cnExpired  = coupons.filter((c) => computedStatus(c) === "expired").length;
+  const cnDisabled = coupons.filter((c) => computedStatus(c) === "disabled").length;
+
+  const tabs: { id: "all" | AdminCouponStatus; label: string; count: number; Icon: any }[] = [
+    { id: "all",      label: "คูปองทั้งหมด", count: cnAll,      Icon: Ticket },
+    { id: "active",   label: "ใช้งานอยู่",    count: cnActive,   Icon: Check  },
+    { id: "expired",  label: "หมดอายุ",       count: cnExpired,  Icon: Clock  },
+    { id: "disabled", label: "ปิดใช้งาน",     count: cnDisabled, Icon: Ban    },
+  ];
+
+  const filtered = coupons.filter((c) => {
+    if (filter !== "all" && computedStatus(c) !== filter) return false;
+    if (issuerFilter !== "all" && c.issuer !== issuerFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      return c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || (c.shopName ?? "").toLowerCase().includes(q);
+    }
+    return true;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * perPage, safePage * perPage);
+
+  const issuerTabs: { id: "all" | AdminCouponIssuer; label: string }[] = [
+    { id: "all",    label: "ทั้งหมด" },
+    { id: "system", label: "ระบบ" },
+    { id: "shop",   label: "ร้านค้า" },
+  ];
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>คูปอง</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>คูปองส่วนลดทั้งระบบและคูปองที่ร้านค้าเปิดเอง</p>
+        </div>
+        <motion.button onClick={() => setShowCreate(true)}
+          whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
+          <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
+            <Plus className="size-[14px]" strokeWidth={2.6} />
+          </span>
+          <span style={{ fontWeight: 600 }}>สร้างคูปอง</span>
+        </motion.button>
+      </div>
+
+      {/* Filter tabs + search */}
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-4 flex items-center gap-2">
+        <FilterTabPills tabs={tabs} active={filter} onChange={(id) => { setFilter(id); setPage(1); }} pillId="adminCouponStatusPill" />
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="ค้นหา รหัส / ชื่อ / ร้าน..."
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+          <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Issuer sub-filter */}
+      <div className="flex items-center gap-2 mb-5">
+        <span className={`${font} text-[12px] text-gray-500`}>ผู้ออกคูปอง:</span>
+        {issuerTabs.map((t) => (
+          <button key={t.id} onClick={() => { setIssuerFilter(t.id); setPage(1); }}
+            className={`${font} px-3 h-7 rounded-full text-[12px] cursor-pointer transition-colors ${issuerFilter === t.id ? "bg-[#319754] text-white" : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"}`}
+            style={{ fontWeight: issuerFilter === t.id ? 600 : 500 }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "32%" }} />{/* ticket */}
+            <col style={{ width: "12%" }} />{/* รหัส */}
+            <col style={{ width: "20%" }} />{/* ผู้ออก */}
+            <col style={{ width: "10%" }} />{/* ส่วนลด */}
+            <col style={{ width: "10%" }} />{/* ใช้แล้ว/จำกัด */}
+            <col style={{ width: "10%" }} />{/* สถานะ */}
+            <col style={{ width: "6%" }} />{/* จัดการ */}
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>คูปอง</th>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>รหัส</th>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ผู้ออก</th>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ส่วนลด</th>
+              <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ใช้แล้ว/จำกัด</th>
+              <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>สถานะ</th>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr><td colSpan={7} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>ไม่พบคูปอง</td></tr>
+            )}
+            {paged.map((c) => {
+              const status = computedStatus(c);
+              const stCfg =
+                status === "active"   ? { label: "ใช้งานอยู่", color: "#319754", Icon: Check } :
+                status === "expired"  ? { label: "หมดอายุ",    color: "#dc2626", Icon: Clock } :
+                                        { label: "ปิดใช้งาน",   color: "#737373", Icon: Ban };
+              const dis = fmtAdminCouponDiscount(c);
+              const usedLabel = c.usageLimit && c.usageLimit > 0 ? `${c.used}/${c.usageLimit}` : `${c.used}/∞`;
+              const isFreeship = c.discountType === "freeship";
+              const tColor = isFreeship ? "#3b82f6" : "#319754";
+              const TIcon = isFreeship ? Truck : Percent;
+              const subLabel = isFreeship ? "โค้ดส่งฟรี" : "โค้ดส่วนลด";
+              const conditions: string[] = [];
+              if (c.minOrder && c.minOrder > 0) conditions.push(`ขั้นต่ำ ฿${c.minOrder.toLocaleString()}`);
+              else conditions.push("ไม่มีขั้นต่ำ");
+              if (c.membersOnly) conditions.push("สมาชิก");
+              if (c.firstOrderOnly) conditions.push("ออเดอร์แรก");
+              const condText = conditions.join(" · ");
+              const expiryStr = fmtAdminCouponThaiDateTime(c.endsAt);
+              const NOTCH_X = 80;
+              const NOTCH_R = 7;
+              const maskCss = `radial-gradient(circle ${NOTCH_R}px at ${NOTCH_X}px 0%, transparent ${NOTCH_R}px, #000 ${NOTCH_R + 0.5}px), radial-gradient(circle ${NOTCH_R}px at ${NOTCH_X}px 100%, transparent ${NOTCH_R}px, #000 ${NOTCH_R + 0.5}px)`;
+              return (
+                <tr key={c.id} className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                  <td className="py-3 pr-4">
+                    <div
+                      className="ticket-wrap w-full max-w-[340px] transition-[filter,transform] duration-300 ease-out group-hover/row:-translate-y-1 group-hover/row:[--ticket-shadow:drop-shadow(0_6px_14px_rgba(0,0,0,0.16))_drop-shadow(0_2px_6px_rgba(0,0,0,0.08))]"
+                      style={{
+                        filter: "var(--ticket-shadow, drop-shadow(0 2px 4px rgba(0,0,0,0.10)) drop-shadow(0 1px 2px rgba(0,0,0,0.06)))",
+                        willChange: "transform, filter",
+                        backfaceVisibility: "hidden",
+                        transform: "translateZ(0)",
+                      } as React.CSSProperties}>
+                      <div className="relative flex items-stretch rounded-xl min-h-[88px]"
+                        style={{
+                          WebkitMaskImage: maskCss,
+                          maskImage: maskCss,
+                          WebkitMaskComposite: "source-in",
+                          maskComposite: "intersect",
+                        }}>
+                        <div className="flex flex-col items-center justify-center gap-1.5 py-4 px-3 shrink-0 w-[80px]" style={{ backgroundColor: tColor }}>
+                          <TIcon className="size-6 text-white" strokeWidth={2.4} />
+                          <span className={`${font} text-white text-[10px] whitespace-nowrap`} style={{ fontWeight: 500 }}>{subLabel}</span>
+                        </div>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-2 pl-5 pr-4 py-3 bg-white relative">
+                          <span className="absolute left-0 top-[10px] bottom-[10px] w-0 border-l-2 border-dashed" style={{ borderColor: `${tColor}40` }} />
+                          <p className={`${font} text-[14px] text-[#1a1a1a] truncate leading-tight`} style={{ fontWeight: 600 }} title={c.name}>{c.name}</p>
+                          <p className={`${font} text-[11px] text-gray-500 truncate leading-tight`} title={condText}>{condText}</p>
+                          <p className={`${font} text-[11px] text-gray-500 truncate leading-tight inline-flex items-center gap-1`} title={expiryStr}>
+                            <CalendarIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
+                            <span>หมดอายุ {expiryStr}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span className={`${font} text-[13px] tabular-nums text-[#1a1a1a]`} style={{ fontWeight: 600 }}>{c.code}</span>
+                  </td>
+                  <td className="py-3 pr-4">
+                    {c.issuer === "system" ? (
+                      <span className={`${font} inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] bg-[#319754]/10 text-[#319754]`} style={{ fontWeight: 600 }}>
+                        <Shield className="size-3" strokeWidth={2.4} />
+                        ระบบ Metaherb
+                      </span>
+                    ) : (
+                      <span className={`${font} inline-flex items-center gap-1.5 text-[12px] text-gray-700 truncate`} style={{ fontWeight: 500 }} title={c.shopName}>
+                        <Store className="size-3.5 text-gray-400 shrink-0" strokeWidth={2.2} />
+                        <span className="truncate">{c.shopName}</span>
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3 pr-4">
+                    <span className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 600, color: dis.color }}>{dis.label}</span>
+                  </td>
+                  <td className={`py-3 pr-4 text-right ${font} text-[14px] tabular-nums`} style={{ fontWeight: 500 }}>{usedLabel}</td>
+                  <td className="py-3 pr-4 text-center align-middle">
+                    <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3.5 py-0.5 rounded-full text-[14px]`}
+                      style={{ backgroundColor: `${stCfg.color}1a`, color: stCfg.color }}>
+                      <stCfg.Icon className="size-3" strokeWidth={2.4} />
+                      {stCfg.label}
+                    </span>
+                  </td>
+                  <td className="py-3 text-center align-middle">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6}
+                        className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)]">
+                        <button onClick={() => toast.info(`แก้ไข: ${c.code}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>แก้ไข</span>
+                        </button>
+                        <button onClick={() => {
+                          setCoupons((prev) => prev.map((x) => x.id === c.id ? { ...x, status: x.status === "disabled" ? "active" : "disabled" } : x));
+                          toast.success(c.status === "disabled" ? `เปิดใช้งาน: ${c.code}` : `ปิดใช้งาน: ${c.code}`);
+                        }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Ban className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>{c.status === "disabled" ? "เปิดใช้งาน" : "ปิดใช้งาน"}</span>
+                        </button>
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={() => {
+                          if (confirm(`ลบคูปอง "${c.code}"?`)) {
+                            setCoupons((prev) => prev.filter((x) => x.id !== c.id));
+                            toast.success(`ลบ: ${c.code}`);
+                          }
+                        }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer text-left text-[13px] text-[#ff3b30]`}>
+                          <Trash2 className="size-3.5" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>ลบ</span>
+                        </button>
+                      </PopoverContent>
+                    </Popover>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* Pagination */}
+        {filtered.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+            <div className="flex items-center gap-2">
+              <span className={`${font} text-[12px] text-gray-500`}>แสดง</span>
+              <div className="relative">
+                <select
+                  className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-3 pr-7 py-1 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}
+                  value={perPage}
+                  onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}>
+                  {[5, 10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <ChevronDown className="size-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <span className={`${font} text-[12px] text-gray-500`}>รายการต่อหน้า · ทั้งหมด {filtered.length} รายการ</span>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button disabled={safePage === 1} onClick={() => setPage(safePage - 1)} aria-label="หน้าก่อน"
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronLeft className="size-4" strokeWidth={2.4} />
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button key={p} onClick={() => setPage(p)}
+                  className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${safePage === p ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                  style={{ fontWeight: safePage === p ? 600 : 400 }}>{p}</button>
+              ))}
+              <button disabled={safePage === totalPages} onClick={() => setPage(safePage + 1)} aria-label="หน้าถัดไป"
+                className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${safePage === totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}>
+                <ChevronRight className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CreateAdminCouponView({ allShops, onCancel, onCreate }: {
+  allShops: string[];
+  onCancel: () => void;
+  onCreate: (c: AdminCoupon) => void;
+}) {
+  const [issuer, setIssuer] = useState<AdminCouponIssuer>("system");
+  const [shopName, setShopName] = useState<string>(allShops[0] ?? "");
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [discountType, setDiscountType] = useState<AdminCouponDiscountType>("percent");
+  const [discountValue, setDiscountValue] = useState(10);
+  const [maxDiscount, setMaxDiscount] = useState(0);
+  const [minOrder, setMinOrder] = useState(0);
+  const [usageLimit, setUsageLimit] = useState(0);
+  const [perUserLimit, setPerUserLimit] = useState(1);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const from = new Date(); from.setHours(0, 0, 0, 0);
+    const to = new Date(); to.setDate(to.getDate() + 7); to.setHours(0, 0, 0, 0);
+    return { from, to };
+  });
+  const [membersOnly, setMembersOnly] = useState(false);
+  const [firstOrderOnly, setFirstOrderOnly] = useState(false);
+  const [enabled, setEnabled] = useState(true);
+
+  const canSubmit =
+    code.trim().length >= 3 &&
+    name.trim().length >= 3 &&
+    (discountType === "freeship" || discountValue > 0) &&
+    !!dateRange?.from && !!dateRange?.to &&
+    (issuer === "system" || (issuer === "shop" && !!shopName));
+
+  const submit = () => {
+    if (!canSubmit || !dateRange?.from || !dateRange?.to) return;
+    const startsAt = new Date(dateRange.from); startsAt.setHours(0, 0, 0, 0);
+    const endsAt = new Date(dateRange.to);     endsAt.setHours(23, 59, 0, 0);
+    onCreate({
+      id: `${issuer === "system" ? "sys" : "shp"}-${Date.now().toString(36).slice(-6)}`,
+      code: code.trim().toUpperCase(),
+      name: name.trim(),
+      description: description.trim() || undefined,
+      discountType,
+      discountValue: discountType === "freeship" ? 0 : discountValue,
+      maxDiscount: maxDiscount > 0 ? maxDiscount : undefined,
+      minOrder: minOrder > 0 ? minOrder : undefined,
+      usageLimit,
+      perUserLimit,
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+      membersOnly,
+      firstOrderOnly,
+      used: 0,
+      status: enabled ? "active" : "disabled",
+      issuer,
+      shopName: issuer === "shop" ? shopName : undefined,
+    });
+  };
+
+  // Live preview ticket
+  const isFreeship = discountType === "freeship";
+  const tColor = isFreeship ? "#3b82f6" : "#319754";
+  const TIcon = isFreeship ? Truck : Percent;
+  const subLabel = isFreeship ? "โค้ดส่งฟรี" : "โค้ดส่วนลด";
+  const conditions: string[] = [];
+  if (minOrder > 0) conditions.push(`ขั้นต่ำ ฿${minOrder.toLocaleString()}`); else conditions.push("ไม่มีขั้นต่ำ");
+  if (membersOnly) conditions.push("สมาชิก");
+  if (firstOrderOnly) conditions.push("ออเดอร์แรก");
+  const condText = conditions.join(" · ");
+  const expiryStr = dateRange?.to ? fmtAdminCouponThaiDateTime(new Date(new Date(dateRange.to).setHours(23, 59, 0, 0)).toISOString()) : "—";
+  const NOTCH_X = 80;
+  const NOTCH_R = 7;
+  const maskCss = `radial-gradient(circle ${NOTCH_R}px at ${NOTCH_X}px 0%, transparent ${NOTCH_R}px, #000 ${NOTCH_R + 0.5}px), radial-gradient(circle ${NOTCH_R}px at ${NOTCH_X}px 100%, transparent ${NOTCH_R}px, #000 ${NOTCH_R + 0.5}px)`;
+  const previewLabel = isFreeship ? "ส่งฟรี" : discountType === "percent" ? `${discountValue || 0}%` : `฿${discountValue || 0}`;
+
+  return (
+    <div>
+      {/* Back button */}
+      <div className="mb-5">
+        <button onClick={onCancel}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+      </div>
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>สร้างคูปอง</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>คูปองส่วนลดที่ออกในนามระบบหรือในนามร้านค้าหนึ่ง</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onCancel}
+            className={`${font} h-[38px] px-5 rounded-full text-[13px] text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            ยกเลิก
+          </button>
+          <motion.button onClick={submit} disabled={!canSubmit}
+            whileTap={canSubmit ? { scale: 0.96 } : undefined} whileHover={canSubmit ? { y: -1 } : undefined}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
+              <Save className="size-[14px] text-white" strokeWidth={2.6} />
+            </span>
+            <span style={{ fontWeight: 600 }}>สร้างคูปอง</span>
+          </motion.button>
+        </div>
+      </div>
+
+      {/* 2-col layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-start">
+        <div className="space-y-4 min-w-0">
+          {/* Section 1: ขอบเขต (ออกในนามใคร) */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Shield className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ผู้ออกคูปอง <span className="text-[#ff3b30]">*</span></p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>เลือกว่าออกในนามระบบ Metaherb หรือร้านค้า</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: "system" as const, label: "ระบบ Metaherb",   desc: "ใช้ได้ทุกร้าน",  Icon: Shield },
+                { id: "shop"   as const, label: "ในนามร้านค้า",     desc: "ใช้ได้เฉพาะร้านที่เลือก", Icon: Store },
+              ].map((opt) => {
+                const active = issuer === opt.id;
+                return (
+                  <button key={opt.id} type="button" onClick={() => setIssuer(opt.id)}
+                    className={`${font} flex items-start gap-3 px-4 py-3 rounded-2xl border-2 cursor-pointer transition-colors text-left ${active ? "border-[#319754] bg-[#319754]/5" : "border-gray-200 hover:border-[#319754]/40"}`}>
+                    <span className={`size-9 rounded-xl flex items-center justify-center shrink-0 ${active ? "bg-[#319754] text-white" : "bg-gray-100 text-gray-500"}`}>
+                      <opt.Icon className="size-4" strokeWidth={2.4} />
+                    </span>
+                    <span className="flex flex-col min-w-0">
+                      <span className="text-[13px] text-black" style={{ fontWeight: 600 }}>{opt.label}</span>
+                      <span className="text-[11px] text-gray-500">{opt.desc}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {issuer === "shop" && (
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>เลือกร้านค้า <span className="text-[#ff3b30]">*</span></label>
+                <div className="relative">
+                  <select value={shopName} onChange={(e) => setShopName(e.target.value)}
+                    className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-5 pr-10 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
+                    {allShops.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <ChevronDown className="size-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Section 2: ข้อมูลคูปอง */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+                <Ticket className="size-4 text-[#3b82f6]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ข้อมูลคูปอง</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>รหัส ชื่อ และคำอธิบาย</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>รหัสคูปอง <span className="text-[#ff3b30]">*</span></label>
+                <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="เช่น METAHERB100"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3] uppercase tabular-nums`} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ชื่อคูปอง <span className="text-[#ff3b30]">*</span></label>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="เช่น ลด 100 บาท ต้อนรับสมาชิกใหม่"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>คำอธิบาย</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="รายละเอียดคูปอง (ไม่บังคับ)" rows={2}
+                className={`${font} bg-[#fafafa] rounded-2xl px-5 py-3 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3] resize-none`} />
+            </div>
+          </section>
+
+          {/* Section 3: ส่วนลด */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#ff3b30]/10 flex items-center justify-center shrink-0">
+                <Megaphone className="size-4 text-[#ff3b30]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ส่วนลด <span className="text-[#ff3b30]">*</span></p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>เลือกประเภทและมูลค่าส่วนลด</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { id: "percent"  as const, label: "เปอร์เซ็นต์", desc: "ลด %",      Icon: Percent  },
+                { id: "baht"     as const, label: "บาท (฿)",      desc: "ลดเป็นจำนวน", Icon: Tag      },
+                { id: "freeship" as const, label: "ส่งฟรี",        desc: "ฟรีค่าจัดส่ง", Icon: Truck    },
+              ].map((opt) => {
+                const active = discountType === opt.id;
+                return (
+                  <button key={opt.id} type="button" onClick={() => setDiscountType(opt.id)}
+                    className={`${font} flex items-center gap-3 px-4 h-14 rounded-2xl border-2 cursor-pointer transition-colors text-left ${active ? "border-[#319754] bg-[#319754]/5" : "border-gray-200 hover:border-[#319754]/40"}`}>
+                    <span className={`size-9 rounded-xl flex items-center justify-center shrink-0 ${active ? "bg-[#319754] text-white" : "bg-gray-100 text-gray-500"}`}>
+                      <opt.Icon className="size-4" strokeWidth={2.4} />
+                    </span>
+                    <span className="flex flex-col min-w-0">
+                      <span className="text-[13px] text-black" style={{ fontWeight: 600 }}>{opt.label}</span>
+                      <span className="text-[11px] text-gray-500">{opt.desc}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 transition-opacity ${isFreeship ? "opacity-40 pointer-events-none" : ""}`}>
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>{discountType === "percent" ? "เปอร์เซ็นต์ส่วนลด (%)" : "มูลค่าส่วนลด (฿)"} <span className="text-[#ff3b30]">*</span></label>
+                <input type="number" value={discountValue} onChange={(e) => setDiscountValue(Math.max(0, parseInt(e.target.value) || 0))}
+                  min={0} max={discountType === "percent" ? 100 : 100000}
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+              </div>
+              <div className={`flex flex-col gap-1.5 transition-opacity ${discountType === "baht" ? "opacity-40 pointer-events-none" : ""}`}>
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ส่วนลดสูงสุด (฿)</label>
+                <input type="number" value={maxDiscount} onChange={(e) => setMaxDiscount(Math.max(0, parseInt(e.target.value) || 0))}
+                  min={0} placeholder="0 = ไม่จำกัด"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+              </div>
+            </div>
+          </section>
+
+          {/* Section 4: เงื่อนไขการใช้ */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#0ea5e9]/10 flex items-center justify-center shrink-0">
+                <ClipboardList className="size-4 text-[#0ea5e9]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>เงื่อนไขการใช้</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>กำหนดยอดขั้นต่ำและจำนวนครั้งที่ใช้ได้</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>ยอดสั่งซื้อขั้นต่ำ (฿)</label>
+                <input type="number" value={minOrder} onChange={(e) => setMinOrder(Math.max(0, parseInt(e.target.value) || 0))}
+                  min={0} placeholder="0 = ไม่มี"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>จำกัดการใช้รวม</label>
+                <input type="number" value={usageLimit} onChange={(e) => setUsageLimit(Math.max(0, parseInt(e.target.value) || 0))}
+                  min={0} placeholder="0 = ไม่จำกัด"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>จำกัดต่อผู้ใช้</label>
+                <input type="number" value={perUserLimit} onChange={(e) => setPerUserLimit(Math.max(1, parseInt(e.target.value) || 1))}
+                  min={1}
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-5 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: "สำหรับสมาชิกเท่านั้น",   checked: membersOnly,    set: setMembersOnly    },
+                { label: "สำหรับคำสั่งซื้อแรกเท่านั้น", checked: firstOrderOnly, set: setFirstOrderOnly },
+              ].map((opt) => (
+                <label key={opt.label} className={`${font} flex items-center gap-3 px-4 h-12 rounded-2xl border-2 cursor-pointer transition-colors text-[13px] ${opt.checked ? "border-[#319754] bg-[#319754]/5" : "border-gray-200 hover:border-[#319754]/40"}`}>
+                  <span onClick={() => opt.set(!opt.checked)} className={`size-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${opt.checked ? "bg-[#319754] border-[#319754]" : "border-gray-300"}`}>
+                    {opt.checked && <Check className="size-3 text-white" strokeWidth={3} />}
+                  </span>
+                  <span style={{ fontWeight: 500 }}>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          {/* Section 5: ระยะเวลา */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#f59e0b]/10 flex items-center justify-center shrink-0">
+                <CalendarIcon className="size-4 text-[#f59e0b]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ระยะเวลา <span className="text-[#ff3b30]">*</span></p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>ช่วงเวลาที่ลูกค้าใช้คูปองได้</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+              <div className="bg-white rounded-2xl flex items-start justify-center overflow-x-auto">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={2}
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  defaultMonth={dateRange?.from}
+                  className={`${font}`}
+                  classNames={{
+                    months: "flex flex-col sm:flex-row gap-6",
+                    month: "flex flex-col gap-3",
+                    caption: "flex justify-center pt-1 relative items-center w-full",
+                    caption_label: `${font} text-[14px] text-black`,
+                    nav: "flex items-center gap-1",
+                    nav_button: "size-7 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] flex items-center justify-center p-0 cursor-pointer transition-colors",
+                    nav_button_previous: "absolute left-1",
+                    nav_button_next: "absolute right-1",
+                    table: "w-full border-collapse",
+                    head_row: "flex",
+                    head_cell: `${font} text-gray-400 w-9 font-normal text-[11px]`,
+                    row: "flex w-full mt-1",
+                    cell: "relative p-0 text-center text-[13px] focus-within:relative focus-within:z-20 has-[[aria-selected]]:bg-[#319754]/12 first:has-[[aria-selected]]:rounded-l-full last:has-[[aria-selected]]:rounded-r-full [&:has(.day-range-start)]:rounded-l-full [&:has(.day-range-end)]:rounded-r-full",
+                    day: `${font} size-9 p-0 font-normal text-[13px] rounded-full hover:bg-[#319754]/15 hover:text-[#319754] aria-selected:opacity-100 cursor-pointer transition-colors`,
+                    day_range_start: "day-range-start aria-selected:bg-[#319754] aria-selected:text-white aria-selected:hover:bg-[#287745] rounded-full",
+                    day_range_end:   "day-range-end aria-selected:bg-[#319754] aria-selected:text-white aria-selected:hover:bg-[#287745] rounded-full",
+                    day_selected:    "bg-[#319754] text-white hover:bg-[#287745] focus:bg-[#319754]",
+                    day_today:       "bg-[#319754]/8 text-[#319754] font-semibold",
+                    day_outside:     "day-outside text-gray-300 aria-selected:text-gray-400",
+                    day_disabled:    "text-gray-300 opacity-50",
+                    day_range_middle: "aria-selected:bg-transparent aria-selected:text-[#319754] aria-selected:font-semibold",
+                    day_hidden: "invisible",
+                  }}
+                />
+              </div>
+              {(() => {
+                const fromDate = dateRange?.from ?? null;
+                const toDate = dateRange?.to ?? null;
+                const totalDays = fromDate && toDate
+                  ? Math.max(1, Math.ceil((toDate.getTime() - fromDate.getTime()) / 86400000) + 1)
+                  : 0;
+                return (
+                  <div className="bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden">
+                    <CalendarIcon className="absolute -bottom-4 -right-4 size-32 text-gray-300/40 pointer-events-none" strokeWidth={1.5} />
+                    <p className={`${font} text-[11px] uppercase tracking-wider text-gray-600 relative z-10`} style={{ fontWeight: 700 }}>สรุประยะเวลา</p>
+                    <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                      <div className="flex flex-col items-center text-center bg-white/80 rounded-xl p-3 backdrop-blur-sm">
+                        <p className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>เริ่มต้น</p>
+                        {fromDate ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none tabular-nums text-gray-900 mt-1`} style={{ fontWeight: 800 }}>{fromDate.getDate()}</p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>{fromDate.toLocaleDateString("th-TH", { month: "short" })} {fromDate.getFullYear() + 543}</p>
+                          </>
+                        ) : <p className={`${font} text-[11px] text-gray-400 italic mt-3 mb-1`}>—</p>}
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 px-1">
+                        <ArrowRight className="size-5 text-gray-500" strokeWidth={2.4} />
+                        {totalDays > 0 && <span className={`${font} text-[9px] text-gray-600 tabular-nums whitespace-nowrap`} style={{ fontWeight: 600 }}>{totalDays} วัน</span>}
+                      </div>
+                      <div className="flex flex-col items-center text-center bg-white/80 rounded-xl p-3 backdrop-blur-sm">
+                        <p className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>สิ้นสุด</p>
+                        {toDate ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none tabular-nums text-gray-900 mt-1`} style={{ fontWeight: 800 }}>{toDate.getDate()}</p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>{toDate.toLocaleDateString("th-TH", { month: "short" })} {toDate.getFullYear() + 543}</p>
+                          </>
+                        ) : <p className={`${font} text-[11px] text-gray-400 italic mt-3 mb-1`}>—</p>}
+                      </div>
+                    </div>
+                    {fromDate && toDate && (
+                      <div className="relative z-10 flex items-center justify-between gap-3 bg-white/80 rounded-xl px-4 py-3 backdrop-blur-sm">
+                        <div className="flex items-center gap-2">
+                          <Clock className="size-4 text-gray-500" strokeWidth={2.4} />
+                          <p className={`${font} text-[12px] text-gray-700`} style={{ fontWeight: 600 }}>ระยะเวลารวม</p>
+                        </div>
+                        <p className={`${font} text-[22px] text-gray-900 tabular-nums leading-none`} style={{ fontWeight: 800 }}>{totalDays} <span className="text-[12px]" style={{ fontWeight: 500 }}>วัน</span></p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </section>
+
+          {/* Section 6: ตั้งค่า */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center shrink-0">
+                <Settings className="size-4 text-[#8b5cf6]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตั้งค่า</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>เปิด/ปิดใช้งานคูปองทันที</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 px-4 h-14 bg-[#fafafa] rounded-2xl">
+              <div className="flex flex-col min-w-0">
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เปิดใช้งานคูปอง</span>
+                <span className={`${font} text-[11px] text-gray-500`}>ถ้าปิด — คูปองจะอยู่ในสถานะ "ปิดใช้งาน"</span>
+              </div>
+              <button onClick={() => setEnabled((v) => !v)} type="button"
+                className={`relative inline-flex items-center w-11 h-6 rounded-full transition-colors cursor-pointer shrink-0 ${enabled ? "bg-[#319754]" : "bg-gray-300"}`}>
+                <span className={`absolute size-5 bg-white rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-transform ${enabled ? "translate-x-[22px]" : "translate-x-[2px]"}`} />
+              </button>
+            </div>
+          </section>
+        </div>
+
+        {/* Right: Live preview */}
+        <div className="space-y-4 lg:sticky lg:top-4">
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Sparkles className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตัวอย่างคูปอง</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>หน้าตาที่ลูกค้าจะเห็น</p>
+              </div>
+            </div>
+
+            {/* Ticket preview */}
+            <div
+              className="ticket-wrap w-full"
+              style={{
+                filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.10)) drop-shadow(0 1px 2px rgba(0,0,0,0.06))",
+                willChange: "filter",
+              } as React.CSSProperties}>
+              <div className="relative flex items-stretch rounded-xl min-h-[100px]"
+                style={{ WebkitMaskImage: maskCss, maskImage: maskCss, WebkitMaskComposite: "source-in", maskComposite: "intersect" }}>
+                <div className="flex flex-col items-center justify-center gap-1.5 py-4 px-3 shrink-0 w-[80px]" style={{ backgroundColor: tColor }}>
+                  <TIcon className="size-6 text-white" strokeWidth={2.4} />
+                  <span className={`${font} text-white text-[10px] whitespace-nowrap`} style={{ fontWeight: 500 }}>{subLabel}</span>
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col justify-center gap-2 pl-5 pr-4 py-3 bg-white relative">
+                  <span className="absolute left-0 top-[10px] bottom-[10px] w-0 border-l-2 border-dashed" style={{ borderColor: `${tColor}40` }} />
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`${font} text-[14px] text-[#1a1a1a] truncate leading-tight`} style={{ fontWeight: 600 }} title={name}>{name.trim() || "ชื่อคูปอง"}</p>
+                    <span className={`${font} text-[14px] tabular-nums shrink-0`} style={{ fontWeight: 700, color: tColor }}>{previewLabel}</span>
+                  </div>
+                  <p className={`${font} text-[11px] text-gray-500 truncate leading-tight`}>{condText}</p>
+                  <p className={`${font} text-[11px] text-gray-500 truncate leading-tight inline-flex items-center gap-1`}>
+                    <CalendarIcon className="size-3.5 shrink-0" strokeWidth={2.2} />
+                    <span>หมดอายุ {expiryStr}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick stats */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[12px]">
+                <span className={`${font} text-gray-500`}>รหัส</span>
+                <span className={`${font} tabular-nums text-black`} style={{ fontWeight: 600 }}>{code.trim().toUpperCase() || "—"}</span>
+              </div>
+              <div className="flex items-center justify-between text-[12px]">
+                <span className={`${font} text-gray-500`}>ผู้ออก</span>
+                <span className={`${font} text-black truncate max-w-[180px]`} style={{ fontWeight: 600 }} title={issuer === "system" ? "ระบบ Metaherb" : shopName}>
+                  {issuer === "system" ? "ระบบ Metaherb" : shopName || "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[12px]">
+                <span className={`${font} text-gray-500`}>จำกัดการใช้</span>
+                <span className={`${font} tabular-nums text-black`} style={{ fontWeight: 600 }}>
+                  {usageLimit > 0 ? `${usageLimit.toLocaleString()} ครั้ง` : "ไม่จำกัด"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[12px]">
+                <span className={`${font} text-gray-500`}>จำกัดต่อผู้ใช้</span>
+                <span className={`${font} tabular-nums text-black`} style={{ fontWeight: 600 }}>{perUserLimit} ครั้ง</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ========== MAIN ========== */
 export function AdminDashboard() {
   const location = useLocation();
@@ -13874,9 +22576,10 @@ export function AdminDashboard() {
 
   const renderContent = () => {
     if (activeItem === "dashboard") return <DashboardContent />;
-    if (activeItem === "report_sales" || activeItem === "report_customers" || activeItem === "report_products" || activeItem === "report_marketing") {
-      return <ReportContent tab={activeItem as any} />;
-    }
+    if (activeItem === "report_sales")     return <AdminSalesReportContent />;
+    if (activeItem === "report_customers") return <AdminCustomersReportContent />;
+    if (activeItem === "report_products")  return <AdminProductsReportContent />;
+    if (activeItem === "report_marketing") return <AdminMarketingReportContent />;
     if (activeItem === "content_banner") return <BannerContent />;
     if (activeItem === "content_blog")   return <BlogContent />;
     if (activeItem === "content_video")  return <VideoContent />;
@@ -13888,6 +22591,11 @@ export function AdminDashboard() {
     if (activeItem === "complaints_appeals") return <ComplaintAppealsContent />;
     if (activeItem === "products_manage")    return <ProductsManageContent onNavigateToComplaints={() => setActiveItem("complaints_list")} />;
     if (activeItem === "products_categories") return <ProductsCategoriesContent />;
+    if (activeItem === "products_promotions") return <AdminPromotionsContent />;
+    if (activeItem === "products_flash")      return <AdminFlashSaleEventsContent />;
+    if (activeItem === "products_coupons")    return <AdminCouponsContent />;
+    if (activeItem === "orders")              return <AdminOrdersContent />;
+    if (activeItem === "reviews")             return <AdminReviewsContent />;
     if (activeItem === "page_home")     return <PageHomeBuilder />;
     if (activeItem === "page_products") return <PageProductsBuilder />;
     if (activeItem === "page_blog")     return <PageBlogBuilder />;
@@ -13913,7 +22621,7 @@ export function AdminDashboard() {
 
       <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">
         {/* BannerContent + BlogContent + VideoContent + PopupContent + LegalContent + ComplaintListContent render their own headers — skip default */}
-        {activeItem !== "content_banner" && activeItem !== "content_blog" && activeItem !== "content_video" && activeItem !== "content_index" && activeItem !== "content_terms" && activeItem !== "content_privacy" && activeItem !== "complaints_list" && activeItem !== "complaints_appeals" && activeItem !== "products_manage" && activeItem !== "products_categories" && activeItem !== "page_home" && activeItem !== "page_products" && activeItem !== "page_blog" && activeItem !== "page_about" && (
+        {activeItem !== "content_banner" && activeItem !== "content_blog" && activeItem !== "content_video" && activeItem !== "content_index" && activeItem !== "content_terms" && activeItem !== "content_privacy" && activeItem !== "complaints_list" && activeItem !== "complaints_appeals" && activeItem !== "products_manage" && activeItem !== "products_categories" && activeItem !== "products_promotions" && activeItem !== "products_flash" && activeItem !== "products_coupons" && activeItem !== "report_sales" && activeItem !== "report_customers" && activeItem !== "report_products" && activeItem !== "report_marketing" && activeItem !== "orders" && activeItem !== "reviews" && activeItem !== "page_home" && activeItem !== "page_products" && activeItem !== "page_blog" && activeItem !== "page_about" && (
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div>
               <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{meta.title}</h2>
