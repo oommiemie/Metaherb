@@ -1,31 +1,33 @@
-import React, { Fragment, useEffect, useMemo, useState } from "react";
+import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
   Shield, DollarSign, Megaphone, UserCog, BarChart2, ShoppingBag,
-  Plus, Minus, Pencil, Trash2, MoreHorizontal, Eye, Search, ChevronLeft, ChevronRight, ChevronDown, Menu,
-  Check, X, Mail, Phone, FileText, Store, AlertCircle, Star, Video,
+  Plus, Minus, Pencil, Trash2, MoreHorizontal, Eye, EyeOff, Search, ChevronLeft, ChevronRight, ChevronDown, Menu,
+  Check, X, Mail, Phone, FileText, Store, AlertCircle, Star, Video, MessageSquare, BadgeCheck,
   Home, Info, LayoutPanelTop, PanelBottom, Bell, Truck, MapPin, Globe, Tag, Zap, Ticket, Folder,
-  Calendar as CalendarIcon, Clock, Link as LinkIcon, MousePointer2, ArrowRight, EyeOff,
-  Image as ImageIcon2, Monitor, Smartphone, Tablet,
+  GripVertical, RotateCcw, Save, Image as ImageIcon2, Film, Monitor, Smartphone, Tablet, Upload,
+  Leaf, UtensilsCrossed, Pill, Sparkles, Flower2, Gift, Coffee, FlaskConical, Droplets, Heart, ArrowRight, Send,
+  Clock, ShieldCheck, Award, Sprout, Sun,
+  Calendar as CalendarIcon, Link as LinkIcon, MousePointer2,
   Bold, Italic, Underline, Strikethrough, Heading1, Heading2, Heading3,
   AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Quote,
   Undo2, Redo2, Type, Palette, Highlighter, RemoveFormatting,
-  Sparkles, Loader2, Wand2, Play, Upload, Youtube, Film, Facebook, ExternalLink,
-  ScrollText, Lock, Save, Gavel, AlertTriangle, PackageX, Wallet,
-  MessageSquare, PackageOpen, RotateCcw, Ban, Filter, Pin, History, Send, FolderEdit,
-  Leaf, Coffee, Heart, Droplet, Gift, Apple, GripVertical, ClipboardList, UserPlus, Percent,
-  Sprout, TreePine, TreeDeciduous, Flower, Flower2, Trees, Sun, Cloud,
+  Loader2, Wand2, Play, Youtube, Facebook, ExternalLink,
+  ScrollText, Lock, Gavel, AlertTriangle, PackageX, Wallet,
+  PackageOpen, Ban, Filter, Pin, History, FolderEdit,
+  Droplet, Apple, ClipboardList, UserPlus, Percent,
+  TreePine, TreeDeciduous, Flower, Trees, Cloud,
   Cherry, Grape, Citrus, Banana, Carrot, Wheat, Egg, EggFried, Cookie, Cake,
-  IceCream, IceCream2, Pizza, Sandwich, Salad, Soup, Beef, Drumstick, Fish, Ham, Croissant, UtensilsCrossed,
+  IceCream, IceCream2, Pizza, Sandwich, Salad, Soup, Beef, Drumstick, Fish, Ham, Croissant,
   Wine, GlassWater, CupSoda, Milk, Beer,
   HeartPulse, Gem, Smile, Scissors, Brush, Paintbrush, Stars, Snowflake,
-  Pill, Stethoscope, Syringe, Bandage, Activity, Microscope, Cross, FlaskConical, TestTube, TestTubes, Beaker, Droplets,
+  Stethoscope, Syringe, Bandage, Activity, Microscope, Cross, TestTube, TestTubes, Beaker,
   Package2, Box, Boxes, ShoppingBasket, Backpack,
   Lamp, Bath, ShowerHead, Bed, Sofa, Armchair,
   Dog, Cat, Bird, PawPrint, Rabbit, Squirrel, Bone,
   Bike, Tent, Footprints, Mountain, Sunrise, Sunset,
-  Award, Trophy, Medal, Crown, Flame, Bookmark, Shirt, BookOpen, Book, Music, Gamepad2,
+  Trophy, Medal, Crown, Flame, Bookmark, Shirt, BookOpen, Book, Music, Gamepad2,
   Download, FileSpreadsheet, PieChart as PieIcon,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, ComposedChart, Area } from "recharts";
@@ -37,6 +39,12 @@ import type { DateRange } from "react-day-picker";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog";
 import { toast } from "sonner";
+
+import imgLogo from "../../assets/logo.png";
+import imgThaipost from "../../assets/Thaipost.png";
+import imgFlashLogo from "../../assets/flashexpress.png";
+import imgKerryLogo from "../../assets/kerry.png";
+import imgJtLogo from "../../assets/jt.png";
 import imgRequests from "../../assets/requests.png";
 import imgDamagedGoods from "../../assets/damaged-goods.png";
 import imgPromoCard from "../../assets/promotioncard.png";
@@ -59,10 +67,12 @@ import imgVisitors from "../../assets/visitors.png";
 import imgBagInCart from "../../assets/bag-in-cart.png";
 import imgConvert from "../../assets/convert.png";
 import imgCoupon from "../../assets/coupon.png";
-import { products as siteProducts, categories as productCategories } from "../data/products";
+import { products as realProducts, products as siteProducts, categories as productCategories } from "../data/products";
+import { articles as realArticles, videos as realVideos } from "./BlogPage";
 import { shops as siteShops } from "../data/shops";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
+const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
 const ADMIN_PRIMARY = "#319754";
 const ADMIN_PRIMARY_DARK = "#287745";
@@ -5219,7 +5229,7 @@ function MiniToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => v
 }
 
 // FilterTabPills — แสดง tabs row บน lg+ / dropdown บน < lg
-function FilterTabPills<T extends string>({ tabs, active, onChange, pillId, singleRow }: {
+function FilterTabPills<T extends string | number>({ tabs, active, onChange, pillId, singleRow }: {
   tabs: { id: T; label: string; count: number; Icon: any }[];
   active: T;
   onChange: (id: T) => void;
@@ -5428,7 +5438,7 @@ function LayoutSlotPicker({ position, aspectClass, selected, draftImage, hasAnyI
 
   return (
     <div
-      draggable={hasImage}
+      draggable={!!hasImage}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
@@ -14179,7 +14189,7 @@ function IconPickerSection({
   iconKey: string;
   iconImage?: string;
   color: string;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   onSelectIcon: (key: string) => void;
   onUploadClick: () => void;
   onClearImage: () => void;
@@ -15467,9 +15477,11 @@ function PageHomeBuilder() {
         </div>
 
         <div
-          className="flex flex-col gap-4 bg-[#fafbfc] rounded-xl p-4 min-h-[400px] mx-auto w-full transition-[max-width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+          className="mx-auto w-full transition-[max-width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
           style={{ maxWidth: view === "mobile" ? 420 : view === "tablet" ? 820 : 1600 }}
         >
+        <BrowserMockup url="metaherb.com/" view={view}>
+        <div className="flex flex-col gap-4 p-4 min-h-[400px]">
           {sections.filter(s => s.visible).length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 gap-2 text-gray-400">
               <EyeOff className="size-8" strokeWidth={1.5} />
@@ -15567,6 +15579,8 @@ function PageHomeBuilder() {
               </div>
             );
           })}
+        </div>
+        </BrowserMockup>
         </div>
       </div>
 
@@ -16138,10 +16152,14 @@ function PageProductsBuilder() {
         </div>
 
         <div
-          className="bg-[#fafbfc] rounded-xl p-4 min-h-[400px] mx-auto w-full transition-[max-width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+          className="mx-auto w-full transition-[max-width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
           style={{ maxWidth: view === "mobile" ? 420 : view === "tablet" ? 820 : 1600 }}
         >
-          <ProductsMainWire cfg={cfg} view={view} />
+          <BrowserMockup url="metaherb.com/products" view={view}>
+            <div className="p-4 min-h-[400px]">
+              <ProductsMainWire cfg={cfg} view={view} />
+            </div>
+          </BrowserMockup>
         </div>
       </div>
 
@@ -16836,9 +16854,11 @@ function PageBlogBuilder() {
         </div>
 
         <div
-          className="flex flex-col gap-4 bg-[#fafbfc] rounded-xl p-4 min-h-[400px] mx-auto w-full transition-[max-width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+          className="mx-auto w-full transition-[max-width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
           style={{ maxWidth: view === "mobile" ? 420 : view === "tablet" ? 820 : 1600 }}
         >
+        <BrowserMockup url="metaherb.com/blog" view={view}>
+        <div className="flex flex-col gap-4 p-4 min-h-[400px]">
           {previewSections.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 gap-2 text-gray-400">
               <EyeOff className="size-8" strokeWidth={1.5} />
@@ -16907,6 +16927,8 @@ function PageBlogBuilder() {
               </div>
             );
           })}
+        </div>
+        </BrowserMockup>
         </div>
       </div>
 
@@ -17061,6 +17083,33 @@ const DEFAULT_ABOUT_SECTIONS: AboutSection[] = [
   { id: "about_contact", label: "ติดต่อเรา",            visible: true },
 ];
 
+/* Story feature icon set */
+const STORY_ICONS = {
+  leaf: Leaf, clock: Clock, shield: ShieldCheck, award: Award,
+  heart: Heart, star: Star, sparkles: Sparkles, sprout: Sprout,
+  sun: Sun, flask: FlaskConical, gift: Gift, droplets: Droplets,
+} as const;
+type StoryIconKey = keyof typeof STORY_ICONS;
+
+function IconPicker({ value, onChange }: { value: StoryIconKey; onChange: (v: StoryIconKey) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {(Object.entries(STORY_ICONS) as [StoryIconKey, any][]).map(([key, IconComp]) => {
+        const active = value === key;
+        return (
+          <button key={key} onClick={() => onChange(key)} title={key}
+            className={`size-8 rounded-md flex items-center justify-center cursor-pointer transition-all ${
+              active ? "border-2" : "border border-gray-200 hover:border-gray-400 bg-white"
+            }`}
+            style={active ? { borderColor: ADMIN_PRIMARY, backgroundColor: `${ADMIN_PRIMARY}15` } : {}}>
+            <IconComp className="size-4 text-gray-700" strokeWidth={2} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 interface AboutConfigs {
   about_hero: {
     badge: string;
@@ -17074,17 +17123,17 @@ interface AboutConfigs {
     showFloatingImage: boolean;
     badge: string; title1: string; title2: string; description: string;
     mainImage: string; floatingImage: string;
-    f1Title: string; f1Desc: string;
-    f2Title: string; f2Desc: string;
-    f3Title: string; f3Desc: string;
+    f1Title: string; f1Desc: string; f1Icon: StoryIconKey; f1BgColor: string; f1IconColor: string;
+    f2Title: string; f2Desc: string; f2Icon: StoryIconKey; f2BgColor: string; f2IconColor: string;
+    f3Title: string; f3Desc: string; f3Icon: StoryIconKey; f3BgColor: string; f3IconColor: string;
   };
   about_trust: {
-    showProductCards: boolean; showCertifications: boolean;
+    showProductCards: boolean; showTags: boolean;
     title1: string; title2: string;
     p1Tag: string; p1TagColor: string; p1Title: string; p1Desc: string;
     p2Tag: string; p2TagColor: string; p2Title: string; p2Desc: string;
     p3Tag: string; p3TagColor: string; p3Title: string; p3Desc: string;
-    cert1: string; cert2: string; cert3: string; cert4: string;
+    tags: string[];
   };
   about_mission: {
     overlayTopTitle: string; overlayTopSubtitle: string;
@@ -17103,10 +17152,10 @@ interface AboutConfigs {
     emailLabel: string; email: string; emailSub: string;
     addressLabel: string; address: string; addressSub: string;
     socialHeading: string;
-    s1Name: string; s1Handle: string;
-    s2Name: string; s2Handle: string;
-    s3Name: string; s3Handle: string;
-    s4Name: string; s4Handle: string;
+    s1Name: string; s1Link: string;
+    s2Name: string; s2Link: string;
+    s3Name: string; s3Link: string;
+    s4Name: string; s4Link: string;
     formHeading: string; formSubheading: string; formSubmitText: string;
   };
 }
@@ -17135,13 +17184,16 @@ const DEFAULT_ABOUT_CONFIGS: AboutConfigs = {
     floatingImage: SAFE_PRODUCT_IMAGES[0],
     f1Title: "ต้นกำเนิดจากธรรมชาติแท้",
     f1Desc: "สมุนไพรทุกชนิดได้รับการปลูกและดูแลโดยเกษตรกรท้องถิ่น",
+    f1Icon: "leaf",  f1BgColor: "#e7cfbc", f1IconColor: "#9D5400",
     f2Title: "ภูมิปัญญาดั้งเดิมสู่นวัตกรรมใหม่",
     f2Desc: "ผสมผสานองค์ความรู้สมุนไพรไทยโบราณกว่า 200 ปี",
+    f2Icon: "clock", f2BgColor: "#e7cfbc", f2IconColor: "#9D5400",
     f3Title: "การรับรองมาตรฐานระดับสากล",
     f3Desc: "ผ่านการตรวจสอบและรับรองจาก อย. และ ISO 22000",
+    f3Icon: "shield", f3BgColor: "#e7cfbc", f3IconColor: "#9D5400",
   },
   about_trust: {
-    showProductCards: true, showCertifications: true,
+    showProductCards: true, showTags: true,
     title1: "ความไว้วางใจที่",
     title2: "สร้างมาจากมาตรฐาน",
     p1Tag: "ขายดีอันดับ 1", p1TagColor: "#ff8a65",
@@ -17153,8 +17205,7 @@ const DEFAULT_ABOUT_CONFIGS: AboutConfigs = {
     p3Tag: "ยอดนิยม",         p3TagColor: "#5b8dee",
     p3Title: "ชาสมุนไพร 7 ชนิด",
     p3Desc:  "ผสมจากตะไคร้ ขิง ขมิ้น กระชาย ใบเตย มะตูม และดอกอัญชัน",
-    cert1: "✓ อย. ไทย", cert2: "✓ Organic Thailand",
-    cert3: "✓ ISO 22000", cert4: "✓ GMP",
+    tags: ["✓ อย. ไทย", "✓ Organic Thailand", "✓ ISO 22000", "✓ GMP"],
   },
   about_mission: {
     overlayTopTitle: "พันธกิจและวิสัยทัศน์",
@@ -17179,10 +17230,10 @@ const DEFAULT_ABOUT_CONFIGS: AboutConfigs = {
     address: "459/153 หมู่บ้านนิวไฮบ์ สุขสวัสดิ์",
     addressSub: "แขวงราษฎร์บูรณะ เขตราษฎร์บูรณะ กรุงเทพฯ 10140",
     socialHeading: "ติดตามเราบนโซเชียล",
-    s1Name: "Facebook",  s1Handle: "MetaherbOfficial",
-    s2Name: "Line",       s2Handle: "@metaherb",
-    s3Name: "YouTube",    s3Handle: "MetaherbTV",
-    s4Name: "Instagram",  s4Handle: "@metaherb.th",
+    s1Name: "Facebook",  s1Link: "https://facebook.com/MetaherbOfficial",
+    s2Name: "Line",       s2Link: "https://line.me/R/ti/p/@metaherb",
+    s3Name: "YouTube",    s3Link: "https://youtube.com/@MetaherbTV",
+    s4Name: "Instagram",  s4Link: "https://instagram.com/metaherb.th",
     formHeading: "ส่งข้อความถึงเรา",
     formSubheading: "กรอกแบบฟอร์มด้านล่าง",
     formSubmitText: "ส่งข้อความ",
@@ -17210,20 +17261,143 @@ function TextareaField({ label, value, onChange }: { label: string; value: strin
     </div>
   );
 }
-function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function ImageField({ label, value, onChange, accept = "image/png,image/jpeg,image/webp,image/svg+xml,image/gif,image/avif", preview, hint }: {
+  label: string; value: string; onChange: (v: string) => void; accept?: string;
+  preview?: React.ReactNode;
+  hint?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleFile = (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("ไฟล์ที่เลือกไม่ใช่รูปภาพ");
+      return;
+    }
+    onChange(URL.createObjectURL(file));
+  };
+  const onDragOver  = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); };
+  const onDragLeave = () => setIsDragOver(false);
+  const onDrop      = (e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); handleFile(e.dataTransfer.files?.[0]); };
+  const onPick      = (e: React.ChangeEvent<HTMLInputElement>) => { handleFile(e.target.files?.[0]); e.target.value = ""; };
+
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 h-full">
       <label className={`${font} text-[11px] text-gray-500`}>{label}</label>
-      <div className="flex gap-2 items-center">
+      <div onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
+        className={`flex gap-2 items-center p-1 rounded-md border-2 border-dashed transition-all ${
+          isDragOver ? "border-[#319754] bg-[#319754]/5" : "border-transparent"
+        }`}>
         <div className="size-10 rounded-md bg-gray-100 border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
           {value
             ? <img src={value} alt="" className="w-full h-full object-cover" />
             : <ImageIcon className="size-4 text-gray-400" />}
         </div>
-        <input type="text" value={value} placeholder="URL รูปภาพ"
+        <input type="text" value={value.startsWith("blob:") ? "" : value}
+          placeholder={isDragOver ? "ปล่อยไฟล์เพื่ออัปโหลด" : "URL รูปภาพ หรือลากไฟล์มาวาง"}
           onChange={(e) => onChange(e.target.value)}
           className={`${font} flex-1 min-w-0 h-8 px-2.5 rounded-md border border-gray-200 text-[11px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+        <input ref={inputRef} type="file" accept={accept} onChange={onPick} className="hidden" />
+        <button onClick={() => inputRef.current?.click()} title="อัปโหลดไฟล์"
+          className="size-8 rounded-md border border-gray-200 flex items-center justify-center hover:bg-[#319754]/5 hover:border-[#319754]/40 cursor-pointer transition-all shrink-0">
+          <Upload className="size-3.5 text-gray-500" strokeWidth={2.2} />
+        </button>
+        {value && (
+          <button onClick={() => onChange("")} title="ลบรูป"
+            className="size-8 rounded-md border border-gray-200 flex items-center justify-center hover:bg-[#ff3b30]/5 hover:border-[#ff3b30]/40 cursor-pointer transition-all shrink-0">
+            <X className="size-3.5 text-gray-400 hover:text-[#ff3b30]" strokeWidth={2.2} />
+          </button>
+        )}
       </div>
+      {hint && <p className={`${font} text-[10px] text-gray-400 mt-0.5`}>{hint}</p>}
+      {preview && (
+        <div className="mt-1.5 flex-1 flex flex-col min-h-0">
+          <div className="flex items-center gap-1 mb-1">
+            <Eye className="size-2.5 text-gray-400" strokeWidth={2.4} />
+            <p className={`${font} text-[9px] uppercase tracking-wide text-gray-400`} style={{ fontWeight: 600 }}>
+              จะแสดงในเว็บแบบนี้
+            </p>
+          </div>
+          <div className="rounded-md bg-[#f5f5f7] border border-dashed border-gray-200 overflow-hidden flex-1 min-h-[130px] flex flex-col">
+            {preview}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* --- Mockup previews showing where each uploaded image will appear --- */
+function LogoMockup({ url }: { url: string }) {
+  const src = url || imgLogo;
+  return (
+    <div className="p-2 flex-1 flex flex-col justify-center gap-1.5">
+      <div className="bg-white rounded border border-gray-200 px-2 py-1.5 flex items-center gap-1.5">
+        <img src={src} alt="" className="size-6 rounded-full object-cover shrink-0" />
+        <span className={`${fontBold} text-[11px] whitespace-nowrap`} style={{ fontWeight: 700 }}>
+          <span className="text-[#ed1c24]">META</span><span className="text-[#f7931d]">HERB</span>
+        </span>
+        <div className="flex-1" />
+        <Bell className="size-2.5 text-gray-400" />
+        <ShoppingCart className="size-2.5 text-gray-400" />
+        <div className="bg-[#319754] rounded-full px-1.5 py-0.5">
+          <span className={`${font} text-[7px] text-white`}>เข้าสู่ระบบ</span>
+        </div>
+      </div>
+      <div className="bg-[#226a3b] rounded border border-gray-200 px-2 py-1.5 flex items-center gap-1.5">
+        <img src={src} alt="" className="size-5 rounded-full object-cover shrink-0" />
+        <span className={`${fontBold} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 700 }}>METAHERB</span>
+      </div>
+      <p className={`${font} text-[9px] text-gray-400 text-center pt-0.5`}>① Appbar (ทุกหน้า)  ·  ② Footer</p>
+    </div>
+  );
+}
+
+function FaviconMockup({ url, siteName }: { url: string; siteName: string }) {
+  return (
+    <div className="bg-[#e4e4e7] p-2 flex-1 flex flex-col justify-center gap-1.5">
+      <div className="flex items-end gap-1">
+        <div className="bg-white rounded-t px-2 py-1.5 flex items-center gap-1.5 max-w-[180px] flex-1 border border-b-0 border-gray-200">
+          {url
+            ? <img src={url} className="size-3.5 shrink-0 rounded-sm object-cover" alt="" />
+            : <div className="size-3.5 bg-gray-200 rounded-sm shrink-0" />}
+          <span className={`${font} text-[9px] text-gray-700 truncate flex-1`}>{siteName || "MetaHerb"}</span>
+          <X className="size-2 text-gray-400 shrink-0" />
+        </div>
+        <div className="bg-white/50 rounded-t h-6 w-10 border border-b-0 border-gray-200/50" />
+      </div>
+      <div className="bg-white rounded px-2 py-1.5 flex items-center gap-1.5 border border-gray-200">
+        <ChevronLeft className="size-2.5 text-gray-400" />
+        <ChevronRight className="size-2.5 text-gray-400" />
+        <div className="flex items-center gap-1 bg-[#f5f5f7] rounded-full px-2 py-0.5 flex-1">
+          {url
+            ? <img src={url} className="size-2.5 shrink-0 rounded-sm object-cover" alt="" />
+            : <div className="size-2.5 bg-gray-200 rounded-sm shrink-0" />}
+          <span className={`${font} text-[8px] text-gray-500`}>metaherb.com</span>
+        </div>
+      </div>
+      <p className={`${font} text-[9px] text-gray-400 text-center pt-0.5`}>แท็บ browser + แถบ URL + Bookmark</p>
+    </div>
+  );
+}
+
+function OgImageMockup({ url, title, description }: { url: string; title: string; description: string }) {
+  return (
+    <div className="p-2 flex-1 flex flex-col justify-center gap-1.5">
+      <div className="rounded border border-gray-200 overflow-hidden bg-white shadow-sm max-w-[260px] mx-auto w-full">
+        <div className="aspect-[1200/630] bg-gray-100 overflow-hidden flex items-center justify-center">
+          {url
+            ? <img src={url} className="w-full h-full object-cover" alt="" />
+            : <ImageIcon className="size-7 text-gray-300" strokeWidth={1.5} />}
+        </div>
+        <div className="p-1.5 border-t border-gray-100 bg-[#f5f5f7]">
+          <p className={`${font} text-[8px] text-gray-400 uppercase tracking-wide`}>metaherb.com</p>
+          <p className={`${font} text-[10px] text-black truncate`} style={{ fontWeight: 600 }}>{title || "MetaHerb"}</p>
+          <p className={`${font} text-[8.5px] text-gray-500 leading-tight line-clamp-2`}>{description || "—"}</p>
+        </div>
+      </div>
+      <p className={`${font} text-[9px] text-gray-400 text-center`}>ตัวอย่างเมื่อแชร์ไปบน Facebook / Line / X / Messenger</p>
     </div>
   );
 }
@@ -17381,11 +17555,11 @@ function AboutTrustWire({ cfg, view }: { cfg: AboutConfigs["about_trust"]; view:
               ))}
             </div>
           )}
-          {cfg.showCertifications && (
+          {cfg.showTags && cfg.tags.length > 0 && (
             <div className={`flex flex-wrap ${isDesktop ? "gap-2" : "gap-1.5"}`}>
-              {[0,1,2,3].map(i => (
+              {cfg.tags.map((tag, i) => (
                 <div key={i} className={`bg-[rgba(125,184,112,0.2)] border border-[rgba(125,184,112,0.4)] rounded-full flex items-center ${isDesktop ? "px-4 py-1.5" : "px-3 py-1"}`}>
-                  <div className={`bg-[#a8d5a0]/80 rounded-full ${isDesktop ? "h-2 w-16" : "h-1.5 w-12"}`} />
+                  <span className={`${font} text-[#a8d5a0]/90 whitespace-nowrap ${isDesktop ? "text-[11px]" : "text-[10px]"}`} style={{ fontWeight: 500 }}>{tag}</span>
                 </div>
               ))}
             </div>
@@ -17570,14 +17744,47 @@ function AboutSectionSettings({ id, configs, setConfigs }: {
           {c.showFloatingImage && <ImageField label="ภาพซ้อน" value={c.floatingImage} onChange={(v) => upd("about_story", { floatingImage: v })} />}
         </FieldGroup>
         <FieldGroup title="คุณสมบัติ 1">
+          <div className="flex flex-col gap-1">
+            <label className={`${font} text-[11px] text-gray-500`}>ไอคอน</label>
+            <IconPicker value={c.f1Icon} onChange={(v) => upd("about_story", { f1Icon: v })} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className={`${font} text-[11px] text-gray-500`}>สีพื้นหลัง / สีไอคอน</span>
+            <div className="flex gap-1.5">
+              <input type="color" value={c.f1BgColor} onChange={(e) => upd("about_story", { f1BgColor: e.target.value })} title="สีพื้นหลัง" className="h-7 w-9 rounded border border-gray-200 cursor-pointer" />
+              <input type="color" value={c.f1IconColor} onChange={(e) => upd("about_story", { f1IconColor: e.target.value })} title="สีไอคอน" className="h-7 w-9 rounded border border-gray-200 cursor-pointer" />
+            </div>
+          </div>
           <TextField label="หัวข้อ" value={c.f1Title} onChange={(v) => upd("about_story", { f1Title: v })} />
           <TextareaField label="คำอธิบาย" value={c.f1Desc} onChange={(v) => upd("about_story", { f1Desc: v })} />
         </FieldGroup>
         <FieldGroup title="คุณสมบัติ 2">
+          <div className="flex flex-col gap-1">
+            <label className={`${font} text-[11px] text-gray-500`}>ไอคอน</label>
+            <IconPicker value={c.f2Icon} onChange={(v) => upd("about_story", { f2Icon: v })} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className={`${font} text-[11px] text-gray-500`}>สีพื้นหลัง / สีไอคอน</span>
+            <div className="flex gap-1.5">
+              <input type="color" value={c.f2BgColor} onChange={(e) => upd("about_story", { f2BgColor: e.target.value })} title="สีพื้นหลัง" className="h-7 w-9 rounded border border-gray-200 cursor-pointer" />
+              <input type="color" value={c.f2IconColor} onChange={(e) => upd("about_story", { f2IconColor: e.target.value })} title="สีไอคอน" className="h-7 w-9 rounded border border-gray-200 cursor-pointer" />
+            </div>
+          </div>
           <TextField label="หัวข้อ" value={c.f2Title} onChange={(v) => upd("about_story", { f2Title: v })} />
           <TextareaField label="คำอธิบาย" value={c.f2Desc} onChange={(v) => upd("about_story", { f2Desc: v })} />
         </FieldGroup>
         <FieldGroup title="คุณสมบัติ 3">
+          <div className="flex flex-col gap-1">
+            <label className={`${font} text-[11px] text-gray-500`}>ไอคอน</label>
+            <IconPicker value={c.f3Icon} onChange={(v) => upd("about_story", { f3Icon: v })} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className={`${font} text-[11px] text-gray-500`}>สีพื้นหลัง / สีไอคอน</span>
+            <div className="flex gap-1.5">
+              <input type="color" value={c.f3BgColor} onChange={(e) => upd("about_story", { f3BgColor: e.target.value })} title="สีพื้นหลัง" className="h-7 w-9 rounded border border-gray-200 cursor-pointer" />
+              <input type="color" value={c.f3IconColor} onChange={(e) => upd("about_story", { f3IconColor: e.target.value })} title="สีไอคอน" className="h-7 w-9 rounded border border-gray-200 cursor-pointer" />
+            </div>
+          </div>
           <TextField label="หัวข้อ" value={c.f3Title} onChange={(v) => upd("about_story", { f3Title: v })} />
           <TextareaField label="คำอธิบาย" value={c.f3Desc} onChange={(v) => upd("about_story", { f3Desc: v })} />
         </FieldGroup>
@@ -17590,7 +17797,7 @@ function AboutSectionSettings({ id, configs, setConfigs }: {
       <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
         <FieldGroup title="การแสดงผล">
           <ConfigRow label="แสดงการ์ดสินค้า"><ToggleSwitch checked={c.showProductCards} onChange={(v) => upd("about_trust", { showProductCards: v })} /></ConfigRow>
-          <ConfigRow label="แสดง Certifications"><ToggleSwitch checked={c.showCertifications} onChange={(v) => upd("about_trust", { showCertifications: v })} /></ConfigRow>
+          <ConfigRow label="แสดง Tag ข้อมูลเพิ่มเติม"><ToggleSwitch checked={c.showTags} onChange={(v) => upd("about_trust", { showTags: v })} /></ConfigRow>
         </FieldGroup>
         <FieldGroup title="หัวข้อ 2 บรรทัด">
           <TextField label="บรรทัด 1 (สีขาว)" value={c.title1} onChange={(v) => upd("about_trust", { title1: v })} />
@@ -17606,12 +17813,41 @@ function AboutSectionSettings({ id, configs, setConfigs }: {
             </div>
           </FieldGroup>
         )}
-        {c.showCertifications && (
-          <FieldGroup title="Certifications">
-            <TextField label="ใบรับรอง 1" value={c.cert1} onChange={(v) => upd("about_trust", { cert1: v })} />
-            <TextField label="ใบรับรอง 2" value={c.cert2} onChange={(v) => upd("about_trust", { cert2: v })} />
-            <TextField label="ใบรับรอง 3" value={c.cert3} onChange={(v) => upd("about_trust", { cert3: v })} />
-            <TextField label="ใบรับรอง 4" value={c.cert4} onChange={(v) => upd("about_trust", { cert4: v })} />
+        {c.showTags && (
+          <FieldGroup title="Tag ข้อมูลเพิ่มเติม">
+            <p className={`${font} text-[10px] text-gray-400 -mt-1`}>เพิ่มได้ไม่จำกัด — แสดงเป็นแถว wrap อัตโนมัติเมื่อเต็มบรรทัด</p>
+            <div className="flex flex-col gap-1.5">
+              {c.tags.map((tag, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={tag}
+                    onChange={(e) => {
+                      const next = [...c.tags];
+                      next[i] = e.target.value;
+                      upd("about_trust", { tags: next });
+                    }}
+                    placeholder="เช่น ✓ อย. ไทย"
+                    className={`${font} flex-1 h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`}
+                  />
+                  <button
+                    onClick={() => upd("about_trust", { tags: c.tags.filter((_, idx) => idx !== i) })}
+                    title="ลบ Tag"
+                    className="size-8 rounded-md border border-gray-200 flex items-center justify-center hover:bg-[#ff3b30]/5 hover:border-[#ff3b30]/40 cursor-pointer transition-all shrink-0"
+                  >
+                    <Trash2 className="size-3.5 text-gray-400 hover:text-[#ff3b30]" strokeWidth={2.2} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => upd("about_trust", { tags: [...c.tags, ""] })}
+              className={`${font} inline-flex items-center justify-center gap-1.5 h-8 rounded-md border border-dashed text-[12px] mt-1 cursor-pointer transition-all hover:bg-[#319754]/5`}
+              style={{ borderColor: ADMIN_PRIMARY, color: ADMIN_PRIMARY, fontWeight: 500 }}
+            >
+              <Plus className="size-3.5" strokeWidth={2.4} />
+              เพิ่ม Tag
+            </button>
           </FieldGroup>
         )}
       </div>
@@ -17665,10 +17901,13 @@ function AboutSectionSettings({ id, configs, setConfigs }: {
       {c.showSocial && (
         <FieldGroup title="ติดตามเราบนโซเชียล">
           <TextField label="หัวข้อกลุ่ม Social" value={c.socialHeading} onChange={(v) => upd("about_contact", { socialHeading: v })} />
-          <div className="grid grid-cols-[1fr_2fr] gap-2"><TextField label="ชื่อ 1" value={c.s1Name} onChange={(v) => upd("about_contact", { s1Name: v })} /><TextField label="Handle 1" value={c.s1Handle} onChange={(v) => upd("about_contact", { s1Handle: v })} /></div>
-          <div className="grid grid-cols-[1fr_2fr] gap-2"><TextField label="ชื่อ 2" value={c.s2Name} onChange={(v) => upd("about_contact", { s2Name: v })} /><TextField label="Handle 2" value={c.s2Handle} onChange={(v) => upd("about_contact", { s2Handle: v })} /></div>
-          <div className="grid grid-cols-[1fr_2fr] gap-2"><TextField label="ชื่อ 3" value={c.s3Name} onChange={(v) => upd("about_contact", { s3Name: v })} /><TextField label="Handle 3" value={c.s3Handle} onChange={(v) => upd("about_contact", { s3Handle: v })} /></div>
-          <div className="grid grid-cols-[1fr_2fr] gap-2"><TextField label="ชื่อ 4" value={c.s4Name} onChange={(v) => upd("about_contact", { s4Name: v })} /><TextField label="Handle 4" value={c.s4Handle} onChange={(v) => upd("about_contact", { s4Handle: v })} /></div>
+          <p className={`${font} text-[10px] text-gray-400 -mt-1`}>ใส่ URL เต็ม (เช่น https://facebook.com/yourpage) — กดที่การ์ดจะเปิด tab ใหม่</p>
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-[1fr_2fr] gap-2"><TextField label="ชื่อ 1" value={c.s1Name} onChange={(v) => upd("about_contact", { s1Name: v })} /><TextField label="Link 1" value={c.s1Link} onChange={(v) => upd("about_contact", { s1Link: v })} placeholder="https://..." /></div>
+            <div className="grid grid-cols-[1fr_2fr] gap-2"><TextField label="ชื่อ 2" value={c.s2Name} onChange={(v) => upd("about_contact", { s2Name: v })} /><TextField label="Link 2" value={c.s2Link} onChange={(v) => upd("about_contact", { s2Link: v })} placeholder="https://..." /></div>
+            <div className="grid grid-cols-[1fr_2fr] gap-2"><TextField label="ชื่อ 3" value={c.s3Name} onChange={(v) => upd("about_contact", { s3Name: v })} /><TextField label="Link 3" value={c.s3Link} onChange={(v) => upd("about_contact", { s3Link: v })} placeholder="https://..." /></div>
+            <div className="grid grid-cols-[1fr_2fr] gap-2"><TextField label="ชื่อ 4" value={c.s4Name} onChange={(v) => upd("about_contact", { s4Name: v })} /><TextField label="Link 4" value={c.s4Link} onChange={(v) => upd("about_contact", { s4Link: v })} placeholder="https://..." /></div>
+          </div>
         </FieldGroup>
       )}
       {c.showForm && (
@@ -17779,20 +18018,23 @@ function AboutFullPreview({ sections, configs, view }: { sections: AboutSection[
                   </div>
                   <div className="flex-1 flex flex-col gap-5">
                     {[
-                      { title: c.f1Title, desc: c.f1Desc },
-                      { title: c.f2Title, desc: c.f2Desc },
-                      { title: c.f3Title, desc: c.f3Desc },
-                    ].map((item, i) => (
-                      <div key={i} className="flex gap-3">
-                        <div className="size-11 bg-[#e7cfbc] rounded-full flex items-center justify-center shrink-0">
-                          <Leaf className="size-5 text-[#9D5400]" />
+                      { title: c.f1Title, desc: c.f1Desc, iconKey: c.f1Icon, bgColor: c.f1BgColor, iconColor: c.f1IconColor },
+                      { title: c.f2Title, desc: c.f2Desc, iconKey: c.f2Icon, bgColor: c.f2BgColor, iconColor: c.f2IconColor },
+                      { title: c.f3Title, desc: c.f3Desc, iconKey: c.f3Icon, bgColor: c.f3BgColor, iconColor: c.f3IconColor },
+                    ].map((item, i) => {
+                      const IconComp = STORY_ICONS[item.iconKey] ?? Leaf;
+                      return (
+                        <div key={i} className="flex gap-3">
+                          <div className="size-12 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: item.bgColor }}>
+                            <IconComp className="size-6" style={{ color: item.iconColor }} strokeWidth={2} />
+                          </div>
+                          <div>
+                            <h3 className={`${font} text-[16px] text-[#333]`} style={{ fontWeight: 600 }}>{item.title}</h3>
+                            <p className={`${font} text-[13px] text-[#4a6741] leading-6 mt-0.5`}>{item.desc}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className={`${font} text-[16px] text-[#333]`} style={{ fontWeight: 600 }}>{item.title}</h3>
-                          <p className={`${font} text-[13px] text-[#4a6741] leading-6 mt-0.5`}>{item.desc}</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -17859,10 +18101,10 @@ function AboutFullPreview({ sections, configs, view }: { sections: AboutSection[
                       </div>
                     )}
 
-                    {c.showCertifications && (
+                    {c.showTags && c.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-5">
-                        {[c.cert1, c.cert2, c.cert3, c.cert4].map((cert) => (
-                          <span key={cert} className={`${font} bg-[rgba(125,184,112,0.2)] border border-[rgba(125,184,112,0.4)] text-[#a8d5a0] text-[12px] px-3 py-1.5 rounded-full`}>{cert}</span>
+                        {c.tags.map((tag, i) => (
+                          <span key={i} className={`${font} bg-[rgba(125,184,112,0.2)] border border-[rgba(125,184,112,0.4)] text-[#a8d5a0] text-[12px] px-3 py-1.5 rounded-full whitespace-nowrap`}>{tag}</span>
                         ))}
                       </div>
                     )}
@@ -17924,11 +18166,19 @@ function AboutFullPreview({ sections, configs, view }: { sections: AboutSection[
           { icon: Mail,   label: c.emailLabel,   value: c.email,   sub: c.emailSub },
           { icon: MapPin, label: c.addressLabel, value: c.address, sub: c.addressSub },
         ];
+        const prettifyLink = (url: string) => {
+          if (!url) return "";
+          try {
+            const u = new URL(url);
+            const path = u.pathname.replace(/^\/+|\/+$/g, "");
+            return path ? path.split("/").pop() || u.hostname : u.hostname;
+          } catch { return url; }
+        };
         const socials = [
-          { name: c.s1Name, handle: c.s1Handle },
-          { name: c.s2Name, handle: c.s2Handle },
-          { name: c.s3Name, handle: c.s3Handle },
-          { name: c.s4Name, handle: c.s4Handle },
+          { name: c.s1Name, link: c.s1Link },
+          { name: c.s2Name, link: c.s2Link },
+          { name: c.s3Name, link: c.s3Link },
+          { name: c.s4Name, link: c.s4Link },
         ];
         return (
           <section key={s.id} className="bg-[#f5f0e8] py-12 sm:py-16 lg:py-20">
@@ -17965,15 +18215,22 @@ function AboutFullPreview({ sections, configs, view }: { sections: AboutSection[
                       <h3 className={`${font} text-[18px] sm:text-[20px] text-[#333] mb-3`} style={{ fontWeight: 700 }}>{c.socialHeading}</h3>
                       <div className="grid grid-cols-2 gap-2">
                         {socials.map((sc) => (
-                          <div key={sc.name} className="bg-white border border-[#e0d5c5] rounded-2xl px-3 py-2.5 flex items-center gap-2.5">
+                          <a
+                            key={sc.name}
+                            href={sc.link || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-white border border-[#e0d5c5] rounded-2xl px-3 py-2.5 flex items-center gap-2.5 cursor-pointer hover:shadow-md hover:border-[#7db870] transition-all group"
+                          >
                             <div className="size-9 bg-[#e7cfbc] rounded-xl flex items-center justify-center shrink-0">
                               <span className={`${font} text-[#9D5400] text-[11px]`} style={{ fontWeight: 700 }}>{sc.name[0]}</span>
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className={`${font} text-[#1a2e1a] text-[13px]`} style={{ fontWeight: 600 }}>{sc.name}</p>
-                              <p className={`${font} text-[#4a6741] text-[11px] truncate`}>{sc.handle}</p>
+                              <p className={`${font} text-[#4a6741] text-[11px] truncate`}>{prettifyLink(sc.link)}</p>
                             </div>
-                          </div>
+                            <ArrowRight className="size-4 text-gray-300 group-hover:text-[#7db870] group-hover:translate-x-0.5 transition-all shrink-0" strokeWidth={2.2} />
+                          </a>
                         ))}
                       </div>
                     </div>
@@ -18130,8 +18387,10 @@ function PageAboutBuilder() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 bg-[#fafbfc] rounded-xl p-4 min-h-[400px] mx-auto w-full transition-[max-width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+        <div className="mx-auto w-full transition-[max-width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
           style={{ maxWidth: view === "mobile" ? 420 : view === "tablet" ? 820 : 1600 }}>
+        <BrowserMockup url="metaherb.com/about" view={view}>
+        <div className="flex flex-col gap-4 p-4 min-h-[400px]">
           {previewSections.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 gap-2 text-gray-400">
               <EyeOff className="size-8" strokeWidth={1.5} />
@@ -18195,6 +18454,8 @@ function PageAboutBuilder() {
               </div>
             );
           })}
+        </div>
+        </BrowserMockup>
         </div>
       </div>
 
@@ -18313,6 +18574,2466 @@ function PageAboutBuilder() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/* ============================================================
+ * APPBAR PAGE BUILDER
+ * ========================================================== */
+type AppbarSectionId = "appbar_main" | "appbar_menu";
+interface AppbarSection { id: AppbarSectionId; label: string; visible: boolean; }
+
+const DEFAULT_APPBAR_SECTIONS: AppbarSection[] = [
+  { id: "appbar_main", label: "แถบหลัก (Logo / Search / ปุ่ม)", visible: true },
+  { id: "appbar_menu", label: "แถบเมนูหลัก",                    visible: true },
+];
+
+interface AppbarConfigs {
+  appbar_main: {
+    logoUrl: string;
+    brandText1: string; brandText1Color: string;
+    brandText2: string; brandText2Color: string;
+    showSearch: boolean;
+    searchPlaceholder: string;
+    showNotifications: boolean;
+    showCart: boolean;
+    showAuthButtons: boolean;
+    registerText: string;
+    loginText: string;
+    registerColor: string;
+    loginBgColor: string;
+  };
+  appbar_menu: {
+    bgColor: string;
+    textColor: string;
+    align: "left" | "center" | "right";
+    items: { label: string; path: string }[];
+  };
+}
+
+const DEFAULT_APPBAR_CONFIGS: AppbarConfigs = {
+  appbar_main: {
+    logoUrl: "",
+    brandText1: "META", brandText1Color: "#ed1c24",
+    brandText2: "HERB", brandText2Color: "#f7931d",
+    showSearch: true,
+    searchPlaceholder: "ค้นหาสินค้าที่ต้องการ",
+    showNotifications: true,
+    showCart: true,
+    showAuthButtons: true,
+    registerText: "สมัครสมาชิก",
+    loginText: "เข้าสู่ระบบ",
+    registerColor: "#db8b0a",
+    loginBgColor: "#319754",
+  },
+  appbar_menu: {
+    bgColor: "#319754",
+    textColor: "#ffffff",
+    align: "center",
+    items: [
+      { label: "หน้าหลัก",       path: "/"         },
+      { label: "ผลิตภัณท์",      path: "/products" },
+      { label: "สาระความรู้",     path: "/blog"     },
+      { label: "เกี่ยวกับเรา",    path: "/about"    },
+    ],
+  },
+};
+
+const appbarSectionIcons: Record<AppbarSectionId, any> = {
+  appbar_main: LayoutPanelTop,
+  appbar_menu: Menu,
+};
+
+/* --- Wires (preview cards) --- */
+function AppbarMainBarWire({ cfg, view }: { cfg: AppbarConfigs["appbar_main"]; view: ViewMode }) {
+  const isMobile  = view === "mobile";
+  const isDesktop = view === "desktop";
+  return (
+    <div className="bg-white rounded-md border border-gray-100">
+      <div className={`flex items-center justify-between py-3 ${isMobile ? "px-3" : isDesktop ? "px-6" : "px-4"}`}>
+        {isMobile && <Menu className="size-5 text-gray-600 shrink-0" />}
+        {/* Logo */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className={`shrink-0 ${isMobile ? "size-[36px]" : "size-[48px]"} rounded-full overflow-hidden bg-gray-100 flex items-center justify-center`}>
+            {cfg.logoUrl
+              ? <img src={cfg.logoUrl} alt="logo" className="w-full h-full object-cover" />
+              : <img src={imgLogo} alt="logo" className="w-full h-full object-cover" />}
+          </div>
+          <span className={`${fontBold} whitespace-nowrap ${isMobile ? "text-[16px]" : "text-[20px]"}`} style={{ fontWeight: 700 }}>
+            <span style={{ color: cfg.brandText1Color }}>{cfg.brandText1}</span>
+            <span style={{ color: cfg.brandText2Color }}>{cfg.brandText2}</span>
+          </span>
+        </div>
+
+        {/* Search */}
+        {cfg.showSearch && !isMobile && (
+          <div className={`shrink-0 mx-3 ${isDesktop ? "w-[300px]" : "w-[200px]"}`}>
+            <div className="flex items-center bg-white border border-[#d4d4d8] rounded-full pl-3 pr-1 py-1">
+              <span className={`${font} flex-1 text-[12px] text-[#a3a3a3] truncate`}>{cfg.searchPlaceholder}</span>
+              <div className="bg-[#319754] rounded-full size-7 flex items-center justify-center shrink-0">
+                <Search className="size-3.5 text-white" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Right icons */}
+        <div className="flex items-center gap-2 justify-end">
+          {cfg.showSearch && isMobile && <Search className="size-4 text-gray-600" />}
+          {cfg.showNotifications && (
+            <div className="bg-[rgba(0,0,0,0.05)] rounded-full size-[34px] flex items-center justify-center relative shrink-0">
+              <Bell className="size-[18px] text-gray-700" strokeWidth={2} />
+              <span className="absolute -top-1 -right-1 bg-[#ff383c] text-white text-[8px] min-w-[16px] h-[16px] flex items-center justify-center px-1 rounded-full border-2 border-white">3</span>
+            </div>
+          )}
+          {cfg.showCart && (
+            <div className="bg-[rgba(0,0,0,0.05)] rounded-full size-[34px] flex items-center justify-center relative shrink-0">
+              <ShoppingCart className="size-[18px] text-gray-700" strokeWidth={2} />
+              <span className="absolute -top-1 -right-1 bg-[#ff383c] text-white text-[8px] min-w-[16px] h-[16px] flex items-center justify-center px-1 rounded-full border-2 border-white">2</span>
+            </div>
+          )}
+          {cfg.showAuthButtons && !isMobile && (
+            <div className="flex items-center gap-1.5">
+              <button className={`${font} h-[34px] px-3 rounded-full text-[12px] border`} style={{ borderColor: cfg.registerColor, color: cfg.registerColor }}>
+                {cfg.registerText}
+              </button>
+              <button className={`${font} h-[34px] px-3 rounded-full text-[12px] text-white`} style={{ backgroundColor: cfg.loginBgColor }}>
+                {cfg.loginText}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AppbarMenuWire({ cfg, view }: { cfg: AppbarConfigs["appbar_menu"]; view: ViewMode }) {
+  if (view === "mobile") {
+    return (
+      <div className="rounded-md overflow-hidden" style={{ backgroundColor: cfg.bgColor }}>
+        <div className="py-2 px-3 flex items-center gap-2">
+          <Menu className="size-4" style={{ color: cfg.textColor }} />
+          <span className={`${font} text-[12px]`} style={{ color: cfg.textColor, fontWeight: 500 }}>
+            เมนู ({cfg.items.length} รายการ)
+          </span>
+        </div>
+      </div>
+    );
+  }
+  const justify = cfg.align === "left" ? "justify-start" : cfg.align === "right" ? "justify-end" : "justify-center";
+  return (
+    <div className="rounded-md overflow-hidden" style={{ backgroundColor: cfg.bgColor }}>
+      <div className={`flex items-center gap-2 py-2.5 px-4 ${justify}`}>
+        {cfg.items.map((it, i) => (
+          <span key={i} className={`${font} px-3 py-1 rounded-full text-[13px] ${i === 0 ? "bg-black/15" : ""}`} style={{ color: cfg.textColor }}>
+            {it.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* --- Settings popover --- */
+function AppbarSectionSettings({ id, configs, setConfigs }: {
+  id: AppbarSectionId;
+  configs: AppbarConfigs;
+  setConfigs: React.Dispatch<React.SetStateAction<AppbarConfigs>>;
+}) {
+  const upd = <K extends AppbarSectionId>(key: K, patch: Partial<AppbarConfigs[K]>) =>
+    setConfigs(prev => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+
+  if (id === "appbar_main") {
+    const c = configs.appbar_main;
+    return (
+      <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
+        <FieldGroup title="โลโก้">
+          <ImageField label="URL โลโก้ (ปล่อยว่าง = ใช้โลโก้เริ่มต้น)" value={c.logoUrl} onChange={(v) => upd("appbar_main", { logoUrl: v })} />
+        </FieldGroup>
+        <FieldGroup title="ชื่อแบรนด์">
+          <div className="grid grid-cols-[2fr_auto] gap-2 items-end">
+            <TextField label="คำที่ 1" value={c.brandText1} onChange={(v) => upd("appbar_main", { brandText1: v })} />
+            <input type="color" value={c.brandText1Color} onChange={(e) => upd("appbar_main", { brandText1Color: e.target.value })} title="สีคำที่ 1" className="h-8 w-9 rounded border border-gray-200 cursor-pointer" />
+          </div>
+          <div className="grid grid-cols-[2fr_auto] gap-2 items-end">
+            <TextField label="คำที่ 2" value={c.brandText2} onChange={(v) => upd("appbar_main", { brandText2: v })} />
+            <input type="color" value={c.brandText2Color} onChange={(e) => upd("appbar_main", { brandText2Color: e.target.value })} title="สีคำที่ 2" className="h-8 w-9 rounded border border-gray-200 cursor-pointer" />
+          </div>
+        </FieldGroup>
+        <FieldGroup title="ช่องค้นหา">
+          <ConfigRow label="แสดงช่องค้นหา"><ToggleSwitch checked={c.showSearch} onChange={(v) => upd("appbar_main", { showSearch: v })} /></ConfigRow>
+          {c.showSearch && <TextField label="ข้อความ placeholder" value={c.searchPlaceholder} onChange={(v) => upd("appbar_main", { searchPlaceholder: v })} />}
+        </FieldGroup>
+        <FieldGroup title="ปุ่ม Action">
+          <ConfigRow label="แสดงปุ่มแจ้งเตือน"><ToggleSwitch checked={c.showNotifications} onChange={(v) => upd("appbar_main", { showNotifications: v })} /></ConfigRow>
+          <ConfigRow label="แสดงปุ่มตะกร้า"><ToggleSwitch checked={c.showCart} onChange={(v) => upd("appbar_main", { showCart: v })} /></ConfigRow>
+          <ConfigRow label="แสดงปุ่ม สมัคร / เข้าสู่ระบบ"><ToggleSwitch checked={c.showAuthButtons} onChange={(v) => upd("appbar_main", { showAuthButtons: v })} /></ConfigRow>
+        </FieldGroup>
+        {c.showAuthButtons && (
+          <FieldGroup title="ปุ่ม Auth">
+            <div className="grid grid-cols-[2fr_auto] gap-2 items-end">
+              <TextField label="ข้อความปุ่มสมัคร" value={c.registerText} onChange={(v) => upd("appbar_main", { registerText: v })} />
+              <input type="color" value={c.registerColor} onChange={(e) => upd("appbar_main", { registerColor: e.target.value })} title="สีปุ่มสมัคร" className="h-8 w-9 rounded border border-gray-200 cursor-pointer" />
+            </div>
+            <div className="grid grid-cols-[2fr_auto] gap-2 items-end">
+              <TextField label="ข้อความปุ่มเข้าสู่ระบบ" value={c.loginText} onChange={(v) => upd("appbar_main", { loginText: v })} />
+              <input type="color" value={c.loginBgColor} onChange={(e) => upd("appbar_main", { loginBgColor: e.target.value })} title="สีปุ่มเข้าสู่ระบบ" className="h-8 w-9 rounded border border-gray-200 cursor-pointer" />
+            </div>
+          </FieldGroup>
+        )}
+      </div>
+    );
+  }
+
+  // appbar_menu
+  const c = configs.appbar_menu;
+  const updItem = (i: number, patch: Partial<{ label: string; path: string }>) => {
+    const next = c.items.map((it, idx) => idx === i ? { ...it, ...patch } : it);
+    upd("appbar_menu", { items: next });
+  };
+  const removeItem = (i: number) => upd("appbar_menu", { items: c.items.filter((_, idx) => idx !== i) });
+  const addItem    = () => upd("appbar_menu", { items: [...c.items, { label: "เมนูใหม่", path: "/" }] });
+  const moveItem   = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= c.items.length) return;
+    const next = [...c.items];
+    [next[i], next[j]] = [next[j], next[i]];
+    upd("appbar_menu", { items: next });
+  };
+  return (
+    <div className="flex flex-col gap-3 max-h-[420px] overflow-y-auto pr-1">
+      <FieldGroup title="สีและการจัด layout">
+        <div className="flex items-center justify-between gap-3">
+          <span className={`${font} text-[11px] text-gray-500`}>พื้นหลัง / ตัวอักษร</span>
+          <div className="flex gap-1.5">
+            <input type="color" value={c.bgColor}   onChange={(e) => upd("appbar_menu", { bgColor: e.target.value })}   title="สีพื้นหลัง"     className="h-7 w-9 rounded border border-gray-200 cursor-pointer" />
+            <input type="color" value={c.textColor} onChange={(e) => upd("appbar_menu", { textColor: e.target.value })} title="สีตัวอักษร" className="h-7 w-9 rounded border border-gray-200 cursor-pointer" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className={`${font} text-[11px] text-gray-500`}>การจัดวาง</label>
+          <div className="inline-flex bg-gray-100 rounded-md p-0.5">
+            {(["left", "center", "right"] as const).map((a) => {
+              const active = c.align === a;
+              return (
+                <button key={a} onClick={() => upd("appbar_menu", { align: a })}
+                  className={`${font} flex-1 h-7 rounded text-[11px] transition-all cursor-pointer ${active ? "bg-white shadow-sm" : "text-gray-500"}`}
+                  style={{ color: active ? ADMIN_PRIMARY : undefined, fontWeight: 500 }}>
+                  {a === "left" ? "ซ้าย" : a === "center" ? "กึ่งกลาง" : "ขวา"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </FieldGroup>
+      <FieldGroup title="รายการเมนู">
+        <p className={`${font} text-[10px] text-gray-400 -mt-1`}>กดลูกศรเพื่อสลับลำดับ — เพิ่ม / ลบได้</p>
+        <div className="flex flex-col gap-1.5">
+          {c.items.map((it, i) => (
+            <div key={i} className="flex items-center gap-1.5 bg-gray-50 rounded-md p-1.5">
+              <div className="flex flex-col gap-0.5 shrink-0">
+                <button onClick={() => moveItem(i, -1)} disabled={i === 0}
+                  className="size-5 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center transition-all">
+                  <ChevronLeft className="size-3 text-gray-500 rotate-90" />
+                </button>
+                <button onClick={() => moveItem(i, 1)} disabled={i === c.items.length - 1}
+                  className="size-5 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center transition-all">
+                  <ChevronLeft className="size-3 text-gray-500 -rotate-90" />
+                </button>
+              </div>
+              <div className="flex-1 min-w-0 grid grid-cols-2 gap-1.5">
+                <input type="text" value={it.label} placeholder="ชื่อเมนู"
+                  onChange={(e) => updItem(i, { label: e.target.value })}
+                  className={`${font} h-7 px-2 rounded border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+                <input type="text" value={it.path} placeholder="/path"
+                  onChange={(e) => updItem(i, { path: e.target.value })}
+                  className={`${font} h-7 px-2 rounded border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+              </div>
+              <button onClick={() => removeItem(i)} title="ลบเมนูนี้"
+                className="size-7 rounded-md border border-gray-200 flex items-center justify-center hover:bg-[#ff3b30]/5 hover:border-[#ff3b30]/40 cursor-pointer transition-all shrink-0">
+                <Trash2 className="size-3.5 text-gray-400 hover:text-[#ff3b30]" strokeWidth={2.2} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button onClick={addItem}
+          className={`${font} inline-flex items-center justify-center gap-1.5 h-8 rounded-md border border-dashed text-[12px] mt-1 cursor-pointer transition-all hover:bg-[#319754]/5`}
+          style={{ borderColor: ADMIN_PRIMARY, color: ADMIN_PRIMARY, fontWeight: 500 }}>
+          <Plus className="size-3.5" strokeWidth={2.4} />
+          เพิ่มเมนู
+        </button>
+      </FieldGroup>
+    </div>
+  );
+}
+
+function AppbarFullPreview({ sections, configs, view }: { sections: AppbarSection[]; configs: AppbarConfigs; view: ViewMode }) {
+  const visible = sections.filter(s => s.visible);
+  const isMobile  = view === "mobile";
+  const isDesktop = view === "desktop";
+  const pxCls = isDesktop ? "px-[60px]" : view === "tablet" ? "px-6" : "px-4";
+  return (
+    <div className="flex flex-col w-full">
+      <header className="backdrop-blur-[8px] bg-[rgba(255,255,255,0.9)]">
+        {visible.map((s) => {
+          if (s.id === "appbar_main") {
+            const c = configs.appbar_main;
+            return (
+              <div key={s.id} className={`flex items-center justify-between py-3 sm:py-4 ${pxCls}`}>
+                {isMobile && <Menu className="size-6 text-gray-600 shrink-0" />}
+                <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                  <img src={c.logoUrl || imgLogo} className={`shrink-0 ${isMobile ? "size-[40px]" : "size-[58px]"}`} alt="logo" />
+                  <span className={`${fontBold} whitespace-nowrap ${isMobile ? "text-[18px]" : "text-[24px]"}`} style={{ fontWeight: 700 }}>
+                    <span style={{ color: c.brandText1Color }}>{c.brandText1}</span>
+                    <span style={{ color: c.brandText2Color }}>{c.brandText2}</span>
+                  </span>
+                </div>
+                {c.showSearch && !isMobile && (
+                  <div className={`shrink-0 mx-4 ${isDesktop ? "w-[300px] lg:w-[412px]" : "w-[240px]"}`}>
+                    <div className="flex items-center bg-white border border-[#d4d4d8] rounded-full pl-4 pr-1 py-1">
+                      <span className={`${font} flex-1 text-[14px] text-[#a3a3a3] truncate`}>{c.searchPlaceholder}</span>
+                      <div className="bg-[#319754] rounded-full size-8 flex items-center justify-center shrink-0">
+                        <Search className="size-4 text-white" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 sm:gap-4 justify-end">
+                  {c.showSearch && isMobile && <Search className="size-5 text-gray-600" />}
+                  {c.showNotifications && (
+                    <div className="bg-[rgba(0,0,0,0.05)] rounded-full size-[36px] sm:size-[40px] flex items-center justify-center relative">
+                      <Bell className="size-[20px] sm:size-[22px] text-gray-700" strokeWidth={2} />
+                      <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full border-2 border-white">3</span>
+                    </div>
+                  )}
+                  {c.showCart && (
+                    <div className="bg-[rgba(0,0,0,0.05)] rounded-full size-[36px] sm:size-[40px] flex items-center justify-center relative">
+                      <ShoppingCart className="size-[20px] sm:size-[22px] text-gray-700" strokeWidth={2} />
+                      <span className="absolute -top-1.5 -right-1.5 bg-[#ff383c] text-white text-[9px] min-w-[18px] h-[18px] flex items-center justify-center px-1 rounded-full border-2 border-white">2</span>
+                    </div>
+                  )}
+                  {c.showAuthButtons && !isMobile && (
+                    <div className="flex items-center gap-2.5">
+                      <button className={`${font} h-[40px] w-[120px] rounded-full text-[14px] border`} style={{ borderColor: c.registerColor, color: c.registerColor }}>
+                        {c.registerText}
+                      </button>
+                      <button className={`${font} h-[40px] w-[120px] rounded-full text-[14px] text-white`} style={{ backgroundColor: c.loginBgColor }}>
+                        {c.loginText}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+          // appbar_menu
+          const c = configs.appbar_menu;
+          if (isMobile) {
+            return (
+              <nav key={s.id} style={{ backgroundColor: c.bgColor }}>
+                <div className="flex items-center gap-2 py-2.5 px-4">
+                  <Menu className="size-4" style={{ color: c.textColor }} />
+                  <span className={`${font} text-[13px]`} style={{ color: c.textColor, fontWeight: 500 }}>เมนู</span>
+                </div>
+              </nav>
+            );
+          }
+          const justify = c.align === "left" ? "justify-start" : c.align === "right" ? "justify-end" : "justify-center";
+          return (
+            <nav key={s.id} style={{ backgroundColor: c.bgColor }}>
+              <div className={`flex items-center gap-2 py-2.5 px-6 ${justify}`}>
+                {c.items.map((it, i) => (
+                  <span key={i} className={`${font} px-4 py-1.5 rounded-full text-[14px] ${i === 0 ? "bg-black/15" : ""}`} style={{ color: c.textColor }}>
+                    {it.label}
+                  </span>
+                ))}
+              </div>
+            </nav>
+          );
+        })}
+      </header>
+      <main className="min-h-[260px] bg-[#fafafa]" />
+    </div>
+  );
+}
+
+function PageAppbarBuilder() {
+  const [sections, setSections] = useState<AppbarSection[]>(DEFAULT_APPBAR_SECTIONS);
+  const [configs, setConfigs]   = useState<AppbarConfigs>(DEFAULT_APPBAR_CONFIGS);
+  const [view, setView]         = useState<ViewMode>("desktop");
+  const [showSave, setShowSave] = useState(false);
+  const [previewView, setPreviewView] = useState<ViewMode>("desktop");
+
+  const toggleVisible = (id: AppbarSectionId) =>
+    setSections(prev => prev.map(s => s.id === id ? { ...s, visible: !s.visible } : s));
+
+  const sectionsDirty = sections.some((s, i) => s.visible !== DEFAULT_APPBAR_SECTIONS[i].visible);
+  const configsDirty  = JSON.stringify(configs) !== JSON.stringify(DEFAULT_APPBAR_CONFIGS);
+  const isDirty = sectionsDirty || configsDirty;
+  const resetAll = () => { setSections(DEFAULT_APPBAR_SECTIONS); setConfigs(DEFAULT_APPBAR_CONFIGS); };
+
+  const visibleSections = sections.filter(s => s.visible);
+  const visibleCount = visibleSections.length;
+
+  const renderWire = (id: AppbarSectionId) => {
+    if (id === "appbar_main") return <AppbarMainBarWire cfg={configs.appbar_main} view={view} />;
+    return <AppbarMenuWire cfg={configs.appbar_menu} view={view} />;
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 sm:p-5">
+        <div className="pb-3 mb-4 border-b border-[#e8e8e8] flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <LayoutPanelTop className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
+            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ตัวอย่าง Appbar</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`${font} text-[11px] text-gray-400 hidden sm:inline`}>ลำดับของ Appbar ถูกล็อกไว้</span>
+            <div className="inline-flex items-center bg-[#f5f5f5] rounded-full p-0.5">
+              {([
+                { id: "desktop" as const, label: "Desktop", Icon: Monitor },
+                { id: "tablet"  as const, label: "Tablet",  Icon: Tablet },
+                { id: "mobile"  as const, label: "Mobile",  Icon: Smartphone },
+              ]).map((m) => {
+                const active = view === m.id;
+                return (
+                  <button key={m.id} onClick={() => setView(m.id)} title={m.label}
+                    className={`${font} inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-[12px] transition-all cursor-pointer ${active ? "bg-white shadow-sm" : "text-gray-500 hover:text-black"}`}
+                    style={{ color: active ? ADMIN_PRIMARY : undefined, fontWeight: 500 }}>
+                    <m.Icon className="size-3.5" strokeWidth={2.2} />
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto w-full transition-[max-width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]"
+          style={{ maxWidth: view === "mobile" ? 420 : view === "tablet" ? 820 : 1600 }}>
+        <BrowserMockup url="metaherb.com/" view={view}>
+        <div className="flex flex-col gap-4 p-4 min-h-[360px]">
+          {visibleSections.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 gap-2 text-gray-400">
+              <EyeOff className="size-8" strokeWidth={1.5} />
+              <p className={`${font} text-[13px]`}>ทุก section ถูกซ่อนอยู่</p>
+            </div>
+          )}
+          {visibleSections.map((s) => {
+            const Icon = appbarSectionIcons[s.id];
+            return (
+              <div key={s.id}
+                className="group relative rounded-2xl border-2 border-dashed border-gray-200 bg-white hover:border-[#319754]/40 transition-all">
+                <div className="absolute -top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
+                  <div className="flex items-center gap-2 bg-white rounded-full pl-2.5 pr-3 py-1 border border-gray-200 shadow-sm pointer-events-auto">
+                    <Icon className="size-3" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.4} />
+                    <span className={`${font} text-[11px] text-black`} style={{ fontWeight: 500 }}>{s.label}</span>
+                  </div>
+                  <div className="pointer-events-auto flex items-center gap-1.5">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button title="ตั้งค่า section นี้" className="bg-white rounded-full size-7 flex items-center justify-center border border-gray-200 shadow-sm hover:border-[#319754]/40 hover:bg-[#319754]/5 transition-all cursor-pointer">
+                          <Settings className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={8} className="w-[360px] p-3">
+                        <div className="flex items-center gap-2 pb-2 mb-2 border-b border-gray-100">
+                          <Icon className="size-3.5" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.4} />
+                          <p className={`${font} text-[13px]`} style={{ fontWeight: 600 }}>{s.label}</p>
+                        </div>
+                        <AppbarSectionSettings id={s.id} configs={configs} setConfigs={setConfigs} />
+                      </PopoverContent>
+                    </Popover>
+                    <button onClick={() => toggleVisible(s.id)} title="ซ่อน section นี้"
+                      className="bg-white rounded-full size-7 flex items-center justify-center border border-gray-200 shadow-sm hover:border-[#ff3b30]/40 hover:bg-[#ff3b30]/5 transition-all cursor-pointer">
+                      <Eye className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                    </button>
+                  </div>
+                </div>
+                <div className="p-4 pt-6">
+                  {renderWire(s.id)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        </BrowserMockup>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3 h-fit lg:sticky lg:top-4">
+        <div className="pb-3 border-b border-[#e8e8e8]">
+          <div className="flex items-center gap-2">
+            <Settings className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.2} />
+            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>การแสดงผล</p>
+          </div>
+          <p className={`${font} text-[11px] text-gray-500 mt-1`}>เปิด/ปิดแต่ละ section (ลำดับล็อกไว้)</p>
+          <p className={`${font} text-[11px] text-gray-400 mt-1`}>
+            แสดงอยู่ <span style={{ color: ADMIN_PRIMARY, fontWeight: 600 }}>{visibleCount}</span> จาก {sections.length} section
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {sections.map((s) => {
+            const Icon = appbarSectionIcons[s.id];
+            return (
+              <div key={s.id}
+                className={`relative flex items-center gap-2 px-2 py-2 rounded-xl border-2 transition-all ${
+                  s.visible ? "border-gray-200 bg-white" :
+                  "border-gray-100 bg-gray-50"
+                }`}>
+                <div className={`size-7 rounded-lg flex items-center justify-center shrink-0 ${s.visible ? "" : "opacity-40"}`}
+                  style={{ backgroundColor: s.visible ? `${ADMIN_PRIMARY}1a` : "#f5f5f5" }}>
+                  <Icon className="size-3.5" style={{ color: s.visible ? ADMIN_PRIMARY : "#999" }} strokeWidth={2.2} />
+                </div>
+                <span className={`${font} text-[13px] flex-1 truncate ${s.visible ? "text-black" : "text-gray-400"}`} style={{ fontWeight: 500 }}>
+                  {s.label}
+                </span>
+                <button onClick={() => toggleVisible(s.id)} title={s.visible ? "ซ่อน" : "แสดง"}
+                  className="size-7 rounded-lg flex items-center justify-center hover:bg-gray-100 cursor-pointer shrink-0 transition-colors">
+                  {s.visible ? <Eye className="size-3.5 text-gray-600" strokeWidth={2.2} /> : <EyeOff className="size-3.5 text-gray-400" strokeWidth={2.2} />}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="pt-3 border-t border-[#e8e8e8] flex gap-2">
+          <button onClick={resetAll} disabled={!isDirty}
+            className={`${font} flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-xl border text-[12px] transition-all ${
+              isDirty ? "border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer" : "border-gray-100 text-gray-300 cursor-not-allowed"
+            }`}
+            style={{ fontWeight: 500 }}>
+            <RotateCcw className="size-3.5" strokeWidth={2.2} />
+            รีเซ็ตทั้งหมด
+          </button>
+          <button onClick={() => { setPreviewView(view); setShowSave(true); }}
+            className={`${font} flex-1 inline-flex items-center justify-center gap-1.5 h-9 rounded-xl text-white text-[12px] transition-all cursor-pointer hover:opacity-90`}
+            style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 500 }}>
+            <Save className="size-3.5" strokeWidth={2.2} />
+            บันทึก
+          </button>
+        </div>
+      </div>
+
+      <Dialog open={showSave} onOpenChange={setShowSave}>
+        <DialogContent className="!max-w-[95vw] !w-[1500px] max-h-[92vh] overflow-hidden p-0 flex flex-col">
+          <DialogHeader className="px-6 pt-5 pb-3 border-b border-gray-100">
+            <DialogTitle className={`${font} text-[17px]`} style={{ fontWeight: 600 }}>ตัวอย่างก่อนบันทึก</DialogTitle>
+            <DialogDescription className={`${font} text-[12px] text-gray-500`}>
+              นี่คือภาพ Appbar จริงที่ผู้ใช้จะเห็น — ถ้าตกลง กดปุ่ม “ยืนยันบันทึก”
+            </DialogDescription>
+            <div className="inline-flex items-center bg-[#f5f5f5] rounded-full p-0.5 self-start mt-2">
+              {([
+                { id: "desktop" as const, label: "Desktop", Icon: Monitor },
+                { id: "tablet"  as const, label: "Tablet",  Icon: Tablet },
+                { id: "mobile"  as const, label: "Mobile",  Icon: Smartphone },
+              ]).map((m) => {
+                const active = previewView === m.id;
+                return (
+                  <button key={m.id} onClick={() => setPreviewView(m.id)} title={m.label}
+                    className={`${font} inline-flex items-center gap-1.5 px-3 h-7 rounded-full text-[12px] transition-all cursor-pointer ${active ? "bg-white shadow-sm" : "text-gray-500 hover:text-black"}`}
+                    style={{ color: active ? ADMIN_PRIMARY : undefined, fontWeight: 500 }}>
+                    <m.Icon className="size-3.5" strokeWidth={2.2} />
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto bg-[#e9ecef] p-4">
+            <div className="mx-auto transition-[max-width] duration-500"
+              style={{ maxWidth: previewView === "mobile" ? 420 : previewView === "tablet" ? 820 : 1280 }}>
+              <BrowserMockup url="metaherb.com/" view={previewView}>
+                <AppbarFullPreview sections={sections} configs={configs} view={previewView} />
+              </BrowserMockup>
+            </div>
+          </div>
+
+          <DialogFooter className="px-6 py-4 border-t border-gray-100 gap-2">
+            <button onClick={() => setShowSave(false)}
+              className={`${font} h-9 px-5 rounded-xl border border-gray-200 text-gray-700 text-[12px] hover:bg-gray-50 cursor-pointer transition-colors`}
+              style={{ fontWeight: 500 }}>
+              ยกเลิก
+            </button>
+            <button onClick={() => { toast.success("บันทึก Appbar เรียบร้อย"); setShowSave(false); }}
+              className={`${font} h-9 px-5 rounded-xl text-white text-[12px] cursor-pointer hover:opacity-90 transition-opacity inline-flex items-center gap-1.5`}
+              style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 500 }}>
+              <Save className="size-3.5" strokeWidth={2.2} />
+              ยืนยันบันทึก
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* ============================================================
+ * SITE INFO SETTINGS PAGES
+ * ========================================================== */
+function SaveBar({ isDirty, onReset, onSave }: { isDirty: boolean; onReset: () => void; onSave: () => void }) {
+  return (
+    <div className="sticky bottom-0 left-0 right-0 -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 mt-5 px-4 sm:px-5 py-3 bg-white border-t border-gray-100 flex items-center justify-between gap-3 rounded-b-2xl">
+      <span className={`${font} text-[12px] ${isDirty ? "text-[#f59e0b]" : "text-gray-400"}`}>
+        {isDirty ? "● มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก" : "บันทึกแล้ว"}
+      </span>
+      <div className="flex gap-2">
+        <button onClick={onReset} disabled={!isDirty}
+          className={`${font} inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-xl border text-[12px] transition-all ${
+            isDirty ? "border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer" : "border-gray-100 text-gray-300 cursor-not-allowed"
+          }`} style={{ fontWeight: 500 }}>
+          <RotateCcw className="size-3.5" strokeWidth={2.2} />
+          ยกเลิก
+        </button>
+        <button onClick={onSave} disabled={!isDirty}
+          className={`${font} inline-flex items-center justify-center gap-1.5 h-9 px-5 rounded-xl text-white text-[12px] transition-all ${
+            isDirty ? "cursor-pointer hover:opacity-90" : "opacity-50 cursor-not-allowed"
+          }`} style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 500 }}>
+          <Save className="size-3.5" strokeWidth={2.2} />
+          บันทึก
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SettingsCard({ icon: Icon, title, desc, children }: {
+  icon: any; title: string; desc?: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 sm:p-5">
+      <div className="pb-3 mb-4 border-b border-[#e8e8e8] flex items-center gap-2">
+        <div className="size-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${ADMIN_PRIMARY}1a` }}>
+          <Icon className="size-3.5" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.4} />
+        </div>
+        <div className="min-w-0">
+          <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{title}</p>
+          {desc && <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>{desc}</p>}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* ---------- 1) ข้อมูลเว็บไซต์ (General) ---------- */
+interface SiteGeneralConfig {
+  siteNameTh: string; siteNameEn: string;
+  tagline: string; description: string;
+  logoUrl: string; faviconUrl: string;
+  metaTitle: string; metaDescription: string; metaKeywords: string; ogImage: string;
+  defaultLang: "th" | "en";
+  timezone: string;
+  currency: "THB" | "USD" | "EUR";
+}
+const DEFAULT_SITE_GENERAL: SiteGeneralConfig = {
+  siteNameTh: "เมต้าเฮิร์บ",
+  siteNameEn: "MetaHerb",
+  tagline: "ผู้นำสมุนไพรไทยคุณภาพ",
+  description: "เราเป็นผู้นำด้านสมุนไพรคุณภาพ เพื่อสุขภาพที่ยั่งยืน คัดสรรผลิตภัณฑ์จากเกษตรกรท้องถิ่นกว่า 200 ราย",
+  logoUrl: "",
+  faviconUrl: "",
+  metaTitle: "MetaHerb — สมุนไพรไทยคุณภาพ",
+  metaDescription: "เลือกซื้อสมุนไพรไทยคุณภาพจาก MetaHerb ผ่านการรับรองมาตรฐาน อย. และ ISO 22000",
+  metaKeywords: "สมุนไพร, ชาสมุนไพร, ผลิตภัณฑ์ธรรมชาติ, MetaHerb",
+  ogImage: "",
+  defaultLang: "th",
+  timezone: "Asia/Bangkok",
+  currency: "THB",
+};
+
+function SiteInfoGeneralPage() {
+  const [cfg, setCfg] = useState<SiteGeneralConfig>(DEFAULT_SITE_GENERAL);
+  const isDirty = JSON.stringify(cfg) !== JSON.stringify(DEFAULT_SITE_GENERAL);
+  const upd = <K extends keyof SiteGeneralConfig>(key: K, v: SiteGeneralConfig[K]) =>
+    setCfg(prev => ({ ...prev, [key]: v }));
+
+  return (
+    <div className="flex flex-col gap-5 pb-2">
+      <SettingsCard icon={Globe} title="ข้อมูลทั่วไป" desc="ชื่อเว็บไซต์ คำโปรย และคำอธิบาย">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <TextField label="ชื่อเว็บไซต์ (ภาษาไทย)" value={cfg.siteNameTh} onChange={(v) => upd("siteNameTh", v)} />
+          <TextField label="ชื่อเว็บไซต์ (English)"   value={cfg.siteNameEn} onChange={(v) => upd("siteNameEn", v)} />
+        </div>
+        <div className="mt-3">
+          <TextField label="คำโปรย / Tagline" value={cfg.tagline} onChange={(v) => upd("tagline", v)} placeholder="เช่น ผู้นำสมุนไพรไทยคุณภาพ" />
+        </div>
+        <div className="mt-3">
+          <TextareaField label="คำอธิบายเว็บไซต์" value={cfg.description} onChange={(v) => upd("description", v)} />
+        </div>
+      </SettingsCard>
+
+      <SettingsCard icon={ImageIcon} title="โลโก้และ Favicon" desc="ภาพที่แสดงบน Appbar และแท็บเบราว์เซอร์">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <ImageField
+            label="โลโก้หลัก (PNG / SVG แนะนำ)"
+            value={cfg.logoUrl}
+            onChange={(v) => upd("logoUrl", v)}
+            accept="image/png,image/svg+xml,image/webp"
+            hint="แนะนำ: ไฟล์พื้นหลังโปร่ง · สูง ≥ 200 px · ขนาดไม่เกิน 2 MB"
+            preview={<LogoMockup url={cfg.logoUrl} />}
+          />
+          <ImageField
+            label="Favicon (32×32 px)"
+            value={cfg.faviconUrl}
+            onChange={(v) => upd("faviconUrl", v)}
+            accept="image/x-icon,image/png,image/svg+xml"
+            hint="แนะนำ: รูปสี่เหลี่ยมจัตุรัส · ขนาดไม่เกิน 200 KB"
+            preview={<FaviconMockup url={cfg.faviconUrl} siteName={cfg.siteNameTh || cfg.siteNameEn} />}
+          />
+        </div>
+      </SettingsCard>
+
+      <SettingsCard icon={Search} title="SEO เริ่มต้น" desc="เมตาแท็กสำหรับเครื่องมือค้นหาและการแชร์โซเชียล">
+        <div className="flex flex-col gap-3">
+          <TextField label="Meta Title" value={cfg.metaTitle} onChange={(v) => upd("metaTitle", v)} />
+          <TextareaField label="Meta Description" value={cfg.metaDescription} onChange={(v) => upd("metaDescription", v)} />
+          <TextField label="Meta Keywords (คั่นด้วยเครื่องหมายจุลภาค)" value={cfg.metaKeywords} onChange={(v) => upd("metaKeywords", v)} />
+          <ImageField
+            label="รูปสำหรับแชร์ Social"
+            value={cfg.ogImage}
+            onChange={(v) => upd("ogImage", v)}
+            accept="image/jpeg,image/png,image/webp"
+            hint="แนะนำ: ขนาด 1200×630 px (อัตราส่วน 1.91:1) · ขนาดไม่เกิน 3 MB"
+            preview={<OgImageMockup url={cfg.ogImage} title={cfg.metaTitle} description={cfg.metaDescription} />}
+          />
+        </div>
+      </SettingsCard>
+
+      <SettingsCard icon={Settings} title="การตั้งค่าทั่วไป" desc="ภาษา เขตเวลา และสกุลเงิน">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="flex flex-col gap-1">
+            <label className={`${font} text-[11px] text-gray-500`}>ภาษาเริ่มต้น</label>
+            <select value={cfg.defaultLang} onChange={(e) => upd("defaultLang", e.target.value as "th" | "en")}
+              className={`${font} h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all cursor-pointer`}>
+              <option value="th">ไทย</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <TextField label="เขตเวลา" value={cfg.timezone} onChange={(v) => upd("timezone", v)} placeholder="Asia/Bangkok" />
+          <div className="flex flex-col gap-1">
+            <label className={`${font} text-[11px] text-gray-500`}>สกุลเงิน</label>
+            <select value={cfg.currency} onChange={(e) => upd("currency", e.target.value as any)}
+              className={`${font} h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all cursor-pointer`}>
+              <option value="THB">บาท (THB)</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </div>
+        </div>
+        <SaveBar isDirty={isDirty} onReset={() => setCfg(DEFAULT_SITE_GENERAL)} onSave={() => toast.success("บันทึกข้อมูลเว็บไซต์เรียบร้อย")} />
+      </SettingsCard>
+    </div>
+  );
+}
+
+/* ---------- 2) ข้อมูลติดต่อ ---------- */
+interface SiteContactConfig {
+  phones: { label: string; number: string }[];
+  emails: { label: string; address: string }[];
+  lineId: string;
+  whatsapp: string;
+  messengerUrl: string;
+  hoursDays: string;
+  hoursOpen: string;
+  hoursClose: string;
+  hoursNote: string;
+}
+const DEFAULT_SITE_CONTACT: SiteContactConfig = {
+  phones: [
+    { label: "ฝ่ายขาย", number: "098-765-4321" },
+    { label: "ฝ่ายบริการลูกค้า", number: "02-123-4567" },
+  ],
+  emails: [
+    { label: "ติดต่อทั่วไป", address: "hello@metaherb.co.th" },
+    { label: "ฝ่ายขาย",     address: "sales@metaherb.co.th" },
+  ],
+  lineId:       "@metaherb",
+  whatsapp:     "+66987654321",
+  messengerUrl: "https://m.me/MetaherbOfficial",
+  hoursDays:    "จันทร์ - ศุกร์",
+  hoursOpen:    "08:30",
+  hoursClose:   "17:30",
+  hoursNote:    "ปิดวันหยุดนักขัตฤกษ์",
+};
+
+function SiteInfoContactPage() {
+  const [cfg, setCfg] = useState<SiteContactConfig>(DEFAULT_SITE_CONTACT);
+  const isDirty = JSON.stringify(cfg) !== JSON.stringify(DEFAULT_SITE_CONTACT);
+  const upd = <K extends keyof SiteContactConfig>(key: K, v: SiteContactConfig[K]) =>
+    setCfg(prev => ({ ...prev, [key]: v }));
+
+  return (
+    <div className="flex flex-col gap-5 pb-2">
+      <SettingsCard icon={Phone} title="เบอร์โทรศัพท์" desc="เพิ่มได้หลายเบอร์ พร้อมป้ายกำกับ">
+        <div className="flex flex-col gap-2">
+          {cfg.phones.map((p, i) => (
+            <div key={i} className="grid grid-cols-[1fr_2fr_auto] gap-2 items-center">
+              <input value={p.label} placeholder="ป้ายกำกับ"
+                onChange={(e) => upd("phones", cfg.phones.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))}
+                className={`${font} h-9 px-2.5 rounded-md border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+              <input value={p.number} placeholder="เช่น 098-765-4321"
+                onChange={(e) => upd("phones", cfg.phones.map((x, idx) => idx === i ? { ...x, number: e.target.value } : x))}
+                className={`${font} h-9 px-2.5 rounded-md border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+              <button onClick={() => upd("phones", cfg.phones.filter((_, idx) => idx !== i))} title="ลบ"
+                className="size-9 rounded-md border border-gray-200 flex items-center justify-center hover:bg-[#ff3b30]/5 hover:border-[#ff3b30]/40 cursor-pointer transition-all">
+                <Trash2 className="size-3.5 text-gray-400 hover:text-[#ff3b30]" strokeWidth={2.2} />
+              </button>
+            </div>
+          ))}
+          <button onClick={() => upd("phones", [...cfg.phones, { label: "", number: "" }])}
+            className={`${font} inline-flex items-center justify-center gap-1.5 h-9 rounded-md border border-dashed text-[12px] mt-1 cursor-pointer transition-all hover:bg-[#319754]/5`}
+            style={{ borderColor: ADMIN_PRIMARY, color: ADMIN_PRIMARY, fontWeight: 500 }}>
+            <Plus className="size-3.5" strokeWidth={2.4} />
+            เพิ่มเบอร์โทรศัพท์
+          </button>
+        </div>
+      </SettingsCard>
+
+      <SettingsCard icon={Mail} title="อีเมล" desc="เพิ่มได้หลายอีเมล พร้อมป้ายกำกับ">
+        <div className="flex flex-col gap-2">
+          {cfg.emails.map((e, i) => (
+            <div key={i} className="grid grid-cols-[1fr_2fr_auto] gap-2 items-center">
+              <input value={e.label} placeholder="ป้ายกำกับ"
+                onChange={(ev) => upd("emails", cfg.emails.map((x, idx) => idx === i ? { ...x, label: ev.target.value } : x))}
+                className={`${font} h-9 px-2.5 rounded-md border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+              <input value={e.address} placeholder="name@domain.com"
+                onChange={(ev) => upd("emails", cfg.emails.map((x, idx) => idx === i ? { ...x, address: ev.target.value } : x))}
+                className={`${font} h-9 px-2.5 rounded-md border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+              <button onClick={() => upd("emails", cfg.emails.filter((_, idx) => idx !== i))} title="ลบ"
+                className="size-9 rounded-md border border-gray-200 flex items-center justify-center hover:bg-[#ff3b30]/5 hover:border-[#ff3b30]/40 cursor-pointer transition-all">
+                <Trash2 className="size-3.5 text-gray-400 hover:text-[#ff3b30]" strokeWidth={2.2} />
+              </button>
+            </div>
+          ))}
+          <button onClick={() => upd("emails", [...cfg.emails, { label: "", address: "" }])}
+            className={`${font} inline-flex items-center justify-center gap-1.5 h-9 rounded-md border border-dashed text-[12px] mt-1 cursor-pointer transition-all hover:bg-[#319754]/5`}
+            style={{ borderColor: ADMIN_PRIMARY, color: ADMIN_PRIMARY, fontWeight: 500 }}>
+            <Plus className="size-3.5" strokeWidth={2.4} />
+            เพิ่มอีเมล
+          </button>
+        </div>
+      </SettingsCard>
+
+      <SettingsCard icon={MessageSquare} title="แชทและข้อความ" desc="ช่องทางสนทนาแบบเรียลไทม์">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <TextField label="Line ID"         value={cfg.lineId}       onChange={(v) => upd("lineId", v)}       placeholder="@yourshop" />
+          <TextField label="WhatsApp"        value={cfg.whatsapp}     onChange={(v) => upd("whatsapp", v)}     placeholder="+66XXXXXXXXX" />
+          <TextField label="Messenger URL"  value={cfg.messengerUrl} onChange={(v) => upd("messengerUrl", v)} placeholder="https://m.me/..." />
+        </div>
+      </SettingsCard>
+
+      <SettingsCard icon={Clock} title="เวลาทำการ" desc="วันและเวลาที่เปิดให้บริการลูกค้า">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <TextField label="วันเปิดทำการ" value={cfg.hoursDays}  onChange={(v) => upd("hoursDays", v)}  placeholder="จันทร์ - ศุกร์" />
+          <div className="grid grid-cols-2 gap-2">
+            <TextField label="เวลาเปิด" value={cfg.hoursOpen}  onChange={(v) => upd("hoursOpen", v)}  placeholder="08:30" />
+            <TextField label="เวลาปิด"  value={cfg.hoursClose} onChange={(v) => upd("hoursClose", v)} placeholder="17:30" />
+          </div>
+        </div>
+        <div className="mt-3">
+          <TextField label="หมายเหตุเพิ่มเติม" value={cfg.hoursNote} onChange={(v) => upd("hoursNote", v)} placeholder="ปิดวันหยุดนักขัตฤกษ์" />
+        </div>
+        <SaveBar isDirty={isDirty} onReset={() => setCfg(DEFAULT_SITE_CONTACT)} onSave={() => toast.success("บันทึกข้อมูลติดต่อเรียบร้อย")} />
+      </SettingsCard>
+    </div>
+  );
+}
+
+/* ---------- 3) ที่อยู่ ---------- */
+interface SiteAddressConfig {
+  companyName: string;
+  taxId: string;
+  branch: string;
+  street: string;
+  subDistrict: string;
+  district: string;
+  province: string;
+  zipcode: string;
+  country: string;
+  mapUrl: string;
+  mapEmbed: string;
+}
+const DEFAULT_SITE_ADDRESS: SiteAddressConfig = {
+  companyName: "บริษัท เมต้าเฮิร์บ จำกัด",
+  taxId:       "0105566012345",
+  branch:      "สำนักงานใหญ่",
+  street:      "459/153 ถนนสุขสวัสดิ์",
+  subDistrict: "ราษฎร์บูรณะ",
+  district:    "ราษฎร์บูรณะ",
+  province:    "กรุงเทพมหานคร",
+  zipcode:     "10140",
+  country:     "ประเทศไทย",
+  mapUrl:      "https://maps.app.goo.gl/example",
+  mapEmbed:    "",
+};
+
+function SiteInfoAddressPage() {
+  const [cfg, setCfg] = useState<SiteAddressConfig>(DEFAULT_SITE_ADDRESS);
+  const isDirty = JSON.stringify(cfg) !== JSON.stringify(DEFAULT_SITE_ADDRESS);
+  const upd = <K extends keyof SiteAddressConfig>(key: K, v: SiteAddressConfig[K]) =>
+    setCfg(prev => ({ ...prev, [key]: v }));
+
+  return (
+    <div className="flex flex-col gap-5 pb-2">
+      <SettingsCard icon={Store} title="ข้อมูลนิติบุคคล" desc="ชื่อบริษัทและเลขประจำตัวผู้เสียภาษี">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <TextField label="ชื่อบริษัท / นิติบุคคล" value={cfg.companyName} onChange={(v) => upd("companyName", v)} />
+          <TextField label="เลขประจำตัวผู้เสียภาษี" value={cfg.taxId}       onChange={(v) => upd("taxId", v)} placeholder="13 หลัก" />
+        </div>
+        <div className="mt-3">
+          <TextField label="สาขา"  value={cfg.branch} onChange={(v) => upd("branch", v)} placeholder="สำนักงานใหญ่ / สาขา..." />
+        </div>
+      </SettingsCard>
+
+      <SettingsCard icon={MapPin} title="ที่อยู่บริษัท" desc="ใช้บนหน้าติดต่อ ใบเสร็จ และเอกสารทางการ">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="md:col-span-2">
+            <TextField label="ที่อยู่ (เลขที่ / ซอย / ถนน)" value={cfg.street} onChange={(v) => upd("street", v)} />
+          </div>
+          <TextField label="ตำบล / แขวง"    value={cfg.subDistrict} onChange={(v) => upd("subDistrict", v)} />
+          <TextField label="อำเภอ / เขต"     value={cfg.district}    onChange={(v) => upd("district", v)} />
+          <TextField label="จังหวัด"            value={cfg.province}    onChange={(v) => upd("province", v)} />
+          <TextField label="รหัสไปรษณีย์"     value={cfg.zipcode}     onChange={(v) => upd("zipcode", v)} placeholder="5 หลัก" />
+          <div className="md:col-span-2">
+            <TextField label="ประเทศ" value={cfg.country} onChange={(v) => upd("country", v)} />
+          </div>
+        </div>
+      </SettingsCard>
+
+      <SettingsCard icon={Globe} title="แผนที่ (Google Maps)" desc="ลิงก์และ embed code สำหรับแสดงแผนที่บนหน้าติดต่อ">
+        <div className="flex flex-col gap-3">
+          <TextField label="Google Maps URL" value={cfg.mapUrl} onChange={(v) => upd("mapUrl", v)} placeholder="https://maps.app.goo.gl/..." />
+          <TextareaField label="Embed Code (iframe จาก Google Maps)" value={cfg.mapEmbed} onChange={(v) => upd("mapEmbed", v)} />
+        </div>
+        <SaveBar isDirty={isDirty} onReset={() => setCfg(DEFAULT_SITE_ADDRESS)} onSave={() => toast.success("บันทึกที่อยู่เรียบร้อย")} />
+      </SettingsCard>
+    </div>
+  );
+}
+
+/* ---------- 4) Social Media ---------- */
+interface SocialItem { enabled: boolean; url: string; }
+interface SiteSocialConfig {
+  facebook:  SocialItem;
+  line:      SocialItem;
+  instagram: SocialItem;
+  tiktok:    SocialItem;
+  youtube:   SocialItem;
+  twitter:   SocialItem;
+}
+const DEFAULT_SITE_SOCIAL: SiteSocialConfig = {
+  facebook:  { enabled: true,  url: "https://facebook.com/MetaherbOfficial" },
+  line:      { enabled: true,  url: "https://line.me/R/ti/p/@metaherb"      },
+  instagram: { enabled: true,  url: "https://instagram.com/metaherb.th"    },
+  tiktok:    { enabled: true,  url: "https://www.tiktok.com/@metaherb"     },
+  youtube:   { enabled: true,  url: "https://youtube.com/@MetaherbTV"      },
+  twitter:   { enabled: false, url: ""                                       },
+};
+const SOCIAL_PLATFORMS: { id: keyof SiteSocialConfig; label: string; placeholder: string }[] = [
+  { id: "facebook",  label: "Facebook",   placeholder: "https://facebook.com/..."  },
+  { id: "line",      label: "Line",        placeholder: "https://line.me/R/ti/p/@" },
+  { id: "instagram", label: "Instagram",   placeholder: "https://instagram.com/..." },
+  { id: "tiktok",    label: "TikTok",      placeholder: "https://www.tiktok.com/@" },
+  { id: "youtube",   label: "YouTube",     placeholder: "https://youtube.com/@"    },
+  { id: "twitter",   label: "X (Twitter)",  placeholder: "https://x.com/..."         },
+];
+
+function SocialBrandIcon({ platform, className = "size-9" }: { platform: keyof SiteSocialConfig; className?: string }) {
+  if (platform === "facebook") {
+    return (
+      <svg viewBox="0 0 32 32" className={className}>
+        <circle cx="16" cy="16" r="16" fill="#1877F2" />
+        <path d="M20.4 20.6l.7-4.6h-4.4v-3c0-1.3.6-2.5 2.6-2.5h2V6.6s-1.8-.3-3.6-.3c-3.6 0-6 2.2-6 6.2V16H7.6v4.6h4.1V32h5V20.6h3.7z" fill="#fff" />
+      </svg>
+    );
+  }
+  if (platform === "line") {
+    return (
+      <svg viewBox="0 0 32 32" className={className}>
+        <circle cx="16" cy="16" r="16" fill="#06C755" />
+        <path d="M26 14.7c0-4.5-4.5-8.2-10-8.2S6 10.2 6 14.7c0 4 3.6 7.4 8.4 8.1.3.1.7.2.8.5.1.3.1.7 0 1l-.1.8c0 .2-.2 1 .9.5 1.1-.5 5.7-3.4 7.8-5.8 1.4-1.6 2.2-3.3 2.2-5.1z" fill="#fff" />
+      </svg>
+    );
+  }
+  if (platform === "instagram") {
+    return (
+      <svg viewBox="0 0 32 32" className={className}>
+        <defs>
+          <radialGradient id="ig-brand-grad" cx="0.3" cy="1" r="1.2">
+            <stop offset="0%" stopColor="#FED576" />
+            <stop offset="25%" stopColor="#F47133" />
+            <stop offset="50%" stopColor="#BC3081" />
+            <stop offset="100%" stopColor="#4F5BD5" />
+          </radialGradient>
+        </defs>
+        <circle cx="16" cy="16" r="16" fill="url(#ig-brand-grad)" />
+        <rect x="9" y="9" width="14" height="14" rx="4" fill="none" stroke="#fff" strokeWidth="2" />
+        <circle cx="16" cy="16" r="3.5" fill="none" stroke="#fff" strokeWidth="2" />
+        <circle cx="20.5" cy="11.5" r="1" fill="#fff" />
+      </svg>
+    );
+  }
+  if (platform === "tiktok") {
+    return (
+      <svg viewBox="0 0 32 32" className={className}>
+        <circle cx="16" cy="16" r="16" fill="#000" />
+        <path d="M21.7 12.2c-1.6-.3-3-1.4-3.6-2.9h-2.4v9.7c0 1.3-1 2.3-2.3 2.3-1.3 0-2.3-1-2.3-2.3 0-1.3 1-2.3 2.3-2.3.2 0 .5 0 .7.1v-2.6c-.2 0-.5-.1-.7-.1-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9 4.9-2.2 4.9-4.9v-4.6c1.1.7 2.4 1.2 3.8 1.2v-2.6c-.1 0-.2 0-.4 0z" fill="#fff" />
+      </svg>
+    );
+  }
+  if (platform === "youtube") {
+    return (
+      <svg viewBox="0 0 32 32" className={className}>
+        <circle cx="16" cy="16" r="16" fill="#FF0000" />
+        <path d="M13 11l9 5-9 5V11z" fill="#fff" />
+      </svg>
+    );
+  }
+  // twitter / X
+  return (
+    <svg viewBox="0 0 32 32" className={className}>
+      <circle cx="16" cy="16" r="16" fill="#000" />
+      <path d="M21.4 8.5h2.6l-5.6 6.4 6.6 8.7h-5.2l-4-5.3-4.7 5.3H8.4l6-6.9-6.3-8.2h5.3l3.7 4.8 4.3-4.8zm-.9 13.6h1.4L11.7 9.9h-1.5l10.3 12.2z" fill="#fff" />
+    </svg>
+  );
+}
+
+function SiteInfoSocialPage() {
+  const [cfg, setCfg] = useState<SiteSocialConfig>(DEFAULT_SITE_SOCIAL);
+  const isDirty = JSON.stringify(cfg) !== JSON.stringify(DEFAULT_SITE_SOCIAL);
+  const upd = (key: keyof SiteSocialConfig, patch: Partial<SocialItem>) =>
+    setCfg(prev => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+
+  const enabledCount = Object.values(cfg).filter(s => s.enabled).length;
+
+  return (
+    <div className="flex flex-col gap-5 pb-2">
+      <SettingsCard icon={Globe} title="ช่องทางโซเชียลมีเดีย"
+        desc={`เปิดใช้งานและใส่ลิงก์เต็มของแต่ละช่องทาง — ใช้งาน ${enabledCount} จาก ${SOCIAL_PLATFORMS.length} ช่องทาง`}>
+        <div className="flex flex-col gap-2.5">
+          {SOCIAL_PLATFORMS.map((p) => {
+            const item = cfg[p.id];
+            return (
+              <div key={p.id} className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all ${
+                item.enabled ? "border-gray-200 bg-white" : "border-gray-100 bg-gray-50"
+              }`}>
+                <div className={`shrink-0 transition-opacity ${item.enabled ? "" : "opacity-40 grayscale"}`}>
+                  <SocialBrandIcon platform={p.id} className="size-9" />
+                </div>
+                <div className="flex-1 min-w-0 grid grid-cols-[120px_1fr] items-center gap-3">
+                  <span className={`${font} text-[13px] ${item.enabled ? "text-black" : "text-gray-400"}`} style={{ fontWeight: 500 }}>
+                    {p.label}
+                  </span>
+                  <input value={item.url} placeholder={p.placeholder} disabled={!item.enabled}
+                    onChange={(e) => upd(p.id, { url: e.target.value })}
+                    className={`${font} h-9 px-2.5 rounded-md border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all disabled:bg-gray-50 disabled:text-gray-400`} />
+                </div>
+                <div className="shrink-0">
+                  <ToggleSwitch checked={item.enabled} onChange={(v) => upd(p.id, { enabled: v })} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <SaveBar isDirty={isDirty} onReset={() => setCfg(DEFAULT_SITE_SOCIAL)} onSave={() => toast.success("บันทึก Social Media เรียบร้อย")} />
+      </SettingsCard>
+    </div>
+  );
+}
+
+/* ============================================================
+ * SHIPPING SETTINGS PAGE — อิง UI จากหน้าตั้งค่าร้านค้า (shop)
+ * แต่เป็นมุมมอง "platform-wide" สำหรับ admin
+ * ========================================================== */
+interface ShippingCarrier {
+  id: string;
+  name: string;
+  code: string;            // ตัวอักษรย่อสำหรับ fallback (เมื่อไม่มีรูปโลโก้)
+  color: string;           // สี fallback (เมื่อไม่มีรูปโลโก้)
+  logo?: string;           // path/URL ของรูปโลโก้ขนส่ง
+  cod: boolean;            // capability — ขนส่งนี้รองรับ COD หรือไม่
+  trackingUrl: string;     // โดเมนสำหรับติดตามพัสดุ
+  enabled: boolean;        // master switch
+}
+
+// Catalog ของขนส่งที่ระบบรู้จัก — admin เลือกจาก list นี้ผ่าน "เพิ่มขนส่ง" modal
+const CARRIER_CATALOG: ShippingCarrier[] = [
+  { id: "thpost",    name: "ไปรษณีย์ไทย",       code: "TH",   color: "#f8201e", logo: imgThaipost,  cod: true,  trackingUrl: "track.thailandpost.co.th", enabled: true },
+  { id: "kerry",     name: "Kerry Express",      code: "K",    color: "#ff6600", logo: imgKerryLogo, cod: true,  trackingUrl: "th.kerryexpress.com",       enabled: true },
+  { id: "flash",     name: "Flash Express",      code: "F",    color: "#fdc70d", logo: imgFlashLogo, cod: true,  trackingUrl: "flashexpress.com",          enabled: true },
+  { id: "jt",        name: "J&T Express",        code: "J&T",  color: "#d40511", logo: imgJtLogo,    cod: true,  trackingUrl: "jtexpress.co.th",           enabled: true },
+  { id: "best",      name: "Best Express",       code: "B",    color: "#d6001c",                     cod: true,  trackingUrl: "best-inc.co.th",            enabled: true },
+  { id: "ninjavan",  name: "Ninja Van",           code: "NJ",   color: "#c8102e",                     cod: true,  trackingUrl: "ninjavan.co",                enabled: true },
+  { id: "scg",       name: "SCG Express",         code: "SCG",  color: "#1a472a",                     cod: false, trackingUrl: "scgyamato.co.th",            enabled: true },
+  { id: "dhl",       name: "DHL Express",        code: "DHL",  color: "#ffcc00",                     cod: false, trackingUrl: "dhl.com/th-th",              enabled: true },
+  { id: "lalamove",  name: "Lalamove",             code: "LM",   color: "#f16622",                     cod: true,  trackingUrl: "lalamove.com",                enabled: true },
+  { id: "grab",      name: "Grab Express",        code: "G",    color: "#00b14f",                     cod: true,  trackingUrl: "grab.com",                    enabled: true },
+  { id: "linethman", name: "Lineman",              code: "LN",   color: "#00C300",                     cod: true,  trackingUrl: "lineman.line.me",             enabled: true },
+  { id: "shopeeexp", name: "Shopee Express",     code: "SE",   color: "#ee4d2d",                     cod: true,  trackingUrl: "spx.co.th",                   enabled: true },
+];
+
+const DEFAULT_PLATFORM_CARRIERS: ShippingCarrier[] = CARRIER_CATALOG.slice(0, 4);
+
+/* --- Shop-style helpers (มิเรอร์จาก SettingsPage shop) --- */
+function ShipStepperInput({ value, onChange, step = 50 }: {
+  value: number; onChange: (v: number) => void; step?: number;
+}) {
+  return (
+    <div className="bg-[#fafafa] h-12 rounded-full w-full flex items-center justify-between pl-6 pr-2 py-3">
+      <input
+        value={value}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          if (!isNaN(n)) onChange(Math.max(0, n));
+        }}
+        className={`bg-transparent text-[14px] ${font} outline-none w-full tabular-nums`} />
+      <div className="h-8 shrink-0 w-[92px] relative flex items-center rounded-full overflow-hidden">
+        <div className="absolute left-1/2 -translate-x-1/2 top-1 h-6 w-px bg-[rgba(60,60,67,0.3)] rounded-lg" />
+        <button onClick={() => onChange(Math.max(0, value - step))}
+          className="flex-1 h-full bg-[rgba(116,116,128,0.08)] rounded-l-full flex items-center justify-center cursor-pointer hover:bg-[rgba(116,116,128,0.15)] transition-colors">
+          <span className="text-[17px] text-black leading-none select-none">−</span>
+        </button>
+        <button onClick={() => onChange(value + step)}
+          className="flex-1 h-full bg-[rgba(116,116,128,0.08)] rounded-r-full flex items-center justify-center cursor-pointer hover:bg-[rgba(116,116,128,0.15)] transition-colors">
+          <span className="text-[17px] text-black leading-none select-none">+</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// แปลง hex เป็น rgba พร้อม alpha
+function brandAlpha(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function ShipCarrierBadge({ carrier, size = 44 }: { carrier: ShippingCarrier; size?: number }) {
+  const darkText = ["flash", "dhl"].includes(carrier.id);
+  return (
+    <div className="rounded-full flex items-center justify-center shrink-0 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.15)]"
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: carrier.color,
+        color: darkText ? "#1a1a1a" : "#fff",
+        fontSize: size * 0.32,
+        fontWeight: 800,
+        letterSpacing: carrier.code.length > 2 ? "-0.5px" : "0",
+      }}>
+      {carrier.code}
+    </div>
+  );
+}
+
+function ShipToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
+  return (
+    <button onClick={onToggle}
+      className={`w-16 h-7 rounded-full cursor-pointer transition-colors relative shrink-0 p-0.5 flex items-center ${enabled ? "bg-[#34c759]" : "bg-[rgba(60,60,67,0.3)]"}`}>
+      <div className={`w-[39px] h-6 bg-white rounded-full shadow transition-transform ${enabled ? "translate-x-[22px]" : "translate-x-0"}`} />
+    </button>
+  );
+}
+
+function AddCarrierDialog({ open, existingIds, onClose, onAdd }: {
+  open: boolean;
+  existingIds: string[];
+  onClose: () => void;
+  onAdd: (c: ShippingCarrier) => void;
+}) {
+  const available = CARRIER_CATALOG.filter(c => !existingIds.includes(c.id));
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-[560px] p-0 overflow-hidden">
+        <DialogHeader className="bg-[#319754]/5 px-5 pt-4 pb-3 border-b border-[#319754]/10">
+          <DialogTitle className={`${font} text-[16px]`} style={{ fontWeight: 600 }}>เพิ่มขนส่ง</DialogTitle>
+          <DialogDescription className={`${font} text-[12px] text-gray-500`}>
+            เลือกขนส่งจากรายการเพื่อเพิ่มเข้าแพลตฟอร์ม
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="px-5 py-4 max-h-[60vh] overflow-y-auto flex flex-col gap-2">
+          {available.length === 0 ? (
+            <div className="text-center py-10 flex flex-col items-center gap-2 text-gray-400">
+              <Truck className="size-8" strokeWidth={1.5} />
+              <p className={`${font} text-[13px]`}>ขนส่งทั้งหมดถูกเพิ่มเข้าระบบแล้ว</p>
+            </div>
+          ) : (
+            available.map((c) => (
+              <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#319754]/40 hover:bg-[#319754]/5 transition-all">
+                <ShipCarrierBadge carrier={c} size={40} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>{c.name}</p>
+                    {c.cod && (
+                      <span className={`${font} inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-[#ff9500]/15 text-[#ff9500]`} style={{ fontWeight: 600 }}>
+                        <ShieldCheck className="size-2.5" strokeWidth={2.4} />
+                        COD
+                      </span>
+                    )}
+                  </div>
+                  <p className={`${font} text-[11px] text-gray-500 mt-0.5 truncate`}>🌐 {c.trackingUrl}</p>
+                </div>
+                <button onClick={() => onAdd(c)}
+                  className={`${font} inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-white text-[12px] cursor-pointer hover:opacity-90 transition-opacity shrink-0`}
+                  style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 500 }}>
+                  <Plus className="size-3" strokeWidth={2.4} />
+                  เพิ่ม
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        <DialogFooter className="px-5 py-3 border-t border-gray-100 bg-white">
+          <button onClick={onClose}
+            className={`${font} h-9 px-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-[13px] cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            ปิด
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SettingsShippingPage() {
+  // 1) ค่าตั้งต้นแพลตฟอร์ม (defaults สำหรับร้านใหม่)
+  const [freeShippingMin,  setFreeShippingMin]  = useState(500);
+  const [baseShippingCost, setBaseShippingCost] = useState(35);
+  const [defaultWeight,    setDefaultWeight]    = useState(500);
+
+  // 2) Master carrier list
+  const [carriers, setCarriers] = useState<ShippingCarrier[]>(DEFAULT_PLATFORM_CARRIERS);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+
+  const updateCarrier = (id: string, patch: Partial<ShippingCarrier>) =>
+    setCarriers((prev) => prev.map((c) => c.id === id ? { ...c, ...patch } : c));
+  const deleteCarrier = (id: string) => {
+    setCarriers((prev) => prev.filter((c) => c.id !== id));
+    toast.success("ลบขนส่งออกจากแพลตฟอร์มแล้ว");
+  };
+  const addFromCatalog = (c: ShippingCarrier) => {
+    setCarriers((prev) => [...prev, { ...c, enabled: true }]);
+    toast.success(`เพิ่ม ${c.name} เข้าแพลตฟอร์มแล้ว`);
+  };
+
+  // 3) นโยบาย COD แพลตฟอร์ม
+  const [codEnabled,   setCodEnabled]   = useState(true);
+  const [codFee,       setCodFee]       = useState(20);
+  const [codMaxAmount, setCodMaxAmount] = useState(50000);
+
+  // 4) Master remote areas
+  const [remoteEnabled, setRemoteEnabled] = useState(true);
+  const [remoteFee,     setRemoteFee]     = useState(150);
+  const [remoteAreas,   setRemoteAreas]   = useState("เกาะสมุย, เกาะพะงัน, เกาะเต่า, เกาะช้าง, เกาะลันตา, แม่ฮ่องสอน (อ.ปาย, อ.ปางมะผ้า)");
+
+  const enabledCarrierCount = carriers.filter(c => c.enabled).length;
+
+  return (
+    <div className="flex flex-col gap-5 pb-2">
+      {/* CARD 1: Platform defaults */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
+        <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
+          <Settings className="size-4 text-[#319754]" strokeWidth={2.2} />
+          <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ค่าตั้งต้นแพลตฟอร์ม</p>
+          <span className={`${font} ml-2 bg-[#319754]/10 text-[#287745] text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>
+            Defaults
+          </span>
+        </div>
+        <p className={`${font} text-[11px] text-gray-500 -mt-2`}>ค่าเริ่มต้นที่ร้านค้าใหม่จะได้รับ — แต่ละร้านยังปรับเองได้ในหน้าตั้งค่าของตน</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className={`${font} text-[12px] text-gray-500 flex items-center gap-1.5`}>
+              <Package className="size-3 text-gray-400" strokeWidth={2.4} />
+              ส่งฟรีเมื่อซื้อครบ (฿)
+            </label>
+            <ShipStepperInput value={freeShippingMin} onChange={setFreeShippingMin} />
+            <p className={`${font} text-[10px] text-gray-400 pl-3`}>0 = ไม่มีเงื่อนไขส่งฟรี default</p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={`${font} text-[12px] text-gray-500 flex items-center gap-1.5`}>
+              <DollarSign className="size-3 text-gray-400" strokeWidth={2.4} />
+              ค่าจัดส่งเริ่มต้น (฿)
+            </label>
+            <ShipStepperInput value={baseShippingCost} onChange={setBaseShippingCost} />
+            <p className={`${font} text-[10px] text-gray-400 pl-3`}>ใช้เป็น fallback เมื่อร้านยังไม่ตั้งค่า</p>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={`${font} text-[12px] text-gray-500 flex items-center gap-1.5`}>
+              <Truck className="size-3 text-gray-400" strokeWidth={2.4} />
+              น้ำหนักเริ่มต้น (กรัม)
+            </label>
+            <ShipStepperInput value={defaultWeight} onChange={setDefaultWeight} />
+            <p className={`${font} text-[10px] text-gray-400 pl-3`}>สำหรับสินค้าที่ยังไม่กรอกน้ำหนัก</p>
+          </div>
+        </div>
+      </div>
+
+      {/* CARD 2: Master carrier list */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
+        <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Truck className="size-4 text-[#319754]" strokeWidth={2.2} />
+            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ขนส่งที่รองรับบนแพลตฟอร์ม</p>
+            <span className={`${font} ml-2 bg-[#319754]/10 text-[#287745] text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>
+              Master List
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`${font} text-[11px] text-gray-500`}>
+              <span className="text-[#319754] tabular-nums" style={{ fontWeight: 600 }}>{enabledCarrierCount}</span>
+              <span className="text-gray-400"> / {carriers.length} ขนส่ง</span>
+            </span>
+            <button onClick={() => setShowAddDialog(true)}
+              className={`${font} inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-white text-[12px] cursor-pointer hover:opacity-90 transition-opacity`}
+              style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 500 }}>
+              <Plus className="size-3" strokeWidth={2.4} />
+              เพิ่มขนส่ง
+            </button>
+          </div>
+        </div>
+        <p className={`${font} text-[11px] text-gray-500 -mt-2`}>
+          ปิดที่นี่ = ขนส่งนี้จะถูกซ่อนจากทุกร้าน · <span style={{ fontWeight: 600 }}>ราคาและระยะเวลาจัดส่ง</span> ร้านค้าเป็นผู้กำหนดเอง
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {carriers.map((c) => {
+            return (
+              <div key={c.id}
+                className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors"
+                style={{ backgroundColor: c.enabled ? c.color : "#9ca3af" }}>
+
+                {/* HEADER — transparent, shows outer brand bg */}
+                <div className="relative overflow-hidden">
+                  {/* Truck illustration — inside header, behind content */}
+                  {c.logo && (
+                    <img src={c.logo} alt=""
+                      className="absolute pointer-events-none select-none z-0 transition-all"
+                      style={{
+                        right: 8,
+                        top: 8,
+                        height: "100px",
+                        width: "auto",
+                        maxWidth: "210px",
+                        objectFit: "contain",
+                        objectPosition: "right top",
+                        filter: c.enabled ? "none" : "grayscale(100%)",
+                      }} />
+                  )}
+                  <div className="relative z-10 flex items-start gap-3 p-4 pr-4">
+                    {/* Small logo circle — white bg with brand color text */}
+                    <div className="size-12 rounded-full flex items-center justify-center shrink-0 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.08)] bg-white transition-colors"
+                      style={{ color: c.enabled ? c.color : "#9ca3af" }}>
+                      <span className={`${fontBold} text-[14px]`} style={{ fontWeight: 800, letterSpacing: c.code.length > 2 ? "-0.5px" : "0" }}>
+                        {c.code}
+                      </span>
+                    </div>
+                    {/* Name + tracking URL */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className={`${font} text-[18px] text-white`} style={{ fontWeight: 700 }}>{c.name}</h3>
+                        {c.cod && (
+                          <span className={`${font} inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-white text-black`} style={{ fontWeight: 600 }}>
+                            <ShieldCheck className="size-2.5 text-[#319754]" strokeWidth={2.4} />
+                            COD
+                          </span>
+                        )}
+                      </div>
+                      <p className={`${font} text-[12px] mt-0.5 flex items-center gap-1.5 text-white/85 leading-none`}>
+                        <Globe className="size-3 shrink-0" strokeWidth={2.4} />
+                        <span className="truncate">{c.trackingUrl || "ยังไม่ได้กรอก URL ติดตาม"}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BODY — white card with rounded all 4 corners */}
+                <div className="relative z-10">
+                  <div className="rounded-2xl p-4 flex flex-col gap-3 bg-white">
+                    {/* Master toggle row */}
+                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-gray-200">
+                      <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 600 }}>เปิดใช้งานขนส่งนี้</span>
+                      <ShipToggle enabled={c.enabled} onToggle={() => updateCarrier(c.id, { enabled: !c.enabled })} />
+                    </div>
+                    {/* Tracking URL field */}
+                    <div className="pr-32">
+                      <label className={`${font} text-[11px] text-gray-600`}>เว็บไซต์ติดตามพัสดุ</label>
+                      <input value={c.trackingUrl} placeholder="track.example.com" disabled={!c.enabled}
+                        onChange={(e) => updateCarrier(c.id, { trackingUrl: e.target.value })}
+                        onFocus={(e) => {
+                          if (!c.enabled) return;
+                          e.currentTarget.style.borderColor = c.color;
+                          e.currentTarget.style.boxShadow = `0 0 0 3px ${brandAlpha(c.color, 0.2)}`;
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = "#e5e7eb";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                        className={`${font} bg-white h-10 w-full mt-1 rounded-full px-4 text-[13px] text-black outline-none border border-gray-200 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500`} />
+                      <p className={`${font} text-[10px] text-gray-500 pl-3 mt-1.5`}>
+                        URL ที่ลูกค้าใช้ติดตามพัสดุ — เป็นค่ามาตรฐานของขนส่ง ทุกร้านใช้ URL เดียวกัน
+                      </p>
+                    </div>
+
+                    {/* COD + Delete */}
+                    <div className="flex items-center justify-between gap-3 flex-wrap pt-2 border-t border-gray-200">
+                      <label className={`flex items-center gap-2 ${c.enabled ? "cursor-pointer" : "cursor-not-allowed"}`}>
+                        <input type="checkbox" checked={c.cod} disabled={!c.enabled}
+                          onChange={(e) => updateCarrier(c.id, { cod: e.target.checked })}
+                          className="hidden" />
+                        <span className={`size-[18px] rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                          c.cod ? "border-transparent" : "border-gray-400 bg-white"
+                        }`}
+                          style={c.cod ? { backgroundColor: c.color } : {}}>
+                          {c.cod && <Check className="size-2.5 text-white" strokeWidth={3} />}
+                        </span>
+                        <span className={`${font} text-[12px] text-gray-800`} style={{ fontWeight: 500 }}>รองรับเก็บเงินปลายทาง (COD)</span>
+                      </label>
+                      <button onClick={() => deleteCarrier(c.id)}
+                        className={`${font} inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-white hover:bg-[#ff3b30]/10 text-[#ff3b30] text-[12px] cursor-pointer transition-colors border border-[#ff3b30]/20`}
+                        style={{ fontWeight: 500 }}>
+                        <Trash2 className="size-3" strokeWidth={2.4} />
+                        ลบออกจากแพลตฟอร์ม
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* CARD 3: COD policy */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
+        <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-2xl bg-[#ff9500]/10 flex items-center justify-center shrink-0">
+              <DollarSign className="size-5 text-[#ff9500]" strokeWidth={2.2} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>นโยบายเก็บเงินปลายทาง (COD)</p>
+                <span className={`${font} bg-[#ff9500]/10 text-[#ff9500] text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>Platform</span>
+              </div>
+              <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>ปิดที่นี่ = ทุกร้านในแพลตฟอร์มไม่สามารถเปิด COD ได้</p>
+            </div>
+          </div>
+          <ShipToggle enabled={codEnabled} onToggle={() => setCodEnabled(!codEnabled)} />
+        </div>
+
+        <AnimatePresence initial={false}>
+          {codEnabled && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className={`${font} text-[12px] text-gray-500`}>ค่าธรรมเนียม COD แนะนำ (฿)</label>
+                  <ShipStepperInput value={codFee} onChange={setCodFee} step={10} />
+                  <p className={`${font} text-[10px] text-gray-400 pl-3`}>ค่า default — แต่ละร้านปรับเองได้</p>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className={`${font} text-[12px] text-gray-500`}>วงเงิน COD สูงสุดต่อออเดอร์ (฿)</label>
+                  <ShipStepperInput value={codMaxAmount} onChange={setCodMaxAmount} step={5000} />
+                  <p className={`${font} text-[10px] text-gray-400 pl-3`}>เพดานสูงสุดของแพลตฟอร์ม — ร้านปรับลงได้แต่ห้ามเกิน</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* CARD 4: Master remote areas */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
+        <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-2xl bg-[#0088ff]/10 flex items-center justify-center shrink-0">
+              <MapPin className="size-5 text-[#0088ff]" strokeWidth={2.2} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>พื้นที่ห่างไกล</p>
+                <span className={`${font} bg-[#0088ff]/10 text-[#0088ff] text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>Master List</span>
+              </div>
+              <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>รายการกลางที่ทุกร้านใช้ร่วมกัน — ร้านเปิด/ปิดฟีเจอร์ได้ แต่รายการพื้นที่บริหารจากที่นี่</p>
+            </div>
+          </div>
+          <ShipToggle enabled={remoteEnabled} onToggle={() => setRemoteEnabled(!remoteEnabled)} />
+        </div>
+
+        <AnimatePresence initial={false}>
+          {remoteEnabled && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="overflow-hidden">
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className={`${font} text-[12px] text-gray-500 flex items-center gap-1.5`}>
+                      <DollarSign className="size-3 text-gray-400" strokeWidth={2.4} />
+                      ค่าจัดส่งเหมาจ่ายแนะนำ (฿)
+                    </label>
+                    <ShipStepperInput value={remoteFee} onChange={setRemoteFee} />
+                    <p className={`${font} text-[10px] text-gray-400 pl-3`}>ค่า default ที่ร้านจะ inherit — ร้านปรับเองได้</p>
+                  </div>
+                  <div className="bg-[#0088ff]/5 border border-[#0088ff]/20 rounded-xl p-4 flex items-start gap-2.5">
+                    <AlertCircle className="size-4 text-[#0088ff] shrink-0 mt-0.5" strokeWidth={2.2} />
+                    <div>
+                      <p className={`${font} text-[12px] text-[#0066b8]`} style={{ fontWeight: 600 }}>วิธีคำนวณ</p>
+                      <p className={`${font} text-[11px] text-gray-600 mt-0.5 leading-relaxed`}>
+                        ค่าส่งจะถูก override เป็น <span style={{ fontWeight: 600 }}>฿{remoteFee.toLocaleString()}</span> ทันที เมื่อระบบตรวจพบที่อยู่ลูกค้าอยู่ในรายการนี้
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className={`${font} text-[12px] text-gray-500 flex items-center gap-1.5`}>
+                    <MapPin className="size-3 text-gray-400" strokeWidth={2.4} />
+                    รายการพื้นที่ห่างไกล (master list)
+                  </label>
+                  <textarea
+                    value={remoteAreas}
+                    onChange={(e) => setRemoteAreas(e.target.value)}
+                    placeholder="ระบุชื่ออำเภอ / เกาะ / จังหวัด คั่นด้วย , เช่น เกาะสมุย, เกาะพะงัน"
+                    rows={3}
+                    className={`${font} bg-[#fafafa] rounded-2xl px-5 py-3 text-[13px] outline-none focus:ring-2 focus:ring-[#319754]/30 focus:bg-white transition-all resize-none placeholder:text-[#a3a3a3]`}
+                    style={{ fontWeight: 500 }} />
+                  <p className={`${font} text-[10px] text-gray-400 pl-3`}>ระบบจะตรวจที่อยู่ลูกค้าตาม keyword ในรายการนี้ (case-insensitive) — ใช้ร่วมกันทุกร้านในแพลตฟอร์ม</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <SaveBar isDirty={true} onReset={() => {
+          setFreeShippingMin(500); setBaseShippingCost(35); setDefaultWeight(500);
+          setCarriers(DEFAULT_PLATFORM_CARRIERS);
+          setCodEnabled(true); setCodFee(20); setCodMaxAmount(50000);
+          setRemoteEnabled(true); setRemoteFee(150); setRemoteAreas("เกาะสมุย, เกาะพะงัน, เกาะเต่า, เกาะช้าง, เกาะลันตา, แม่ฮ่องสอน (อ.ปาย, อ.ปางมะผ้า)");
+        }} onSave={() => toast.success("บันทึกตั้งค่าการจัดส่งแพลตฟอร์มเรียบร้อย")} />
+      </div>
+
+      <AddCarrierDialog
+        open={showAddDialog}
+        existingIds={carriers.map(c => c.id)}
+        onClose={() => setShowAddDialog(false)}
+        onAdd={(c) => addFromCatalog(c)}
+      />
+    </div>
+  );
+}
+
+/* ============================================================
+ * USER REGISTRY PAGE
+ * ========================================================== */
+interface UserRecord {
+  id: string;
+  username: string;
+  email: string;
+  name: string;          // ชื่อ-นามสกุล
+  role: "customer" | "owner" | "admin";
+  status: "active" | "banned" | "pending";
+}
+
+const MOCK_USERS: UserRecord[] = [
+  { id: "u-1",  username: "admin0001",    email: "test0001@gmail.com",        name: "Admin TestKUB",         role: "admin",    status: "active" },
+  { id: "u-2",  username: "customertest", email: "customer@test.com",         name: "customer test",          role: "customer", status: "active" },
+  { id: "u-3",  username: "metaherb",     email: "metaherb.herb@gmail.com",   name: "metaherb store",         role: "owner",    status: "active" },
+  { id: "u-4",  username: "registest",    email: "registertest@test.com",     name: "ทดสอบ ลงทะเบียน",        role: "customer", status: "active" },
+  { id: "u-5",  username: "bmsdevging",   email: "ging.buppa@gmail.com",      name: "บุปผา ทดสอบ",            role: "customer", status: "active" },
+  { id: "u-6",  username: "BMStester",    email: "d0879876440@gmail.com",     name: "ชาลิสา ทดสอบ12",         role: "admin",    status: "active" },
+  { id: "u-7",  username: "0pom33pom0",   email: "pom33120pom@gmail.com",     name: "พอม พอม",                role: "customer", status: "active" },
+  { id: "u-8",  username: "AomTantarat",  email: "tanyarat.160344@gmail.com", name: "อัญญารัตน์ คำบุญเรือง", role: "customer", status: "active" },
+  { id: "u-9",  username: "pakjira5245",  email: "namepjk2002@gmail.com",     name: "ภัคจิรา ชัยฮะ",          role: "customer", status: "active" },
+  { id: "u-10", username: "Adthapon.u",   email: "adthapon.u@gmail.com",      name: "อรรถพล อุทัยเรือง",     role: "customer", status: "active" },
+  { id: "u-11", username: "torlarp99",    email: "torlarp999@hotmail.co.th",  name: "ต่อลาภ นาคทอง",          role: "customer", status: "active" },
+];
+
+const ROLE_META: Record<UserRecord["role"], { label: string; color: string; bg: string }> = {
+  customer: { label: "ลูกค้า",          color: "#6b7280", bg: "#f3f4f6" },
+  owner:    { label: "ร้านค้า",         color: "#287745", bg: "#319754" + "1f" },
+  admin:    { label: "ผู้ดูแลระบบ",     color: "#1d4ed8", bg: "#3b82f6" + "1f" },
+};
+
+const STATUS_META: Record<UserRecord["status"], { label: string; color: string; bg: string }> = {
+  active:  { label: "ใช้งาน",     color: "#287745", bg: "#319754" + "1a" },
+  banned:  { label: "ถูกระงับ",   color: "#dc2626", bg: "#ff3b30" + "1a" },
+  pending: { label: "รออนุมัติ",   color: "#b45309", bg: "#f59e0b" + "1a" },
+};
+
+function KpiCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number | string; color: string }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 flex items-center gap-3">
+      <div className="size-11 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}1a` }}>
+        <Icon className="size-5" style={{ color }} strokeWidth={2.2} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className={`${font} text-[11px] text-gray-500`}>{label}</p>
+        <p className={`${fontBold} text-[22px] text-black tabular-nums`} style={{ fontWeight: 700 }}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function FilterTabs<T extends string>({ value, options, onChange }: {
+  value: T; options: { id: T; label: string; count?: number }[]; onChange: (v: T) => void;
+}) {
+  return (
+    <div className="inline-flex bg-gray-100 rounded-full p-1 flex-wrap">
+      {options.map((t) => {
+        const active = value === t.id;
+        return (
+          <button key={t.id} onClick={() => onChange(t.id)}
+            className={`${font} inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-[12px] cursor-pointer transition-all ${
+              active ? "bg-white shadow-sm text-black" : "text-gray-500 hover:text-black"
+            }`} style={{ fontWeight: 500 }}>
+            {t.label}
+            {t.count !== undefined && (
+              <span className={`tabular-nums text-[10px] px-1.5 py-0.5 rounded-full ${active ? "bg-[#319754]/10 text-[#319754]" : "bg-gray-200 text-gray-500"}`} style={{ fontWeight: 600 }}>
+                {t.count}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="relative flex-1 min-w-[200px]">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" strokeWidth={2.2} />
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+        className={`${font} w-full h-10 pl-10 pr-3 rounded-full border border-gray-200 text-[13px] outline-none focus:ring-2 focus:ring-[#319754]/30 focus:border-[#319754] transition-all bg-white`} />
+    </div>
+  );
+}
+
+function UserAvatar({ user, size = 36 }: { user: UserRecord; size?: number }) {
+  const initial = user.name.charAt(0);
+  const bg = ROLE_META[user.role].color;
+  return (
+    <div className="rounded-full flex items-center justify-center shrink-0 text-white"
+      style={{ width: size, height: size, backgroundColor: bg, fontSize: size * 0.4 }}>
+      <span className={`${fontBold}`} style={{ fontWeight: 700 }}>{initial}</span>
+    </div>
+  );
+}
+
+function UsersListPage() {
+  const [users, setUsers] = useState<UserRecord[]>(MOCK_USERS);
+  const [filter, setFilter] = useState<UserRecord["role"] | "all">("all");
+  const [search, setSearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const updateUserRole = (id: string, newRole: UserRecord["role"]) => {
+    const u = users.find(x => x.id === id);
+    if (!u) return;
+    if (u.role === newRole) return;
+    // ป้องกันไม่ให้ลดบทบาท admin คนสุดท้าย
+    if (u.role === "admin" && newRole !== "admin") {
+      const adminCount = users.filter(x => x.role === "admin").length;
+      if (adminCount <= 1) {
+        toast.error("ต้องมีแอดมินอย่างน้อย 1 คนในระบบ");
+        return;
+      }
+    }
+    setUsers(prev => prev.map(x => x.id === id ? { ...x, role: newRole } : x));
+    toast.success(`เปลี่ยน ${u.name} เป็น ${ROLE_META[newRole].label}`);
+  };
+
+  const stats = useMemo(() => ({
+    total:    users.length,
+    customer: users.filter(u => u.role === "customer").length,
+    owner:    users.filter(u => u.role === "owner").length,
+    admin:    users.filter(u => u.role === "admin").length,
+  }), [users]);
+
+  const filtered = users.filter((u) => {
+    if (filter !== "all" && u.role !== filter) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      if (!u.name.toLowerCase().includes(q) && !u.username.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const deleteUser = (id: string) => {
+    const u = users.find(x => x.id === id);
+    if (!u) return;
+    setUsers(prev => prev.filter(x => x.id !== id));
+    toast.success(`ลบ ${u.username} เรียบร้อย`);
+  };
+
+  return (
+    <div className="flex flex-col gap-5 pb-2">
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KpiCard icon={Users}   label="ผู้ใช้ทั้งหมด"      value={stats.total}    color="#319754" />
+        <KpiCard icon={Users}   label="ลูกค้า"               value={stats.customer} color="#6b7280" />
+        <KpiCard icon={Store}   label="ร้านค้า"               value={stats.owner}    color="#319754" />
+        <KpiCard icon={Shield}  label="ผู้ดูแลระบบ"          value={stats.admin}    color="#3b82f6" />
+      </div>
+
+      {/* Filter + Search */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 sm:p-5">
+        <div className="flex items-center gap-3 flex-wrap mb-4">
+          <FilterTabs value={filter} onChange={setFilter}
+            options={[
+              { id: "all" as const,      label: "ทั้งหมด",        count: stats.total },
+              { id: "customer" as const, label: "ลูกค้า",          count: stats.customer },
+              { id: "owner" as const,    label: "ร้านค้า",         count: stats.owner },
+              { id: "admin" as const,    label: "ผู้ดูแลระบบ",    count: stats.admin },
+            ]} />
+          <SearchInput value={search} onChange={setSearch} placeholder="ค้นหา ชื่อผู้ใช้ / อีเมล / ชื่อ-นามสกุล" />
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto -mx-4 sm:-mx-5">
+          <table className="w-full min-w-[900px]">
+            <thead>
+              <tr className={`${font} text-[11px] text-gray-500 uppercase tracking-wide bg-gray-50 border-y border-gray-100`} style={{ fontWeight: 600 }}>
+                <th className="px-4 py-3 text-left w-12">ID</th>
+                <th className="px-4 py-3 text-left">ชื่อผู้ใช้</th>
+                <th className="px-4 py-3 text-left">อีเมล</th>
+                <th className="px-4 py-3 text-left">ชื่อ-นามสกุล</th>
+                <th className="px-4 py-3 text-left">บทบาท</th>
+                <th className="px-4 py-3 text-left">สถานะ</th>
+                <th className="px-4 py-3 text-right">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2 text-gray-400">
+                      <Users className="size-8" strokeWidth={1.5} />
+                      <p className={`${font} text-[13px]`}>ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {filtered.map((u, idx) => {
+                const role = ROLE_META[u.role];
+                const status = STATUS_META[u.status];
+                const isEditing = editingId === u.id;
+                return (
+                  <tr key={u.id}
+                    className={`border-b border-gray-100 transition-colors ${
+                      isEditing ? "bg-[#fffbeb]" : "hover:bg-gray-50/60"
+                    }`}
+                    style={isEditing ? { boxShadow: "inset 3px 0 0 #f59e0b" } : {}}>
+                    <td className="px-4 py-3">
+                      <span className={`${font} text-[13px] text-gray-500 tabular-nums`}>{idx + 1}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <UserAvatar user={u} size={32} />
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{u.username}</span>
+                          {isEditing && (
+                            <span className={`${font} inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-[#f59e0b]/15 text-[#b45309] shrink-0`} style={{ fontWeight: 600 }}>
+                              <Pencil className="size-2.5" strokeWidth={2.4} />
+                              กำลังแก้ไข
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <a href={`mailto:${u.email}`} className={`${font} text-[12px] text-[#3b82f6] hover:underline truncate block`}>{u.email}</a>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`${font} text-[13px] text-black truncate`}>{u.name}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {isEditing ? (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button title="คลิกเพื่อเปลี่ยนบทบาท"
+                              className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ring-2 ring-[#f59e0b]/40`}
+                              style={{ backgroundColor: role.bg, color: role.color, fontWeight: 600 }}>
+                              {role.label}
+                              <ChevronDown className="size-3" strokeWidth={2.4} />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" sideOffset={6} className="w-56 p-1.5">
+                            <p className={`${font} text-[10px] text-gray-400 uppercase tracking-wide px-2 pt-1 pb-2`} style={{ fontWeight: 600 }}>
+                              เปลี่ยนบทบาท
+                            </p>
+                            {(["customer", "owner", "admin"] as const).map((r) => {
+                              const meta = ROLE_META[r];
+                              const active = u.role === r;
+                              return (
+                                <button key={r} onClick={() => updateUserRole(u.id, r)}
+                                  className={`${font} w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md cursor-pointer transition-colors text-left ${
+                                    active ? "bg-gray-50" : "hover:bg-gray-50"
+                                  }`}>
+                                  <div className="flex items-center gap-2">
+                                    <span className="size-2 rounded-full" style={{ backgroundColor: meta.color }} />
+                                    <span className="text-[13px] text-black" style={{ fontWeight: active ? 600 : 500 }}>{meta.label}</span>
+                                  </div>
+                                  {active && <Check className="size-4 text-[#319754]" strokeWidth={2.5} />}
+                                </button>
+                              );
+                            })}
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
+                        <span className={`${font} inline-flex items-center text-[11px] px-2.5 py-1 rounded-full`}
+                          style={{ backgroundColor: role.bg, color: role.color, fontWeight: 600 }}>
+                          {role.label}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full`}
+                        style={{ backgroundColor: status.bg, color: status.color, fontWeight: 600 }}>
+                        <Check className="size-2.5" strokeWidth={3} />
+                        {status.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        {isEditing ? (
+                          <button onClick={() => setEditingId(null)}
+                            className={`${font} inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-[#319754] hover:bg-[#287745] text-white text-[11px] cursor-pointer transition-colors`}
+                            style={{ fontWeight: 500 }}>
+                            <Check className="size-3" strokeWidth={2.4} />
+                            เสร็จสิ้น
+                          </button>
+                        ) : (
+                          <button onClick={() => setEditingId(u.id)}
+                            className={`${font} inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] cursor-pointer transition-colors`}
+                            style={{ fontWeight: 500 }}>
+                            <Pencil className="size-3" strokeWidth={2.4} />
+                            แก้ไข
+                          </button>
+                        )}
+                        <button onClick={() => toast.success(`รีเซตรหัสผ่าน ${u.username} เรียบร้อย`)}
+                          className={`${font} inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-[#f59e0b]/15 hover:bg-[#f59e0b]/25 text-[#b45309] text-[11px] cursor-pointer transition-colors`}
+                          style={{ fontWeight: 500 }}>
+                          <RotateCcw className="size-3" strokeWidth={2.4} />
+                          รีเซต
+                        </button>
+                        <button onClick={() => { deleteUser(u.id); if (isEditing) setEditingId(null); }}
+                          className={`${font} inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-[#ff3b30]/15 hover:bg-[#ff3b30]/25 text-[#dc2626] text-[11px] cursor-pointer transition-colors`}
+                          style={{ fontWeight: 500 }}>
+                          <Trash2 className="size-3" strokeWidth={2.4} />
+                          ลบ
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <p className={`${font} text-[11px] text-gray-400 mt-3`}>
+          แสดง <span style={{ fontWeight: 600 }} className="text-[#319754]">{filtered.length}</span> จาก {users.length} ผู้ใช้
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+ * SHOP REGISTRY PAGE
+ * ========================================================== */
+interface ShopRecord {
+  id: string;
+  name: string;
+  owner: string;
+  category: string;
+  status: "active" | "pending" | "suspended";
+  verified: boolean;
+  registeredAt: string;
+  productCount: number;
+  orderCount: number;
+  revenue: number;
+  rating: number;
+}
+
+const MOCK_SHOPS: ShopRecord[] = [
+  { id: "s-001", name: "เมต้าเฮิร์บ",          owner: "จิราภา ศรีสวัสดิ์", category: "สมุนไพร",   status: "active",    verified: true,  registeredAt: "1 ม.ค. 2568",  productCount: 248, orderCount: 1432, revenue: 1845000, rating: 4.8 },
+  { id: "s-002", name: "ชาเขียวออร์แกนิคไทย", owner: "วิชัย เทพประสิทธิ์",  category: "เครื่องดื่ม", status: "active",    verified: true,  registeredAt: "18 ก.พ. 2568", productCount: 56,  orderCount: 320,  revenue: 285000,  rating: 4.6 },
+  { id: "s-003", name: "น้ำผึ้งดอยไทย",       owner: "ภาคภูมิ ใจดี",       category: "อาหาร",      status: "active",    verified: true,  registeredAt: "22 ม.ค. 2568", productCount: 18,  orderCount: 156,  revenue: 124000,  rating: 4.9 },
+  { id: "s-004", name: "เครื่องสำอางสมุนไพรอรุณ", owner: "วิภาวี เกษมสุข",  category: "ความงาม",    status: "active",    verified: false, registeredAt: "28 ม.ค. 2568", productCount: 42,  orderCount: 87,   revenue: 64000,   rating: 4.4 },
+  { id: "s-005", name: "ของขวัญสุขภาพ Premium", owner: "วิภาวี เกษมสุข",   category: "ของขวัญ",   status: "active",    verified: false, registeredAt: "5 ก.พ. 2568",  productCount: 24,  orderCount: 42,   revenue: 38000,   rating: 4.2 },
+  { id: "s-006", name: "ร้านสมุนไพรลุงจ้อย",    owner: "ปนัดดา ใจกล้า",    category: "สมุนไพร",   status: "pending",   verified: false, registeredAt: "เมื่อวาน",         productCount: 0,   orderCount: 0,    revenue: 0,        rating: 0 },
+  { id: "s-007", name: "Tea House Bangkok",      owner: "ธารา วงศ์ทอง",     category: "เครื่องดื่ม", status: "pending",   verified: false, registeredAt: "วันนี้",            productCount: 0,   orderCount: 0,    revenue: 0,        rating: 0 },
+  { id: "s-008", name: "ร้านยาโบราณป๋าสมศักดิ์", owner: "สมศักดิ์ ตำราดี",  category: "สมุนไพร",   status: "suspended", verified: false, registeredAt: "12 ธ.ค. 2567", productCount: 8,   orderCount: 2,    revenue: 1500,     rating: 2.1 },
+];
+
+const SHOP_STATUS_META: Record<ShopRecord["status"], { label: string; color: string; bg: string }> = {
+  active:    { label: "ใช้งาน",     color: "#287745", bg: "#319754" + "1a" },
+  pending:   { label: "รออนุมัติ",   color: "#b45309", bg: "#f59e0b" + "1a" },
+  suspended: { label: "ระงับ",       color: "#dc2626", bg: "#ff3b30" + "1a" },
+};
+
+function ShopLogo({ shop, size = 44 }: { shop: ShopRecord; size?: number }) {
+  const palette = ["#319754", "#3b82f6", "#f59e0b", "#9747ff", "#ec4899", "#06b6d4"];
+  const idx = shop.id.split("-")[1] ? Number(shop.id.split("-")[1]) % palette.length : 0;
+  const bg = palette[idx];
+  return (
+    <div className="rounded-xl flex items-center justify-center shrink-0 text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)]"
+      style={{ width: size, height: size, backgroundColor: bg, fontSize: size * 0.4 }}>
+      <span className={`${fontBold}`} style={{ fontWeight: 800 }}>{shop.name.charAt(0)}</span>
+    </div>
+  );
+}
+
+function ShopsListPage() {
+  const [filter, setFilter] = useState<ShopRecord["status"] | "all">("all");
+  const [search, setSearch] = useState("");
+
+  const stats = useMemo(() => ({
+    total:     MOCK_SHOPS.length,
+    active:    MOCK_SHOPS.filter(s => s.status === "active").length,
+    pending:   MOCK_SHOPS.filter(s => s.status === "pending").length,
+    suspended: MOCK_SHOPS.filter(s => s.status === "suspended").length,
+  }), []);
+
+  const filtered = MOCK_SHOPS.filter((s) => {
+    if (filter !== "all" && s.status !== filter) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      if (!s.name.toLowerCase().includes(q) && !s.owner.toLowerCase().includes(q) && !s.category.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const formatCurrency = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : `${n}`;
+
+  return (
+    <div className="flex flex-col gap-5 pb-2">
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KpiCard icon={Store}        label="ร้านค้าทั้งหมด"   value={stats.total}     color="#319754" />
+        <KpiCard icon={Check}        label="ใช้งาน"             value={stats.active}    color="#319754" />
+        <KpiCard icon={Clock}        label="รออนุมัติ"          value={stats.pending}   color="#f59e0b" />
+        <KpiCard icon={AlertCircle}  label="ระงับ"               value={stats.suspended} color="#ff3b30" />
+      </div>
+
+      {/* Filter + Search */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 sm:p-5">
+        <div className="flex items-center gap-3 flex-wrap mb-4">
+          <FilterTabs value={filter} onChange={setFilter}
+            options={[
+              { id: "all" as const,       label: "ทั้งหมด",     count: stats.total },
+              { id: "active" as const,    label: "ใช้งาน",       count: stats.active },
+              { id: "pending" as const,   label: "รออนุมัติ",    count: stats.pending },
+              { id: "suspended" as const, label: "ระงับ",         count: stats.suspended },
+            ]} />
+          <SearchInput value={search} onChange={setSearch} placeholder="ค้นหา ชื่อร้าน / เจ้าของ / หมวดหมู่" />
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto -mx-4 sm:-mx-5">
+          <table className="w-full min-w-[900px]">
+            <thead>
+              <tr className={`${font} text-[11px] text-gray-500 uppercase tracking-wide bg-gray-50 border-y border-gray-100`} style={{ fontWeight: 600 }}>
+                <th className="px-4 py-3 text-left">ร้านค้า</th>
+                <th className="px-4 py-3 text-left">หมวดหมู่</th>
+                <th className="px-4 py-3 text-left">สถานะ</th>
+                <th className="px-4 py-3 text-right">สินค้า</th>
+                <th className="px-4 py-3 text-right">ออเดอร์</th>
+                <th className="px-4 py-3 text-right">รายได้</th>
+                <th className="px-4 py-3 text-left">เรตติ้ง</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2 text-gray-400">
+                      <Store className="size-8" strokeWidth={1.5} />
+                      <p className={`${font} text-[13px]`}>ไม่พบร้านค้าที่ตรงกับเงื่อนไข</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {filtered.map((s) => {
+                const status = SHOP_STATUS_META[s.status];
+                return (
+                  <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50/60 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <ShopLogo shop={s} />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{s.name}</p>
+                            {s.verified && (
+                              <BadgeCheck className="size-4 text-[#319754] shrink-0" strokeWidth={2.4} fill="#319754" stroke="#fff" />
+                            )}
+                          </div>
+                          <p className={`${font} text-[11px] text-gray-500 truncate`}>โดย {s.owner}</p>
+                          <p className={`${font} text-[11px] text-gray-400`}>สมัคร: {s.registeredAt}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`${font} inline-flex items-center text-[11px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-700`} style={{ fontWeight: 500 }}>
+                        {s.category}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full`}
+                        style={{ backgroundColor: status.bg, color: status.color, fontWeight: 600 }}>
+                        <span className="size-1.5 rounded-full" style={{ backgroundColor: status.color }} />
+                        {status.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <p className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{s.productCount}</p>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <p className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{s.orderCount.toLocaleString()}</p>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <p className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>฿{formatCurrency(s.revenue)}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      {s.rating > 0 ? (
+                        <div className="inline-flex items-center gap-1">
+                          <Star className="size-3.5 text-[#f59e0b]" fill="#f59e0b" strokeWidth={0} />
+                          <span className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{s.rating.toFixed(1)}</span>
+                        </div>
+                      ) : (
+                        <span className={`${font} text-[12px] text-gray-400`}>—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <button title="ดูร้าน" onClick={() => toast.info(`ดูร้าน ${s.name}`)}
+                          className="size-8 rounded-lg hover:bg-gray-100 flex items-center justify-center cursor-pointer transition-colors">
+                          <Eye className="size-4 text-gray-500" strokeWidth={2.2} />
+                        </button>
+                        {s.status === "pending" && (
+                          <button title="อนุมัติร้านค้า" onClick={() => toast.success(`อนุมัติ ${s.name} แล้ว`)}
+                            className="size-8 rounded-lg hover:bg-[#319754]/10 flex items-center justify-center cursor-pointer transition-colors">
+                            <Check className="size-4 text-[#319754]" strokeWidth={2.4} />
+                          </button>
+                        )}
+                        {s.status === "active" && (
+                          <button title="ระงับร้านค้า" onClick={() => toast.success(`ระงับ ${s.name} แล้ว`)}
+                            className="size-8 rounded-lg hover:bg-[#ff3b30]/10 flex items-center justify-center cursor-pointer transition-colors">
+                            <X className="size-4 text-[#ff3b30]" strokeWidth={2.4} />
+                          </button>
+                        )}
+                        {s.status === "suspended" && (
+                          <button title="คืนสถานะใช้งาน" onClick={() => toast.success(`ปลดระงับ ${s.name} แล้ว`)}
+                            className="size-8 rounded-lg hover:bg-[#319754]/10 flex items-center justify-center cursor-pointer transition-colors">
+                            <Check className="size-4 text-[#319754]" strokeWidth={2.4} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <p className={`${font} text-[11px] text-gray-400 mt-3`}>
+          แสดง <span style={{ fontWeight: 600 }} className="text-[#319754]">{filtered.length}</span> จาก {MOCK_SHOPS.length} ร้านค้า
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+ * ADMIN NOTIFICATION SETTINGS PAGE
+ * ========================================================== */
+type NotifChannel = "email" | "push" | "sms" | "inapp";
+
+interface NotifEventConfig {
+  enabled: boolean;
+  channels: NotifChannel[];
+  threshold?: number;
+}
+
+interface NotifMeta {
+  id: string;
+  category: "registry" | "orders" | "system" | "content";
+  icon: any;
+  iconColor: string;
+  label: string;
+  desc: string;
+  thresholdLabel?: string;
+  thresholdSuffix?: string;
+}
+
+const NOTIF_EVENTS: NotifMeta[] = [
+  { id: "shop_pending",    category: "registry", icon: Store,         iconColor: "#319754", label: "ร้านค้าใหม่ลงทะเบียน",       desc: "ร้านที่รออนุมัติ — แอดมินตรวจและกดอนุมัติ" },
+  { id: "user_signup",     category: "registry", icon: Users,         iconColor: "#3b82f6", label: "ผู้ใช้ใหม่สมัครสมาชิก",       desc: "ลูกค้า / เจ้าของร้าน สมัครเข้าสู่ระบบ" },
+  { id: "user_reported",   category: "registry", icon: AlertCircle,   iconColor: "#ff3b30", label: "ผู้ใช้ / ร้านค้าถูกรายงาน", desc: "มีคนรายงานพฤติกรรมไม่เหมาะสม" },
+
+  { id: "large_order",     category: "orders",   icon: ShoppingCart,  iconColor: "#9747ff", label: "ออเดอร์มูลค่าสูง",            desc: "แจ้งเตือนเมื่อมีออเดอร์เกินเกณฑ์", thresholdLabel: "มูลค่าขั้นต่ำ", thresholdSuffix: "บาท" },
+  { id: "complaint_new",   category: "orders",   icon: AlertCircle,   iconColor: "#f59e0b", label: "การร้องเรียนใหม่",             desc: "ลูกค้าร้องเรียนเกี่ยวกับสินค้า / ร้าน" },
+  { id: "refund_request",  category: "orders",   icon: DollarSign,    iconColor: "#f59e0b", label: "คำขอคืนเงิน",                   desc: "ลูกค้าขอคืนเงิน — รออนุมัติ" },
+  { id: "payment_failed",  category: "orders",   icon: X,             iconColor: "#ff3b30", label: "การชำระเงินล้มเหลว",         desc: "ออเดอร์มีปัญหาการชำระเงิน" },
+  { id: "withdrawal",      category: "orders",   icon: DollarSign,    iconColor: "#287745", label: "การถอนเงินจากร้านค้า",      desc: "ร้านขอถอนเงินมูลค่าสูง", thresholdLabel: "มูลค่าขั้นต่ำ", thresholdSuffix: "บาท" },
+
+  { id: "system_error",    category: "system",   icon: AlertCircle,   iconColor: "#ff3b30", label: "Error rate สูง / ระบบมีปัญหา", desc: "เกิดข้อผิดพลาดในระบบเกินเกณฑ์ปกติ" },
+  { id: "failed_logins",   category: "system",   icon: Shield,        iconColor: "#f59e0b", label: "ล็อกอินล้มเหลวซ้ำ",         desc: "มีการลองเข้าระบบล้มเหลวจำนวนมาก — สงสัย attack" },
+  { id: "admin_login_new", category: "system",   icon: UserCog,       iconColor: "#9747ff", label: "แอดมินเข้าระบบจาก IP ใหม่",  desc: "บัญชีแอดมินถูกใช้จากอุปกรณ์ / ตำแหน่งใหม่" },
+  { id: "suspicious",      category: "system",   icon: Shield,        iconColor: "#ff3b30", label: "กิจกรรมน่าสงสัย",             desc: "ระบบตรวจพบพฤติกรรมผิดปกติ" },
+
+  { id: "review_reported", category: "content",  icon: Star,          iconColor: "#f59e0b", label: "รีวิวที่ถูกรายงาน",            desc: "ลูกค้ารายงานรีวิวว่าไม่เหมาะสม / spam" },
+  { id: "product_reported",category: "content",  icon: Package,       iconColor: "#9747ff", label: "สินค้าที่ถูกรายงาน",          desc: "ลูกค้ารายงานสินค้าว่าน่าสงสัย / ของปลอม" },
+  { id: "banned_content",  category: "content",  icon: MessageSquare, iconColor: "#ff3b30", label: "คอมเมนต์ต้องห้าม (Auto)",     desc: "ระบบตรวจพบคำต้องห้าม / spam อัตโนมัติ" },
+];
+
+interface AdminNotifConfig {
+  channels: {
+    email: { enabled: boolean; address: string };
+    push:  { enabled: boolean };
+    sms:   { enabled: boolean; phone: string };
+  };
+  events: Record<string, NotifEventConfig>;
+  reports: {
+    daily:   { enabled: boolean; time: string };
+    weekly:  { enabled: boolean; day: number };
+    monthly: { enabled: boolean; date: number };
+  };
+}
+
+const DEFAULT_NOTIF_CONFIG: AdminNotifConfig = {
+  channels: {
+    email: { enabled: true,  address: "admin@metaherb.co.th" },
+    push:  { enabled: true },
+    sms:   { enabled: false, phone: "" },
+  },
+  events: Object.fromEntries(NOTIF_EVENTS.map(e => [e.id, {
+    enabled: ["shop_pending", "complaint_new", "payment_failed", "system_error", "failed_logins", "admin_login_new", "suspicious"].includes(e.id),
+    channels: ["email", "inapp"] as NotifChannel[],
+    threshold: e.id === "large_order" ? 50000 : e.id === "withdrawal" ? 100000 : undefined,
+  }])),
+  reports: {
+    daily:   { enabled: true,  time: "09:00" },
+    weekly:  { enabled: true,  day: 1 },  // จันทร์
+    monthly: { enabled: false, date: 1 },
+  },
+};
+
+const CHANNEL_META: Record<NotifChannel, { label: string; icon: any; color: string }> = {
+  email: { label: "Email",  icon: Mail,         color: "#3b82f6" },
+  push:  { label: "Push",   icon: Bell,         color: "#319754" },
+  sms:   { label: "SMS",    icon: MessageSquare, color: "#9747ff" },
+  inapp: { label: "In-app", icon: Shield,       color: "#6b7280" },
+};
+
+function ChannelChip({ channel, active, disabled, onClick }: {
+  channel: NotifChannel; active: boolean; disabled?: boolean; onClick: () => void;
+}) {
+  const meta = CHANNEL_META[channel];
+  return (
+    <button onClick={onClick} disabled={disabled}
+      className={`${font} inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] transition-all ${
+        disabled ? "opacity-40 cursor-not-allowed bg-gray-100 text-gray-400" :
+        active   ? "cursor-pointer text-white" : "cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200"
+      }`}
+      style={active && !disabled ? { backgroundColor: meta.color, fontWeight: 500 } : { fontWeight: 500 }}
+      title={disabled ? `ปิดที่ช่องทาง ${meta.label} ในด้านบน` : undefined}>
+      <meta.icon className="size-3" strokeWidth={2.4} />
+      {meta.label}
+    </button>
+  );
+}
+
+function NotifEventRow({ meta, config, channelGlobal, onToggle, onToggleChannel, onThreshold }: {
+  meta: NotifMeta;
+  config: NotifEventConfig;
+  channelGlobal: AdminNotifConfig["channels"];
+  onToggle: () => void;
+  onToggleChannel: (ch: NotifChannel) => void;
+  onThreshold: (v: number) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-200 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2.5 min-w-0 flex-1">
+          <div className="size-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${meta.iconColor}15` }}>
+            <meta.icon className="size-4" style={{ color: meta.iconColor }} strokeWidth={2.2} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{meta.label}</p>
+            <p className={`${font} text-[11px] text-gray-500 mt-0.5 leading-snug`}>{meta.desc}</p>
+          </div>
+        </div>
+        <ToggleSwitch checked={config.enabled} onChange={onToggle} />
+      </div>
+      {config.enabled && (
+        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className={`${font} text-[10px] uppercase tracking-wide text-gray-400`} style={{ fontWeight: 600 }}>ช่องทาง</span>
+            {(["email", "push", "sms", "inapp"] as NotifChannel[]).map((ch) => {
+              const inactive = ch !== "inapp" && !channelGlobal[ch].enabled;
+              return (
+                <ChannelChip key={ch} channel={ch}
+                  active={config.channels.includes(ch)}
+                  disabled={inactive}
+                  onClick={() => onToggleChannel(ch)} />
+              );
+            })}
+          </div>
+          {meta.thresholdLabel && (
+            <div className="flex items-center gap-2 ml-auto">
+              <label className={`${font} text-[11px] text-gray-500`}>{meta.thresholdLabel}</label>
+              <div className="relative">
+                <input type="number" value={config.threshold ?? 0}
+                  onChange={(e) => onThreshold(Number(e.target.value) || 0)}
+                  className={`${font} h-8 px-2.5 pr-12 w-[140px] rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white tabular-nums transition-all`} />
+                <span className={`${font} absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 pointer-events-none`}>{meta.thresholdSuffix}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SettingsNotificationsPage() {
+  const [cfg, setCfg] = useState<AdminNotifConfig>(DEFAULT_NOTIF_CONFIG);
+  const isDirty = JSON.stringify(cfg) !== JSON.stringify(DEFAULT_NOTIF_CONFIG);
+
+  const updEventEnabled = (id: string) => setCfg(prev => ({
+    ...prev, events: { ...prev.events, [id]: { ...prev.events[id], enabled: !prev.events[id].enabled } },
+  }));
+  const updEventChannel = (id: string, ch: NotifChannel) => setCfg(prev => {
+    const current = prev.events[id].channels;
+    const next = current.includes(ch) ? current.filter(c => c !== ch) : [...current, ch];
+    return { ...prev, events: { ...prev.events, [id]: { ...prev.events[id], channels: next } } };
+  });
+  const updEventThreshold = (id: string, v: number) => setCfg(prev => ({
+    ...prev, events: { ...prev.events, [id]: { ...prev.events[id], threshold: v } },
+  }));
+
+  const eventsByCategory = (cat: NotifMeta["category"]) => NOTIF_EVENTS.filter(e => e.category === cat);
+  const renderEvents = (cat: NotifMeta["category"]) => (
+    <div className="flex flex-col gap-2.5">
+      {eventsByCategory(cat).map((e) => (
+        <NotifEventRow key={e.id} meta={e}
+          config={cfg.events[e.id]}
+          channelGlobal={cfg.channels}
+          onToggle={() => updEventEnabled(e.id)}
+          onToggleChannel={(ch) => updEventChannel(e.id, ch)}
+          onThreshold={(v) => updEventThreshold(e.id, v)} />
+      ))}
+    </div>
+  );
+
+  const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+
+  return (
+    <div className="flex flex-col gap-5 pb-2">
+      {/* 1. Channels */}
+      <SettingsCard icon={Bell} title="ช่องทางการแจ้งเตือน" desc="เปิด/ปิด ช่องทางหลักที่ระบบจะใช้ส่งแจ้งเตือนให้แอดมิน">
+        <div className="flex flex-col gap-3">
+          {/* Email */}
+          <div className="rounded-xl border border-gray-200 p-3 flex items-center gap-3 flex-wrap">
+            <div className="size-9 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+              <Mail className="size-4 text-[#3b82f6]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>Email</p>
+              <p className={`${font} text-[11px] text-gray-500`}>ส่งสรุปและแจ้งเตือนสำคัญทางอีเมล</p>
+            </div>
+            {cfg.channels.email.enabled && (
+              <input type="email" value={cfg.channels.email.address}
+                onChange={(e) => setCfg(prev => ({ ...prev, channels: { ...prev.channels, email: { ...prev.channels.email, address: e.target.value } } }))}
+                placeholder="admin@example.com"
+                className={`${font} h-9 px-3 w-full sm:w-[260px] rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+            )}
+            <ToggleSwitch checked={cfg.channels.email.enabled}
+              onChange={() => setCfg(prev => ({ ...prev, channels: { ...prev.channels, email: { ...prev.channels.email, enabled: !prev.channels.email.enabled } } }))} />
+          </div>
+
+          {/* Push */}
+          <div className="rounded-xl border border-gray-200 p-3 flex items-center gap-3">
+            <div className="size-9 rounded-lg bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <Bell className="size-4 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>Push Notification (Web)</p>
+              <p className={`${font} text-[11px] text-gray-500`}>แจ้งเตือนแบบ pop-up เมื่อแอดมินออนไลน์อยู่</p>
+            </div>
+            <ToggleSwitch checked={cfg.channels.push.enabled}
+              onChange={() => setCfg(prev => ({ ...prev, channels: { ...prev.channels, push: { enabled: !prev.channels.push.enabled } } }))} />
+          </div>
+
+          {/* SMS */}
+          <div className="rounded-xl border border-gray-200 p-3 flex items-center gap-3 flex-wrap">
+            <div className="size-9 rounded-lg bg-[#9747ff]/10 flex items-center justify-center shrink-0">
+              <MessageSquare className="size-4 text-[#9747ff]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>SMS</p>
+              <p className={`${font} text-[11px] text-gray-500`}>เฉพาะเหตุการณ์เร่งด่วน — มีค่าใช้จ่ายต่อข้อความ</p>
+            </div>
+            {cfg.channels.sms.enabled && (
+              <input type="tel" value={cfg.channels.sms.phone}
+                onChange={(e) => setCfg(prev => ({ ...prev, channels: { ...prev.channels, sms: { ...prev.channels.sms, phone: e.target.value } } }))}
+                placeholder="0X-XXXX-XXXX"
+                className={`${font} h-9 px-3 w-full sm:w-[220px] rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+            )}
+            <ToggleSwitch checked={cfg.channels.sms.enabled}
+              onChange={() => setCfg(prev => ({ ...prev, channels: { ...prev.channels, sms: { ...prev.channels.sms, enabled: !prev.channels.sms.enabled } } }))} />
+          </div>
+
+          {/* In-app — always on */}
+          <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-3 flex items-center gap-3">
+            <div className="size-9 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+              <Shield className="size-4 text-gray-500" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`${font} text-[13px] text-gray-700`} style={{ fontWeight: 500 }}>In-app (ในระบบ)</p>
+              <p className={`${font} text-[11px] text-gray-400`}>แสดงในไอคอนกระดิ่ง — เปิดอยู่เสมอ ปิดไม่ได้</p>
+            </div>
+            <span className={`${font} text-[11px] bg-[#319754]/10 text-[#287745] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>เปิดอยู่</span>
+          </div>
+        </div>
+      </SettingsCard>
+
+      {/* 2. Registry */}
+      <SettingsCard icon={UserCog} title="ทะเบียนผู้ใช้และร้านค้า" desc="กิจกรรมที่เกี่ยวกับการสมัคร / อนุมัติ / การรายงาน">
+        {renderEvents("registry")}
+      </SettingsCard>
+
+      {/* 3. Orders & Finance */}
+      <SettingsCard icon={ShoppingCart} title="คำสั่งซื้อและการเงิน" desc="การทำธุรกรรม / การร้องเรียน / การชำระเงิน">
+        {renderEvents("orders")}
+      </SettingsCard>
+
+      {/* 4. System & Security */}
+      <SettingsCard icon={Shield} title="ระบบและความปลอดภัย" desc="สุขภาพของระบบและการเข้าใช้งานที่น่าสงสัย">
+        {renderEvents("system")}
+      </SettingsCard>
+
+      {/* 5. Content Moderation */}
+      <SettingsCard icon={MessageSquare} title="คอนเทนต์และการกลั่นกรอง" desc="รีวิว / สินค้า / คอมเมนต์ที่ต้องตรวจสอบ">
+        {renderEvents("content")}
+      </SettingsCard>
+
+      {/* 6. Reports */}
+      <SettingsCard icon={FileText} title="รายงานสรุป" desc="รับสรุปข้อมูลของแพลตฟอร์มทุกช่วงเวลา">
+        <div className="flex flex-col gap-2.5">
+          {/* Daily */}
+          <div className="rounded-xl border border-gray-200 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="size-9 rounded-lg bg-[#319754]/10 flex items-center justify-center shrink-0">
+                  <Clock className="size-4 text-[#319754]" strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>รายงานรายวัน</p>
+                  <p className={`${font} text-[11px] text-gray-500`}>สรุปยอดขาย / ออเดอร์ / ลูกค้าใหม่ของวันก่อนหน้า</p>
+                </div>
+              </div>
+              <ToggleSwitch checked={cfg.reports.daily.enabled}
+                onChange={() => setCfg(prev => ({ ...prev, reports: { ...prev.reports, daily: { ...prev.reports.daily, enabled: !prev.reports.daily.enabled } } }))} />
+            </div>
+            {cfg.reports.daily.enabled && (
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+                <label className={`${font} text-[11px] text-gray-500`}>ส่งทุกวันเวลา</label>
+                <input type="time" value={cfg.reports.daily.time}
+                  onChange={(e) => setCfg(prev => ({ ...prev, reports: { ...prev.reports, daily: { ...prev.reports.daily, time: e.target.value } } }))}
+                  className={`${font} h-8 px-2.5 w-[110px] rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+                <span className={`${font} text-[11px] text-gray-400`}>น.</span>
+              </div>
+            )}
+          </div>
+
+          {/* Weekly */}
+          <div className="rounded-xl border border-gray-200 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="size-9 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+                  <Clock className="size-4 text-[#3b82f6]" strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>รายงานรายสัปดาห์</p>
+                  <p className={`${font} text-[11px] text-gray-500`}>สรุปประสิทธิภาพและแนวโน้มในสัปดาห์ที่ผ่านมา</p>
+                </div>
+              </div>
+              <ToggleSwitch checked={cfg.reports.weekly.enabled}
+                onChange={() => setCfg(prev => ({ ...prev, reports: { ...prev.reports, weekly: { ...prev.reports.weekly, enabled: !prev.reports.weekly.enabled } } }))} />
+            </div>
+            {cfg.reports.weekly.enabled && (
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2 flex-wrap">
+                <label className={`${font} text-[11px] text-gray-500`}>ส่งทุกวัน</label>
+                <div className="inline-flex bg-gray-100 rounded-full p-0.5">
+                  {dayNames.map((d, i) => {
+                    const active = cfg.reports.weekly.day === i;
+                    return (
+                      <button key={i} onClick={() => setCfg(prev => ({ ...prev, reports: { ...prev.reports, weekly: { ...prev.reports.weekly, day: i } } }))}
+                        className={`${font} h-7 px-2.5 rounded-full text-[11px] cursor-pointer transition-all ${active ? "bg-white shadow-sm text-[#319754]" : "text-gray-500 hover:text-black"}`}
+                        style={{ fontWeight: active ? 600 : 500 }}>
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Monthly */}
+          <div className="rounded-xl border border-gray-200 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="size-9 rounded-lg bg-[#9747ff]/10 flex items-center justify-center shrink-0">
+                  <Clock className="size-4 text-[#9747ff]" strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>รายงานรายเดือน</p>
+                  <p className={`${font} text-[11px] text-gray-500`}>สรุปรายได้ / KPI ของเดือนที่ผ่านมา</p>
+                </div>
+              </div>
+              <ToggleSwitch checked={cfg.reports.monthly.enabled}
+                onChange={() => setCfg(prev => ({ ...prev, reports: { ...prev.reports, monthly: { ...prev.reports.monthly, enabled: !prev.reports.monthly.enabled } } }))} />
+            </div>
+            {cfg.reports.monthly.enabled && (
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+                <label className={`${font} text-[11px] text-gray-500`}>ส่งทุกวันที่</label>
+                <input type="number" min={1} max={28} value={cfg.reports.monthly.date}
+                  onChange={(e) => setCfg(prev => ({ ...prev, reports: { ...prev.reports, monthly: { ...prev.reports.monthly, date: Math.min(28, Math.max(1, Number(e.target.value) || 1)) } } }))}
+                  className={`${font} h-8 px-2.5 w-[80px] rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white tabular-nums transition-all`} />
+                <span className={`${font} text-[11px] text-gray-400`}>ของเดือน (1-28)</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <SaveBar isDirty={isDirty}
+          onReset={() => setCfg(DEFAULT_NOTIF_CONFIG)}
+          onSave={() => toast.success("บันทึกตั้งค่าแจ้งเตือนเรียบร้อย")} />
+      </SettingsCard>
     </div>
   );
 }
@@ -22707,6 +25428,15 @@ export function AdminDashboard() {
     if (activeItem === "page_products") return <PageProductsBuilder />;
     if (activeItem === "page_blog")     return <PageBlogBuilder />;
     if (activeItem === "page_about")    return <PageAboutBuilder />;
+    if (activeItem === "page_appbar")   return <PageAppbarBuilder />;
+    if (activeItem === "site_info_general") return <SiteInfoGeneralPage />;
+    if (activeItem === "site_info_contact") return <SiteInfoContactPage />;
+    if (activeItem === "site_info_address") return <SiteInfoAddressPage />;
+    if (activeItem === "site_info_social")  return <SiteInfoSocialPage />;
+    if (activeItem === "settings_shipping") return <SettingsShippingPage />;
+    if (activeItem === "settings_notifications") return <SettingsNotificationsPage />;
+    if (activeItem === "users_list") return <UsersListPage />;
+    if (activeItem === "shops_list") return <ShopsListPage />;
     const Icon = itemIconMap[activeItem] || FileText;
     return <PlaceholderContent icon={Icon} title={meta.title} desc={meta.subtitle} />;
   };
