@@ -4,32 +4,34 @@ import { motion } from "motion/react";
 import { toast } from "sonner";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { articles, getArticleById } from "../data/articles";
+import { useLanguage } from "../store/LanguageContext";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
 export function BlogDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const article = getArticleById(id || "1") || articles[0];
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    toast.success("คัดลอกลิงก์แล้ว!");
+    toast.success(t("blog_copy_link"));
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
       <div className="flex flex-col gap-[16px]">
         {/* Top bar: Back + view/share */}
         <div className="flex items-center justify-between w-full">
           <button onClick={() => navigate(-1)}
             className="group inline-flex items-center gap-1.5 bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] px-3.5 py-1.5 rounded-full cursor-pointer transition-colors">
             <ChevronLeft className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" strokeWidth={2.4} />
-            <span className={`${font} text-[12px]`} style={{ fontWeight: 500 }}>กลับ</span>
+            <span className={`${font} text-[12px]`} style={{ fontWeight: 500 }}>{t("common_back")}</span>
           </button>
           <div className="flex items-center gap-2">
             {/* Views pill */}
-            <div className="inline-flex items-center gap-1.5 bg-[#f5f5f5] text-gray-700 px-3 py-1.5 rounded-full" title="จำนวนผู้เข้าชม">
+            <div className="inline-flex items-center gap-1.5 bg-[#f5f5f5] text-gray-700 px-3 py-1.5 rounded-full" title={t("blog_views")}>
               <Eye className="size-3.5" strokeWidth={2.2} />
               <span className={`${font} text-[12px] tabular-nums`} style={{ fontWeight: 500 }}>{article.views.toLocaleString()}</span>
             </div>
@@ -38,7 +40,7 @@ export function BlogDetailPage() {
               onClick={handleShare}
               whileTap={{ scale: 0.92 }}
               className="inline-flex items-center justify-center bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] rounded-full size-8 cursor-pointer transition-colors"
-              title="แชร์บทความ"
+              title={t("blog_share")}
             >
               <Share2 className="size-3.5" strokeWidth={2.2} />
             </motion.button>

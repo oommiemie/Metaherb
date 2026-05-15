@@ -9,7 +9,7 @@ import {
   AlertTriangle, Phone, Mail, ChevronRight, Filter,
   FileText, TrendingUp, Users, ShoppingBag, BarChart2, Download, FileSpreadsheet,
   ClipboardList, ScanSearch, Truck, PackageCheck, PackageX, EyeOff, Send,
-  Lock, Banknote, ArrowDownToLine, Info
+  Lock, Banknote, ArrowDownToLine, Info, Save
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from "recharts";
@@ -1021,6 +1021,82 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
   );
 }
 
+// FilterTabPills — แสดง tabs row บน lg+ / dropdown icon บน < lg (ใช้ทั่วระบบร้านค้า)
+function FilterTabPills<T extends string>({ tabs, active, onChange, pillId }: {
+  tabs: { id: T; label: string; count: number; Icon: any }[];
+  active: T;
+  onChange: (id: T) => void;
+  pillId: string;
+}) {
+  const activeTab = tabs.find((t) => t.id === active);
+  const ActiveIcon = activeTab?.Icon;
+
+  return (
+    <>
+      {/* Desktop (lg+): tabs row */}
+      <div className="hidden lg:flex items-center gap-2 flex-wrap flex-1 min-w-0">
+        {tabs.map((tab) => {
+          const isAct = active === tab.id;
+          return (
+            <motion.button key={tab.id} onClick={() => onChange(tab.id)}
+              whileTap={{ scale: 0.94 }} whileHover={!isAct ? { scale: 1.04 } : undefined}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
+              {isAct && (
+                <motion.span layoutId={pillId}
+                  className="absolute inset-0 bg-[#319754] rounded-full"
+                  transition={{ type: "spring", stiffness: 380, damping: 32 }} />
+              )}
+              <motion.span layout className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
+                style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
+                transition={{ duration: 0.2 }}>
+                <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
+              </motion.span>
+              <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
+                style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>{tab.label}</span>
+              <span className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
+                style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>{tab.count}</span>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Mobile/tablet (< lg): icon-only dropdown */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <button title={activeTab?.label}
+            className="lg:hidden inline-flex items-center justify-center size-[36px] rounded-full bg-[#319754] text-white cursor-pointer shrink-0 data-[state=open]:bg-[#267a43] transition-colors">
+            {ActiveIcon && <ActiveIcon className="size-[16px] text-white" strokeWidth={2.2} />}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" sideOffset={6}
+          className="w-[260px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+          <motion.div initial={{ scale: 0.6, opacity: 0, y: -6 }} animate={{ scale: 1, opacity: 1, y: 0 }} transition={{ type: "spring", stiffness: 380, damping: 26 }}
+            style={{ transformOrigin: "top left" }}>
+            {tabs.map((tab) => {
+              const isAct = active === tab.id;
+              return (
+                <button key={tab.id} onClick={() => onChange(tab.id)}
+                  className={`${font} w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors text-left ${isAct ? "bg-[#319754]/10" : "hover:bg-gray-50"}`}>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={`size-7 rounded-full inline-flex items-center justify-center shrink-0 ${isAct ? "bg-[#319754]" : "bg-[#d6eadd]"}`}>
+                      <tab.Icon className={`size-3.5 ${isAct ? "text-white" : "text-[#319754]"}`} strokeWidth={2.2} />
+                    </span>
+                    <span className={`${font} text-[13px] truncate`} style={{ fontWeight: isAct ? 700 : 500, color: isAct ? "#319754" : "#171717" }}>{tab.label}</span>
+                  </div>
+                  <span className={`${font} text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 ${isAct ? "bg-[#319754] text-white" : "bg-[#ff3b30] text-white"}`} style={{ fontWeight: 600 }}>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </motion.div>
+        </PopoverContent>
+      </Popover>
+    </>
+  );
+}
+
 function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
   initialFilter?: OrderFilterTab;
   orders: Order[];
@@ -1081,85 +1157,17 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
       <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>จัดการคำสั่งซื้อ</h2>
 
       {/* Filter tabs + search (in one pill) */}
-      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
         {(() => {
-          // All icons share the brand green; all count badges share red — uniform look across tabs
-          const ICON_COLOR = "#319754";
-          const ICON_BG = "#d6eadd";
-          const BADGE_COLOR = "#ff3b30";
-          const tabStyle: Record<string, { Icon: any }> = {
-            all:             { Icon: ClipboardList },
-            pending_payment: { Icon: Wallet         },
-            pending_verify:  { Icon: ScanSearch     },
-            ready_ship:      { Icon: Package        },
-            shipping:        { Icon: Truck          },
-            shipped:         { Icon: PackageCheck   },
-            cancelled:       { Icon: PackageX       },
+          const orderIcons: Record<string, any> = {
+            all: ClipboardList, pending_payment: Wallet, pending_verify: ScanSearch,
+            ready_ship: Package, shipping: Truck, shipped: PackageCheck, cancelled: PackageX,
           };
-          return liveTabs.map((tab) => {
-          const isAct = activeFilter === tab.id;
-          const { Icon } = tabStyle[tab.id];
-          const color = ICON_COLOR;
-          const bg = ICON_BG;
-          return (
-            <motion.button
-              key={tab.id}
-              onClick={() => setActiveFilter(tab.id)}
-              whileTap={{ scale: 0.94 }}
-              whileHover={!isAct ? { scale: 1.04 } : undefined}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${
-                !isAct ? "hover:bg-gray-50" : ""
-              }`}
-            >
-              {/* Sliding green pill (active background) */}
-              {isAct && (
-                <motion.span
-                  layoutId="orderTabActivePill"
-                  className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                />
-              )}
-              <motion.span
-                layout
-                className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : bg }}
-                transition={{ duration: 0.2 }}
-              >
-                <Icon className="size-[14px]" style={{ color: isAct ? "#fff" : color }} strokeWidth={2.2} />
-              </motion.span>
-              <span
-                className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}
-              >
-                {tab.label}
-              </span>
-              <motion.span
-                layout
-                className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                style={{
-                  backgroundColor: isAct ? "rgba(255,255,255,0.25)" : BADGE_COLOR,
-                  color: "#fff",
-                  fontWeight: 600,
-                }}
-              >
-                <motion.span
-                  key={tab.count}
-                  initial={{ y: 8, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                >
-                  {tab.count}
-                </motion.span>
-              </motion.span>
-            </motion.button>
-          );
-        });
+          const tabsWithIcon = liveTabs.map((t) => ({ ...t, Icon: orderIcons[t.id] }));
+          return <FilterTabPills tabs={tabsWithIcon} active={activeFilter} onChange={setActiveFilter} pillId="orderTabActivePill" />;
         })()}
-        </div>
-        {/* Search (inside same pill, aligned right) */}
-        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+        {/* Search (inside same pill) */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
             placeholder="ค้นหาเลขคำสั่งซื้อ, ชื่อลูกค้า...."
@@ -1418,7 +1426,7 @@ function OrderDetailTab({ order, onBack, onUpdate }: {
     return (
       <div>
         <button onClick={onBack}
-          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors mb-4`}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors mb-5`}
           style={{ fontWeight: 500 }}>
           <ChevronLeft className="size-3.5" strokeWidth={2.5} />
           กลับ
@@ -1968,81 +1976,16 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
       </div>
 
       {/* Filter tabs + search (in one pill) */}
-      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
-          {(() => {
-            // All icons share the brand green; all count badges share red — uniform look across tabs
-            const ICON_COLOR = "#319754";
-            const ICON_BG = "#d6eadd";
-            const BADGE_COLOR = "#ff3b30";
-            const tabStyle: Record<string, { Icon: any }> = {
-              all:      { Icon: Package        },
-              active:   { Icon: PackageCheck   },
-              inactive: { Icon: EyeOff         },
-              out:      { Icon: AlertTriangle  },
-            };
-            return productFilterTabs.map((tab) => {
-              const isAct = productFilter === tab.id;
-              const { Icon } = tabStyle[tab.id];
-              const color = ICON_COLOR;
-              const bg = ICON_BG;
-              return (
-                <motion.button
-                  key={tab.id}
-                  onClick={() => { setProductFilter(tab.id); setCurrentPage(1); }}
-                  whileTap={{ scale: 0.94 }}
-                  whileHover={!isAct ? { scale: 1.04 } : undefined}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${
-                    !isAct ? "hover:bg-gray-50" : ""
-                  }`}
-                >
-                  {isAct && (
-                    <motion.span
-                      layoutId="productTabActivePill"
-                      className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    />
-                  )}
-                  <motion.span
-                    layout
-                    className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                    style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : bg }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Icon className="size-[14px]" style={{ color: isAct ? "#fff" : color }} strokeWidth={2.2} />
-                  </motion.span>
-                  <span
-                    className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                    style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}
-                  >
-                    {tab.label}
-                  </span>
-                  <motion.span
-                    layout
-                    className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                    style={{
-                      backgroundColor: isAct ? "rgba(255,255,255,0.25)" : BADGE_COLOR,
-                      color: "#fff",
-                      fontWeight: 600,
-                    }}
-                  >
-                    <motion.span
-                      key={tab.count}
-                      initial={{ y: 8, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                    >
-                      {tab.count}
-                    </motion.span>
-                  </motion.span>
-                </motion.button>
-              );
-            });
-          })()}
-        </div>
-        {/* Search (inside same pill, aligned right) */}
-        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
+        {(() => {
+          const productIcons: Record<string, any> = {
+            all: Package, active: PackageCheck, inactive: EyeOff, out: AlertTriangle,
+          };
+          const tabsWithIcon = productFilterTabs.map((t) => ({ ...t, Icon: productIcons[t.id] }));
+          return <FilterTabPills tabs={tabsWithIcon} active={productFilter} onChange={(id) => { setProductFilter(id); setCurrentPage(1); }} pillId="productTabActivePill" />;
+        })()}
+        {/* Search (inside same pill) */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
             placeholder="ค้นหาสินค้าของคุณ...."
@@ -2828,52 +2771,10 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
 
         {/* Filter tabs (unified style: green icons + red badges) */}
         {/* Filter tabs + search (in one pill) — ตรงกับ ProductsTab */}
-        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-4 flex items-center gap-2">
-          <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
-            {flashFilterTabs.map((tab) => {
-              const isAct = flashFilter === tab.id;
-              return (
-                <motion.button
-                  key={tab.id}
-                  onClick={() => { setFlashFilter(tab.id); setFlashStorePage(1); }}
-                  whileTap={{ scale: 0.94 }}
-                  whileHover={!isAct ? { scale: 1.04 } : undefined}
-                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                  className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${
-                    !isAct ? "hover:bg-gray-50" : ""
-                  }`}
-                >
-                  {isAct && (
-                    <motion.span
-                      layoutId="flashTabActivePill"
-                      className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                      transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                    />
-                  )}
-                  <motion.span layout
-                    className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                    style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
-                  </motion.span>
-                  <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                    style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
-                    {tab.label}
-                  </span>
-                  <motion.span layout
-                    className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                    style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
-                    <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
-                      {tab.count}
-                    </motion.span>
-                  </motion.span>
-                </motion.button>
-              );
-            })}
-          </div>
+        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-4 flex items-center gap-2">
+          <FilterTabPills tabs={flashFilterTabs} active={flashFilter} onChange={(id) => { setFlashFilter(id); setFlashStorePage(1); }} pillId="flashTabActivePill" />
           {/* Search */}
-          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
             <input
               value={flashSearch}
               onChange={(e) => { setFlashSearch(e.target.value); setFlashStorePage(1); }}
@@ -7791,12 +7692,15 @@ function ReportSalesTab() {
           return data.map((d) => ({ label: d.label }));
         })();
 
+        // Platform commission rate (GP) — fixed at 7% of gross sales per item
+        const GP_RATE = 0.07;
+
         // Build date groups for the table — show what was sold on each bucket.
         // Each bucket gets 3-5 products picked from the period product pool with small per-bucket qty.
         const dateGroups = tableBuckets.map((bucket, bucketIdx) => {
           const seed = ((bucketIdx * 37 + 1234) >>> 0);
           const numItems = 3 + (seed % 3); // 3..5 products
-          const items: { name: string; sku: string; qty: number; sales: number; cost: number }[] = [];
+          const items: { name: string; sku: string; qty: number; sales: number; cost: number; gp: number; discount: number; net: number }[] = [];
           for (let i = 0; i < numItems && sorted.length > 0; i++) {
             const productIdx = (seed + i * 13) % sorted.length;
             const p = sorted[productIdx];
@@ -7806,7 +7710,12 @@ function ReportSalesTab() {
             const salesAmt = qty * unitPrice;
             const costRatio = p.sales > 0 ? p.cost / p.sales : 0.5;
             const costAmt = Math.round(salesAmt * costRatio);
-            items.push({ name: p.name, sku: p.sku, qty, sales: salesAmt, cost: costAmt });
+            const gp = Math.round(salesAmt * GP_RATE);
+            // Discount: pseudo-random 0–15% of sales (sometimes 0 for variety)
+            const discountPct = (itemSeed % 4 === 0) ? 0 : ((itemSeed % 16) / 100);
+            const discount = Math.round(salesAmt * discountPct);
+            const net = salesAmt - gp;
+            items.push({ name: p.name, sku: p.sku, qty, sales: salesAmt, cost: costAmt, gp, discount, net });
           }
           // Sort items within group using same productSort key
           items.sort((a, b) => {
@@ -7825,7 +7734,10 @@ function ReportSalesTab() {
           const totalQty = items.reduce((s, it) => s + it.qty, 0);
           const totalSales = items.reduce((s, it) => s + it.sales, 0);
           const totalCost = items.reduce((s, it) => s + it.cost, 0);
-          return { label: bucket.label, items, totalQty, totalSales, totalCost };
+          const totalGp = items.reduce((s, it) => s + it.gp, 0);
+          const totalDiscount = items.reduce((s, it) => s + it.discount, 0);
+          const totalNet = items.reduce((s, it) => s + it.net, 0);
+          return { label: bucket.label, items, totalQty, totalSales, totalCost, totalGp, totalDiscount, totalNet };
         });
 
         // Paginate by groups
@@ -7837,7 +7749,10 @@ function ReportSalesTab() {
         const pageTotalQty = pageGroups.reduce((s, g) => s + g.totalQty, 0);
         const pageTotalSales = pageGroups.reduce((s, g) => s + g.totalSales, 0);
         const pageTotalCost = pageGroups.reduce((s, g) => s + g.totalCost, 0);
-        const pageTotalProfit = pageTotalSales - pageTotalCost;
+        const pageTotalGp = pageGroups.reduce((s, g) => s + g.totalGp, 0);
+        const pageTotalDiscount = pageGroups.reduce((s, g) => s + g.totalDiscount, 0);
+        const pageTotalNet = pageGroups.reduce((s, g) => s + g.totalNet, 0);
+        const pageTotalProfit = pageTotalNet - pageTotalCost;
         const pageMargin = pageTotalSales > 0 ? (pageTotalProfit / pageTotalSales) * 100 : 0;
         const totalRows = pageGroups.reduce((s, g) => s + g.items.length, 0);
 
@@ -7895,33 +7810,39 @@ function ReportSalesTab() {
             <div>
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: "16%" }} />
-                  <col style={{ width: "32%" }} />
                   <col style={{ width: "11%" }} />
-                  <col style={{ width: "13%" }} />
+                  <col style={{ width: "22%" }} />
+                  <col style={{ width: "7%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "9%" }} />
                   <col style={{ width: "12%" }} />
-                  <col style={{ width: "16%" }} />
                 </colgroup>
                 <thead>
                   <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
                     <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>วันที่</th>
                     <th className="text-left pb-3 pr-3 pl-5" style={{ fontWeight: 500 }}>สินค้า</th>
-                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>จำนวนขาย</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>จำนวน</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดขาย</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ค่าธรรมเนียมแพลตฟอร์ม 7%">GP</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ส่วนลด</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ร้านรับสุทธิ = ยอดขาย − GP">ร้านรับสุทธิ</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ต้นทุน</th>
-                    <th className="text-right pb-3" style={{ fontWeight: 500 }}>กำไร / มาร์จิ้น</th>
+                    <th className="text-right pb-3" style={{ fontWeight: 500 }}>กำไร</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pageGroups.map((group, gi) => {
-                    const groupProfit = group.totalSales - group.totalCost;
+                    const groupProfit = group.totalNet - group.totalCost;
                     const groupMargin = group.totalSales > 0 ? (groupProfit / group.totalSales) * 100 : 0;
                     return (
                       <Fragment key={gi}>
                         {group.items.map((p, i) => {
-                          const profit = p.sales - p.cost;
+                          const profit = p.net - p.cost;
                           const margin = p.sales > 0 ? (profit / p.sales) * 100 : 0;
-                          const profitDown = margin < 55 && profit > 0;
+                          const profitDown = margin < 45 && profit > 0;
                           const isFirst = i === 0;
                           const isLast = i === group.items.length - 1;
                           return (
@@ -7935,7 +7856,9 @@ function ReportSalesTab() {
                                     </div>
                                     <div className={`${font} text-[10px] text-gray-500 flex flex-col gap-0.5 pl-5`}>
                                       <span>{group.items.length} รายการ · {group.totalQty} ชิ้น</span>
-                                      <span className="text-[#319754]" style={{ fontWeight: 600 }}>฿{group.totalSales.toLocaleString()}</span>
+                                      <span className="text-[#1a1a1a] tabular-nums" style={{ fontWeight: 600 }}>ยอดขาย ฿{group.totalSales.toLocaleString()}</span>
+                                      <span className="text-[#c2410c] tabular-nums" style={{ fontWeight: 500 }}>GP −฿{group.totalGp.toLocaleString()}</span>
+                                      <span className="text-[#319754] tabular-nums" style={{ fontWeight: 600 }}>สุทธิ ฿{group.totalNet.toLocaleString()}</span>
                                       <span className={groupProfit >= 0 ? "text-[#15803d]" : "text-[#dc2626]"}>กำไร {groupMargin.toFixed(1)}%</span>
                                     </div>
                                   </div>
@@ -7948,10 +7871,15 @@ function ReportSalesTab() {
                               <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
                                 {p.qty} <span className="text-gray-400 text-[11px]">ชิ้น</span>
                               </td>
-                              <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
-                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-gray-600`}>฿{p.cost.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#1a1a1a] tabular-nums`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#c2410c] tabular-nums`} style={{ fontWeight: 500 }}>−฿{p.gp.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#a16207] tabular-nums`} style={{ fontWeight: 500 }}>
+                                {p.discount > 0 ? `−฿${p.discount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                              </td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 700 }}>฿{p.net.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-gray-600 tabular-nums`}>฿{p.cost.toLocaleString()}</td>
                               <td className="py-3 text-right">
-                                <p className={`${font} text-[14px]`} style={{ fontWeight: 700, color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
+                                <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
                                   ฿{profit.toLocaleString()}
                                 </p>
                                 <p className={`${font} text-[11px]`} style={{ color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
@@ -7965,18 +7893,23 @@ function ReportSalesTab() {
                     );
                   })}
                   {pageGroups.length === 0 && (
-                    <tr><td colSpan={6} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</td></tr>
+                    <tr><td colSpan={9} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</td></tr>
                   )}
                 </tbody>
                 {pageGroups.length > 0 && (
                   <tfoot>
-                    <tr className="border-t-2 border-gray-100">
+                    <tr className="border-t-2 border-gray-100 bg-gray-50/40">
                       <td className={`pt-3 pr-3 ${font} text-[12px]`} style={{ fontWeight: 600 }}>{pageGroups.length} กลุ่ม</td>
                       <td className={`pt-3 pr-3 pl-5 ${font} text-[12px]`} style={{ fontWeight: 600 }}>รวม {totalRows} รายการ</td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[13px]`} style={{ fontWeight: 700 }}>{pageTotalQty} <span className="text-gray-400 text-[11px]">ชิ้น</span></td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>฿{pageTotalSales.toLocaleString()}</td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-gray-600`} style={{ fontWeight: 600 }}>฿{pageTotalCost.toLocaleString()}</td>
-                      <td className={`pt-3 text-right ${font} text-[14px] text-[#15803d]`} style={{ fontWeight: 700 }}>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] tabular-nums`} style={{ fontWeight: 700 }}>{pageTotalQty} <span className="text-gray-400 text-[11px]">ชิ้น</span></td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[14px] tabular-nums`} style={{ fontWeight: 700 }}>฿{pageTotalSales.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-[#c2410c] tabular-nums`} style={{ fontWeight: 600 }}>−฿{pageTotalGp.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-[#a16207] tabular-nums`} style={{ fontWeight: 600 }}>
+                        {pageTotalDiscount > 0 ? `−฿${pageTotalDiscount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                      </td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 700 }}>฿{pageTotalNet.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-gray-600 tabular-nums`} style={{ fontWeight: 600 }}>฿{pageTotalCost.toLocaleString()}</td>
+                      <td className={`pt-3 text-right ${font} text-[14px] text-[#15803d] tabular-nums`} style={{ fontWeight: 700 }}>
                         ฿{pageTotalProfit.toLocaleString()}
                         <span className={`${font} text-[11px] block`} style={{ fontWeight: 500 }}>{pageMargin.toFixed(1)}%</span>
                       </td>
@@ -9488,6 +9421,14 @@ function ReportProductsTab() {
 
         const pageTotalSold = pageItems.reduce((s, p) => s + p.sold, 0);
         const pageTotalRevenue = pageItems.reduce((s, p) => s + p.revenue, 0);
+        // Per-row discount + avg revenue per unit
+        const itemDiscount = (p: { name: string; revenue: number }) => {
+          const seed = Array.from(p.name).reduce((a, c) => a + c.charCodeAt(0), 0);
+          const pct = (seed % 4 === 0) ? 0 : ((seed % 18) / 100); // 0–17%
+          return Math.round(p.revenue * pct);
+        };
+        const pageTotalDiscount = pageItems.reduce((s, p) => s + itemDiscount(p), 0);
+        const pageAvgPerUnit = pageTotalSold > 0 ? Math.round(pageTotalRevenue / pageTotalSold) : 0;
 
         const rankColor = (i: number) => i === 0 ? "#facc15" : i === 1 ? "#94a3b8" : i === 2 ? "#f97316" : "transparent";
         const rankText = (i: number) => i < 3 ? "white" : "#9ca3af";
@@ -9547,22 +9488,28 @@ function ReportProductsTab() {
             <div>
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: "8%" }} />
-                  <col style={{ width: "44%" }} />
-                  <col style={{ width: "26%" }} />
-                  <col style={{ width: "22%" }} />
+                  <col style={{ width: "6%" }} />
+                  <col style={{ width: "32%" }} />
+                  <col style={{ width: "20%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
                 </colgroup>
                 <thead>
                   <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
                     <th className="text-left pb-3 pr-2" style={{ fontWeight: 500 }}>#</th>
                     <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>สินค้า</th>
                     <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ยอดขาย (ชิ้น)</th>
-                    <th className="text-right pb-3" style={{ fontWeight: 500 }}>รายได้ (฿)</th>
+                    <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>รายได้ (฿)</th>
+                    <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ยอดส่วนลด</th>
+                    <th className="text-right pb-3" style={{ fontWeight: 500 }} title="รายได้เฉลี่ยต่อชิ้น = รายได้ ÷ ยอดขาย">เฉลี่ย/ชิ้น</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pageItems.map((p, i) => {
                     const rank = pageStart + i;
+                    const discount = itemDiscount(p);
+                    const avgPerUnit = p.sold > 0 ? Math.round(p.revenue / p.sold) : 0;
                     return (
                       <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                         <td className="py-3 pr-2">
@@ -9584,27 +9531,35 @@ function ReportProductsTab() {
                         </td>
                         <td className="py-3 pr-4 text-right">
                           <div className="flex items-center justify-end gap-3">
-                            <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
                               <div className="h-full bg-[#319754] rounded-full" style={{ width: `${(p.sold / maxSold) * 100}%` }} />
                             </div>
-                            <span className={`${font} text-[14px] w-8 text-right`}>{p.sold.toLocaleString()}</span>
+                            <span className={`${font} text-[14px] w-8 text-right tabular-nums`}>{p.sold.toLocaleString()}</span>
                           </div>
                         </td>
-                        <td className={`py-3 text-right ${font} text-[14px]`} style={{ fontWeight: 600 }}>{p.revenue.toLocaleString()}</td>
+                        <td className={`py-3 pr-4 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 600 }}>฿{p.revenue.toLocaleString()}</td>
+                        <td className={`py-3 pr-4 text-right tabular-nums ${font} text-[13px] text-[#a16207]`} style={{ fontWeight: 500 }}>
+                          {discount > 0 ? `−฿${discount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                        </td>
+                        <td className={`py-3 text-right tabular-nums ${font} text-[13px] text-gray-600`}>฿{avgPerUnit.toLocaleString()}</td>
                       </tr>
                     );
                   })}
                   {pageItems.length === 0 && (
-                    <tr><td colSpan={4} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบข้อมูลสินค้า</td></tr>
+                    <tr><td colSpan={6} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบข้อมูลสินค้า</td></tr>
                   )}
                 </tbody>
                 {pageItems.length > 0 && (
                   <tfoot>
-                    <tr className="border-t-2 border-gray-100">
+                    <tr className="border-t-2 border-gray-100 bg-gray-50/40">
                       <td />
                       <td className={`pt-3 pr-4 ${font} text-[13px]`} style={{ fontWeight: 600 }}>รวม ({pageItems.length} รายการที่แสดง)</td>
-                      <td className={`pt-3 pr-4 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>{pageTotalSold.toLocaleString()}</td>
-                      <td className={`pt-3 text-right ${font} text-[14px] text-[#319754]`} style={{ fontWeight: 700 }}>{pageTotalRevenue.toLocaleString()}</td>
+                      <td className={`pt-3 pr-4 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 700 }}>{pageTotalSold.toLocaleString()}</td>
+                      <td className={`pt-3 pr-4 text-right tabular-nums ${font} text-[14px] text-[#319754]`} style={{ fontWeight: 700 }}>฿{pageTotalRevenue.toLocaleString()}</td>
+                      <td className={`pt-3 pr-4 text-right tabular-nums ${font} text-[13px] text-[#a16207]`} style={{ fontWeight: 600 }}>
+                        {pageTotalDiscount > 0 ? `−฿${pageTotalDiscount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                      </td>
+                      <td className={`pt-3 text-right tabular-nums ${font} text-[13px] text-gray-600`} style={{ fontWeight: 600 }}>฿{pageAvgPerUnit.toLocaleString()}</td>
                     </tr>
                   </tfoot>
                 )}
@@ -10989,45 +10944,10 @@ function CouponsTab() {
       </div>
 
       {/* Filter tabs + search (in one pill) — เหมือน ProductsTab */}
-      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
-          {tabs.map((tab) => {
-            const isAct = filter === tab.id;
-            return (
-              <motion.button key={tab.id}
-                onClick={() => { setFilter(tab.id); setCouponPage(1); }}
-                whileTap={{ scale: 0.94 }}
-                whileHover={!isAct ? { scale: 1.04 } : undefined}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
-                {isAct && (
-                  <motion.span layoutId="couponTabActivePill"
-                    className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                    transition={{ type: "spring", stiffness: 380, damping: 32 }} />
-                )}
-                <motion.span layout
-                  className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
-                  transition={{ duration: 0.2 }}>
-                  <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
-                </motion.span>
-                <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                  style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
-                  {tab.label}
-                </span>
-                <motion.span layout
-                  className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
-                  <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
-                    {tab.count}
-                  </motion.span>
-                </motion.span>
-              </motion.button>
-            );
-          })}
-        </div>
-        {/* Search (inside same pill, aligned right) */}
-        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
+        <FilterTabPills tabs={tabs} active={filter} onChange={(id) => { setFilter(id); setCouponPage(1); }} pillId="couponTabActivePill" />
+        {/* Search */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input value={search} onChange={(e) => { setSearch(e.target.value); setCouponPage(1); }}
             placeholder="ค้นหาคูปอง...."
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
@@ -11365,8 +11285,7 @@ function fmtPromoThaiDateTime(iso: string): string {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-function CreatePromotionModal({ open, onClose, onCreate }: {
-  open: boolean;
+function CreatePromotionView({ onClose, onCreate }: {
   onClose: () => void;
   onCreate: (p: Promotion) => void;
 }) {
@@ -11375,10 +11294,10 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
   const [discountType, setDiscountType] = useState<PromoDiscountType>("percent");
   const [discountValue, setDiscountValue] = useState(20);
   const [maxDiscount, setMaxDiscount] = useState(0);
-  const [startsAt, setStartsAt] = useState(() => isoToDatetimeLocal(new Date().toISOString()));
-  const [endsAt, setEndsAt] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(23, 59, 0, 0);
-    return isoToDatetimeLocal(d.toISOString());
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const end = new Date(); end.setDate(end.getDate() + 7); end.setHours(0, 0, 0, 0);
+    return { from: start, to: end };
   });
   const [noExpiry, setNoExpiry] = useState(false);
   const [enabled, setEnabled] = useState(true);
@@ -11386,18 +11305,6 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
   const [selectedProducts, setSelectedProducts] = useState<PromoProductLimit[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
-
-  useEffect(() => {
-    if (!open) {
-      setName(""); setDescription("");
-      setDiscountType("percent"); setDiscountValue(20); setMaxDiscount(0);
-      setNoExpiry(false); setEnabled(true);
-      setScope("products"); setSelectedProducts([]);
-      setShowPicker(false); setPickerSearch("");
-    }
-  }, [open]);
-
-  if (!open) return null;
 
   const canSubmit = name.trim() && discountValue > 0 && (scope === "all" || selectedProducts.length > 0);
 
@@ -11416,8 +11323,8 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
       discountType,
       discountValue,
       maxDiscount: maxDiscount > 0 ? maxDiscount : undefined,
-      startsAt: new Date(startsAt).toISOString(),
-      endsAt: noExpiry ? undefined : new Date(endsAt).toISOString(),
+      startsAt: dateRange?.from ? new Date(dateRange.from).toISOString() : new Date().toISOString(),
+      endsAt: noExpiry || !dateRange?.to ? undefined : (() => { const d = new Date(dateRange.to); d.setHours(23, 59, 59, 0); return d.toISOString(); })(),
       noExpiry,
       enabled,
       scope,
@@ -11426,17 +11333,43 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-[760px] h-[820px] max-h-[92vh] flex flex-col shadow-xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
-          <p className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</p>
-          <button onClick={onClose} className="size-7 rounded-full bg-[rgba(120,120,128,0.12)] hover:bg-[rgba(120,120,128,0.2)] flex items-center justify-center cursor-pointer transition-colors">
-            <X className="size-3.5" />
-          </button>
-        </div>
+    <div>
+      {/* Back button — pill style matching admin pattern */}
+      <div className="mb-5">
+        <button onClick={onClose}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#fafbfc]">
+      {/* Header — title left, action buttons right */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>กำหนดข้อมูล ส่วนลด ระยะเวลา และเลือกสินค้าที่เข้าร่วม</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onClose}
+            className={`${font} h-[38px] px-5 rounded-full text-[13px] text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            ยกเลิก
+          </button>
+          <motion.button onClick={handleSubmit} disabled={!canSubmit}
+            whileTap={{ scale: 0.96 }} whileHover={canSubmit ? { y: -1 } : undefined}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-white text-[13px] cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
+              <Save className="size-[14px] text-white" strokeWidth={2.6} />
+            </span>
+            <span style={{ fontWeight: 600 }}>บันทึก</span>
+          </motion.button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-start">
+        <div className="space-y-4 min-w-0">
           {/* ── Section 1: ข้อมูลโปรโมชั่น ── */}
           <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
             <div className="flex items-center gap-3">
@@ -11503,7 +11436,7 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
             </div>
           </section>
 
-          {/* ── Section 3: ระยะเวลา ── */}
+          {/* ── Section 3: ระยะเวลา — calendar range + summary (matches admin) ── */}
           <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -11511,39 +11444,173 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
                   <CalendarIcon className="size-4 text-[#f59e0b]" strokeWidth={2.2} />
                 </div>
                 <div className="min-w-0">
-                  <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ระยะเวลา</p>
-                  <p className={`${font} text-[11px] text-[#8e8e93]`}>ช่วงเวลาที่โปรโมชั่นใช้งานได้</p>
+                  <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ระยะเวลา <span className="text-[#ff3b30]">*</span></p>
+                  <p className={`${font} text-[11px] text-[#8e8e93]`}>เลือกช่วงเวลาที่โปรโมชั่นใช้งานได้</p>
                 </div>
               </div>
-              {/* Switch — ไม่มีวันหมดอายุ (อยู่ใน row title) */}
               <label className={`${font} flex items-center gap-2 text-[13px] cursor-pointer shrink-0`}>
                 <span className="text-gray-700">ไม่มีวันหมดอายุ</span>
                 <ToggleSwitch checked={noExpiry} onChange={() => setNoExpiry(!noExpiry)} />
               </label>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>เวลาเริ่ม <span className="text-[#ff3b30]">*</span></label>
-                <DateTimePicker value={startsAt} onChange={setStartsAt} />
+
+            {/* 2-column: calendar left, summary preview right */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+              {/* Calendar */}
+              <div className="bg-white rounded-2xl flex items-start justify-center overflow-x-auto">
+                <Calendar
+                  mode="range"
+                  numberOfMonths={2}
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  defaultMonth={dateRange?.from}
+                  className={`${font}`}
+                  classNames={{
+                    months: "flex flex-col sm:flex-row gap-6",
+                    month: "flex flex-col gap-3",
+                    caption: "flex justify-center pt-1 relative items-center w-full",
+                    caption_label: `${font} text-[14px] text-black`,
+                    nav: "flex items-center gap-1",
+                    nav_button: "size-7 rounded-full bg-[#319754]/10 hover:bg-[#319754]/20 text-[#319754] flex items-center justify-center p-0 cursor-pointer transition-colors",
+                    nav_button_previous: "absolute left-1",
+                    nav_button_next: "absolute right-1",
+                    table: "w-full border-collapse",
+                    head_row: "flex",
+                    head_cell: `${font} text-gray-400 w-9 font-normal text-[11px]`,
+                    row: "flex w-full mt-1",
+                    cell: "relative p-0 text-center text-[13px] focus-within:relative focus-within:z-20 has-[[aria-selected]]:bg-[#319754]/12 first:has-[[aria-selected]]:rounded-l-full last:has-[[aria-selected]]:rounded-r-full [&:has(.day-range-start)]:rounded-l-full [&:has(.day-range-end)]:rounded-r-full",
+                    day: `${font} size-9 p-0 font-normal text-[13px] rounded-full hover:bg-[#319754]/15 hover:text-[#319754] aria-selected:opacity-100 cursor-pointer transition-colors`,
+                    day_range_start: "day-range-start aria-selected:bg-[#319754] aria-selected:text-white aria-selected:hover:bg-[#287745] rounded-full",
+                    day_range_end:   "day-range-end aria-selected:bg-[#319754] aria-selected:text-white aria-selected:hover:bg-[#287745] rounded-full",
+                    day_selected:    "bg-[#319754] text-white hover:bg-[#287745] focus:bg-[#319754]",
+                    day_today:       "bg-[#319754]/8 text-[#319754] font-semibold",
+                    day_outside:     "day-outside text-gray-300 aria-selected:text-gray-400",
+                    day_disabled:    "text-gray-300 opacity-50",
+                    day_range_middle: "aria-selected:bg-transparent aria-selected:text-[#319754] aria-selected:font-semibold",
+                    day_hidden: "invisible",
+                  }}
+                />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={`${font} text-[13px]`} style={{ fontWeight: 500 }}>เวลาสิ้นสุด {!noExpiry && <span className="text-[#ff3b30]">*</span>}</label>
-                {noExpiry ? (
-                  // ไม่มีวันหมดอายุ — แสดง infinity แทน datetime picker (layout คงที่)
-                  <div className={`${font} bg-[#fafafa] flex h-12 items-center justify-between pl-6 pr-4 py-3 rounded-full w-full opacity-60 cursor-not-allowed select-none`}>
-                    <span className="text-[14px] text-gray-500 tabular-nums inline-flex items-center gap-2">
-                      <span className="text-[20px] leading-none" style={{ fontWeight: 700 }}>∞</span>
-                      <span>ลดราคาตลอด</span>
-                    </span>
-                    <CalendarIcon className="size-4 text-gray-300" strokeWidth={2} />
+
+              {/* Summary preview */}
+              {(() => {
+                const hasEnd = !!(dateRange?.to && !noExpiry);
+                const totalDays = dateRange?.from && hasEnd
+                  ? Math.max(1, Math.ceil((dateRange.to!.getTime() - dateRange.from.getTime()) / 86400000) + 1)
+                  : 0;
+                const startsToday = dateRange?.from ? (new Date().setHours(0,0,0,0) === new Date(dateRange.from).setHours(0,0,0,0)) : false;
+                const daysToStart = dateRange?.from ? Math.ceil((dateRange.from.getTime() - new Date().setHours(0,0,0,0)) / 86400000) : 0;
+                return (
+                  <div className="bg-gradient-to-br from-gray-100 via-gray-50 to-gray-100 rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden">
+                    <CalendarIcon className="absolute -bottom-4 -right-4 size-32 text-gray-300/40 pointer-events-none" strokeWidth={1.5} />
+
+                    <div className="relative z-10 flex items-center justify-between gap-2">
+                      <p className={`${font} text-[11px] uppercase tracking-wider text-gray-600`} style={{ fontWeight: 700 }}>สรุประยะเวลา</p>
+                      {dateRange?.from && (hasEnd || noExpiry) && (
+                        <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/80 text-gray-700 text-[10px] tabular-nums`} style={{ fontWeight: 600 }}>
+                          <span className="size-1.5 rounded-full bg-gray-500 animate-pulse" />
+                          {startsToday ? "เริ่มวันนี้" : daysToStart > 0 ? `อีก ${daysToStart} วันเริ่ม` : "กำลังดำเนินการ"}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="relative z-10 grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+                      <div className="flex flex-col items-center text-center bg-white/80 rounded-xl p-3 backdrop-blur-sm">
+                        <p className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>เริ่มต้น</p>
+                        {dateRange?.from ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none tabular-nums text-gray-900 mt-1`} style={{ fontWeight: 800 }}>
+                              {dateRange.from.getDate()}
+                            </p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>
+                              {dateRange.from.toLocaleDateString("th-TH", { month: "short" })} {dateRange.from.getFullYear() + 543}
+                            </p>
+                          </>
+                        ) : (
+                          <p className={`${font} text-[11px] text-gray-400 italic mt-3 mb-1`}>—</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 px-1">
+                        <ArrowRight className="size-5 text-gray-500" strokeWidth={2.4} />
+                        {totalDays > 0 && (
+                          <span className={`${font} text-[9px] text-gray-600 tabular-nums whitespace-nowrap`} style={{ fontWeight: 600 }}>
+                            {totalDays} วัน
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-center text-center bg-white/80 rounded-xl p-3 backdrop-blur-sm">
+                        <p className={`${font} text-[9px] uppercase tracking-wider text-gray-500`} style={{ fontWeight: 600 }}>สิ้นสุด</p>
+                        {noExpiry ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none text-gray-900 mt-1`} style={{ fontWeight: 800 }}>∞</p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>ลดราคาตลอด</p>
+                          </>
+                        ) : dateRange?.to ? (
+                          <>
+                            <p className={`${font} text-[32px] leading-none tabular-nums text-gray-900 mt-1`} style={{ fontWeight: 800 }}>
+                              {dateRange.to.getDate()}
+                            </p>
+                            <p className={`${font} text-[11px] text-gray-700 mt-1`} style={{ fontWeight: 600 }}>
+                              {dateRange.to.toLocaleDateString("th-TH", { month: "short" })} {dateRange.to.getFullYear() + 543}
+                            </p>
+                          </>
+                        ) : (
+                          <p className={`${font} text-[11px] text-gray-400 italic mt-3 mb-1`}>—</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="relative z-10 flex items-center justify-between gap-3 bg-white/80 rounded-xl px-4 py-3 backdrop-blur-sm">
+                      <div className="flex items-center gap-2">
+                        <Clock className="size-4 text-gray-500" strokeWidth={2.4} />
+                        <p className={`${font} text-[12px] text-gray-700`} style={{ fontWeight: 600 }}>ระยะเวลารวม</p>
+                      </div>
+                      {noExpiry ? (
+                        <p className={`${font} text-[18px] text-gray-900 leading-none`} style={{ fontWeight: 800 }}>ไม่มีกำหนด</p>
+                      ) : totalDays > 0 ? (
+                        <p className={`${font} text-[22px] text-gray-900 tabular-nums leading-none`} style={{ fontWeight: 800 }}>
+                          {totalDays.toLocaleString()} <span className="text-[12px]" style={{ fontWeight: 500 }}>วัน</span>
+                        </p>
+                      ) : (
+                        <p className={`${font} text-[12px] text-gray-400 italic`}>ยังไม่กำหนด</p>
+                      )}
+                    </div>
+
+                    {!dateRange?.from && (
+                      <div className="relative z-10 flex items-center gap-2 text-[11px] text-gray-500 italic">
+                        <Info className="size-3 shrink-0" strokeWidth={2.4} />
+                        คลิกวันที่เริ่ม → วันที่สิ้นสุดในปฏิทินด้านซ้าย
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <DateTimePicker value={endsAt} onChange={setEndsAt} />
-                )}
-              </div>
+                );
+              })()}
             </div>
           </section>
 
+          {/* ── Section 5: ตั้งค่า (in left column so width matches ระยะเวลา) ── */}
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center shrink-0">
+                <Settings className="size-4 text-[#8b5cf6]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตั้งค่า</p>
+                <p className={`${font} text-[11px] text-[#8e8e93]`}>การตั้งค่าโปรโมชั่น</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 px-4 h-14 bg-[#fafafa] rounded-2xl">
+              <div className="flex flex-col min-w-0">
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เปิดใช้งานโปรโมชั่น</span>
+                <span className={`${font} text-[11px] text-gray-500`}>{enabled ? "โปรโมชั่นจะแสดงและใช้งานได้" : "โปรโมชั่นถูกซ่อน ไม่ใช้งาน"}</span>
+              </div>
+              <ToggleSwitch checked={enabled} onChange={() => setEnabled(!enabled)} />
+            </div>
+          </section>
+        </div>
+
+        {/* Right column — promotion scope */}
+        <div className="space-y-4 lg:sticky lg:top-4 min-w-0">
           {/* ── Section 4: ขอบเขตโปรโมชั่น ── */}
           <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
             <div className="flex items-center gap-3">
@@ -11666,44 +11733,12 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
               </div>
             )}
           </section>
-
-          {/* ── Section 5: ตั้งค่า ── */}
-          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="size-9 rounded-xl bg-[#8b5cf6]/10 flex items-center justify-center shrink-0">
-                <Settings className="size-4 text-[#8b5cf6]" strokeWidth={2.2} />
-              </div>
-              <div>
-                <p className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตั้งค่า</p>
-                <p className={`${font} text-[11px] text-[#8e8e93]`}>การตั้งค่าโปรโมชั่น</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between gap-3 px-4 h-14 bg-[#fafafa] rounded-2xl">
-              <div className="flex flex-col min-w-0">
-                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เปิดใช้งานโปรโมชั่น</span>
-                <span className={`${font} text-[11px] text-gray-500`}>{enabled ? "โปรโมชั่นจะแสดงและใช้งานได้" : "โปรโมชั่นถูกซ่อน ไม่ใช้งาน"}</span>
-              </div>
-              <ToggleSwitch checked={enabled} onChange={() => setEnabled(!enabled)} />
-            </div>
-          </section>
         </div>
+      </div>
 
-        <div className="border-t border-gray-100 p-4 shrink-0 flex items-center gap-3 justify-end">
-          <button onClick={onClose}
-            className={`${font} h-[44px] px-5 rounded-full text-[13px] text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer transition-colors`}
-            style={{ fontWeight: 500 }}>
-            ยกเลิก
-          </button>
-          <button onClick={handleSubmit} disabled={!canSubmit}
-            className={`${font} h-[44px] px-6 rounded-full text-white text-[13px] transition-colors ${canSubmit ? "bg-[#008c45] hover:bg-[#007a3b] cursor-pointer" : "bg-gray-300 cursor-not-allowed"}`}
-            style={{ fontWeight: 600 }}>
-            บันทึก
-          </button>
-        </div>
-
-        {/* Sub-modal: Product picker */}
+      {/* Sub-modal: Product picker (still a popup since it's a nested picker) */}
         {showPicker && (
-          <div className="absolute inset-0 bg-black/40 z-10 flex items-center justify-center p-4" onClick={() => setShowPicker(false)}>
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowPicker(false)}>
             <div className="bg-white rounded-2xl w-full max-w-[480px] max-h-[80%] flex flex-col shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between p-4 border-b border-gray-100 shrink-0">
                 <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 600 }}>เลือกสินค้าเข้าร่วมโปรโมชั่น</p>
@@ -11749,7 +11784,6 @@ function CreatePromotionModal({ open, onClose, onCreate }: {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }
@@ -11761,6 +11795,15 @@ function PromotionsTab() {
   const [showCreate, setShowCreate] = useState(false);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
+
+  if (showCreate) {
+    return (
+      <CreatePromotionView
+        onClose={() => setShowCreate(false)}
+        onCreate={(p) => { setPromotions((prev) => [p, ...prev]); setShowCreate(false); toast.success(`สร้างโปรโมชั่น "${p.name}" แล้ว`); }}
+      />
+    );
+  }
 
   const now = Date.now();
   const computedStatus = (p: Promotion): PromoStatus => {
@@ -11811,45 +11854,10 @@ function PromotionsTab() {
       </div>
 
       {/* Filter tabs + search (in one pill) — เหมือน ProductsTab */}
-      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-2 mb-6 flex items-center gap-2">
-        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
-          {tabs.map((tab) => {
-            const isAct = filter === tab.id;
-            return (
-              <motion.button key={tab.id}
-                onClick={() => { setFilter(tab.id); setPage(1); }}
-                whileTap={{ scale: 0.94 }}
-                whileHover={!isAct ? { scale: 1.04 } : undefined}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
-                {isAct && (
-                  <motion.span layoutId="promoTabActivePill"
-                    className="absolute inset-0 bg-[#319754] shadow-[0_2px_8px_rgba(49,151,84,0.25)] rounded-full"
-                    transition={{ type: "spring", stiffness: 380, damping: 32 }} />
-                )}
-                <motion.span layout
-                  className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
-                  transition={{ duration: 0.2 }}>
-                  <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
-                </motion.span>
-                <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                  style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>
-                  {tab.label}
-                </span>
-                <motion.span layout
-                  className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>
-                  <motion.span key={tab.count} initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.25, ease: "easeOut" }}>
-                    {tab.count}
-                  </motion.span>
-                </motion.span>
-              </motion.button>
-            );
-          })}
-        </div>
-        {/* Search (inside same pill, aligned right) */}
-        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0 ml-auto">
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
+        <FilterTabPills tabs={tabs} active={filter} onChange={(id) => { setFilter(id); setPage(1); }} pillId="promoTabActivePill" />
+        {/* Search */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="ค้นหาโปรโมชั่น...."
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
@@ -12018,8 +12026,6 @@ function PromotionsTab() {
         )}
       </div>
 
-      <CreatePromotionModal open={showCreate} onClose={() => setShowCreate(false)}
-        onCreate={(p) => { setPromotions((prev) => [p, ...prev]); setShowCreate(false); toast.success(`สร้างโปรโมชั่น "${p.name}" แล้ว`); }} />
     </div>
   );
 }

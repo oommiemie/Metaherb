@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Clock, Tag, Ticket, Gift } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../store/LanguageContext";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
@@ -35,6 +36,7 @@ const mockCoupons: Coupon[] = [
 ];
 
 function CouponCard({ coupon, onCollect }: { coupon: Coupon; onCollect: (id: string) => void }) {
+  const { t } = useLanguage();
   return (
     <div className="bg-white rounded-lg relative overflow-hidden border border-[#e8e8e8] shadow-[0px_1px_4px_0px_rgba(0,0,0,0.08)]">
       <div className="flex items-center">
@@ -60,16 +62,16 @@ function CouponCard({ coupon, onCollect }: { coupon: Coupon; onCollect: (id: str
             <div className="flex items-center gap-1">
               <Clock className="size-3 text-[#999]" />
               <span className={`${font} text-[11px] text-[#999]`}>{coupon.expiry}</span>
-              <span className={`${font} text-[11px] text-[#319754] ml-2 cursor-pointer`}>เงื่อนไข</span>
+              <span className={`${font} text-[11px] text-[#319754] ml-2 cursor-pointer`}>{t("coupon_terms")}</span>
             </div>
           </div>
 
           {/* Collect button */}
           {coupon.collected ? (
-            <span className={`${font} text-[13px] text-[#999] bg-[#f0f0f0] px-4 py-1.5 rounded-full`}>เก็บแล้ว</span>
+            <span className={`${font} text-[13px] text-[#999] bg-[#f0f0f0] px-4 py-1.5 rounded-full`}>{t("coupon_collected")}</span>
           ) : (
             <button onClick={() => onCollect(coupon.id)}
-              className={`${font} text-[13px] text-white bg-[#319754] px-5 py-1.5 rounded-full cursor-pointer hover:bg-[#267a43]`}>เก็บ</button>
+              className={`${font} text-[13px] text-white bg-[#319754] px-5 py-1.5 rounded-full cursor-pointer hover:bg-[#267a43]`}>{t("coupon_collect")}</button>
           )}
         </div>
       </div>
@@ -78,12 +80,13 @@ function CouponCard({ coupon, onCollect }: { coupon: Coupon; onCollect: (id: str
 }
 
 export function CouponPage() {
+  const { t } = useLanguage();
   const [coupons, setCoupons] = useState(mockCoupons);
   const [activeTab, setActiveTab] = useState<CouponType>("all");
 
   const handleCollect = (id: string) => {
     setCoupons((prev) => prev.map((c) => (c.id === id ? { ...c, collected: true } : c)));
-    toast.success("คุณได้รับคูปองแล้ว!");
+    toast.success(t("coupon_received"));
   };
 
   const filtered = activeTab === "all" ? coupons :
@@ -94,18 +97,18 @@ export function CouponPage() {
   const freeCount = coupons.filter((c) => c.type === "FREE").length;
 
   const tabItems: { key: CouponType; label: string; count: number }[] = [
-    { key: "all", label: "ทั้งหมด", count: coupons.length },
-    { key: "discount", label: "ส่วนลด", count: discountCount },
-    { key: "free_shipping", label: "ส่งฟรี", count: freeCount },
+    { key: "all", label: t("coupon_tab_all"), count: coupons.length },
+    { key: "discount", label: t("coupon_tab_discount"), count: discountCount },
+    { key: "free_shipping", label: t("coupon_tab_freeship"), count: freeCount },
   ];
 
   return (
     <div>
-      <div className="bg-[rgba(214,234,221,0.5)] py-4 text-center">
-        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>คูปอง METAHERB</h1>
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
+        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("coupon_title")}</h1>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         {/* Tabs */}
         <div className="flex gap-3 mb-6">
           {tabItems.map((tab) => (

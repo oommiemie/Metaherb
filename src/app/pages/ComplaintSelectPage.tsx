@@ -1,40 +1,10 @@
 import { useNavigate, useParams } from "react-router";
 import svgPaths from "../../imports/svg-msiytpo2yd";
 import { useOrders } from "../store/OrderContext";
+import { useLanguage } from "../store/LanguageContext";
 import { ChevronLeft } from "lucide-react";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
-
-const problemTypes = [
-  {
-    id: "damaged",
-    title: "สินค้าเสียหาย",
-    desc: "สินค้าที่มีรอยแตก บุบ หรือชำรุดจากการขนส่ง",
-    badgeColor: "#FF383C",
-    badgeType: "x" as const,
-  },
-  {
-    id: "wrong_item",
-    title: "สินค้าไม่ตรงตามที่สั่ง",
-    desc: "ได้รับสินค้าผิดรายการจากที่สั่ง",
-    badgeColor: "#DF9723",
-    badgeType: "question" as const,
-  },
-  {
-    id: "return",
-    title: "ต้องการคืนสินค้า",
-    desc: "ส่งคืนสินค้าและรับเป็นเครดิตหรือสินค้าใหม่",
-    badgeColor: "#9747FF",
-    badgeType: "return" as const,
-  },
-  {
-    id: "refund",
-    title: "ต้องการขอเงินคืน",
-    desc: "ต้องการขอคืนเงินจากการสั่งซื้อ",
-    badgeColor: "#0088FF",
-    badgeType: "money" as const,
-  },
-];
 
 function BoxIcon({ badgeColor, badgeType }: { badgeColor: string; badgeType: string }) {
   return (
@@ -80,29 +50,37 @@ export function ComplaintSelectPage() {
   const navigate = useNavigate();
   const { orderId } = useParams();
   const { orders } = useOrders();
+  const { t } = useLanguage();
   const order = orders.find((o) => o.id === orderId);
+
+  const problemTypes = [
+    { id: "damaged", title: t("complaint_type_damaged"), desc: t("complaint_type_damaged_desc"), badgeColor: "#FF383C", badgeType: "x" as const },
+    { id: "wrong_item", title: t("complaint_type_wrong"), desc: t("complaint_type_wrong_desc"), badgeColor: "#DF9723", badgeType: "question" as const },
+    { id: "return", title: t("complaint_type_return"), desc: t("complaint_type_return_desc"), badgeColor: "#9747FF", badgeType: "return" as const },
+    { id: "refund", title: t("complaint_type_refund"), desc: t("complaint_type_refund_desc"), badgeColor: "#0088FF", badgeType: "money" as const },
+  ];
 
   if (!order) {
     return (
       <div className="text-center py-16">
-        <p className={`${font} text-gray-500`}>ไม่พบคำสั่งซื้อ</p>
-        <button onClick={() => navigate("/orders")} className={`mt-4 text-[#319754] ${font} cursor-pointer hover:underline`}>กลับไปหน้าคำสั่งซื้อ</button>
+        <p className={`${font} text-gray-500`}>{t("vp_not_found")}</p>
+        <button onClick={() => navigate("/orders")} className={`mt-4 text-[#319754] ${font} cursor-pointer hover:underline`}>{t("common_back")}</button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-6">
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-6">
       {/* Back button */}
       <button onClick={() => navigate("/orders")}
         className={`flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#d4d4d4] text-[12px] ${font} cursor-pointer hover:bg-[#c4c4c4] mb-6`}>
-        <ChevronLeft className="size-3" /> กลับ
+        <ChevronLeft className="size-3" /> {t("common_back")}
       </button>
 
       {/* Content */}
       <div className="bg-white rounded-2xl p-6 max-w-[720px] mx-auto">
         <div className="flex items-start justify-between mb-6">
-          <h1 className={`${font} text-[24px] text-black`} style={{ fontWeight: 600 }}>โปรดระบุปัญหาที่คุณพบ</h1>
+          <h1 className={`${font} text-[24px] text-black`} style={{ fontWeight: 600 }}>{t("complaint_select_title")}</h1>
           <button onClick={() => navigate("/orders")}
             className="size-10 rounded-full bg-[#f4f4f4] flex items-center justify-center cursor-pointer hover:bg-[#e8e8e8]">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -113,7 +91,7 @@ export function ComplaintSelectPage() {
 
         {/* Order info */}
         <div className={`mb-6 p-3 rounded-lg bg-[#f9fafb] border border-[#e5e7eb]`}>
-          <p className={`${font} text-[12px] text-[#999]`}>คำสั่งซื้อ: {order.id}</p>
+          <p className={`${font} text-[12px] text-[#999]`}>{t("complaint_order_label")} {order.id}</p>
           <p className={`${font} text-[14px] text-black mt-1`} style={{ fontWeight: 500 }}>{order.shopName}</p>
         </div>
 

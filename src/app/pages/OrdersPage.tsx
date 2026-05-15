@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useOrders, type OrderStatus } from "../store/OrderContext";
 import { useChat } from "../store/ChatContext";
+import { useLanguage } from "../store/LanguageContext";
 import { Package, Truck, CheckCircle, Clock, XCircle, ChevronRight, Star, Eye, MessageCircle, RotateCcw, Copy, ChevronDown, ChevronUp, ClipboardList, Hourglass, Search, Ban, ArrowRightCircle } from "lucide-react";
 import { OrderTimeline } from "../components/OrderTimeline";
 import { toast } from "sonner";
+import { motion } from "motion/react";
 import svgPaths from "../../imports/svg-msiytpo2yd";
 import imgDamaged from "figma:asset/4f59e2204352b9ea47e8c08661dec6d473c60c53.png";
 import imgWrongItem from "figma:asset/4517e4a0ab01b002c578ac42c372cf5b3a5ab1af.png";
@@ -12,13 +14,6 @@ import imgReturn from "figma:asset/a93992c00d6ca24ac5ac6db4f9ba36829787f574.png"
 import imgRefund from "figma:asset/2c8e0b82e046f224d900948034e932ec386e66ff.png";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
-
-const problemTypes = [
-  { id: "damaged", title: "สินค้าเสียหาย", desc: "สินค้าที่มีรอยแตก บุบ หรือชำรุดจากการขนส่ง", badgeColor: "#FF383C", icon: imgDamaged },
-  { id: "wrong_item", title: "สินค้าไม่ตรงตามที่สั่ง", desc: "ได้รับสินค้าผิดรายการจากที่สั่ง", badgeColor: "#DF9723", icon: imgWrongItem },
-  { id: "return", title: "ต้องการคืนสินค้า", desc: "ส่งคืนสินค้าและรับเป็นเครดิตหรือสินค้าใหม่", badgeColor: "#9747FF", icon: imgReturn },
-  { id: "refund", title: "ต้องการขอเงินคืน", desc: "ต้องการขอคืนเงินจากการสั่งซื้อ", badgeColor: "#0088FF", icon: imgRefund },
-];
 
 function BoxIcon({ badgeColor }: { badgeColor: string }) {
   return (
@@ -37,41 +32,49 @@ function BoxIcon({ badgeColor }: { badgeColor: string }) {
   );
 }
 
-const tabs: { label: string; status: OrderStatus | "all" | "pending_group"; icon: any }[] = [
-  { label: "ทั้งหมด", status: "all", icon: Package },
-  { label: "รอชำระเงิน", status: "pending_group", icon: Clock },
-  { label: "กำลังจัดเตรียม", status: "preparing", icon: Package },
-  { label: "จัดส่งแล้ว", status: "shipped", icon: Truck },
-  { label: "ได้รับสินค้าแล้ว", status: "delivered", icon: ClipboardList },
-  { label: "สำเร็จ", status: "completed", icon: CheckCircle },
-  { label: "ยกเลิก", status: "cancelled", icon: XCircle },
-];
-
 const statusBadgeColors: Record<OrderStatus, string> = {
-  pending_payment: "bg-[#ff8d28] text-white",
-  pending_verify: "bg-[#f7931d] text-white",
-  preparing: "bg-[#3b82f6] text-white",
-  shipped: "bg-[#8b5cf6] text-white",
-  delivered: "bg-[#14b8a6] text-white",
-  completed: "bg-[#319754] text-white",
-  cancelled: "bg-[#9ca3af] text-white",
-};
-
-const statusLabels: Record<OrderStatus, string> = {
-  pending_payment: "รอชำระเงิน",
-  pending_verify: "รอตรวจสอบ",
-  preparing: "กำลังจัดเตรียม",
-  shipped: "จัดส่งแล้ว",
-  delivered: "รับสินค้าแล้ว",
-  completed: "สำเร็จ",
-  cancelled: "ยกเลิก",
+  pending_payment: "bg-[#319754] text-white",
+  pending_verify:  "bg-[#319754] text-white",
+  preparing:       "bg-[#319754] text-white",
+  shipped:         "bg-[#319754] text-white",
+  delivered:       "bg-[#319754] text-white",
+  completed:       "bg-[#319754] text-white",
+  cancelled:       "bg-gray-400 text-white",
 };
 
 export function OrdersPage() {
   const navigate = useNavigate();
   const { orders, updateOrderStatus, addReview } = useOrders();
   const { openChat } = useChat();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<OrderStatus | "all" | "pending_group">("all");
+
+  const tabs: { label: string; status: OrderStatus | "all" | "pending_group"; icon: any }[] = [
+    { label: t("orders_tab_all"), status: "all", icon: Package },
+    { label: t("orders_tab_pending"), status: "pending_group", icon: Clock },
+    { label: t("orders_tab_preparing"), status: "preparing", icon: Package },
+    { label: t("orders_tab_shipped"), status: "shipped", icon: Truck },
+    { label: t("orders_tab_delivered"), status: "delivered", icon: ClipboardList },
+    { label: t("orders_tab_completed"), status: "completed", icon: CheckCircle },
+    { label: t("orders_tab_cancelled"), status: "cancelled", icon: XCircle },
+  ];
+
+  const statusLabels: Record<OrderStatus, string> = {
+    pending_payment: t("orders_status_pending_payment"),
+    pending_verify: t("orders_status_pending_verify"),
+    preparing: t("orders_status_preparing"),
+    shipped: t("orders_status_shipped"),
+    delivered: t("orders_status_delivered"),
+    completed: t("orders_status_completed"),
+    cancelled: t("orders_status_cancelled"),
+  };
+
+  const problemTypes = [
+    { id: "damaged", title: t("complaint_type_damaged"), desc: t("complaint_type_damaged_desc"), badgeColor: "#FF383C", icon: imgDamaged },
+    { id: "wrong_item", title: t("complaint_type_wrong"), desc: t("complaint_type_wrong_desc"), badgeColor: "#DF9723", icon: imgWrongItem },
+    { id: "return", title: t("complaint_type_return"), desc: t("complaint_type_return_desc"), badgeColor: "#9747FF", icon: imgReturn },
+    { id: "refund", title: t("complaint_type_refund"), desc: t("complaint_type_refund_desc"), badgeColor: "#0088FF", icon: imgRefund },
+  ];
   const [reviewModal, setReviewModal] = useState<string | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
@@ -92,33 +95,37 @@ export function OrdersPage() {
     setReviewModal(null);
     setReviewComment("");
     setReviewRating(5);
-    toast.success("ขอบคุณสำหรับรีวิว! 🎉");
+    toast.success(t("review_thanks"));
   };
 
   const handleRefund = (orderId: string) => {
-    toast.success("ส่งคำขอคืนเงินเรียบร้อย", { description: "ทีมงานจะตรวจสอบภายใน 1-3 วันทำการ" });
+    toast.success(t("refund_success"), { description: t("refund_success_desc") });
     setRefundModal(null);
     setRefundReason("");
   };
 
   const copyOrderId = (id: string) => {
     navigator.clipboard.writeText(id);
-    toast.success("คัดลอกหมายเลขคำสั่งซื้อแล้ว");
+    toast.success(t("orders_id_copied"));
   };
 
   return (
     <div>
-      {/* Header with shipping box pattern */}
-      <div className="bg-[rgba(214,234,221,0.5)] relative overflow-hidden">
+      {/* Header with shipping box pattern — extends up behind the appbar */}
+      <div className="bg-[#eaf3ee] relative overflow-hidden -mt-[64px] md:-mt-[116px] pt-[64px] md:pt-[116px]">
         <div className="relative py-6 text-center">
-          <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>คำสั่งซื้อของฉัน</h1>
+          <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("orders_title")}</h1>
         </div>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
-        {/* Tabs - pill style */}
-        <div className="flex justify-center -mt-10 mb-4 sm:mb-6 relative z-10">
-          <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.1)] p-2 flex gap-2 sm:gap-4 overflow-x-auto max-w-full">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+        {/* Tabs — frosted glass pill with gradient active state */}
+        <div className="flex justify-center -mt-10 mb-5 sm:mb-7 relative z-10">
+          <div className="backdrop-blur-[14px] rounded-full p-[6px] flex gap-1 overflow-x-auto max-w-full ring-1 ring-white/60"
+            style={{
+              background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)",
+              boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(255,255,255,0.5) inset, 0 2px 6px rgba(0,0,0,0.06), 0 12px 28px -8px rgba(20,63,36,0.18)"
+            }}>
             {tabs.map((tab) => {
               const count = tab.status === "all" ? orders.length : tab.status === "pending_group"
                 ? orders.filter((o) => o.status === "pending_payment" || o.status === "pending_verify").length
@@ -126,15 +133,30 @@ export function OrdersPage() {
               const isActive = activeTab === tab.status;
               return (
                 <button key={tab.status} onClick={() => setActiveTab(tab.status)}
-                  className={`flex items-center gap-2 pl-3 pr-2 py-1 rounded-full text-[14px] ${font} cursor-pointer whitespace-nowrap transition-all active:scale-95 duration-150 ${
-                    isActive ? "bg-[#319754] text-white backdrop-blur-sm" : "text-black hover:bg-gray-50"
-                  }`}>
-                  <tab.icon className="size-[18px]" />
-                  {tab.label}
+                  className={`group/tab relative flex items-center gap-1.5 px-3 h-[34px] rounded-full text-[13px] ${font} cursor-pointer whitespace-nowrap transition-all duration-200 active:scale-[0.97] ${
+                    isActive ? "text-white" : "text-[#1d5b32] hover:text-[#287745]"
+                  }`}
+                  style={{ fontWeight: 500 }}>
+                  {!isActive && (
+                    <span className="absolute inset-0 rounded-full bg-[#319754]/0 group-hover/tab:bg-[#319754]/10 transition-colors duration-200" />
+                  )}
+                  {isActive && (
+                    <motion.div layoutId="orders-tab"
+                      className="absolute inset-0 rounded-full shadow-[0_4px_14px_-2px_rgba(49,151,84,0.55),inset_0_1px_0_rgba(255,255,255,0.25)]"
+                      style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 50%, #267a43 100%)" }}
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                  )}
+                  <tab.icon className="size-[15px] relative z-10" strokeWidth={2.2} />
+                  <span className="relative z-10 leading-none">{tab.label}</span>
                   {count > 0 && (
-                    <span className={`text-[8px] px-2 py-0.5 rounded-full shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] ${
-                      isActive ? "bg-white text-[#ff383c]" : "bg-[#ff383c] text-white"
-                    }`}>{count}</span>
+                    <span className={`relative z-10 min-w-[18px] h-[18px] px-1.5 inline-flex items-center justify-center rounded-full text-[10px] tabular-nums ring-[1.5px] ${
+                      isActive
+                        ? "bg-white text-[#ef4444] ring-white/40 shadow-[0_2px_4px_rgba(0,0,0,0.15)]"
+                        : "text-white ring-white shadow-[0_2px_6px_rgba(239,56,60,0.5)]"
+                    }`}
+                    style={isActive ? { fontWeight: 700 } : { background: "linear-gradient(135deg, #ff8a8a, #ef4444)", fontWeight: 700 }}>
+                      {count}
+                    </span>
                   )}
                 </button>
               );
@@ -146,32 +168,38 @@ export function OrdersPage() {
         {filtered.length === 0 ? (
           <div className="text-center py-16">
             <Package className="size-16 text-gray-200 mx-auto" />
-            <p className={`${font} text-[14px] text-gray-400 mt-4`}>ไม่มีคำสั่งซื้อ</p>
-            <button onClick={() => navigate("/products")} className={`mt-3 text-[13px] text-[#319754] ${font} cursor-pointer hover:underline`}>ไปช้อปปิ้ง</button>
+            <p className={`${font} text-[14px] text-gray-400 mt-4`}>{t("orders_empty")}</p>
+            <button onClick={() => navigate("/products")} className={`mt-3 text-[13px] text-[#319754] ${font} cursor-pointer hover:underline`}>{t("orders_shop_now")}</button>
           </div>
         ) : (
           <div className="space-y-4">
             {filtered.map((order) => {
               const isExpanded = expandedOrder === order.id;
               return (
-                <div key={order.id} className="bg-white rounded-2xl overflow-hidden p-4 shadow-sm">
+                <div key={order.id} className="bg-white rounded-[20px] overflow-hidden p-5 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.08)] border border-gray-100 hover:shadow-[0_12px_28px_-8px_rgba(16,24,40,0.12)] transition-shadow duration-300">
                   {/* Top: Shop name + View detail */}
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{order.shopName}</span>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="size-[24px] rounded-full bg-gradient-to-br from-[#46c474] to-[#319754] flex items-center justify-center text-white shadow-[0_2px_6px_-1px_rgba(49,151,84,0.4)]">
+                        <Package className="size-3" strokeWidth={2.4} />
+                      </div>
+                      <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>{order.shopName}</span>
+                    </div>
                     <button onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                      className={`flex items-center gap-1.5 text-[12px] text-black ${font} cursor-pointer hover:opacity-70`}>
-                      ดูรายละเอียด
-                      <ArrowRightCircle className="size-[20px]" />
+                      className={`group/det flex items-center gap-1.5 text-[12px] text-[#319754] ${font} cursor-pointer hover:gap-2 transition-all`}
+                      style={{ fontWeight: 500 }}>
+                      {t("orders_view_details")}
+                      <ArrowRightCircle className="size-[18px] group-hover/det:translate-x-0.5 transition-transform" strokeWidth={2.2} />
                     </button>
                   </div>
 
                   {/* Order ID + Status + Date */}
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                     <div className="flex items-center gap-2.5">
-                      <span className={`${font} text-[14px] text-black`}>{order.id}</span>
-                      <span className={`${font} text-[12px] px-4 py-0.5 rounded-full ${statusBadgeColors[order.status]}`} style={{ fontWeight: 500 }}>{statusLabels[order.status]}</span>
+                      <span className={`${font} text-[12.5px] text-gray-500 tabular-nums`}>{order.id}</span>
+                      <span className={`${font} text-[11px] px-3 py-1 rounded-full ${statusBadgeColors[order.status]}`} style={{ fontWeight: 600 }}>{statusLabels[order.status]}</span>
                     </div>
-                    <span className={`${font} text-[12px] text-[#8e8e93]`}>{order.date}</span>
+                    <span className={`${font} text-[11.5px] text-gray-400`}>{order.date}</span>
                   </div>
 
                   {/* Divider */}
@@ -194,7 +222,7 @@ export function OrdersPage() {
                           <span className={`${font} text-[12px] text-black`} style={{ fontWeight: 500 }}>{item.name}</span>
                           <span className={`${font} text-[10px] text-black`}>{item.option}</span>
                           <div className="flex items-center justify-between">
-                            <span className={`${font} text-[10px] text-[#999]`}>จำนวน {item.quantity} ชิ้น</span>
+                            <span className={`${font} text-[10px] text-[#999]`}>{t("pay_qty_text")} {item.quantity} {t("common_pieces")}</span>
                             <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>฿{(item.price * item.quantity).toFixed(2)}</span>
                           </div>
                         </div>
@@ -203,7 +231,7 @@ export function OrdersPage() {
                     {order.items.length > 3 && !isExpanded && (
                       <button onClick={() => setExpandedOrder(order.id)}
                         className={`flex items-center gap-1 text-[12px] text-gray-400 ${font} cursor-pointer hover:text-gray-600 w-full justify-center py-1`}>
-                        <ChevronDown className="size-3" /> ดูทั้งหมด ({order.items.length} รายการ)
+                        <ChevronDown className="size-3" /> {t("orders_view_all_items")} ({order.items.length} {t("common_items")})
                       </button>
                     )}
                   </div>
@@ -211,12 +239,12 @@ export function OrdersPage() {
                   {/* Timeline (expanded only) */}
                   {isExpanded && (
                     <div className="pb-3 border-t border-gray-100 pt-3 mb-3">
-                      <p className={`${font} text-[13px] text-gray-600 mb-2`} style={{ fontWeight: 500 }}>สถานะคำสั่งซื้อ</p>
+                      <p className={`${font} text-[13px] text-gray-600 mb-2`} style={{ fontWeight: 500 }}>{t("orders_status_label")}</p>
                       <OrderTimeline currentStatus={order.status} trackingNumber={order.trackingNumber} />
                       {order.trackingNumber && (
                         <div className="flex items-center gap-2 mt-2">
-                          <span className={`${font} text-[12px] text-gray-500`}>หมายเลขพัสดุ: {order.trackingNumber}</span>
-                          <button onClick={() => { navigator.clipboard.writeText(order.trackingNumber!); toast.success("คัดลอกหมายเลขพัสดุแล้ว"); }}
+                          <span className={`${font} text-[12px] text-gray-500`}>{t("orders_tracking_no")} {order.trackingNumber}</span>
+                          <button onClick={() => { navigator.clipboard.writeText(order.trackingNumber!); toast.success(t("orders_tracking_copied")); }}
                             className="cursor-pointer"><Copy className="size-3 text-gray-400" /></button>
                         </div>
                       )}
@@ -227,52 +255,57 @@ export function OrdersPage() {
                   <div className="w-full h-px bg-[#D4D4D8] mb-3" />
 
                   {/* Footer: Total + Actions */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className={`${font} text-[14px] text-[#8e8e93]`} style={{ fontWeight: 500 }}>รวมการสั่งซื้อ:</span>
-                      <span className={`${font} text-[20px] text-[#ff383c]`} style={{ fontWeight: 500 }}>฿{order.total.toFixed(2)}</span>
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className={`${font} text-[13px] text-gray-500`} style={{ fontWeight: 500 }}>{t("orders_total_label")}</span>
+                      <span className={`${font} text-[22px] text-[#ef4444] tabular-nums`} style={{ fontWeight: 700 }}>฿{order.total.toFixed(2)}</span>
                     </div>
-                    <div className="flex gap-2.5">
+                    <div className="flex gap-2">
                       {order.status === "pending_payment" && (
                         <>
-                          <button onClick={() => { updateOrderStatus(order.id, "cancelled"); toast("ยกเลิกคำสั่งซื้อแล้ว"); }}
-                            className={`w-[120px] h-[40px] rounded-full border border-[#ff3b30] text-[#ff383c] text-[14px] ${font} cursor-pointer hover:bg-red-50`}>ยกเลิก</button>
+                          <button onClick={() => { updateOrderStatus(order.id, "cancelled"); toast(t("orders_cancelled_toast")); }}
+                            className={`min-w-[110px] h-[40px] px-4 rounded-full border border-[#ff3b30] text-[#ef4444] text-[13.5px] ${font} cursor-pointer hover:bg-red-50 active:scale-[0.97] transition-all`} style={{ fontWeight: 500 }}>{t("orders_btn_cancel")}</button>
                           <button onClick={() => navigate(`/verify-payment/${order.id}`)}
-                            className={`w-[120px] h-[40px] rounded-full bg-[#319754] text-white text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ชำระเงิน</button>
+                            className={`min-w-[110px] h-[40px] px-4 rounded-full text-white text-[13.5px] ${font} cursor-pointer hover:shadow-[0_8px_20px_-4px_rgba(49,151,84,0.5)] hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97] transition-all shadow-[0_4px_12px_-2px_rgba(49,151,84,0.4)]`}
+                            style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }}>{t("orders_btn_pay")}</button>
                         </>
                       )}
                       {order.status === "pending_verify" && (
-                        <button className={`w-[120px] h-[40px] rounded-full border border-[#319754] text-[#319754] text-[14px] ${font} cursor-pointer hover:bg-green-50`}>แก้ไขข้อมูล</button>
+                        <button className={`min-w-[110px] h-[40px] px-4 rounded-full border border-[#319754] text-[#319754] text-[13.5px] ${font} cursor-pointer hover:bg-[#319754]/5 active:scale-[0.97] transition-all`} style={{ fontWeight: 500 }}>{t("orders_btn_edit")}</button>
                       )}
                       {order.status === "preparing" && (
                         <button onClick={() => openChat("metaherb")}
-                          className={`w-[120px] h-[40px] rounded-full border border-[#319754] text-[#319754] text-[14px] ${font} cursor-pointer hover:bg-green-50 flex items-center justify-center gap-1`}>
-                          <MessageCircle className="size-4" /> ติดต่อร้าน
+                          className={`min-w-[110px] h-[40px] px-4 rounded-full border border-[#319754] text-[#319754] text-[13.5px] ${font} cursor-pointer hover:bg-[#319754]/5 active:scale-[0.97] transition-all flex items-center justify-center gap-1.5`} style={{ fontWeight: 500 }}>
+                          <MessageCircle className="size-4" strokeWidth={2.2} /> {t("orders_btn_contact")}
                         </button>
                       )}
                       {order.status === "shipped" && (
-                        <button onClick={() => { updateOrderStatus(order.id, "delivered"); toast.success("ยืนยันรับสินค้าแล้ว! 📦"); }}
-                          className={`h-[40px] px-6 rounded-full bg-[#319754] text-white text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ยืนยันรับสินค้า</button>
+                        <button onClick={() => { updateOrderStatus(order.id, "delivered"); toast.success(t("orders_received_toast")); }}
+                          className={`h-[40px] px-6 rounded-full text-white text-[13.5px] ${font} cursor-pointer hover:shadow-[0_8px_20px_-4px_rgba(49,151,84,0.5)] hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97] transition-all shadow-[0_4px_12px_-2px_rgba(49,151,84,0.4)]`}
+                          style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }}>{t("orders_btn_confirm_received")}</button>
                       )}
                       {order.status === "delivered" && !order.review && (
                         <>
                           <button onClick={() => setComplaintModal(order.id)}
-                            className={`px-[14px] h-[40px] rounded-full border border-[#d4d4d8] text-black text-[14px] ${font} cursor-pointer hover:bg-gray-50 flex items-center justify-center`}>
-                            แจ้งปัญหาสินค้า
+                            className={`min-w-[110px] h-[40px] px-4 rounded-full border border-gray-200 text-gray-700 text-[13.5px] ${font} cursor-pointer hover:bg-gray-50 hover:border-gray-300 active:scale-[0.97] transition-all`} style={{ fontWeight: 500 }}>
+                            {t("orders_btn_complaint")}
                           </button>
                           <button onClick={() => setReviewModal(order.id)}
-                            className={`w-[120px] h-[40px] rounded-full bg-[#f7931d] text-white text-[14px] ${font} cursor-pointer hover:bg-[#e0850f] flex items-center justify-center gap-1`}>
-                            <Star className="size-4" /> รีวิวสินค้า
+                            className={`min-w-[110px] h-[40px] px-4 rounded-full text-white text-[13.5px] ${font} cursor-pointer hover:shadow-[0_8px_20px_-4px_rgba(247,147,29,0.5)] hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97] transition-all shadow-[0_4px_12px_-2px_rgba(247,147,29,0.4)] flex items-center justify-center gap-1.5`}
+                            style={{ background: "linear-gradient(135deg, #fbbf24 0%, #f7931d 55%, #d97706 100%)", fontWeight: 600 }}>
+                            <Star className="size-4" strokeWidth={2.2} /> {t("orders_btn_review")}
                           </button>
                         </>
                       )}
                       {order.status === "completed" && order.review && (
                         <button onClick={() => navigate("/products")}
-                          className={`w-[120px] h-[40px] rounded-full bg-[#319754] text-white text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ซื้ออีกครั้ง</button>
+                          className={`min-w-[110px] h-[40px] px-4 rounded-full text-white text-[13.5px] ${font} cursor-pointer hover:shadow-[0_8px_20px_-4px_rgba(49,151,84,0.5)] hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97] transition-all shadow-[0_4px_12px_-2px_rgba(49,151,84,0.4)]`}
+                          style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }}>{t("orders_btn_buy_again")}</button>
                       )}
                       {order.status === "cancelled" && (
                         <button onClick={() => navigate("/products")}
-                          className={`w-[120px] h-[40px] rounded-full bg-[#319754] text-white text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ซื้อใหม่</button>
+                          className={`min-w-[110px] h-[40px] px-4 rounded-full text-white text-[13.5px] ${font} cursor-pointer hover:shadow-[0_8px_20px_-4px_rgba(49,151,84,0.5)] hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97] transition-all shadow-[0_4px_12px_-2px_rgba(49,151,84,0.4)]`}
+                          style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }}>{t("orders_btn_rebuy")}</button>
                       )}
                     </div>
                   </div>
@@ -287,9 +320,9 @@ export function OrdersPage() {
       {reviewModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setReviewModal(null)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-[400px]" onClick={(e) => e.stopPropagation()}>
-            <h3 className={`${font} text-[18px] text-center mb-4`} style={{ fontWeight: 600 }}>รีวิวสินค้า</h3>
+            <h3 className={`${font} text-[18px] text-center mb-4`} style={{ fontWeight: 600 }}>{t("review_title")}</h3>
 
-            <p className={`${font} text-[13px] text-gray-500 text-center mb-3`}>แตะดาวเพื่อให้คะแนน</p>
+            <p className={`${font} text-[13px] text-gray-500 text-center mb-3`}>{t("review_tap_star")}</p>
             <div className="flex justify-center gap-2 mb-4">
               {[1, 2, 3, 4, 5].map((s) => (
                 <Star key={s} onClick={() => setReviewRating(s)}
@@ -297,12 +330,12 @@ export function OrdersPage() {
               ))}
             </div>
             <p className={`${font} text-[12px] text-center text-[#f7931d] mb-4`}>
-              {["", "แย่มาก", "ไม่ดี", "ปกติ", "ดี", "ดีมาก"][reviewRating]}
+              {["", t("review_rating_1"), t("review_rating_2"), t("review_rating_3"), t("review_rating_4"), t("review_rating_5")][reviewRating]}
             </p>
 
             {/* Quick tags */}
             <div className="flex flex-wrap gap-2 mb-3">
-              {["สินค้าดี", "ส่งเร็ว", "แพ็คเกจดี", "คุ้มค่า", "ตรงปก"].map((tag) => (
+              {[t("review_tag_good"), t("review_tag_fast"), t("review_tag_package"), t("review_tag_worth"), t("review_tag_accurate")].map((tag) => (
                 <button key={tag} onClick={() => setReviewComment((p) => p + (p ? " " : "") + tag)}
                   className={`px-3 py-1 rounded-full border border-gray-200 text-[12px] ${font} cursor-pointer hover:border-[#319754] hover:text-[#319754]`}>
                   {tag}
@@ -310,11 +343,11 @@ export function OrdersPage() {
               ))}
             </div>
 
-            <textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} placeholder="เขียนรีวิวของคุณ..."
+            <textarea value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} placeholder={t("review_placeholder")}
               className={`w-full h-24 border border-gray-300 rounded-lg p-3 text-[14px] ${font} outline-none resize-none focus:border-[#319754]`} />
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setReviewModal(null)} className={`flex-1 py-3 rounded-full border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer`}>ยกเลิก</button>
-              <button onClick={() => handleReview(reviewModal)} className={`flex-1 py-3 rounded-full bg-[#319754] text-white text-[14px] ${font} cursor-pointer`}>ส่งรีวิว</button>
+              <button onClick={() => setReviewModal(null)} className={`flex-1 py-3 rounded-full border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer`}>{t("common_cancel")}</button>
+              <button onClick={() => handleReview(reviewModal)} className={`flex-1 py-3 rounded-full bg-[#319754] text-white text-[14px] ${font} cursor-pointer`}>{t("review_submit")}</button>
             </div>
           </div>
         </div>
@@ -324,11 +357,11 @@ export function OrdersPage() {
       {refundModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setRefundModal(null)}>
           <div className="bg-white rounded-2xl p-6 w-full max-w-[450px]" onClick={(e) => e.stopPropagation()}>
-            <h3 className={`${font} text-[18px] text-center mb-2`} style={{ fontWeight: 600 }}>ขอคืนเงิน/คืนสินค้า</h3>
-            <p className={`${font} text-[12px] text-gray-500 text-center mb-4`}>เลือกเหตุผลในการขอคืนเงิน</p>
+            <h3 className={`${font} text-[18px] text-center mb-2`} style={{ fontWeight: 600 }}>{t("refund_title")}</h3>
+            <p className={`${font} text-[12px] text-gray-500 text-center mb-4`}>{t("refund_subtitle")}</p>
 
             <div className="space-y-2 mb-4">
-              {["สินค้าไม่ตรงตามคำอธิบาย", "สินค้าชำรุด/เสียหาย", "ได้รับสินค้าผิดชิ้น", "สินค้าไม่ครบตามจำนวน", "เปลี่ยนใจ", "อื่นๆ"].map((reason) => (
+              {[t("refund_reason_desc"), t("refund_reason_damaged"), t("refund_reason_wrong"), t("refund_reason_qty"), t("refund_reason_change"), t("refund_reason_other")].map((reason) => (
                 <label key={reason} className="flex items-center gap-3 cursor-pointer px-3 py-2 rounded-lg hover:bg-gray-50">
                   <input type="radio" name="refundReason" value={reason} checked={refundReason === reason}
                     onChange={() => setRefundReason(reason)} className="accent-[#319754] size-4" />
@@ -337,13 +370,13 @@ export function OrdersPage() {
               ))}
             </div>
 
-            <textarea placeholder="รายละเอียดเพิ่มเติม (ไม่บังคับ)"
+            <textarea placeholder={t("refund_detail_ph")}
               className={`w-full h-20 border border-gray-300 rounded-lg p-3 text-[13px] ${font} outline-none resize-none`} />
 
             <div className="flex gap-2 mt-4">
-              <button onClick={() => setRefundModal(null)} className={`flex-1 py-3 rounded-full border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer`}>ยกเลิก</button>
+              <button onClick={() => setRefundModal(null)} className={`flex-1 py-3 rounded-full border border-gray-300 text-gray-600 text-[14px] ${font} cursor-pointer`}>{t("common_cancel")}</button>
               <button onClick={() => handleRefund(refundModal)} disabled={!refundReason}
-                className={`flex-1 py-3 rounded-full text-[14px] ${font} cursor-pointer ${refundReason ? "bg-[#ee4d2d] text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>ส่งคำขอ</button>
+                className={`flex-1 py-3 rounded-full text-[14px] ${font} cursor-pointer ${refundReason ? "bg-[#ee4d2d] text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>{t("refund_submit")}</button>
             </div>
           </div>
         </div>
@@ -356,7 +389,7 @@ export function OrdersPage() {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setComplaintModal(null)}>
             <div className="bg-white rounded-2xl p-6 w-full max-w-[720px]" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-start justify-between mb-6">
-                <h3 className={`${font} text-[24px] text-black`} style={{ fontWeight: 600 }}>โปรดระบุปัญหาที่คุณพบ</h3>
+                <h3 className={`${font} text-[24px] text-black`} style={{ fontWeight: 600 }}>{t("complaint_select_title")}</h3>
                 <button onClick={() => setComplaintModal(null)}
                   className="size-10 rounded-full bg-[#f4f4f4] flex items-center justify-center cursor-pointer hover:bg-[#e8e8e8]">
                   <XCircle className="size-5 text-gray-500" />
@@ -365,7 +398,7 @@ export function OrdersPage() {
 
               {complaintOrder && (
                 <div className={`mb-6 p-3 rounded-lg bg-[#f9fafb] border border-[#e5e7eb]`}>
-                  <p className={`${font} text-[12px] text-[#999]`}>คำสั่งซื้อ: {complaintOrder.id}</p>
+                  <p className={`${font} text-[12px] text-[#999]`}>{t("complaint_order_label")} {complaintOrder.id}</p>
                   <p className={`${font} text-[14px] text-black mt-1`} style={{ fontWeight: 500 }}>{complaintOrder.shopName}</p>
                 </div>
               )}

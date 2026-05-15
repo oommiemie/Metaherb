@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight, ChevronDown, Play, Eye } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { useLanguage } from "../store/LanguageContext";
 import imgArticle1 from "figma:asset/51e11fdedae888e644826410f8d7038f1bbaf2e6.png";
 import imgArticle2 from "figma:asset/ca947bfdf5c8f7c7177ecee869d4bbb6fa74e2e0.png";
 import imgArticle3 from "figma:asset/eaf91e3dbd420033f1f9e5d7e3813e02f9603e18.png";
@@ -65,18 +66,19 @@ export const videos = [
 
 export function BlogPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <div>
-      <div className="bg-[rgba(214,234,221,0.5)] py-4 text-center">
-        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>สาระความรู้ทั้งหมด</h1>
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
+        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("blog_title")}</h1>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         {/* Articles */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className={`${font} text-[20px]`} style={{ fontWeight: 600 }}>บทความ</h2>
-          <button className={`flex items-center gap-1 text-gray-500 text-[13px] ${font} cursor-pointer`}>จากมากไปน้อย <ChevronDown className="size-4" /></button>
+          <h2 className={`${font} text-[20px]`} style={{ fontWeight: 600 }}>{t("blog_articles")}</h2>
+          <button className={`flex items-center gap-1 text-gray-500 text-[13px] ${font} cursor-pointer`}>{t("common_sort_desc")} <ChevronDown className="size-4" /></button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
@@ -109,7 +111,7 @@ export function BlogPage() {
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#af6f08]/10 text-[#af6f08] group-hover:bg-[#af6f08] group-hover:text-white cursor-pointer transition-all duration-200 self-start mt-auto ${font} text-[12px]`}
                     style={{ fontWeight: 500 }}
                   >
-                    อ่านเพิ่มเติม
+                    {t("blog_read_more")}
                     <ChevronRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                   </button>
                 </div>
@@ -120,7 +122,7 @@ export function BlogPage() {
 
         {/* Pagination */}
         <div className="flex items-center justify-center gap-2 mb-10">
-          <button aria-label="หน้าก่อน"
+          <button aria-label={t("common_prev_page")}
             className="size-8 rounded-full inline-flex items-center justify-center cursor-pointer text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754] transition-colors">
             <ChevronLeft className="size-4" strokeWidth={2.4} />
           </button>
@@ -129,7 +131,7 @@ export function BlogPage() {
               className={`${font} size-8 rounded-full inline-flex items-center justify-center text-[13px] cursor-pointer transition-colors ${p === 1 ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
               style={{ fontWeight: p === 1 ? 600 : 400 }}>{p}</button>
           ))}
-          <button aria-label="หน้าถัดไป"
+          <button aria-label={t("common_next_page")}
             className="size-8 rounded-full inline-flex items-center justify-center cursor-pointer text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754] transition-colors">
             <ChevronRight className="size-4" strokeWidth={2.4} />
           </button>
@@ -137,8 +139,8 @@ export function BlogPage() {
 
         {/* Videos */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className={`${font} text-[20px]`} style={{ fontWeight: 600 }}>วีดีโอ</h2>
-          <button className={`flex items-center gap-1 text-gray-500 text-[13px] ${font} cursor-pointer`}>จากมากไปน้อย <ChevronDown className="size-4" /></button>
+          <h2 className={`${font} text-[20px]`} style={{ fontWeight: 600 }}>{t("blog_videos")}</h2>
+          <button className={`flex items-center gap-1 text-gray-500 text-[13px] ${font} cursor-pointer`}>{t("common_sort_desc")} <ChevronDown className="size-4" /></button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-[16px]">

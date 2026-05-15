@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useChat } from "../store/ChatContext";
 import { useAuth } from "../store/AuthContext";
+import { useLanguage } from "../store/LanguageContext";
 import { X, Send, Image, Smile, Minus, MessageCircle, ChevronLeft, Headset, Package } from "lucide-react";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
@@ -8,6 +9,7 @@ const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 /* ========== USER CHAT (chat with shops) ========== */
 function UserChat() {
   const { chatRooms, activeChatShop, closeChat, sendMessage, totalUnread, openChat } = useChat();
+  const { t } = useLanguage();
   const [input, setInput] = useState("");
   const [minimized, setMinimized] = useState(false);
   const [showList, setShowList] = useState(false);
@@ -57,7 +59,7 @@ function UserChat() {
     return (
       <div className="fixed bottom-4 right-4 z-50 w-[360px] max-w-[calc(100vw-32px)] h-[500px] max-h-[calc(100vh-100px)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
         <div className="bg-[#319754] text-white px-4 py-3 flex items-center justify-between shrink-0">
-          <p className={`${font} text-[15px]`} style={{ fontWeight: 600 }}>แชทกับร้านค้า</p>
+          <p className={`${font} text-[15px]`} style={{ fontWeight: 600 }}>{t("chat_title")}</p>
           <button onClick={() => setShowList(false)} className="cursor-pointer hover:bg-white/10 rounded p-1">
             <X className="size-4" />
           </button>
@@ -78,7 +80,7 @@ function UserChat() {
                   {r.lastTime && <span className={`${font} text-[10px] text-gray-400 shrink-0 ml-2`}>{r.lastTime}</span>}
                 </div>
                 <div className="flex items-center justify-between mt-0.5">
-                  <p className={`${font} text-[12px] text-gray-500 truncate`}>{r.lastMessage || "เริ่มสนทนา..."}</p>
+                  <p className={`${font} text-[12px] text-gray-500 truncate`}>{r.lastMessage || t("chat_start_default")}</p>
                   {r.unread > 0 && (
                     <span className="bg-[#ff383c] text-white text-[10px] size-5 rounded-full flex items-center justify-center shrink-0 ml-2">
                       {r.unread}
@@ -88,7 +90,7 @@ function UserChat() {
                 <div className="flex items-center gap-1 mt-0.5">
                   <div className={`size-1.5 rounded-full ${r.online ? "bg-green-500" : "bg-gray-300"}`} />
                   <span className={`${font} text-[10px] ${r.online ? "text-green-600" : "text-gray-400"}`}>
-                    {r.online ? "ออนไลน์" : "ออฟไลน์"}
+                    {r.online ? t("chat_online") : t("chat_offline")}
                   </span>
                 </div>
               </div>
@@ -122,7 +124,7 @@ function UserChat() {
             <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{room?.shopName || "Chat"}</p>
             <div className="flex items-center gap-1">
               <div className={`size-2 rounded-full ${room?.online ? "bg-green-300" : "bg-gray-300"}`} />
-              <span className={`${font} text-[10px] opacity-80`}>{room?.online ? "ออนไลน์" : "ออฟไลน์"}</span>
+              <span className={`${font} text-[10px] opacity-80`}>{room?.online ? t("chat_online") : t("chat_offline")}</span>
             </div>
           </div>
         </div>
@@ -137,7 +139,7 @@ function UserChat() {
       </div>
 
       <div className="px-3 py-2 border-b border-gray-100 flex gap-2 overflow-x-auto shrink-0">
-        {["สอบถามสินค้า", "สถานะคำสั่งซื้อ", "ขอใบเสร็จ", "แจ้งปัญหา"].map((q) => (
+        {[t("chat_quick_q1"), t("chat_quick_q2"), t("chat_quick_q3"), t("chat_quick_q4")].map((q) => (
           <button
             key={q}
             onClick={() => { sendMessage(activeChatShop!, q); }}
@@ -152,7 +154,7 @@ function UserChat() {
         {room?.messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <MessageCircle className="size-10 mb-2 opacity-30" />
-            <p className={`${font} text-[13px]`}>เริ่มสนทนากับ {room.shopName}</p>
+            <p className={`${font} text-[13px]`}>{t("chat_start_with")} {room.shopName}</p>
           </div>
         )}
         {room?.messages.map((msg) => (
@@ -184,7 +186,7 @@ function UserChat() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="พิมพ์ข้อความ..."
+            placeholder={t("chat_placeholder")}
             className={`flex-1 bg-gray-100 rounded-full px-4 py-2 text-[13px] ${font} outline-none`}
           />
           <button

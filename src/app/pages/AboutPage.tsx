@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Phone, Mail, MapPin, ChevronDown, Leaf, Clock, ShieldCheck, Facebook, Send, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../store/LanguageContext";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -20,21 +21,22 @@ const fontHeading = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
 export function AboutPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [contactForm, setContactForm] = useState({ name: "", email: "", subject: "", message: "" });
 
   const handleSubmit = () => {
     if (!contactForm.name || !contactForm.email || !contactForm.message) {
-      toast.error("กรุณากรอกข้อมูลให้ครบ");
+      toast.error(t("common_required"));
       return;
     }
-    toast.success("ส่งข้อความเรียบร้อยแล้ว!", { description: "ทีมงานจะติดต่อกลับภายใน 24 ชั่วโมง" });
+    toast.success(t("about_form_success"), { description: t("about_form_success_desc") });
     setContactForm({ name: "", email: "", subject: "", message: "" });
   };
 
   return (
     <div className="w-full">
-      {/* ========== HERO SECTION ========== */}
-      <section className="relative h-[500px] sm:h-[600px] lg:h-[770px] overflow-hidden">
+      {/* ========== HERO SECTION ========== Video extends up behind appbar */}
+      <section className="relative -mt-[64px] md:-mt-[116px] h-[614px] sm:h-[714px] md:h-[866px] lg:h-[966px] overflow-hidden">
         {/* Background image */}
         <div className="absolute inset-0">
           <video autoPlay loop muted playsInline className="w-full h-full object-cover">
@@ -45,35 +47,45 @@ export function AboutPage() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 lg:pl-[69px] flex flex-col gap-6 justify-end h-full pb-20 pt-[111px] lg:pt-0">
+        <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 lg:pl-[69px] flex flex-col gap-6 justify-center h-full pt-[64px] md:pt-[116px]">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-[rgba(125,184,112,0.2)] border border-[rgba(125,184,112,0.4)] rounded-full px-4 py-2 w-fit">
             <Leaf className="size-3.5 text-[#a8d5a0]" />
-            <span className="text-[#a8d5a0] text-[12px] tracking-wider uppercase">ยินดีต้อนรับ</span>
+            <span className="text-[#a8d5a0] text-[12px] tracking-wider uppercase">{t("about_welcome")}</span>
           </div>
 
           {/* Heading */}
-          <h1 className={`${fontHeading} text-[40px] sm:text-[56px] lg:text-[80px] lg:leading-[88px] leading-[1.1]`}>
-            <span className="block text-white">จากพืชพรรณ</span>
-            <span className="block text-[#a8d5a0]">สู่ผลิตภัณฑ์</span>
-            <span className="block text-white">เมต้าเฮิร์บ</span>
+          <h1 className={`${fontHeading} text-[40px] sm:text-[56px] lg:text-[80px] leading-[1.25] lg:leading-[1.2]`}>
+            <span className="block text-white">{t("about_hero_1")}</span>
+            <span className="block text-[#a8d5a0]">{t("about_hero_2")}</span>
+            <span className="block text-white">{t("about_hero_3")}</span>
           </h1>
 
           {/* Subtitle */}
           <p className={`${font} text-[16px] sm:text-[20px] text-white/80 max-w-[500px]`}>
-            แม้เป็นสมุนไพรที่หายากแต่เมต้าเฮิร์บ<br />
-            สามารถคัดสรรและจัดหาให้คุณได้
+            {t("about_subtitle")}<br />
+            {t("about_subtitle2")}
           </p>
 
           {/* CTA buttons */}
-          <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex flex-wrap gap-3 sm:gap-4 items-center mt-2">
+            {/* Primary — gradient pill with shimmer + circular arrow */}
             <button onClick={() => navigate("/products")}
-              className={`bg-[#7db870] hover:bg-[#6da760] text-white px-8 sm:px-16 py-3 sm:py-6 rounded-full text-[16px] sm:text-[20px] ${font} cursor-pointer flex items-center gap-4 transition-colors`}>
-              เลือกซื้อได้ที่ <ArrowRight className="size-5 sm:size-6" />
+              className={`group/cta relative bg-gradient-to-br from-[#86c378] via-[#5ea854] to-[#3e8237] text-white pl-7 pr-3 sm:pl-10 sm:pr-4 py-2 sm:py-2.5 rounded-full text-[15px] sm:text-[17px] ${font} cursor-pointer inline-flex items-center gap-3 sm:gap-4 shadow-[0_10px_30px_-6px_rgba(94,168,84,0.55)] hover:shadow-[0_16px_40px_-6px_rgba(94,168,84,0.75)] hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.98] transition-all duration-300 overflow-hidden`}
+              style={{ fontWeight: 500 }}>
+              <span aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover/cta:translate-x-full transition-transform duration-700 ease-out" />
+              <span className="relative whitespace-nowrap">{t("about_cta_shop")}</span>
+              <span className="relative size-10 sm:size-12 rounded-full bg-white/25 group-hover/cta:bg-white/35 flex items-center justify-center shadow-inner transition-colors duration-300">
+                <ArrowRight className="size-4 sm:size-5 transition-transform duration-300 group-hover/cta:translate-x-[3px]" strokeWidth={2.6} />
+              </span>
             </button>
+
+            {/* Secondary — glass pill with chevron */}
             <button onClick={() => document.getElementById("mission")?.scrollIntoView({ behavior: "smooth" })}
-              className={`bg-white/10 hover:bg-white/20 text-white px-6 sm:px-7 py-3 sm:py-6 rounded-full text-[14px] sm:text-[16px] ${font} cursor-pointer transition-colors`}>
-              พันธกิจของเรา
+              className={`group/sec relative bg-white/10 backdrop-blur-md hover:bg-white/20 text-white px-5 sm:px-7 py-2 sm:py-2.5 h-[52px] sm:h-[60px] rounded-full text-[14px] sm:text-[16px] ${font} cursor-pointer inline-flex items-center gap-2 border border-white/30 hover:border-white/50 hover:-translate-y-[2px] active:translate-y-0 transition-all duration-300`}
+              style={{ fontWeight: 500 }}>
+              <span className="whitespace-nowrap">{t("about_cta_mission")}</span>
+              <ChevronDown className="size-4 transition-transform duration-300 group-hover/sec:translate-y-[2px]" strokeWidth={2.4} />
             </button>
           </div>
         </div>
@@ -87,7 +99,7 @@ export function AboutPage() {
             <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#f5f0e8] z-[2]" />
           </div>
           <div className="absolute top-[30%] left-1/2 -translate-x-1/2 z-[3]">
-            <span className={`text-[#319754] text-[12px] tracking-wider uppercase`}>เลื่อนเพื่อดูเนื้อหา</span>
+            <span className={`text-[#319754] text-[12px] tracking-wider uppercase`}>{t("about_scroll")}</span>
           </div>
         </div>
       </section>
@@ -99,16 +111,16 @@ export function AboutPage() {
           <div className="text-center mb-10 sm:mb-16">
             <div className="inline-flex items-center gap-2 bg-[rgba(125,184,112,0.2)] border border-[rgba(125,184,112,0.4)] rounded-full px-4 py-2 mb-4">
               <Leaf className="size-3.5 text-[#319754]" />
-              <span className="text-[#319754] text-[12px] tracking-wider uppercase">เรื่องราวของเรา</span>
+              <span className="text-[#319754] text-[12px] tracking-wider uppercase">{t("about_our_story")}</span>
             </div>
             <h2 className={`${fontHeading} text-[28px] sm:text-[36px] lg:text-[48px] text-[#4e4e4e]`}>
-              ผลผลิตจากเกษตรกร
+              {t("about_story_h1")}
             </h2>
             <h2 className={`text-[28px] sm:text-[36px] lg:text-[48px] italic text-[#4e4e4e]`} style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>
-              สู่ทุกบ้านทั่วไทย
+              {t("about_story_h2")}
             </h2>
             <p className={`${font} text-[14px] sm:text-[16px] text-[#333] mt-4 max-w-[614px] mx-auto leading-8`}>
-              เราเป็นผู้นำด้านสมุนไพรคุณภาพ เพื่อสุขภาพที่ยั่งยืนที่เมต้าเฮิร์บ
+              {t("about_story_sub")}
             </p>
           </div>
 
@@ -129,21 +141,9 @@ export function AboutPage() {
             {/* Features */}
             <div className="flex-1 space-y-6 mt-8 lg:mt-0">
               {[
-                {
-                  icon: Leaf,
-                  title: "ต้นกำเนิดจากธรรมชาติแท้",
-                  desc: "สมุนไพรทุกชนิดของเราได้รับการปลูกและดูแลโดยเกษตรกรท้องถิ่น บนพื้นที่กว่า 120 ไร่ที่ดอยแม่สลอง เชียงราย ภายใต้มาตรฐานเกษตรอินทรีย์ที่เคร่งครัด",
-                },
-                {
-                  icon: Clock,
-                  title: "ภูมิปัญญาดั้งเดิมสู่นวัตกรรมใหม่",
-                  desc: "เราผสมผสานองค์ความรู้สมุนไพรไทยโบราณที่สืบทอดมากว่า 200 ปี เข้ากับเทคโนโลยีการผลิตสมัยใหม่ เพื่อให้ได้ผลิตภัณฑ์ที่มีประสิทธิภาพสูงสุดและปลอดภัย",
-                },
-                {
-                  icon: ShieldCheck,
-                  title: "การรับรองมาตรฐานระดับสากล",
-                  desc: "ผลิตภัณฑ์ทุกชิ้นผ่านการตรวจสอบคุณภาพและได้รับการรับรองจาก อย. Thailand, Organic Thailand และ ISO 22000 ก่อนส่งถึงมือลูกค้า",
-                },
+                { icon: Leaf, title: t("about_feat1_title"), desc: t("about_feat1_desc") },
+                { icon: Clock, title: t("about_feat2_title"), desc: t("about_feat2_desc") },
+                { icon: ShieldCheck, title: t("about_feat3_title"), desc: t("about_feat3_desc") },
               ].map((item, i) => (
                 <div key={i} className="flex gap-4">
                   <div className="size-12 bg-[#e7cfbc] rounded-full flex items-center justify-center shrink-0">
@@ -200,7 +200,7 @@ export function AboutPage() {
                         <ImageWithFallback src={item.img} alt={item.title} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-[rgba(13,31,13,0.8)] via-transparent to-transparent" />
                         <div className="absolute bottom-10 left-6 right-6">
-                          <p className="text-white/80 text-[13px]">ผลิตภัณฑ์เด่นของเรา</p>
+                          <p className="text-white/80 text-[13px]">{t("about_product_featured")}</p>
                           <p className="text-white text-[18px] sm:text-[21px]" style={{ fontWeight: 700 }}>{item.title}</p>
                           <p className="text-[#a8d5a0] text-[13px]">{item.desc}</p>
                         </div>
@@ -214,8 +214,8 @@ export function AboutPage() {
             {/* Right side content */}
             <div className="w-full lg:w-1/2 min-w-0">
               <h2 className={`${fontHeading} text-[28px] sm:text-[36px] lg:text-[40px] leading-tight`}>
-                <span className="text-white block">ความไว้วางใจที่</span>
-                <span className="text-[#7db870] block">สร้างมาจากมาตรฐาน</span>
+                <span className="text-white block">{t("about_trust_h1")}</span>
+                <span className="text-[#7db870] block">{t("about_trust_h2")}</span>
               </h2>
 
               {/* Product cards */}
@@ -257,16 +257,16 @@ export function AboutPage() {
 
               {/* Overlaid text */}
               <div className="absolute top-6 sm:top-8 left-6 sm:left-8">
-                <p className={`${fontHeading} text-[28px] sm:text-[36px] lg:text-[48px] text-white uppercase`}>พันธกิจและวิสัยทัศน์</p>
-                <p className={`${fontHeading} text-[28px] sm:text-[36px] lg:text-[48px] text-white/70`}>เราทำงานเพื่ออะไร ?</p>
+                <p className={`${fontHeading} text-[28px] sm:text-[36px] lg:text-[48px] text-white uppercase`}>{t("about_mission_h1")}</p>
+                <p className={`${fontHeading} text-[28px] sm:text-[36px] lg:text-[48px] text-white/70`}>{t("about_mission_h2")}</p>
               </div>
 
               <div className="absolute bottom-6 sm:bottom-8 left-6 sm:left-8 right-6 sm:right-auto max-w-[800px]">
                 <h3 className={`${fontHeading} text-[24px] sm:text-[32px] lg:text-[40px] text-white leading-tight`}>
-                  "เป็นผู้นำสมุนไพรไทยสู่ตลาดโลก"
+                  {t("about_mission_quote")}
                 </h3>
                 <p className={`${font} text-[16px] sm:text-[20px] lg:text-[24px] text-white/70 mt-3 leading-relaxed`}>
-                  มุ่งมั่นที่จะเป็นผู้นำในการนำเสนอสมุนไพรไทยคุณภาพสู่ผู้บริโภค เพื่อสุขภาพที่ดีและยั่งยืน
+                  {t("about_mission_desc")}
                 </p>
               </div>
             </div>
@@ -274,10 +274,10 @@ export function AboutPage() {
             {/* Stats */}
             <div className="flex flex-row lg:flex-col gap-4 flex-wrap justify-center">
               {[
-                { value: "3+", label: "ปีแห่งประสบการณ์" },
-                { value: "120", label: "ไร่แปลงเกษตรอินทรีย์" },
-                { value: "50+", label: "ผลิตภัณฑ์สมุนไพร" },
-                { value: "2,400+", label: "ลูกค้าทั่วไทย" },
+                { value: "3+", label: t("about_stat_years") },
+                { value: "120", label: t("about_stat_farm") },
+                { value: "50+", label: t("about_stat_products") },
+                { value: "2,400+", label: t("about_stat_customers") },
               ].map((stat) => (
                 <div key={stat.label} className="bg-[#f5f0e8] border border-[#e0d5c5] rounded-2xl p-5 sm:p-6 flex-1 min-w-[140px] lg:min-w-[280px]">
                   <p className="text-[#333] text-[28px] sm:text-[32px]" style={{ fontWeight: 700 }}>{stat.value}</p>
@@ -294,24 +294,24 @@ export function AboutPage() {
         <div className="max-w-[1440px] mx-auto px-6 sm:px-8 lg:px-[68px]">
           {/* Heading */}
           <div className="text-center mb-10 sm:mb-14">
-            <h2 className={`${fontHeading} text-[32px] sm:text-[40px] lg:text-[48px] text-[#1a2e1a]`}>พูดคุยกับเรา</h2>
-            <h2 className={`${fontHeading} text-[32px] sm:text-[40px] lg:text-[48px] text-[#7db870]`}>ได้ทุกช่องทาง</h2>
+            <h2 className={`${fontHeading} text-[32px] sm:text-[40px] lg:text-[48px] text-[#1a2e1a]`}>{t("about_contact_h1")}</h2>
+            <h2 className={`${fontHeading} text-[32px] sm:text-[40px] lg:text-[48px] text-[#7db870]`}>{t("about_contact_h2")}</h2>
             <p className={`${font} text-[14px] sm:text-[16px] text-[#4a6741] mt-4 max-w-[554px] mx-auto`}>
-              เราพร้อมให้คำปรึกษาเรื่องสมุนไพรและผลิตภัณฑ์ทุกชนิด ติดต่อเราได้ผ่านช่องทางที่คุณสะดวก
+              {t("about_contact_sub")}
             </p>
           </div>
 
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
             {/* Left - Contact info */}
             <div className="flex-1 space-y-6">
-              <h3 className={`${fontHeading} text-[20px] sm:text-[22px] text-[#333]`}>ข้อมูลการติดต่อ</h3>
+              <h3 className={`${fontHeading} text-[20px] sm:text-[22px] text-[#333]`}>{t("about_contact_info")}</h3>
 
               {/* Contact cards */}
               <div className="space-y-4">
                 {[
-                  { icon: Phone, label: "โทรศัพท์", value: "098-765-4321", sub: "จันทร์-ศุกร์: 08.30 - 17.30" },
-                  { icon: Mail, label: "อีเมล", value: "hello@siamherb.co.th", sub: "ตอบกลับภายใน 24 ชั่วโมง" },
-                  { icon: MapPin, label: "ที่อยู่", value: "บ้านเลขที่ 459/153 หมู่บ้านนิวไฮบ์ สุขสวัสดิ์", sub: "แขวงราษฎรบูรณะ เขตราษฎร์บรณะ กรุงเทพฯ 10140" },
+                  { icon: Phone, label: t("about_phone"), value: "098-765-4321", sub: t("about_phone_hours") },
+                  { icon: Mail, label: t("about_email"), value: "hello@siamherb.co.th", sub: t("about_email_reply") },
+                  { icon: MapPin, label: t("about_address"), value: "บ้านเลขที่ 459/153 หมู่บ้านนิวไฮบ์ สุขสวัสดิ์", sub: "แขวงราษฎรบูรณะ เขตราษฎร์บรณะ กรุงเทพฯ 10140" },
                 ].map((c) => (
                   <div key={c.label} className="bg-white rounded-2xl border border-[#e0d5c5] shadow-sm p-5 flex gap-4 items-start">
                     <div className="size-11 bg-[#e8f5e2] rounded-xl flex items-center justify-center shrink-0">
@@ -328,7 +328,7 @@ export function AboutPage() {
 
               {/* Social media */}
               <div className="mt-6">
-                <h3 className={`${fontHeading} text-[20px] sm:text-[22px] text-[#333] mb-4`}>ติดตามเราบนโซเชียล</h3>
+                <h3 className={`${fontHeading} text-[20px] sm:text-[22px] text-[#333] mb-4`}>{t("about_follow_us")}</h3>
                 <div className="flex flex-wrap gap-3">
                   {[
                     { name: "Facebook", handle: "SiamHerbOfficial" },
@@ -362,40 +362,40 @@ export function AboutPage() {
             {/* Right - Contact form */}
             <div className="flex-1 max-w-[600px]">
               <div className="bg-white rounded-2xl border border-[#e0d5c5] shadow-sm p-6 sm:p-8">
-                <h3 className={`${fontHeading} text-[20px] sm:text-[22px] text-[#333] mb-1`}>ส่งข้อความถึงเรา</h3>
-                <p className={`${font} text-[13px] text-[#4a6741] mb-6`}>กรอกแบบฟอร์มด้านล่าง</p>
+                <h3 className={`${fontHeading} text-[20px] sm:text-[22px] text-[#333] mb-1`}>{t("about_send_message")}</h3>
+                <p className={`${font} text-[13px] text-[#4a6741] mb-6`}>{t("about_form_sub")}</p>
 
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1">
-                      <label className={`${font} text-[13px] text-[#333] mb-1 block`}>ชื่อ-นามสกุล</label>
+                      <label className={`${font} text-[13px] text-[#333] mb-1 block`}>{t("about_form_name")}</label>
                       <input value={contactForm.name} onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                        placeholder="ชื่อของคุณ" className={`w-full bg-[#f5f5f5] border border-[#e0d5c5] rounded-xl px-4 py-3 text-[14px] ${font} outline-none focus:border-[#319754]`} />
+                        placeholder={t("about_form_name_ph")} className={`w-full bg-[#f5f5f5] border border-[#e0d5c5] rounded-xl px-4 py-3 text-[14px] ${font} outline-none focus:border-[#319754]`} />
                     </div>
                     <div className="flex-1">
-                      <label className={`${font} text-[13px] text-[#333] mb-1 block`}>อีเมล</label>
+                      <label className={`${font} text-[13px] text-[#333] mb-1 block`}>{t("about_form_email")}</label>
                       <input value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                        placeholder="อีเมลของคุณ" className={`w-full bg-[#f5f5f5] border border-[#e0d5c5] rounded-xl px-4 py-3 text-[14px] ${font} outline-none focus:border-[#319754]`} />
+                        placeholder={t("about_form_email_ph")} className={`w-full bg-[#f5f5f5] border border-[#e0d5c5] rounded-xl px-4 py-3 text-[14px] ${font} outline-none focus:border-[#319754]`} />
                     </div>
                   </div>
 
                   <div>
-                    <label className={`${font} text-[13px] text-[#333] mb-1 block`}>หัวข้อ</label>
+                    <label className={`${font} text-[13px] text-[#333] mb-1 block`}>{t("about_form_subject")}</label>
                     <input value={contactForm.subject} onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
-                      placeholder="หัวข้อการติดต่อ" className={`w-full bg-[#f5f5f5] border border-[#e0d5c5] rounded-xl px-4 py-3 text-[14px] ${font} outline-none focus:border-[#319754]`} />
+                      placeholder={t("about_form_subject_ph")} className={`w-full bg-[#f5f5f5] border border-[#e0d5c5] rounded-xl px-4 py-3 text-[14px] ${font} outline-none focus:border-[#319754]`} />
                   </div>
 
                   <div>
-                    <label className={`${font} text-[13px] text-[#333] mb-1 block`}>ข้อความ</label>
+                    <label className={`${font} text-[13px] text-[#333] mb-1 block`}>{t("about_form_message")}</label>
                     <textarea value={contactForm.message} onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                      placeholder="พิมพ์ข้อความของคุณ..."
+                      placeholder={t("about_form_message_ph")}
                       rows={5}
                       className={`w-full bg-[#f5f5f5] border border-[#e0d5c5] rounded-xl px-4 py-3 text-[14px] ${font} outline-none resize-none focus:border-[#319754]`} />
                   </div>
 
                   <button onClick={handleSubmit}
                     className={`w-full bg-[#319754] hover:bg-[#267a43] text-white py-3 rounded-xl text-[14px] ${font} cursor-pointer transition-colors flex items-center justify-center gap-2`}>
-                    <Send className="size-4" /> ส่งข้อความ
+                    <Send className="size-4" /> {t("about_form_send")}
                   </button>
                 </div>
               </div>

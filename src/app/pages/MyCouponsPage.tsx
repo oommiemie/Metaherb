@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Clock, ChevronRight, ChevronLeft, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../store/LanguageContext";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
@@ -59,10 +60,11 @@ function CouponBadge({ coupon, inactive }: { coupon: CollectedCoupon; inactive: 
 /* -------- Single Coupon Card -------- */
 function MyCouponCard({ coupon }: { coupon: CollectedCoupon }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const isInactive = coupon.status === "used" || coupon.status === "expired";
 
   const handleUse = () => {
-    toast.success("เลือกใช้คูปองแล้ว!");
+    toast.success(t("my_coupons_use_toast"));
     navigate("/products");
   };
 
@@ -88,7 +90,7 @@ function MyCouponCard({ coupon }: { coupon: CollectedCoupon }) {
               <Clock className="size-3 text-[#999]" />
               <span className={`${font} text-[11px] text-[#999]`}>{coupon.expiry}</span>
               {coupon.status === "active" && (
-                <span className={`${font} text-[11px] text-[#319754] cursor-pointer hover:underline`}>เงื่อนไข</span>
+                <span className={`${font} text-[11px] text-[#319754] cursor-pointer hover:underline`}>{t("coupon_terms")}</span>
               )}
             </div>
           </div>
@@ -100,11 +102,11 @@ function MyCouponCard({ coupon }: { coupon: CollectedCoupon }) {
                 onClick={handleUse}
                 className={`${font} text-[13px] text-[#319754] border border-[#319754] px-4 py-1.5 rounded-full cursor-pointer hover:bg-[#319754] hover:text-white transition-colors whitespace-nowrap`}
               >
-                ใช้งาน
+                {t("my_coupons_use")}
               </button>
             ) : (
               <span className={`${font} text-[12px] text-[#999] bg-[#f0f0f0] px-4 py-1.5 rounded-full whitespace-nowrap`}>
-                หมดอายุแล้ว
+                {t("my_coupons_expired")}
               </span>
             )}
           </div>
@@ -132,6 +134,7 @@ function TicketIcon() {
 /* -------- Main Page -------- */
 export function MyCouponsPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
 
   const filtered = collectedCoupons.filter((c) => {
@@ -149,26 +152,26 @@ export function MyCouponsPage() {
   const expiredCount = collectedCoupons.filter((c) => c.status === "expired").length;
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
-    { key: "all", label: "ทั้งหมด", count: collectedCoupons.length },
-    { key: "discount", label: "ส่วนลด", count: discountActive },
-    { key: "free_shipping", label: "ส่งฟรี", count: freeActive },
-    { key: "used", label: "ใช้แล้ว", count: usedCount },
-    { key: "expired", label: "หมดอายุ", count: expiredCount },
+    { key: "all", label: t("coupon_tab_all"), count: collectedCoupons.length },
+    { key: "discount", label: t("coupon_tab_discount"), count: discountActive },
+    { key: "free_shipping", label: t("coupon_tab_freeship"), count: freeActive },
+    { key: "used", label: t("my_coupons_tab_used"), count: usedCount },
+    { key: "expired", label: t("my_coupons_tab_expired"), count: expiredCount },
   ];
 
   return (
     <div className="bg-[rgba(214,234,221,0.5)] min-h-screen">
       {/* Top section */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-4 space-y-4">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 space-y-4">
         {/* Back + Title */}
         <div className="flex gap-4 items-center">
           <button
             onClick={() => navigate(-1)}
             className={`flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-[12px] ${font} cursor-pointer hover:bg-[#f0f0f0]`}
           >
-            <ChevronLeft className="size-3" /> กลับ
+            <ChevronLeft className="size-3" /> {t("common_back")}
           </button>
-          <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>คูปองของฉัน</p>
+          <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("my_coupons_title")}</p>
         </div>
 
         {/* Collect more coupons banner */}
@@ -180,7 +183,7 @@ export function MyCouponsPage() {
             <div className="size-9 bg-[#e8f5e2] rounded-full flex items-center justify-center">
               <TicketIcon />
             </div>
-            <span className={`${font} text-[14px] text-white`} style={{ fontWeight: 500 }}>เก็บคูปองเพิ่มเติม</span>
+            <span className={`${font} text-[14px] text-white`} style={{ fontWeight: 500 }}>{t("my_coupons_collect_more")}</span>
           </div>
           <ChevronRight className="size-5 text-white" />
         </button>
@@ -224,14 +227,14 @@ export function MyCouponsPage() {
               <ShoppingBag className="size-8 text-[#ccc]" />
             </div>
             <p className={`${font} text-[16px] text-[#999]`} style={{ fontWeight: 500 }}>
-              ยังไม่มีคูปองในหมวดนี้
+              {t("my_coupons_empty")}
             </p>
-            <p className={`${font} text-[13px] text-[#bbb] mt-1`}>ไปเก็บคูปองเพิ่มได้เลย!</p>
+            <p className={`${font} text-[13px] text-[#bbb] mt-1`}>{t("my_coupons_empty_sub")}</p>
             <button
               onClick={() => navigate("/coupons")}
               className={`mt-4 ${font} text-[13px] text-white bg-[#319754] px-6 py-2 rounded-full cursor-pointer hover:bg-[#267a43]`}
             >
-              เก็บคูปอง
+              {t("my_coupons_go")}
             </button>
           </div>
         )}
