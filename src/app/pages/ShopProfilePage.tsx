@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { useShop } from "../store/ShopContext";
 import { useAuth } from "../store/AuthContext";
 import { useChat } from "../store/ChatContext";
+import { useLanguage } from "../store/LanguageContext";
 import { products } from "../data/products";
 import { getShopIdByName } from "../data/shops";
 import { Star, Heart, MessageCircle, MapPin, Clock, ShieldCheck, Package, Users, TrendingUp, ChevronRight, ThumbsUp, Flag, Eye, EyeOff, Trash2, Edit3, Camera, X, Send, Store } from "lucide-react";
@@ -102,6 +103,7 @@ export function ShopProfilePage() {
   const { user } = useAuth();
   const { openChat } = useChat();
   const { toggleWishlist, isWishlisted } = useWishlist();
+  const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<"products" | "reviews">("products");
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -118,7 +120,7 @@ export function ShopProfilePage() {
     return (
       <div className={`${font} text-center py-20`}>
         <Store className="size-16 mx-auto text-gray-300 mb-4" />
-        <p className="text-gray-500 text-[16px]">ไม่พบร้านค้านี้</p>
+        <p className="text-gray-500 text-[16px]">{t("vp_not_found")}</p>
         <button onClick={() => navigate("/")} className="mt-4 px-6 py-2 bg-[#319754] text-white rounded-full cursor-pointer hover:bg-[#267a43]">
           กลับหน้าแรก
         </button>
@@ -245,7 +247,7 @@ export function ShopProfilePage() {
                         style={{ fontWeight: 500 }}
                       >
                         <Heart className={`size-4 ${following ? "fill-red-500 text-red-500" : ""}`} />
-                        {following ? "ติดตามแล้ว" : "ติดตาม"}
+                        {following ? t("shop_followed") : t("shop_follow")}
                       </button>
                       <button
                         onClick={() => openChat(shop.id)}
@@ -283,17 +285,17 @@ export function ShopProfilePage() {
                 <div className="w-px h-10 bg-gray-200" />
                 <div className="text-center">
                   <p className="text-[18px] text-[#101828]" style={{ fontWeight: 700 }}>{shop.followers.toLocaleString()}</p>
-                  <p className="text-[10px] text-[#99a1af]">ผู้ติดตาม</p>
+                  <p className="text-[10px] text-[#99a1af]">{t("shop_followers")}</p>
                 </div>
                 <div className="w-px h-10 bg-gray-200" />
                 <div className="text-center">
                   <p className="text-[18px] text-[#101828]" style={{ fontWeight: 700 }}>{shop.totalProducts}</p>
-                  <p className="text-[10px] text-[#99a1af]">สินค้า</p>
+                  <p className="text-[10px] text-[#99a1af]">{t("shop_products")}</p>
                 </div>
                 <div className="w-px h-10 bg-gray-200" />
                 <div className="text-center">
                   <p className="text-[18px] text-[#101828]" style={{ fontWeight: 700 }}>{shop.totalSold}</p>
-                  <p className="text-[10px] text-[#99a1af]">ขายแล้ว</p>
+                  <p className="text-[10px] text-[#99a1af]">{t("pd_sold")}</p>
                 </div>
               </div>
             </div>
@@ -371,7 +373,7 @@ export function ShopProfilePage() {
                         <>
                           <div className="absolute top-0 right-0 p-[8px]">
                             <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
-                              <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
+                              <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_discount_prefix")} {p.discountPercent}%</span>
                             </div>
                           </div>
                           <div className="absolute bottom-0 left-0 backdrop-blur-[4px] bg-[rgba(230,46,5,0.8)] flex gap-[4px] items-center justify-center px-[8px] py-[4px] rounded-tr-[8px]">
@@ -390,7 +392,7 @@ export function ShopProfilePage() {
                       {tag === "recommended" && (
                         <div className="absolute top-0 right-0 p-[8px]">
                           <div className="bg-[#319754] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(49,151,84,0.4)]">
-                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>สินค้าแนะนำ</span>
+                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_recommended_tag")}</span>
                           </div>
                         </div>
                       )}
@@ -399,7 +401,7 @@ export function ShopProfilePage() {
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleWishlist(p.id);
-                          toast(wishlisted ? "ลบออกจากสินค้าที่ชอบแล้ว" : "เพิ่มในสินค้าที่ชอบแล้ว");
+                          toast(wishlisted ? t("pd_removed_from_wishlist") : t("pd_added_to_wishlist"));
                         }}
                         className="absolute bottom-2 right-2 size-7 bg-white/90 rounded-full flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-10"
                       >

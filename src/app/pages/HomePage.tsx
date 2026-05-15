@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { products, categories } from "../data/products";
 import { useRecentlyViewed } from "../store/RecentlyViewedContext";
 import { useWishlist } from "../store/WishlistContext";
+import { useLanguage } from "../store/LanguageContext";
 import {
   Star,
   ChevronRight,
@@ -134,13 +135,13 @@ function MiniCountdown({ initialSeconds }: { initialSeconds: number }) {
   const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
   const s = String(sec % 60).padStart(2, "0");
   return (
-    <div className="flex items-center gap-[3px]">
+    <div className="flex items-center gap-[4px]">
       {[h, m, s].map((t, i) => (
-        <div key={i} className="flex items-center gap-[3px]">
-          <div className="rounded-[3px] size-[12px] flex items-center justify-center" style={{ backgroundImage: "linear-gradient(90deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.2) 100%), linear-gradient(#e62e05 0%, #bc1b06 100%)" }}>
-            <span className={`${font} text-[6px] text-white`} style={{ fontWeight: 700 }}>{t}</span>
+        <div key={i} className="flex items-center gap-[4px]">
+          <div className="rounded-[4px] size-[18px] flex items-center justify-center" style={{ backgroundImage: "linear-gradient(90deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.2) 100%), linear-gradient(#e62e05 0%, #bc1b06 100%)" }}>
+            <span className={`${font} text-[10px] text-white tabular-nums`} style={{ fontWeight: 700 }}>{t}</span>
           </div>
-          {i < 2 && <span className={`${font} text-[8px] text-white`}>:</span>}
+          {i < 2 && <span className={`${font} text-[11px] text-white`}>:</span>}
         </div>
       ))}
     </div>
@@ -177,6 +178,7 @@ function ProductCard({
   onClick: () => void;
 }) {
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const { t } = useLanguage();
   const wishlisted = isWishlisted(product.id);
 
   return (
@@ -184,7 +186,7 @@ function ProductCard({
       onClick={onClick}
       className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-100 min-w-[180px] group"
     >
-      <div className="relative aspect-square bg-gray-100 overflow-hidden">
+      <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden">
         <ImageWithFallback
           src={image}
           alt={product.name}
@@ -211,8 +213,8 @@ function ProductCard({
             toggleWishlist(product.id);
             toast(
               wishlisted
-                ? "ลบออกจากสินค้าที่ชอบแล้ว"
-                : "เพิ่มในสินค้าที่ชอบแล้ว ❤️",
+                ? t("pd_removed_from_wishlist")
+                : t("pd_added_to_wishlist"),
             );
           }}
           className="absolute bottom-2 right-2 size-7 bg-white/90 rounded-full flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
@@ -305,7 +307,7 @@ function BannerCarousel() {
         </div>
       ))}
       {/* Fallback fixed-aspect image to drive height when parent has no aspect */}
-      <div className="invisible aspect-[775/235] w-full" />
+      <div className="invisible aspect-[775/160] w-full" />
       {/* Dots */}
       <div className="absolute bottom-[14px] left-1/2 -translate-x-1/2 flex gap-1.5">
         {banners.map((_, i) => (
@@ -337,6 +339,7 @@ function BannerCarousel() {
 export function HomePage() {
   const navigate = useNavigate();
   const { recentIds } = useRecentlyViewed();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [recPage, setRecPage] = useState(0);
   const [recDirection, setRecDirection] = useState(0);
@@ -355,13 +358,13 @@ export function HomePage() {
   if (loading) {
     return (
       <div className="max-w-[1440px] mx-auto">
-        <div className="px-4 sm:px-6 lg:px-[124px] pt-4 sm:pt-6">
+        <div className="px-4 sm:px-6 lg:px-12 pt-4 sm:pt-6">
           <BannerSkeleton />
         </div>
-        <div className="px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
+        <div className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
           <CategorySkeleton />
         </div>
-        <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+        <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
           <div className="bg-white rounded-[16px] p-[16px]">
             <div className="flex items-center justify-between mb-[16px]">
               <div className="bg-gray-200 w-[120px] h-[20px] rounded-lg relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent" />
@@ -370,7 +373,7 @@ export function HomePage() {
             <ProductGridSkeleton count={6} />
           </div>
         </section>
-        <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+        <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
           <div className="bg-white rounded-[16px] p-[16px]">
             <div className="flex items-center justify-between mb-[16px]">
               <div className="bg-gray-200 w-[160px] h-[20px] rounded-lg relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent" />
@@ -379,7 +382,7 @@ export function HomePage() {
             <ProductGridSkeleton count={6} />
           </div>
         </section>
-        <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+        <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
           <div className="bg-white rounded-[16px] p-[16px]">
             <div className="flex items-center justify-between mb-[16px]">
               <div className="bg-gray-200 w-[120px] h-[20px] rounded-lg relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent" />
@@ -387,7 +390,7 @@ export function HomePage() {
             <ArticleSkeleton />
           </div>
         </section>
-        <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+        <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
           <div className="bg-white rounded-[16px] p-[16px]">
             <div className="flex items-center justify-between mb-[16px]">
               <div className="bg-gray-200 w-[120px] h-[20px] rounded-lg relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent" />
@@ -402,9 +405,9 @@ export function HomePage() {
   return (
     <div className="max-w-[1440px] mx-auto">
       {/* Banner */}
-      <div className="px-4 sm:px-6 lg:px-[124px] pt-4 sm:pt-6">
+      <div className="px-4 sm:px-6 lg:px-12 pt-4 sm:pt-6">
         <div className="flex flex-col lg:flex-row gap-[10px] w-full">
-          <div className="min-w-0 lg:flex-[775_1_0%] lg:aspect-[775/235]">
+          <div className="min-w-0 lg:flex-[775_1_0%] lg:aspect-[775/160]">
             <BannerCarousel />
           </div>
           <div className="hidden lg:flex flex-col gap-[10px] lg:flex-[230_1_0%] min-w-0">
@@ -427,18 +430,18 @@ export function HomePage() {
       </div>
 
       {/* Categories */}
-      <div className="px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
+      <div className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         <div className="flex items-center justify-center gap-3 sm:gap-4 overflow-x-auto py-3 scrollbar-hide w-full">
           {([
-            { name: "สมุนไพร", icon: Leaf },
-            { name: "อาหาร", icon: UtensilsCrossed },
-            { name: "ยา", icon: Pill },
-            { name: "เครื่องหอม", icon: Sparkles },
-            { name: "ความสวย", icon: Flower2 },
-            { name: "ชุดของขวัญ", icon: Gift },
-            { name: "ชาสมุนไพร", icon: Coffee },
-            { name: "อาหารเสริม", icon: FlaskConical },
-            { name: "น้ำมันสกัด", icon: Droplets },
+            { name: "สมุนไพร", label: t("cat_herb"), icon: Leaf },
+            { name: "อาหาร", label: t("cat_food"), icon: UtensilsCrossed },
+            { name: "ยา", label: t("cat_medicine"), icon: Pill },
+            { name: "เครื่องหอม", label: t("cat_aroma"), icon: Sparkles },
+            { name: "ความสวย", label: t("cat_beauty"), icon: Flower2 },
+            { name: "ชุดของขวัญ", label: t("cat_giftset"), icon: Gift },
+            { name: "ชาสมุนไพร", label: t("cat_tea"), icon: Coffee },
+            { name: "อาหารเสริม", label: t("cat_supplement"), icon: FlaskConical },
+            { name: "น้ำมันสกัด", label: t("cat_oil"), icon: Droplets },
           ]).map((cat) => {
             const Icon = cat.icon;
             return (
@@ -453,7 +456,7 @@ export function HomePage() {
                 <span
                   className={`${font} text-[11px] sm:text-[12px] text-gray-600 whitespace-nowrap transition-colors duration-300 group-hover:text-[#319754]`}
                 >
-                  {cat.name}
+                  {cat.label}
                 </span>
               </button>
             );
@@ -461,14 +464,14 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* Recommended Products - สินค้าแนะนำ */}
-      <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+      {/* Recommended Products */}
+      <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
         <div className="bg-white rounded-[16px] p-[16px]">
           {/* Header */}
           <div className="flex items-center justify-between mb-[16px]">
-            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>สินค้าแนะนำ</p>
+            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("home_recommended")}</p>
             <button onClick={() => navigate("/products")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
-              <span className={`${font} text-[12px]`}>ดูทั้งหมด</span>
+              <span className={`${font} text-[12px]`}>{t("common_view_all")}</span>
               <ChevronRight className="size-4" />
             </button>
           </div>
@@ -506,11 +509,11 @@ export function HomePage() {
                         <>
                           <div className="absolute top-0 right-0 p-[6px]">
                             <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
-                              <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
+                              <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_discount_prefix")} {p.discountPercent}%</span>
                             </div>
                           </div>
-                          <div className="absolute bottom-0 left-0 backdrop-blur-[4px] bg-[rgba(230,46,5,0.8)] flex gap-[4px] items-center justify-center px-[8px] py-[4px] rounded-tr-[8px]">
-                            <span className={`${font} text-[8px] text-white`}>Flash Sale</span>
+                          <div className="absolute bottom-0 left-0 backdrop-blur-[4px] bg-[rgba(230,46,5,0.8)] flex gap-[6px] items-center justify-center px-[10px] py-[6px] rounded-tr-[12px]">
+                            <span className={`${font} text-[11px] text-white`} style={{ fontWeight: 600 }}>Flash Sale</span>
                             <MiniCountdown initialSeconds={p.flashSaleEndsIn || 3600} />
                           </div>
                         </>
@@ -518,14 +521,14 @@ export function HomePage() {
                       {tag === "discount" && (
                         <div className="absolute top-0 right-0 p-[6px]">
                           <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
-                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
+                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_discount_prefix")} {p.discountPercent}%</span>
                           </div>
                         </div>
                       )}
                       {tag === "recommended" && (
                         <div className="absolute top-0 right-0 p-[6px]">
                           <div className="bg-[#319754] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(49,151,84,0.4)]">
-                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>สินค้าแนะนำ</span>
+                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_recommended_tag")}</span>
                           </div>
                         </div>
                       )}
@@ -576,16 +579,16 @@ export function HomePage() {
       </section>
 
       {/* Flash Sale */}
-      <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+      <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
         <div className="bg-white rounded-[16px] p-[16px]">
           {/* Header */}
           <div className="flex items-center justify-between mb-[16px]">
             <div className="flex items-center gap-[10px]">
-              <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>Flash Sale</p>
+              <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("home_flash_sale")}</p>
               <FlashSaleCountdown />
             </div>
             <button onClick={() => navigate("/products")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
-              <span className={`${font} text-[12px]`}>ดูทั้งหมด</span>
+              <span className={`${font} text-[12px]`}>{t("common_view_all")}</span>
               <ChevronRight className="size-4" />
             </button>
           </div>
@@ -621,12 +624,12 @@ export function HomePage() {
                     {/* Discount tag top-right */}
                     <div className="absolute top-0 right-0 p-[6px]">
                       <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
-                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
+                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_discount_prefix")} {p.discountPercent}%</span>
                       </div>
                     </div>
                     {/* Flash Sale badge bottom-left with countdown */}
-                    <div className="absolute bottom-0 left-0 backdrop-blur-[4px] bg-[rgba(230,46,5,0.8)] flex gap-[4px] items-center justify-center px-[8px] py-[4px] rounded-tr-[8px]">
-                      <span className={`${font} text-[8px] text-white`}>Flash Sale</span>
+                    <div className="absolute bottom-0 left-0 backdrop-blur-[4px] bg-[rgba(230,46,5,0.8)] flex gap-[6px] items-center justify-center px-[10px] py-[6px] rounded-tr-[12px]">
+                      <span className={`${font} text-[11px] text-white`} style={{ fontWeight: 600 }}>Flash Sale</span>
                       <MiniCountdown initialSeconds={p.flashSaleEndsIn || 3600} />
                     </div>
                   </div>
@@ -682,13 +685,13 @@ export function HomePage() {
       )}
 
       {/* Articles */}
-      <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+      <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
         <div className="bg-white rounded-[16px] p-[16px]">
           {/* Header */}
           <div className="flex items-center justify-between mb-[16px]">
-            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>บทความแนะนำ</p>
+            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("home_articles")}</p>
             <button onClick={() => navigate("/blog")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
-              <span className={`${font} text-[12px]`}>ดูทั้งหมด</span>
+              <span className={`${font} text-[12px]`}>{t("common_view_all")}</span>
               <ChevronRight className="size-4" />
             </button>
           </div>
@@ -735,7 +738,7 @@ export function HomePage() {
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#af6f08]/10 text-[#af6f08] group-hover:bg-[#af6f08] group-hover:text-white cursor-pointer transition-all duration-200 self-start mt-auto ${font} text-[12px]`}
                       style={{ fontWeight: 500 }}
                     >
-                      อ่านเพิ่มเติม
+                      {t("blog_read_more")}
                       <ChevronRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                     </button>
                   </div>
@@ -747,13 +750,13 @@ export function HomePage() {
       </section>
 
       {/* Videos */}
-      <section className="px-4 sm:px-6 lg:px-[124px] pb-6 sm:pb-8">
+      <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
         <div className="bg-white rounded-[16px] p-[16px]">
           {/* Header */}
           <div className="flex items-center justify-between mb-[16px]">
-            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>วีดีโอแนะนำ</p>
+            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("home_videos")}</p>
             <button onClick={() => navigate("/blog")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
-              <span className={`${font} text-[12px]`}>ดูทั้งหมด</span>
+              <span className={`${font} text-[12px]`}>{t("common_view_all")}</span>
               <ChevronRight className="size-4" />
             </button>
           </div>

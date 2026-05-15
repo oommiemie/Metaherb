@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useCart } from "../store/CartContext";
+import { useLanguage } from "../store/LanguageContext";
 import { Trash2, Minus, Plus, ChevronLeft, Store, Tag, MessageCircle, ShieldCheck } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useChat } from "../store/ChatContext";
@@ -22,6 +23,7 @@ export function CartPage() {
   const navigate = useNavigate();
   const { items, removeItem, updateQuantity, total } = useCart();
   const { openChat } = useChat();
+  const { t } = useLanguage();
   const [selected, setSelected] = useState<Set<string>>(new Set(items.filter((i) => i.inStock).map((i) => i.productId)));
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -45,13 +47,13 @@ export function CartPage() {
     removeItem(id);
     selected.delete(id);
     setSelected(new Set(selected));
-    toast("ลบสินค้าออกจากรถเข็นแล้ว", { description: name });
+    toast(t("cart_removed"), { description: name });
   };
 
   const handleApplyCoupon = () => {
     if (couponCode.trim()) {
       setAppliedCoupon(couponCode);
-      toast.success("ใช้โค้ดส่วนลดสำเร็จ!", { description: `ลด ฿100.00` });
+      toast.success(t("cart_coupon_applied"), { description: t("cart_discount_amount") });
     }
   };
 
@@ -65,19 +67,19 @@ export function CartPage() {
 
   return (
     <div>
-      <div className="bg-[rgba(214,234,221,0.5)] py-4 text-center">
-        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>รถเข็น</h1>
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
+        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("cart_title")}</h1>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         {items.length === 0 ? (
           <div className="text-center py-16">
             <div className="size-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
               <span className="text-[40px]">🛒</span>
             </div>
-            <p className={`${font} text-[16px] text-gray-400 mt-4`}>รถเข็นว่างเปล่า</p>
-            <p className={`${font} text-[13px] text-gray-400 mt-1`}>เพิ่มสินค้าที่คุณชื่นชอบลงในรถเข็น</p>
-            <button onClick={() => navigate("/products")} className={`mt-4 bg-[#319754] text-white px-8 py-2.5 rounded-full text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>ไปช้อปปิ้งเลย</button>
+            <p className={`${font} text-[16px] text-gray-400 mt-4`}>{t("cart_empty")}</p>
+            <p className={`${font} text-[13px] text-gray-400 mt-1`}>{t("cart_empty_sub")}</p>
+            <button onClick={() => navigate("/products")} className={`mt-4 bg-[#319754] text-white px-8 py-2.5 rounded-full text-[14px] ${font} cursor-pointer hover:bg-[#267a43]`}>{t("common_shop_now")}</button>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6">
@@ -86,14 +88,14 @@ export function CartPage() {
               <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 mb-3 border border-gray-200">
                 <div className="flex items-center gap-3">
                   <input type="checkbox" checked={selected.size === items.filter((i) => i.inStock).length && items.length > 0} onChange={toggleAll} className="accent-[#319754] cursor-pointer size-4" />
-                  <span className={`${font} text-[14px]`}>เลือกทั้งหมด ({items.length} รายการ)</span>
+                  <span className={`${font} text-[14px]`}>{t("cart_select_all")} ({items.length} {t("common_items")})</span>
                 </div>
                 <button onClick={() => {
                   const toDelete = items.filter((i) => selected.has(i.productId));
                   toDelete.forEach((i) => removeItem(i.productId));
                   setSelected(new Set());
-                  toast("ลบสินค้าที่เลือกแล้ว");
-                }} className={`text-[13px] text-red-400 ${font} cursor-pointer hover:text-red-500`}>ลบที่เลือก</button>
+                  toast(t("cart_removed_selected"));
+                }} className={`text-[13px] text-red-400 ${font} cursor-pointer hover:text-red-500`}>{t("cart_delete_selected")}</button>
               </div>
 
               {/* Grouped by shop */}
@@ -113,11 +115,11 @@ export function CartPage() {
                         className="accent-[#319754] cursor-pointer size-4" />
                       <img src={shopLogos[shopName] || imgShop} alt={shopName} className="size-5 rounded-full object-cover" />
                       <span className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{shopName}</span>
-                      <span className="bg-[#319754] text-white text-[9px] px-1.5 py-0.5 rounded">ร้านค้าแนะนำ</span>
+                      <span className="bg-[#319754] text-white text-[9px] px-1.5 py-0.5 rounded">{t("cart_shop_recommend")}</span>
                     </div>
                     <button onClick={() => openChat("metaherb")}
                       className={`flex items-center gap-1 text-[12px] text-[#319754] ${font} cursor-pointer hover:underline`}>
-                      <MessageCircle className="size-3.5" /> แชทกับร้านค้า
+                      <MessageCircle className="size-3.5" /> {t("cart_chat_shop")}
                     </button>
                   </div>
 
@@ -142,7 +144,7 @@ export function CartPage() {
                               </button>
                             </div>
                             {!item.inStock && (
-                              <span className={`inline-block bg-gray-200 text-gray-600 text-[11px] px-2 py-0.5 rounded mt-1 ${font}`}>สินค้าหมด</span>
+                              <span className={`inline-block bg-gray-200 text-gray-600 text-[11px] px-2 py-0.5 rounded mt-1 ${font}`}>{t("cart_out_of_stock")}</span>
                             )}
                             <div className="flex items-center justify-between mt-2">
                               {item.inStock ? (
@@ -166,7 +168,7 @@ export function CartPage() {
                   {/* Shop voucher */}
                   <div className="px-4 py-2 border-t border-gray-100 bg-[#fff8f0] flex items-center gap-2">
                     <Tag className="size-3.5 text-[#ee4d2d]" />
-                    <span className={`${font} text-[12px] text-[#ee4d2d]`}>คูปองร้านค้า: ลดเพิ่ม ฿30 เมื่อซื้อขั้นต่ำ ฿300</span>
+                    <span className={`${font} text-[12px] text-[#ee4d2d]`}>{t("cart_shop_voucher")}</span>
                   </div>
                 </div>
               ))}
@@ -179,31 +181,31 @@ export function CartPage() {
                 
                 {appliedCoupon && (
                   <div className="flex items-center justify-between mb-3 bg-green-50 rounded-lg px-3 py-2">
-                    <span className={`${font} text-[12px] text-[#319754]`}>โค้ด: {appliedCoupon}</span>
-                    <button onClick={() => { setAppliedCoupon(null); toast("ลบโค้ดส่วนลดแล้ว"); }} className={`text-[11px] text-red-400 cursor-pointer`}>ลบ</button>
+                    <span className={`${font} text-[12px] text-[#319754]`}>{t("cart_code")}: {appliedCoupon}</span>
+                    <button onClick={() => { setAppliedCoupon(null); toast(t("cart_coupon_removed")); }} className={`text-[11px] text-red-400 cursor-pointer`}>{t("common_delete")}</button>
                   </div>
                 )}
 
-                <h3 className={`${font} text-[16px] mb-4`} style={{ fontWeight: 600 }}>สรุปคำสั่งซื้อ</h3>
+                <h3 className={`${font} text-[16px] mb-4`} style={{ fontWeight: 600 }}>{t("cart_summary")}</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className={`${font} text-[13px] text-gray-600`}>สินค้าที่เลือก</span>
-                    <span className={`${font} text-[13px] text-[#319754]`} style={{ fontWeight: 600 }}>{selectedCount} รายการ</span>
+                    <span className={`${font} text-[13px] text-gray-600`}>{t("cart_selected_items")}</span>
+                    <span className={`${font} text-[13px] text-[#319754]`} style={{ fontWeight: 600 }}>{selectedCount} {t("common_items")}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={`${font} text-[13px] text-gray-600`}>ยอดรวมสินค้า ({items.reduce((s, i) => s + i.quantity, 0)} ชิ้น)</span>
+                    <span className={`${font} text-[13px] text-gray-600`}>{t("cart_subtotal")} ({items.reduce((s, i) => s + i.quantity, 0)} {t("common_pieces")})</span>
                     <span className={`${font} text-[13px]`}>฿{selectedTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={`${font} text-[13px] text-gray-600`}>ส่วนลด</span>
+                    <span className={`${font} text-[13px] text-gray-600`}>{t("cart_discount")}</span>
                     <span className={`${font} text-[13px] text-[#ee4d2d]`}>-฿{discount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className={`${font} text-[13px] text-gray-600`}>ค่าจัดส่ง</span>
-                    <span className={`${font} text-[13px] text-[#319754]`}>ฟรี</span>
+                    <span className={`${font} text-[13px] text-gray-600`}>{t("cart_shipping")}</span>
+                    <span className={`${font} text-[13px] text-[#319754]`}>{t("common_free")}</span>
                   </div>
                   <div className="border-t pt-3 flex justify-between">
-                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>มูลค่าสินค้ารวม</span>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>{t("cart_grand_total")}</span>
                     <span className={`${font} text-[22px] text-[#ee4d2d]`} style={{ fontWeight: 700 }}>฿{(selectedTotal - discount).toFixed(2)}</span>
                   </div>
                 </div>
@@ -211,14 +213,14 @@ export function CartPage() {
                 {/* Guarantee badge */}
                 <div className="flex items-center gap-2 mt-3 text-gray-400">
                   <ShieldCheck className="size-4" />
-                  <span className={`${font} text-[11px]`}>การซื้อของคุณได้รับการคุ้มครอง</span>
+                  <span className={`${font} text-[11px]`}>{t("cart_protected")}</span>
                 </div>
 
                 <button onClick={() => selectedCount > 0 && navigate("/payment")}
                   className={`w-full mt-4 py-3 rounded-full text-[14px] ${font} cursor-pointer transition-colors ${selectedCount > 0 ? "bg-[#319754] text-white hover:bg-[#267a43]" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>
-                  สั่งซื้อสินค้า ({selectedCount})
+                  {t("cart_checkout")} ({selectedCount})
                 </button>
-                <button onClick={() => navigate("/products")} className={`w-full mt-2 py-3 rounded-full border border-[#319754] text-[#319754] text-[14px] ${font} cursor-pointer hover:bg-[#319754]/5`}>ช้อปปิ้งต่อ</button>
+                <button onClick={() => navigate("/products")} className={`w-full mt-2 py-3 rounded-full border border-[#319754] text-[#319754] text-[14px] ${font} cursor-pointer hover:bg-[#319754]/5`}>{t("cart_continue")}</button>
               </div>
             </div>
           </div>

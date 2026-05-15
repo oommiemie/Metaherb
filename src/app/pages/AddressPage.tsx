@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Plus, MoreHorizontal, X, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../store/LanguageContext";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]"; // v2
 
@@ -159,6 +160,7 @@ function AddressCard({
   onDelete: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <div className="bg-white rounded-lg border border-[#e8e8e8] p-4 relative">
@@ -168,7 +170,7 @@ function AddressCard({
           <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{addr.firstName}</p>
           {addr.isDefault && (
             <span className={`${font} text-[11px] text-white bg-[#319754] px-3 py-0.5 rounded-full shrink-0`}>
-              ที่อยู่หลัก
+              {t("address_default")}
             </span>
           )}
         </div>
@@ -189,21 +191,21 @@ function AddressCard({
                     onClick={() => { onSetDefault(); setMenuOpen(false); }}
                     className={`w-full text-left px-4 py-2 text-[13px] ${font} hover:bg-[#f5f5f5] cursor-pointer text-black flex items-center gap-2`}
                   >
-                    <MapPinIcon className="size-3.5" /> ตั้งเป็นหลัก
+                    <MapPinIcon className="size-3.5" /> {t("address_set_default")}
                   </button>
                 )}
                 <button
                   onClick={() => { onEdit(); setMenuOpen(false); }}
                   className={`w-full text-left px-4 py-2 text-[13px] ${font} hover:bg-[#f5f5f5] cursor-pointer text-black flex items-center gap-2`}
                 >
-                  <Pencil className="size-3.5" /> แก้ไข
+                  <Pencil className="size-3.5" /> {t("common_edit")}
                 </button>
                 {!addr.isDefault && (
                   <button
                     onClick={() => { onDelete(); setMenuOpen(false); }}
                     className={`w-full text-left px-4 py-2 text-[13px] ${font} hover:bg-[#f5f5f5] cursor-pointer text-[#d32f2f] flex items-center gap-2`}
                   >
-                    <Trash2 className="size-3.5" /> ลบ
+                    <Trash2 className="size-3.5" /> {t("common_delete")}
                   </button>
                 )}
               </div>
@@ -240,6 +242,7 @@ function AddressModal({
   onSave: (data: { firstName: string; lastName: string; phone: string; postalOrSubdistrict: string; addressDetail: string; isDefault: boolean }) => void;
   initial?: { firstName: string; lastName: string; phone: string; postalOrSubdistrict: string; addressDetail: string; isDefault: boolean };
 }) {
+  const { t } = useLanguage();
   const [firstName, setFirstName] = useState(initial?.firstName || "");
   const [lastName, setLastName] = useState(initial?.lastName || "");
   const [phone, setPhone] = useState(initial?.phone || "");
@@ -261,7 +264,7 @@ function AddressModal({
 
   const handleSave = () => {
     if (!firstName || !phone || !postalOrSubdistrict) {
-      toast.error("กรุณากรอกข้อมูลที่จำเป็นให้ครบ");
+      toast.error(t("address_required"));
       return;
     }
     onSave({ firstName, lastName, phone, postalOrSubdistrict, addressDetail, isDefault: setAsDefault });
@@ -276,7 +279,7 @@ function AddressModal({
         {/* Title row */}
         <div className="flex items-center justify-between mb-4">
           <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>
-            {initial ? "แก้ไขที่อยู่" : "เพิ่มที่อยู่ใหม่"}
+            {initial ? t("address_edit_title") : t("address_add_title")}
           </p>
           <button
             onClick={onClose}
@@ -290,59 +293,59 @@ function AddressModal({
         <div className="h-px bg-[#d4d4d8] mb-4" />
 
         <div className="space-y-4">
-          {/* ชื่อ + นามสกุล (side by side) */}
+          {/* First name + last name */}
           <div className="flex gap-4">
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-[5px]">
-                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ชื่อ</span>
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("address_first_name")}</span>
                 <span className={`${font} text-[14px] text-[#ff3b30]`} style={{ fontWeight: 500 }}>*</span>
               </div>
               <input
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 className={`${font} text-[14px] text-black w-full bg-[#fafafa] rounded-full h-[48px] px-6 outline-none focus:ring-1 focus:ring-[#319754] placeholder:text-[#a3a3a3]`}
-                placeholder="ระบุชื่อผู้รับ"
+                placeholder={t("address_first_name_ph")}
               />
             </div>
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-[5px]">
-                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>นามสกุล</span>
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("address_last_name")}</span>
                 <span className={`${font} text-[14px] text-[#ff3b30]`} style={{ fontWeight: 500 }}>*</span>
               </div>
               <input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 className={`${font} text-[14px] text-black w-full bg-[#fafafa] rounded-full h-[48px] px-6 outline-none focus:ring-1 focus:ring-[#319754] placeholder:text-[#a3a3a3]`}
-                placeholder="นามสกุล"
+                placeholder={t("address_last_name_ph")}
               />
             </div>
           </div>
 
-          {/* เบอร์โทรศัพท์ */}
+          {/* Phone */}
           <div className="space-y-2">
             <div className="flex items-center gap-[5px]">
-              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เบอร์โทรศัพท์</span>
+              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("address_phone")}</span>
               <span className={`${font} text-[14px] text-[#ff3b30]`} style={{ fontWeight: 500 }}>*</span>
             </div>
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className={`${font} text-[14px] text-black w-full bg-[#fafafa] rounded-full h-[48px] px-6 outline-none focus:ring-1 focus:ring-[#319754] placeholder:text-[#a3a3a3]`}
-              placeholder="ระบุเบอร์โทรศัพท์"
+              placeholder={t("address_phone_ph")}
             />
           </div>
 
-          {/* ที่อยู่ */}
+          {/* Address */}
           <div className="space-y-2 relative">
             <div className="flex items-center gap-[5px]">
-              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ที่อยู่</span>
+              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("address_addr_label")}</span>
               <span className={`${font} text-[14px] text-[#ff3b30]`} style={{ fontWeight: 500 }}>*</span>
             </div>
             <input
               value={postalOrSubdistrict}
               onChange={(e) => { setPostalOrSubdistrict(e.target.value); setShowSuggestions(true); setHighlightIdx(-1); }}
               className={`${font} text-[14px] text-black w-full bg-[#fafafa] rounded-full h-[48px] px-6 outline-none focus:ring-1 focus:ring-[#319754] placeholder:text-[#a3a3a3]`}
-              placeholder="ระบุรหัสไปรษณีย์ หรือ ตำบล / แขวง"
+              placeholder={t("address_addr_ph")}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               onKeyDown={(e) => {
@@ -384,20 +387,20 @@ function AddressModal({
             )}
           </div>
 
-          {/* รายละเอียดที่อยู่ */}
+          {/* Address detail */}
           <div className="space-y-2">
-            <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>รายละเอียดที่อยู่</span>
+            <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("address_detail")}</span>
             <input
               value={addressDetail}
               onChange={(e) => setAddressDetail(e.target.value)}
               className={`${font} text-[14px] text-black w-full bg-[#fafafa] rounded-full h-[48px] px-6 outline-none focus:ring-1 focus:ring-[#319754] placeholder:text-[#a3a3a3]`}
-              placeholder="บ้านเลขที่, หมู่ที่, ชื่ออาคาร, ซอย ถนน"
+              placeholder={t("address_detail_ph")}
             />
           </div>
 
-          {/* Toggle ตั้งเป็นที่อยู่หลัก */}
+          {/* Default toggle */}
           <div className="flex items-center justify-between">
-            <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ตั้งเป็นที่อยู่หลัก</span>
+            <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("address_set_default_toggle")}</span>
             <button
               onClick={() => setSetAsDefault(!setAsDefault)}
               className={`w-[64px] h-[30px] rounded-full p-[2px] cursor-pointer transition-colors duration-200 ${setAsDefault ? "bg-[#34c759]" : "bg-[#e5e5ea]"}`}
@@ -417,7 +420,7 @@ function AddressModal({
           onClick={handleSave}
           className={`w-full h-[49px] bg-[#008c45] text-white rounded-full ${font} text-[14px] cursor-pointer hover:bg-[#007a3d] transition-colors`}
         >
-          {initial ? "บันทึกที่อยู่" : "เพิ่มที่อยู่"}
+          {initial ? t("address_save") : t("address_add")}
         </button>
       </div>
     </div>
@@ -427,18 +430,19 @@ function AddressModal({
 /* ---- Main Page ---- */
 export function AddressPage() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [addresses, setAddresses] = useState<Address[]>(initialAddresses);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Address | null>(null);
 
   const handleSetDefault = (id: string) => {
     setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));
-    toast.success("ตั้งเป็นที่อยู่หลักแล้ว");
+    toast.success(t("address_set_default_toast"));
   };
 
   const handleDelete = (id: string) => {
     setAddresses((prev) => prev.filter((a) => a.id !== id));
-    toast.success("ลบที่อยู่แล้ว");
+    toast.success(t("address_deleted"));
   };
 
   const handleEdit = (addr: Address) => {
@@ -460,7 +464,7 @@ export function AddressPage() {
           return a;
         })
       );
-      toast.success("แก้ไขที่อยู่แล้ว");
+      toast.success(t("address_edited"));
     } else {
       const newAddr: Address = {
         id: Date.now().toString(),
@@ -471,7 +475,7 @@ export function AddressPage() {
       } else {
         setAddresses((prev) => [...prev, newAddr]);
       }
-      toast.success("เพิ่มที่อยู่ใหม่แล้ว");
+      toast.success(t("address_added"));
     }
     setModalOpen(false);
     setEditTarget(null);
@@ -479,7 +483,7 @@ export function AddressPage() {
 
   return (
     <div className="bg-[#fafafa] min-h-screen">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-4">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex gap-4 items-center">
@@ -487,15 +491,15 @@ export function AddressPage() {
               onClick={() => navigate(-1)}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-[12px] ${font} cursor-pointer hover:bg-[#f0f0f0]`}
             >
-              <ChevronLeft className="size-3" /> กลับ
+              <ChevronLeft className="size-3" /> {t("common_back")}
             </button>
-            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>ที่อยู่จัดส่ง</p>
+            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("address_title")}</p>
           </div>
           <button
             onClick={handleAdd}
             className={`flex items-center gap-2 px-5 py-2 rounded-full bg-[#319754] text-white text-[13px] ${font} cursor-pointer hover:bg-[#267a43] transition-colors`}
           >
-            <Plus className="size-4" /> เพิ่มที่อยู่ใหม่
+            <Plus className="size-4" /> {t("address_add_new")}
           </button>
         </div>
 

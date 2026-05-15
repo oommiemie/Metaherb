@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../store/AuthContext";
+import { useLanguage } from "../store/LanguageContext";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import imgLogo from "../../assets/logo.png";
 import imgGoogle from "../../assets/google.png";
@@ -12,16 +13,17 @@ const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
   const handleLogin = () => {
-    if (!email || !password) { setError("กรุณากรอกข้อมูลให้ครบ"); return; }
+    if (!email || !password) { setError(t("common_required")); return; }
     const success = login(email, password);
     if (success) navigate("/");
-    else setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+    else setError(t("login_invalid"));
   };
 
   return (
@@ -33,7 +35,7 @@ export function LoginPage() {
             className={`bg-[#319754]/10 flex gap-2 items-center justify-center px-4 py-1.5 rounded-full ${font} text-[12px] text-[#319754] cursor-pointer hover:bg-[#319754]/20 transition-colors`}
             style={{ fontWeight: 500 }}>
             <ChevronLeft className="size-3.5" strokeWidth={2.5} />
-            กลับ
+            {t("common_back")}
           </button>
         </div>
 
@@ -41,10 +43,10 @@ export function LoginPage() {
         <div className="flex flex-col gap-4 items-center px-4 sm:px-[60px] py-4 w-full">
           <img src={imgLogo} className="size-[58px]" alt="MetaHerb" />
           <div className="flex flex-col gap-2 items-center text-center">
-            <h1 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>ยินดีต้อนรับเข้าสู่ระบบ</h1>
+            <h1 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("login_welcome")}</h1>
             <p className={`${font} text-[12px] text-black`}>
-              ดูแลสุขภาพอย่างมั่นใจ ด้วยผลิตภัณฑ์สมุนไพรคัดสรร<br />
-              ช้อปออนไลน์ได้แล้วที่ Metaherb
+              {t("login_subtitle")}<br />
+              {t("login_subtitle2")}
             </p>
           </div>
 
@@ -53,14 +55,14 @@ export function LoginPage() {
           {/* Form fields */}
           <div className="flex flex-col gap-4 items-stretch w-full max-w-[350px] py-2.5">
             <div className="flex flex-col gap-2">
-              <label className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>อีเมลหรือชื่อผู้ใช้</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="กรอกอีเมลหรือชื่อผู้ใช้"
+              <label className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("login_email_label")}</label>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("login_email_ph")}
                 className={`bg-[#fafafa] h-[48px] rounded-full px-6 text-[14px] ${font} outline-none text-gray-700 placeholder:text-[#a3a3a3] focus:ring-2 focus:ring-[#319754]/30 transition-shadow`} />
             </div>
             <div className="flex flex-col gap-2">
-              <label className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>รหัสผ่าน</label>
+              <label className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("login_password_label")}</label>
               <div className="relative">
-                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="กรอกรหัสผ่าน"
+                <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("login_password_ph")}
                   className={`bg-[#fafafa] h-[48px] rounded-full px-6 pr-12 text-[14px] ${font} outline-none w-full text-gray-700 placeholder:text-[#a3a3a3] focus:ring-2 focus:ring-[#319754]/30 transition-shadow`} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer">
                   {showPassword ? <Eye className="size-5 text-gray-400" /> : <EyeOff className="size-5 text-gray-400" />}
@@ -68,13 +70,13 @@ export function LoginPage() {
               </div>
             </div>
             <div className="text-right">
-              <span className={`${font} text-[12px] text-[#297a4e] cursor-pointer hover:underline`}>ลืมรหัสผ่าน?</span>
+              <span className={`${font} text-[12px] text-[#297a4e] cursor-pointer hover:underline`}>{t("login_forgot")}</span>
             </div>
           </div>
 
           {/* Demo account info */}
           <div className="w-full max-w-[350px] bg-green-50 rounded-lg p-3 text-[11px]">
-            <p className={`${font} text-[#319754]`} style={{ fontWeight: 500 }}>บัญชีทดสอบ (กดเพื่อกรอกอัตโนมัติ):</p>
+            <p className={`${font} text-[#319754]`} style={{ fontWeight: 500 }}>{t("login_demo")}</p>
             <p
               onClick={() => { setEmail("user@test.com"); setPassword("12345678"); setError(""); }}
               className={`${font} text-gray-600 cursor-pointer hover:text-[#319754] hover:bg-[#319754]/10 rounded px-1 py-0.5 -mx-1 transition-colors duration-200`}
@@ -86,13 +88,13 @@ export function LoginPage() {
           {/* Sign in button — full width of content section */}
           <button onClick={handleLogin}
             className={`bg-[#008c45] hover:bg-[#007a3b] h-[49px] w-full rounded-full text-white text-[14px] ${font} cursor-pointer transition-colors`}>
-            เข้าสู่ระบบ
+            {t("login_button")}
           </button>
 
-          {/* Divider with "หรือ" */}
+          {/* Divider */}
           <div className="flex items-center w-full gap-4">
             <div className="flex-1 h-px bg-gray-200" />
-            <span className={`${font} text-[12px] text-black`}>หรือ</span>
+            <span className={`${font} text-[12px] text-black`}>{t("common_or")}</span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
@@ -115,8 +117,8 @@ export function LoginPage() {
 
         {/* Bottom: register link */}
         <div className={`flex gap-2.5 items-center justify-center p-4 w-full max-w-[350px] ${font} text-[14px] text-center`}>
-          <span className="text-[#0a0a0a]">คุณยังไม่มีบัญชีผู้ใช้</span>
-          <span onClick={() => navigate("/register")} className="text-[#297a4e] underline cursor-pointer">ลงทะเบียน</span>
+          <span className="text-[#0a0a0a]">{t("login_no_account")}</span>
+          <span onClick={() => navigate("/register")} className="text-[#297a4e] underline cursor-pointer">{t("login_register_link")}</span>
         </div>
       </div>
     </div>

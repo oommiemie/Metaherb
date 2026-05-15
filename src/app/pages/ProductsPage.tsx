@@ -4,6 +4,7 @@ import { products, categories } from "../data/products";
 import { Star, ChevronDown, RotateCcw, Heart, ChevronLeft, ChevronRight } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useWishlist } from "../store/WishlistContext";
+import { useLanguage } from "../store/LanguageContext";
 import { toast } from "sonner";
 import svgPaths from "../../imports/svg-7w99agzzp8";
 import { FilterSkeleton, ProductGridSkeleton } from "../components/Skeleton";
@@ -29,6 +30,7 @@ export function ProductsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "ทั้งหมด");
   const [productType, setProductType] = useState("ทั้งหมด");
   const [sortBy, setSortBy] = useState("จากมากไปน้อย");
@@ -75,10 +77,10 @@ export function ProductsPage() {
   if (loading) {
     return (
       <div>
-        <div className="bg-[rgba(214,234,221,0.5)] py-4 text-center">
+        <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
           <div className="bg-gray-200 w-[200px] h-[24px] rounded-lg mx-auto relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent" />
         </div>
-        <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
+        <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
           <aside className="hidden lg:block w-[218px] shrink-0">
             <FilterSkeleton />
           </aside>
@@ -92,25 +94,25 @@ export function ProductsPage() {
 
   return (
     <div>
-      {/* Title banner */}
-      <div className="bg-[rgba(214,234,221,0.5)] py-4 text-center">
+      {/* Title banner — extends up behind the appbar (appbar sits on top, transparent areas show through) */}
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
         <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>
-          {searchQuery ? `ผลการค้นหา "${searchQuery}"` : "ผลิตภัณฑ์ทั้งหมด"}
+          {searchQuery ? `${t("common_search_results")} "${searchQuery}"` : t("products_title")}
         </h1>
         {searchQuery && (
-          <p className={`${font} text-[13px] text-gray-500 mt-1`}>พบ {filtered.length} รายการ</p>
+          <p className={`${font} text-[13px] text-gray-500 mt-1`}>{t("common_results_found")} {filtered.length} {t("products_results")}</p>
         )}
       </div>
 
-      <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
+      <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         {/* Sidebar filters */}
         <aside className="hidden lg:block w-[218px] shrink-0">
           <div className="bg-white rounded-2xl p-4 flex flex-col gap-4">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <span className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>ตัวกรอง</span>
+              <span className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("products_filter")}</span>
               <button onClick={() => { setSelectedCategory("ทั้งหมด"); setProductType("ทั้งหมด"); setPriceRange([PRICE_MIN, PRICE_MAX]); setSortBy("จากมากไปน้อย"); }}
-                title="ล้างตัวกรอง"
+                title={t("common_reset_filter")}
                 className="cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
                 <RotateCcw className="size-4" strokeWidth={2} />
               </button>
@@ -119,9 +121,9 @@ export function ProductsPage() {
             {/* Divider */}
             <div className="w-full h-px bg-[#a3a3a3]" />
 
-            {/* หมวดหมู่ */}
+            {/* category */}
             <div className="flex flex-col gap-2">
-              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>หมวดหมู่</span>
+              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("products_category")}</span>
               <div className="relative w-full">
                 <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}
                   className={`w-full bg-[#fafafa] h-[40px] rounded-full px-4 text-[13px] ${font} outline-none appearance-none cursor-pointer pr-10`}>
@@ -136,25 +138,30 @@ export function ProductsPage() {
               </div>
             </div>
 
-            {/* ประเภทสินค้า */}
+            {/* product type */}
             <div className="flex flex-col gap-2">
-              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ประเภทสินค้า</span>
-              {["ทั้งหมด", "สินค้า Flash Sale", "สินค้าโปรโมชัน", "สินค้าแนะนำ"].map((t) => {
-                const checked = productType === t;
+              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("products_type")}</span>
+              {[
+                { key: "ทั้งหมด", label: t("products_all") },
+                { key: "สินค้า Flash Sale", label: t("products_type_flash") },
+                { key: "สินค้าโปรโมชัน", label: t("products_type_promo") },
+                { key: "สินค้าแนะนำ", label: t("products_type_rec") },
+              ].map((opt) => {
+                const checked = productType === opt.key;
                 return (
-                  <button key={t} onClick={() => setProductType(t)} className="group flex items-center gap-2.5 cursor-pointer py-1">
+                  <button key={opt.key} onClick={() => setProductType(opt.key)} className="group flex items-center gap-2.5 cursor-pointer py-1">
                     <span className={`size-[16px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${checked ? "border-[#319754]" : "border-gray-300 group-hover:border-gray-400"}`}>
                       <span className={`rounded-full bg-[#319754] transition-all ${checked ? "size-[8px]" : "size-0"}`} />
                     </span>
-                    <span className={`${font} text-[13px] transition-colors ${checked ? "text-[#319754]" : "text-gray-700 group-hover:text-black"}`} style={{ fontWeight: checked ? 500 : 400 }}>{t}</span>
+                    <span className={`${font} text-[13px] transition-colors ${checked ? "text-[#319754]" : "text-gray-700 group-hover:text-black"}`} style={{ fontWeight: checked ? 500 : 400 }}>{opt.label}</span>
                   </button>
                 );
               })}
             </div>
 
-            {/* ช่วงราคา */}
+            {/* price range */}
             <div className="flex flex-col gap-3">
-              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ช่วงราคา</span>
+              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("products_price_range")}</span>
               {/* Min/Max value text */}
               <div className={`${font} flex items-center justify-between text-[14px] text-[#319754]`} style={{ fontWeight: 600 }}>
                 <span>฿{minPrice.toLocaleString()}</span>
@@ -182,14 +189,14 @@ export function ProductsPage() {
               </SliderPrimitive.Root>
             </div>
 
-            {/* เรียงตาม */}
+            {/* sort */}
             <div className="flex flex-col gap-2">
-              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เรียงตาม</span>
+              <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("common_sort")}</span>
               <div className="relative w-full">
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
                   className={`w-full bg-[#fafafa] h-[40px] rounded-full px-4 text-[13px] ${font} outline-none appearance-none cursor-pointer pr-10`}>
-                  <option>จากมากไปน้อย</option>
-                  <option>จากน้อยไปมาก</option>
+                  <option value="จากมากไปน้อย">{t("common_sort_desc")}</option>
+                  <option value="จากน้อยไปมาก">{t("common_sort_asc")}</option>
                 </select>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                   <svg width="16" height="9" viewBox="0 0 16 9" fill="none">
@@ -212,8 +219,8 @@ export function ProductsPage() {
             </select>
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
               className={`border border-gray-300 rounded-lg px-3 py-2 text-[13px] ${font} outline-none shrink-0`}>
-              <option>จากมากไปน้อย</option>
-              <option>จากน้อยไปมาก</option>
+              <option value="จากมากไปน้อย">{t("common_sort_desc")}</option>
+              <option value="จากน้อยไปมาก">{t("common_sort_asc")}</option>
             </select>
           </div>
 
@@ -232,7 +239,7 @@ export function ProductsPage() {
                       <>
                         <div className="absolute top-0 right-0 p-[8px]">
                           <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
-                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
+                            <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_discount_prefix")} {p.discountPercent}%</span>
                           </div>
                         </div>
                         <div className="absolute bottom-0 left-0 backdrop-blur-[4px] bg-[rgba(230,46,5,0.8)] flex gap-[4px] items-center justify-center px-[8px] py-[4px] rounded-tr-[8px]">
@@ -244,14 +251,14 @@ export function ProductsPage() {
                     {tag === "discount" && (
                       <div className="absolute top-0 right-0 p-[8px]">
                         <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
-                          <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
+                          <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_discount_prefix")} {p.discountPercent}%</span>
                         </div>
                       </div>
                     )}
                     {tag === "recommended" && (
                       <div className="absolute top-0 right-0 p-[8px]">
                         <div className="bg-[#319754] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(49,151,84,0.4)]">
-                          <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>สินค้าแนะนำ</span>
+                          <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_recommended_tag")}</span>
                         </div>
                       </div>
                     )}
@@ -260,7 +267,7 @@ export function ProductsPage() {
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleWishlist(p.id);
-                        toast(wishlisted ? "ลบออกจากสินค้าที่ชอบแล้ว" : "เพิ่มในสินค้าที่ชอบแล้ว ❤️");
+                        toast(wishlisted ? t("pd_removed_from_wishlist") : t("pd_added_to_wishlist"));
                       }}
                       className="absolute bottom-2 right-2 size-7 bg-white/90 rounded-full flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-10"
                     >
@@ -295,12 +302,12 @@ export function ProductsPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8">
-              <span className={`${font} text-[13px] text-gray-500 mr-2`}>แสดง {(page - 1) * ITEMS_PER_PAGE + 1}-{Math.min(page * ITEMS_PER_PAGE, filtered.length)} จาก {filtered.length} รายการ</span>
+              <span className={`${font} text-[13px] text-gray-500 mr-2`}>{t("products_showing")} {(page - 1) * ITEMS_PER_PAGE + 1}-{Math.min(page * ITEMS_PER_PAGE, filtered.length)} {t("products_of")} {filtered.length} {t("products_results")}</span>
               <button
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
                 className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${page <= 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}
-                aria-label="หน้าก่อน">
+                aria-label={t("common_prev_page")}>
                 <ChevronLeft className="size-4" strokeWidth={2.4} />
               </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
@@ -312,7 +319,7 @@ export function ProductsPage() {
                 disabled={page >= totalPages}
                 onClick={() => setPage(page + 1)}
                 className={`size-8 rounded-full inline-flex items-center justify-center cursor-pointer transition-colors ${page >= totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-[#319754]/10 hover:text-[#319754]"}`}
-                aria-label="หน้าถัดไป">
+                aria-label={t("common_next_page")}>
                 <ChevronRight className="size-4" strokeWidth={2.4} />
               </button>
             </div>

@@ -1,27 +1,30 @@
 import { Check, Clock, CreditCard, Eye, Package, Truck, Home, Star } from "lucide-react";
 import type { OrderStatus } from "../store/OrderContext";
+import { useLanguage } from "../store/LanguageContext";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
-
-const steps: { status: OrderStatus; label: string; icon: any }[] = [
-  { status: "pending_payment", label: "รอชำระเงิน", icon: CreditCard },
-  { status: "pending_verify", label: "รอตรวจสอบ", icon: Eye },
-  { status: "preparing", label: "กำลังจัดเตรียม", icon: Package },
-  { status: "shipped", label: "จัดส่งแล้ว", icon: Truck },
-  { status: "delivered", label: "ได้รับสินค้า", icon: Home },
-  { status: "completed", label: "เสร็จสิ้น", icon: Star },
-];
 
 const statusOrder: OrderStatus[] = ["pending_payment", "pending_verify", "preparing", "shipped", "delivered", "completed"];
 
 export function OrderTimeline({ currentStatus, trackingNumber }: { currentStatus: OrderStatus; trackingNumber?: string }) {
+  const { t } = useLanguage();
+
+  const steps: { status: OrderStatus; label: string; icon: any }[] = [
+    { status: "pending_payment", label: t("orders_status_pending_payment"), icon: CreditCard },
+    { status: "pending_verify", label: t("orders_status_pending_verify"), icon: Eye },
+    { status: "preparing", label: t("orders_status_preparing"), icon: Package },
+    { status: "shipped", label: t("orders_status_shipped"), icon: Truck },
+    { status: "delivered", label: t("orders_status_delivered"), icon: Home },
+    { status: "completed", label: t("orders_status_completed"), icon: Star },
+  ];
+
   if (currentStatus === "cancelled") {
     return (
       <div className={`${font} text-center py-4`}>
         <div className="size-12 rounded-full bg-red-100 flex items-center justify-center mx-auto">
           <span className="text-[20px]">✕</span>
         </div>
-        <p className="text-[14px] text-red-500 mt-2" style={{ fontWeight: 500 }}>คำสั่งซื้อถูกยกเลิก</p>
+        <p className="text-[14px] text-red-500 mt-2" style={{ fontWeight: 500 }}>{t("orders_status_cancelled")}</p>
       </div>
     );
   }
@@ -72,8 +75,8 @@ export function OrderTimeline({ currentStatus, trackingNumber }: { currentStatus
         <div className={`mt-4 bg-blue-50 rounded-lg p-3 flex items-center gap-3 ${font}`}>
           <Truck className="size-5 text-blue-500 shrink-0" />
           <div>
-            <p className="text-[12px] text-blue-700" style={{ fontWeight: 500 }}>หมายเลขพัสดุ: {trackingNumber}</p>
-            <p className="text-[11px] text-blue-500">คลิกเพื่อติดตามพัสดุ</p>
+            <p className="text-[12px] text-blue-700" style={{ fontWeight: 500 }}>{t("orders_tracking_no")} {trackingNumber}</p>
+            <p className="text-[11px] text-blue-500">{t("orders_view_details")}</p>
           </div>
         </div>
       )}

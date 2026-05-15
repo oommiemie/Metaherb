@@ -6,6 +6,7 @@ import { useAuth } from "../store/AuthContext";
 import { useWishlist } from "../store/WishlistContext";
 import { useChat } from "../store/ChatContext";
 import { useRecentlyViewed } from "../store/RecentlyViewedContext";
+import { useLanguage } from "../store/LanguageContext";
 import { getShopIdByName } from "../data/shops";
 import { generateSampleReviews } from "../data/sampleReviews";
 import { Heart, Share2, ChevronLeft, ChevronRight, Store, MessageCircle, Check, Zap } from "lucide-react";
@@ -226,6 +227,7 @@ export default function ProductDetailPage() {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { openChat } = useChat();
   const { addRecent } = useRecentlyViewed();
+  const { t } = useLanguage();
   const product = products.find((p) => p.id === id);
   const [selectedOption, setSelectedOption] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -244,7 +246,7 @@ export default function ProductDetailPage() {
     if (id) addRecent(id);
   }, [id]);
 
-  if (!product) return <div className="p-8 text-center">สินค้าไม่พบ</div>;
+  if (!product) return <div className="p-8 text-center">{t("vp_not_found")}</div>;
 
   const productImages = getProductImages(product.id);
   const wishlisted = isWishlisted(product.id);
@@ -292,9 +294,9 @@ export default function ProductDetailPage() {
       shopName: product.shopName,
     });
     setAddedToCart(true);
-    toast.success("เพิ่มลงรถเข็นแล้ว!", {
+    toast.success(t("pd_added_to_cart"), {
       description: `${product.name} x ${quantity}`,
-      action: { label: "ดูรถเข็น", onClick: () => navigate("/cart") },
+      action: { label: t("cart_title"), onClick: () => navigate("/cart") },
     });
     setTimeout(() => setAddedToCart(false), 2000);
   };
@@ -306,13 +308,13 @@ export default function ProductDetailPage() {
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    toast.success("คัดลอกลิงก์แล้ว!");
+    toast.success(t("pd_copy_link"));
   };
 
   const relatedProducts = products.filter((p) => p.id !== id).slice(0, 6);
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[124px] py-4 sm:py-6">
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
       {/* Main product section */}
       <div className="flex flex-col lg:flex-row gap-[24px] items-start">
         {/* Left: Top bar + Images */}
@@ -322,19 +324,19 @@ export default function ProductDetailPage() {
             <button onClick={() => navigate(-1)}
               className="group inline-flex items-center gap-1.5 bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] px-3.5 py-1.5 rounded-full cursor-pointer transition-colors">
               <ChevronLeft className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" strokeWidth={2.4} />
-              <span className={`${font} text-[12px]`} style={{ fontWeight: 500 }}>กลับ</span>
+              <span className={`${font} text-[12px]`} style={{ fontWeight: 500 }}>{t("common_back")}</span>
             </button>
             <div className="flex items-center gap-2">
-              {/* Heart — pill with count, turns red when active */}
+              {/* Heart */}
               <motion.button
-                onClick={() => { toggleWishlist(product.id); toast(wishlisted ? "ลบออกจากสินค้าที่ชอบ" : "เพิ่มในสินค้าที่ชอบแล้ว"); }}
+                onClick={() => { toggleWishlist(product.id); toast(wishlisted ? t("pd_removed_from_wishlist") : t("pd_added_to_wishlist")); }}
                 whileTap={{ scale: 0.92 }}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-colors ${
                   wishlisted
                     ? "bg-[#ff383c]/10 text-[#ff383c]"
                     : "bg-[#f5f5f5] text-gray-700 hover:bg-[#ff383c]/10 hover:text-[#ff383c]"
                 }`}
-                title={wishlisted ? "ถูกใจแล้ว" : "เพิ่มในสินค้าที่ชอบ"}
+                title={t("pd_added_to_wishlist")}
               >
                 <Heart className={`size-3.5 transition-colors ${wishlisted ? "fill-[#ff383c]" : ""}`} strokeWidth={2.2} />
                 <span className={`${font} text-[12px]`} style={{ fontWeight: 500 }}>{wishlisted ? "1" : "0"}</span>
@@ -344,7 +346,7 @@ export default function ProductDetailPage() {
                 onClick={() => openChat("metaherb")}
                 whileTap={{ scale: 0.92 }}
                 className="inline-flex items-center justify-center bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] rounded-full size-8 cursor-pointer transition-colors"
-                title="แชทกับร้าน"
+                title={t("pd_chat")}
               >
                 <MessageCircle className="size-3.5" strokeWidth={2.2} />
               </motion.button>
@@ -353,7 +355,7 @@ export default function ProductDetailPage() {
                 onClick={handleShare}
                 whileTap={{ scale: 0.92 }}
                 className="inline-flex items-center justify-center bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] rounded-full size-8 cursor-pointer transition-colors"
-                title="แชร์สินค้า"
+                title={t("pd_share")}
               >
                 <Share2 className="size-3.5" strokeWidth={2.2} />
               </motion.button>
@@ -413,7 +415,7 @@ export default function ProductDetailPage() {
                 )}
                 {product.discountPercent && (
                   <div className="bg-[#e62e05] px-[16px] py-[4px] rounded-full">
-                    <span className={`${font} text-[12px] text-white text-center`}>ลด {product.discountPercent}%</span>
+                    <span className={`${font} text-[12px] text-white text-center`}>{t("home_discount_prefix")} {product.discountPercent}%</span>
                   </div>
                 )}
               </div>
@@ -423,7 +425,7 @@ export default function ProductDetailPage() {
           {/* Regular price card */}
           {!product.isFlashSale && (
             <div className="bg-white rounded-[16px] p-[16px] flex flex-col gap-[10px]">
-              <span className={`${font} text-[14px] text-[#666]`}>ราคาสินค้า</span>
+              <span className={`${font} text-[14px] text-[#666]`}>{t("pd_price")}</span>
               <div className="flex items-center gap-[10px]">
                 <span className={`${font} text-[24px] ${product.discountPercent ? "text-[#bc1b06]" : "text-[#297a4e]"}`} style={{ fontWeight: 500 }}>฿ {product.price.toFixed(2)}</span>
                 {product.originalPrice && (
@@ -440,7 +442,7 @@ export default function ProductDetailPage() {
 
           {/* Options */}
           <div className="flex flex-col gap-[10px]">
-            <span className={`${font} text-[14px] text-[#666]`}>ตัวเลือกสินค้า</span>
+            <span className={`${font} text-[14px] text-[#666]`}>{t("pd_options_label")}</span>
             <div className="flex flex-wrap gap-[10px]">
               {product.options.map((opt, i) => (
                 <button key={opt} onClick={() => setSelectedOption(i)}
@@ -455,7 +457,7 @@ export default function ProductDetailPage() {
 
           {/* Quantity */}
           <div className="flex flex-col gap-[10px]">
-            <span className={`${font} text-[14px] text-[#666]`}>จำนวนสินค้า</span>
+            <span className={`${font} text-[14px] text-[#666]`}>{t("pd_quantity_label")}</span>
             <div className="flex items-center gap-[16px]">
               <div className="bg-[#f5f5f5] flex items-center gap-[24px] px-[16px] py-[4px] rounded-full">
                 <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="cursor-pointer flex items-center justify-center">
@@ -468,7 +470,7 @@ export default function ProductDetailPage() {
               </div>
               <div className="flex items-center gap-[10px]">
                 <svg width="16" height="17" viewBox="0 0 16 17" fill="none"><path d={svgPaths.p3a1e14f0} fill="black" fillOpacity="0.85" /></svg>
-                <span className={`${font} text-[12px] text-black`}>เหลือเพียง {product.stock} ชิ้น</span>
+                <span className={`${font} text-[12px] text-black`}>{t("pd_remaining")} {product.stock} {t("common_pieces")}</span>
               </div>
             </div>
           </div>
@@ -485,7 +487,7 @@ export default function ProductDetailPage() {
               <AnimatePresence mode="wait">
                 {addedToCart ? (
                   <motion.span key="added" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} className="flex items-center gap-2">
-                    <Check className="size-4" /> เพิ่มแล้ว!
+                    <Check className="size-4" /> {t("pd_added_btn")}
                   </motion.span>
                 ) : (
                   <motion.span key="add" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} className="flex items-center gap-[10px]">
@@ -493,7 +495,7 @@ export default function ProductDetailPage() {
                       <path d={svgPaths.p3087100} fill="#C59507" />
                       <path d={svgPaths.p5cbde00} fill="#C59507" />
                     </svg>
-                    <span className={`${font} text-[14px]`}>เพิ่มไปยังรถเข็น</span>
+                    <span className={`${font} text-[14px]`}>{t("pd_add_to_cart_btn")}</span>
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -501,7 +503,7 @@ export default function ProductDetailPage() {
             <button onClick={handleBuyNow}
               className={`flex items-center justify-center gap-[10px] h-[48px] flex-1 sm:flex-none sm:w-[200px] rounded-full bg-[#319754] text-white ${font} text-[14px] cursor-pointer hover:bg-[#267a43] transition-colors`}>
               <svg width="14" height="16" viewBox="0 0 14 16" fill="none"><path d={svgPaths.p294be700} fill="white" /></svg>
-              ซื้อสินค้า
+              {t("pd_buy_now_btn")}
             </button>
           </div>
         </div>
@@ -510,17 +512,17 @@ export default function ProductDetailPage() {
       {/* Description + Specs card */}
       <div className="bg-white rounded-[16px] p-[16px] flex flex-col gap-[16px] mt-6">
         <div className="flex flex-col gap-[10px]">
-          <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>รายละเอียดผลิตภัณฑ์</h2>
+          <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("pd_product_details")}</h2>
           <p className={`${font} text-[14px] text-black leading-relaxed`}>{product.description}</p>
         </div>
         <div className="h-px w-full bg-[#D4D4D8]" />
         <div className="flex flex-col gap-[10px]">
-          <h3 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลจำเพาะ</h3>
+          <h3 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("pd_product_specs")}</h3>
           {[
-            { label: "น้ำหนักสุทธิ:", value: product.weight },
-            { label: "ประเภท:", value: product.type },
-            { label: "รหัสสินค้า:", value: product.sku },
-            { label: "รูปแบบ:", value: product.format },
+            { label: t("pd_weight"), value: product.weight },
+            { label: t("pd_type"), value: product.type },
+            { label: t("pd_sku"), value: product.sku },
+            { label: t("pd_format"), value: product.format },
           ].map((s) => (
             <div key={s.label} className="flex gap-[10px]">
               <span className={`${font} text-[14px] text-black w-[80px] shrink-0`} style={{ fontWeight: 500 }}>{s.label}</span>
@@ -540,19 +542,19 @@ export default function ProductDetailPage() {
             <div className="flex flex-wrap gap-x-[24px] gap-y-[6px] items-center">
               <div className="flex items-center gap-[6px]">
                 <svg className="size-[14px]" fill="none" viewBox="0 0 13 14"><path d={svgPaths.p2d3b1d00} fill="black" fillOpacity="0.85" /></svg>
-                <span className={`${font} text-[14px] text-black`}>รายการสินค้า</span>
+                <span className={`${font} text-[14px] text-black`}>{t("pd_shop_items")}</span>
                 <span className={`${font} text-[14px] text-[#a2845e]`} style={{ fontWeight: 500 }}>100</span>
-                <span className={`${font} text-[14px] text-black`}>รายการ</span>
+                <span className={`${font} text-[14px] text-black`}>{t("pd_shop_items_unit")}</span>
               </div>
               <div className="flex items-center gap-[6px]">
                 <svg className="size-[14px]" fill="none" viewBox="0 0 14 14"><path d={svgPaths.p1052b000} fill="black" /></svg>
-                <span className={`${font} text-[14px] text-black`}>คะแนนร้านค้า</span>
+                <span className={`${font} text-[14px] text-black`}>{t("pd_shop_rating")}</span>
                 <span className={`${font} text-[14px] text-[#a2845e]`} style={{ fontWeight: 500 }}>{product.rating}/5</span>
-                <span className={`${font} text-[14px] text-black`}>การให้คะแนนทั้งหมด 100</span>
+                <span className={`${font} text-[14px] text-black`}>{t("pd_all_ratings")}</span>
               </div>
               <div className="flex items-center gap-[6px]">
                 <Heart className="size-[14px] text-black/85" strokeWidth={2} />
-                <span className={`${font} text-[14px] text-black`}>ถูกใจสินค้า</span>
+                <span className={`${font} text-[14px] text-black`}>{t("pd_loved_items")}</span>
                 <span className={`${font} text-[14px] text-[#a2845e]`} style={{ fontWeight: 500 }}>100</span>
               </div>
             </div>
@@ -565,7 +567,7 @@ export default function ProductDetailPage() {
             <Store className="size-[16px] shrink-0" strokeWidth={2} />
             <span className="grid grid-cols-[0fr] group-hover/shop:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out">
               <span className="overflow-hidden">
-                <span className="block whitespace-nowrap pl-[8px] text-[14px]" style={{ fontWeight: 500 }}>ดูร้านค้า</span>
+                <span className="block whitespace-nowrap pl-[8px] text-[14px]" style={{ fontWeight: 500 }}>{t("pd_view_shop")}</span>
               </span>
             </span>
           </button>
@@ -574,7 +576,7 @@ export default function ProductDetailPage() {
             <MessageCircle className="size-[16px] shrink-0" strokeWidth={2} />
             <span className="grid grid-cols-[0fr] group-hover/ask:grid-cols-[1fr] transition-[grid-template-columns] duration-300 ease-out">
               <span className="overflow-hidden">
-                <span className="block whitespace-nowrap pl-[8px] text-[14px]" style={{ fontWeight: 500 }}>ถามร้านค้า</span>
+                <span className="block whitespace-nowrap pl-[8px] text-[14px]" style={{ fontWeight: 500 }}>{t("pd_ask_shop")}</span>
               </span>
             </span>
           </button>
@@ -586,7 +588,7 @@ export default function ProductDetailPage() {
         {/* Header + Filters */}
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between w-full gap-3">
           <div className="flex items-center gap-[12px] shrink-0">
-            <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>รีวิวสินค้า</h2>
+            <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("pd_reviews")}</h2>
             {enrichedReviews.length > 0 && (() => {
               const avg = enrichedReviews.reduce((sum, rv) => sum + rv.rating, 0) / enrichedReviews.length;
               return (
@@ -624,7 +626,7 @@ export default function ProductDetailPage() {
                       <path d={svgPaths.p1052b000} fill={isActive ? "#FBE08A" : "#F7C42B"} />
                     </svg>
                   )}
-                  <span style={{ fontWeight: isActive ? 600 : 500 }}>{typeof r === "number" ? r : "ทั้งหมด"}</span>
+                  <span style={{ fontWeight: isActive ? 600 : 500 }}>{typeof r === "number" ? r : t("pd_all_filter")}</span>
                   <span className={`text-[10px] tabular-nums ${isActive ? "text-white/80" : "text-[#a3a3a3] group-hover/filter:text-[#319754]/70"}`}>({count})</span>
                 </motion.button>
               );
@@ -634,7 +636,7 @@ export default function ProductDetailPage() {
 
         {/* Review cards - 4-column grid with side arrows */}
         {paginatedReviews.length === 0 ? (
-          <p className={`${font} text-[14px] text-gray-400 text-center py-8`}>ยังไม่มีรีวิว</p>
+          <p className={`${font} text-[14px] text-gray-400 text-center py-8`}>{t("pd_no_reviews")}</p>
         ) : (
           <div className="group relative overflow-x-clip py-2 -my-2">
             <AnimatePresence mode="wait" initial={false} custom={reviewDirection}>
@@ -675,7 +677,7 @@ export default function ProductDetailPage() {
                     {/* Option tag */}
                     {r.tags && r.tags.length > 0 && (
                       <div className="bg-[#fdf3e3] px-[8px] py-[4px] rounded-full shrink-0 max-w-full">
-                        <span className={`${font} text-[10px] text-[#a86a05] block truncate`} style={{ fontWeight: 500 }}>ตัวเลือกสินค้า: {r.tags[0]}</span>
+                        <span className={`${font} text-[10px] text-[#a86a05] block truncate`} style={{ fontWeight: 500 }}>{t("pd_review_option_prefix")} {r.tags[0]}</span>
                       </div>
                     )}
                     {/* Comment */}
@@ -688,7 +690,7 @@ export default function ProductDetailPage() {
                           key={j}
                           onClick={() => setReviewLightbox({ images: r.images, index: j })}
                           className="relative shrink-0 size-[40px] rounded-[10px] overflow-hidden bg-[#d9d9d9] cursor-pointer hover:opacity-80 transition-opacity"
-                          aria-label="ดูรูปรีวิว"
+                          aria-label={t("pd_view_review_image")}
                         >
                           <ImageWithFallback src={img} alt="" className="w-full h-full object-cover" />
                           {j === 4 && r.images.length > 5 && (
@@ -709,7 +711,7 @@ export default function ProductDetailPage() {
               <button
                 onClick={() => { setReviewDirection(-1); setReviewPage((p) => p - 1); }}
                 className="absolute left-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10"
-                aria-label="ก่อนหน้า"
+                aria-label={t("pd_prev")}
               >
                 <ChevronLeft className="size-5" strokeWidth={2.4} />
               </button>
@@ -719,7 +721,7 @@ export default function ProductDetailPage() {
               <button
                 onClick={() => { setReviewDirection(1); setReviewPage((p) => p + 1); }}
                 className="absolute right-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10"
-                aria-label="ถัดไป"
+                aria-label={t("pd_next")}
               >
                 <ChevronRight className="size-5" strokeWidth={2.4} />
               </button>
@@ -733,9 +735,9 @@ export default function ProductDetailPage() {
       <div className="bg-white rounded-[16px] p-[16px] flex flex-col gap-[16px] mt-6">
         {/* Header */}
         <div className="flex items-end justify-between w-full">
-          <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>สินค้าเหมาะกับคุณ</h2>
+          <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("pd_recommended_for_you")}</h2>
           <button onClick={() => navigate("/products")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
-            <span className={`${font} text-[12px]`}>ดูทั้งหมด</span>
+            <span className={`${font} text-[12px]`}>{t("common_view_all")}</span>
             <ChevronRight className="size-4" />
           </button>
         </div>
@@ -754,21 +756,21 @@ export default function ProductDetailPage() {
                   {tag === "flashsale" && (
                     <div className="absolute top-0 right-0 p-[6px]">
                       <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
-                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
+                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_discount_prefix")} {p.discountPercent}%</span>
                       </div>
                     </div>
                   )}
                   {tag === "discount" && (
                     <div className="absolute top-0 right-0 p-[6px]">
                       <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
-                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ลด {p.discountPercent}%</span>
+                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_discount_prefix")} {p.discountPercent}%</span>
                       </div>
                     </div>
                   )}
                   {tag === "recommended" && (
                     <div className="absolute top-0 right-0 p-[6px]">
                       <div className="bg-[#319754] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(49,151,84,0.4)]">
-                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>สินค้าแนะนำ</span>
+                        <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_recommended_tag")}</span>
                       </div>
                     </div>
                   )}
@@ -932,7 +934,7 @@ export default function ProductDetailPage() {
             <button
               onClick={() => setReviewLightbox(null)}
               className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 rounded-full size-[40px] flex items-center justify-center cursor-pointer transition-colors z-10"
-              aria-label="ปิด"
+              aria-label={t("common_close")}
             >
               <span className="text-white text-[20px]">&times;</span>
             </button>
@@ -944,7 +946,7 @@ export default function ProductDetailPage() {
                   setReviewLightbox((cur) => cur && { ...cur, index: (cur.index - 1 + cur.images.length) % cur.images.length });
                 }}
                 className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 rounded-full size-[40px] flex items-center justify-center cursor-pointer transition-colors z-10"
-                aria-label="ก่อนหน้า"
+                aria-label={t("pd_prev")}
               >
                 <ChevronLeft className="size-5 text-white" />
               </button>
@@ -973,7 +975,7 @@ export default function ProductDetailPage() {
                   setReviewLightbox((cur) => cur && { ...cur, index: (cur.index + 1) % cur.images.length });
                 }}
                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 rounded-full size-[40px] flex items-center justify-center cursor-pointer transition-colors z-10"
-                aria-label="ถัดไป"
+                aria-label={t("pd_next")}
               >
                 <ChevronRight className="size-5 text-white" />
               </button>

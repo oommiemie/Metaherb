@@ -707,7 +707,7 @@ function DashboardContent() {
               <Trophy className="size-4 text-[#f59e0b]" strokeWidth={2.4} />
             </div>
             <div>
-              <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>ร้านค้ายอดเยี่ยมเดือนนี้</p>
+              <p className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>ร้านค้าที่มียอดขายสูงสุด</p>
               <p className={`${font} text-[11px] text-gray-500`}>{topShops.length} อันดับแรก</p>
             </div>
           </div>
@@ -2013,22 +2013,34 @@ function AdminSalesReportContent() {
 
       {/* Top products table — grouped by date, owner-style */}
       {(() => {
+        // Platform commission rate (GP)
+        const GP_RATE = 0.07;
+
         // Build N date groups; chunk the sorted product rows into them
         const groupCount = period === "daily" ? Math.min(7, chartSeries.length) : period === "weekly" ? 4 : period === "monthly" ? 6 : 5;
         const dateLabels = chartSeries.slice(-groupCount).map((s) => s.label).reverse();
         const itemsPerGroup = Math.max(2, Math.ceil(sortedRows.length / Math.max(1, dateLabels.length)));
         const dateGroups = dateLabels.map((label, gi) => {
-          const groupItems = sortedRows.slice(gi * itemsPerGroup, gi * itemsPerGroup + itemsPerGroup).map((p) => {
+          const groupItems = sortedRows.slice(gi * itemsPerGroup, gi * itemsPerGroup + itemsPerGroup).map((p, idx) => {
             const cost = Math.round(p.sales * 0.58);
-            const profit = p.sales - cost;
-            return { ...p, cost, profit };
+            const gp = Math.round(p.sales * GP_RATE);
+            // Pseudo-random 0-15% discount, stable per group+row
+            const seed = (gi * 31 + idx * 17 + 1234) >>> 0;
+            const discountPct = (seed % 4 === 0) ? 0 : ((seed % 16) / 100);
+            const discount = Math.round(p.sales * discountPct);
+            const net = p.sales - gp;
+            const profit = net - cost;
+            return { ...p, cost, gp, discount, net, profit };
           });
-          const totalQty   = groupItems.reduce((s, p) => s + p.qty, 0);
-          const totalSales = groupItems.reduce((s, p) => s + p.sales, 0);
-          const totalCost  = groupItems.reduce((s, p) => s + p.cost, 0);
-          const totalProfit = totalSales - totalCost;
+          const totalQty      = groupItems.reduce((s, p) => s + p.qty, 0);
+          const totalSales    = groupItems.reduce((s, p) => s + p.sales, 0);
+          const totalCost     = groupItems.reduce((s, p) => s + p.cost, 0);
+          const totalGp       = groupItems.reduce((s, p) => s + p.gp, 0);
+          const totalDiscount = groupItems.reduce((s, p) => s + p.discount, 0);
+          const totalNet      = groupItems.reduce((s, p) => s + p.net, 0);
+          const totalProfit   = totalNet - totalCost;
           const margin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
-          return { label, items: groupItems, totalQty, totalSales, totalCost, totalProfit, margin };
+          return { label, items: groupItems, totalQty, totalSales, totalCost, totalGp, totalDiscount, totalNet, totalProfit, margin };
         }).filter((g) => g.items.length > 0);
 
         const groupTotalPages = Math.max(1, Math.ceil(dateGroups.length / groupsPerPage));
@@ -2036,10 +2048,13 @@ function AdminSalesReportContent() {
         const groupPageStart = (groupSafePage - 1) * groupsPerPage;
         const pageGroups = dateGroups.slice(groupPageStart, groupPageStart + groupsPerPage);
 
-        const pageTotalQty   = pageGroups.reduce((s, g) => s + g.totalQty, 0);
-        const pageTotalSales = pageGroups.reduce((s, g) => s + g.totalSales, 0);
-        const pageTotalCost  = pageGroups.reduce((s, g) => s + g.totalCost, 0);
-        const pageTotalProfit = pageTotalSales - pageTotalCost;
+        const pageTotalQty      = pageGroups.reduce((s, g) => s + g.totalQty, 0);
+        const pageTotalSales    = pageGroups.reduce((s, g) => s + g.totalSales, 0);
+        const pageTotalCost     = pageGroups.reduce((s, g) => s + g.totalCost, 0);
+        const pageTotalGp       = pageGroups.reduce((s, g) => s + g.totalGp, 0);
+        const pageTotalDiscount = pageGroups.reduce((s, g) => s + g.totalDiscount, 0);
+        const pageTotalNet      = pageGroups.reduce((s, g) => s + g.totalNet, 0);
+        const pageTotalProfit   = pageTotalNet - pageTotalCost;
         const pageMargin = pageTotalSales > 0 ? (pageTotalProfit / pageTotalSales) * 100 : 0;
         const totalRows = pageGroups.reduce((s, g) => s + g.items.length, 0);
 
@@ -2064,110 +2079,130 @@ function AdminSalesReportContent() {
               </div>
             </div>
 
-            <table className="w-full table-fixed">
-              <colgroup>
-                <col style={{ width: "14%" }} />{/* วันที่ */}
-                <col style={{ width: "28%" }} />{/* สินค้า */}
-                <col style={{ width: "14%" }} />{/* ร้านค้า */}
-                <col style={{ width: "10%" }} />{/* จำนวนขาย */}
-                <col style={{ width: "11%" }} />{/* ยอดขาย */}
-                <col style={{ width: "10%" }} />{/* ต้นทุน */}
-                <col style={{ width: "13%" }} />{/* กำไร/มาร์จิ้น */}
-              </colgroup>
-              <thead>
-                <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
-                  <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>วันที่</th>
-                  <th className="text-left pb-3 pr-3 pl-5" style={{ fontWeight: 500 }}>สินค้า</th>
-                  <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ร้านค้า</th>
-                  <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>จำนวนขาย</th>
-                  <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดขาย</th>
-                  <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ต้นทุน</th>
-                  <th className="text-right pb-3" style={{ fontWeight: 500 }}>กำไร / มาร์จิ้น</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pageGroups.map((group, gi) => {
-                  const groupMargin = group.margin;
-                  return (
-                    <Fragment key={gi}>
-                      {group.items.map((p, i) => {
-                        const profit = p.profit;
-                        const margin = p.sales > 0 ? (profit / p.sales) * 100 : 0;
-                        const profitDown = margin < 35 && profit > 0;
-                        const isFirst = i === 0;
-                        const isLast = i === group.items.length - 1;
-                        return (
-                          <tr key={p.id} className={`hover:bg-gray-50/50 transition-colors ${isLast ? "border-b-2 border-gray-100" : "border-b border-gray-50"}`}>
-                            {isFirst && (
-                              <td rowSpan={group.items.length} className="py-3 pr-3 align-top bg-[#f0faf3]/50 border-r border-gray-100">
-                                <div className="flex flex-col gap-1.5 px-2 py-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <CalendarIcon className="size-3.5 text-[#319754] shrink-0" />
-                                    <span className={`${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>{group.label}</span>
+            <div>
+              <table className="w-full table-fixed">
+                <colgroup>
+                  <col style={{ width: "9%" }} />{/* วันที่ */}
+                  <col style={{ width: "19%" }} />{/* สินค้า */}
+                  <col style={{ width: "11%" }} />{/* ร้านค้า */}
+                  <col style={{ width: "7%" }} />{/* จำนวน */}
+                  <col style={{ width: "9%" }} />{/* ยอดขาย */}
+                  <col style={{ width: "8%" }} />{/* GP */}
+                  <col style={{ width: "8%" }} />{/* ส่วนลด */}
+                  <col style={{ width: "10%" }} />{/* ร้านรับสุทธิ */}
+                  <col style={{ width: "8%" }} />{/* ต้นทุน */}
+                  <col style={{ width: "11%" }} />{/* กำไร */}
+                </colgroup>
+                <thead>
+                  <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+                    <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>วันที่</th>
+                    <th className="text-left pb-3 pr-3 pl-5" style={{ fontWeight: 500 }}>สินค้า</th>
+                    <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ร้านค้า</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>จำนวน</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดขาย</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ค่าธรรมเนียมแพลตฟอร์ม 7%">GP</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ส่วนลด</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ร้านรับสุทธิ = ยอดขาย − GP">ร้านรับสุทธิ</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ต้นทุน</th>
+                    <th className="text-right pb-3" style={{ fontWeight: 500 }}>กำไร</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageGroups.map((group, gi) => {
+                    const groupMargin = group.margin;
+                    return (
+                      <Fragment key={gi}>
+                        {group.items.map((p, i) => {
+                          const profit = p.profit;
+                          const margin = p.sales > 0 ? (profit / p.sales) * 100 : 0;
+                          const profitDown = margin < 35 && profit > 0;
+                          const isFirst = i === 0;
+                          const isLast = i === group.items.length - 1;
+                          return (
+                            <tr key={p.id} className={`hover:bg-gray-50/50 transition-colors ${isLast ? "border-b-2 border-gray-100" : "border-b border-gray-50"}`}>
+                              {isFirst && (
+                                <td rowSpan={group.items.length} className="py-3 pr-3 align-top bg-[#f0faf3]/50 border-r border-gray-100">
+                                  <div className="flex flex-col gap-1.5 px-2 py-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <CalendarIcon className="size-3.5 text-[#319754] shrink-0" />
+                                      <span className={`${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>{group.label}</span>
+                                    </div>
+                                    <div className={`${font} text-[10px] text-gray-500 flex flex-col gap-0.5 pl-5`}>
+                                      <span>{group.items.length} รายการ · {group.totalQty.toLocaleString()} ชิ้น</span>
+                                      <span className="text-[#1a1a1a] tabular-nums" style={{ fontWeight: 600 }}>ยอดขาย ฿{group.totalSales.toLocaleString()}</span>
+                                      <span className="text-[#c2410c] tabular-nums" style={{ fontWeight: 500 }}>GP −฿{group.totalGp.toLocaleString()}</span>
+                                      <span className="text-[#319754] tabular-nums" style={{ fontWeight: 600 }}>สุทธิ ฿{group.totalNet.toLocaleString()}</span>
+                                      <span className={group.totalProfit >= 0 ? "text-[#15803d]" : "text-[#dc2626]"}>กำไร {groupMargin.toFixed(1)}%</span>
+                                    </div>
                                   </div>
-                                  <div className={`${font} text-[10px] text-gray-500 flex flex-col gap-0.5 pl-5`}>
-                                    <span>{group.items.length} รายการ · {group.totalQty.toLocaleString()} ชิ้น</span>
-                                    <span className="text-[#319754]" style={{ fontWeight: 600 }}>฿{group.totalSales.toLocaleString()}</span>
-                                    <span className={group.totalProfit >= 0 ? "text-[#15803d]" : "text-[#dc2626]"}>กำไร {groupMargin.toFixed(1)}%</span>
+                                </td>
+                              )}
+                              <td className="py-3 pr-3 pl-5">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <ImageWithFallback src={p.image} alt={p.name} className="size-9 rounded-lg object-cover bg-gray-100 shrink-0" />
+                                  <div className="flex flex-col min-w-0">
+                                    <p className={`${font} text-[13px] text-[#1a1a1a] truncate`} style={{ fontWeight: 500 }} title={p.name}>{p.name}</p>
+                                    <p className={`${font} text-[11px] text-gray-400 truncate`}>{p.category}</p>
                                   </div>
                                 </div>
                               </td>
-                            )}
-                            <td className="py-3 pr-3 pl-5">
-                              <div className="flex items-center gap-3 min-w-0">
-                                <ImageWithFallback src={p.image} alt={p.name} className="size-9 rounded-lg object-cover bg-gray-100 shrink-0" />
-                                <div className="flex flex-col min-w-0">
-                                  <p className={`${font} text-[13px] text-[#1a1a1a] truncate`} style={{ fontWeight: 500 }} title={p.name}>{p.name}</p>
-                                  <p className={`${font} text-[11px] text-gray-400 truncate`}>{p.category}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3 pr-3">
-                              <span className={`${font} inline-flex items-center gap-1.5 text-[12px] text-gray-700 truncate max-w-full`} title={p.shopName} style={{ fontWeight: 500 }}>
-                                <Store className="size-3.5 text-gray-400 shrink-0" strokeWidth={2.2} />
-                                <span className="truncate">{p.shopName}</span>
-                              </span>
-                            </td>
-                            <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
-                              {p.qty.toLocaleString()} <span className="text-gray-400 text-[11px]">ชิ้น</span>
-                            </td>
-                            <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
-                            <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-600`}>฿{p.cost.toLocaleString()}</td>
-                            <td className="py-3 text-right">
-                              <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
-                                ฿{profit.toLocaleString()}
-                              </p>
-                              <p className={`${font} text-[11px] tabular-nums`} style={{ color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
-                                {p.sales > 0 ? `${margin.toFixed(1)}%` : "-"}
-                              </p>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </Fragment>
-                  );
-                })}
-                {pageGroups.length === 0 && (
-                  <tr><td colSpan={7} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</td></tr>
+                              <td className="py-3 pr-3">
+                                <span className={`${font} inline-flex items-center gap-1.5 text-[12px] text-gray-700 truncate max-w-full`} title={p.shopName} style={{ fontWeight: 500 }}>
+                                  <Store className="size-3.5 text-gray-400 shrink-0" strokeWidth={2.2} />
+                                  <span className="truncate">{p.shopName}</span>
+                                </span>
+                              </td>
+                              <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
+                                {p.qty.toLocaleString()} <span className="text-gray-400 text-[11px]">ชิ้น</span>
+                              </td>
+                              <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-[#c2410c]`} style={{ fontWeight: 500 }}>−฿{p.gp.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-[#a16207]`} style={{ fontWeight: 500 }}>
+                                {p.discount > 0 ? `−฿${p.discount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                              </td>
+                              <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[14px] text-[#319754]`} style={{ fontWeight: 700 }}>฿{p.net.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-600`}>฿{p.cost.toLocaleString()}</td>
+                              <td className="py-3 text-right">
+                                <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
+                                  ฿{profit.toLocaleString()}
+                                </p>
+                                <p className={`${font} text-[11px] tabular-nums`} style={{ color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
+                                  {p.sales > 0 ? `${margin.toFixed(1)}%` : "-"}
+                                </p>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </Fragment>
+                    );
+                  })}
+                  {pageGroups.length === 0 && (
+                    <tr><td colSpan={10} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</td></tr>
+                  )}
+                </tbody>
+                {pageGroups.length > 0 && (
+                  <tfoot>
+                    <tr className="border-t-2 border-gray-100 bg-gray-50/40">
+                      <td className={`pt-3 pr-3 ${font} text-[12px]`} style={{ fontWeight: 600 }}>{pageGroups.length} กลุ่ม</td>
+                      <td className={`pt-3 pr-3 pl-5 ${font} text-[12px]`} style={{ fontWeight: 600 }}>รวม {totalRows} รายการ</td>
+                      <td className={`pt-3 pr-3 ${font} text-[12px] text-gray-500`}>—</td>
+                      <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[13px]`} style={{ fontWeight: 700 }}>{pageTotalQty.toLocaleString()} <span className="text-gray-400 text-[11px]">ชิ้น</span></td>
+                      <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 700 }}>฿{pageTotalSales.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[13px] text-[#c2410c]`} style={{ fontWeight: 600 }}>−฿{pageTotalGp.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[13px] text-[#a16207]`} style={{ fontWeight: 600 }}>
+                        {pageTotalDiscount > 0 ? `−฿${pageTotalDiscount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                      </td>
+                      <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[14px] text-[#319754]`} style={{ fontWeight: 700 }}>฿{pageTotalNet.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-600`} style={{ fontWeight: 600 }}>฿{pageTotalCost.toLocaleString()}</td>
+                      <td className={`pt-3 text-right ${font} text-[14px] text-[#15803d] tabular-nums`} style={{ fontWeight: 700 }}>
+                        ฿{pageTotalProfit.toLocaleString()}
+                        <span className={`${font} text-[11px] block`} style={{ fontWeight: 500 }}>{pageMargin.toFixed(1)}%</span>
+                      </td>
+                    </tr>
+                  </tfoot>
                 )}
-              </tbody>
-              {pageGroups.length > 0 && (
-                <tfoot>
-                  <tr className="border-t-2 border-gray-100">
-                    <td className={`pt-3 pr-3 ${font} text-[12px]`} style={{ fontWeight: 600 }}>{pageGroups.length} กลุ่ม</td>
-                    <td className={`pt-3 pr-3 pl-5 ${font} text-[12px]`} style={{ fontWeight: 600 }}>รวม {totalRows} รายการ</td>
-                    <td className={`pt-3 pr-3 ${font} text-[12px] text-gray-500`}>—</td>
-                    <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[13px]`} style={{ fontWeight: 700 }}>{pageTotalQty.toLocaleString()} <span className="text-gray-400 text-[11px]">ชิ้น</span></td>
-                    <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 700 }}>฿{pageTotalSales.toLocaleString()}</td>
-                    <td className={`pt-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-600`} style={{ fontWeight: 600 }}>฿{pageTotalCost.toLocaleString()}</td>
-                    <td className={`pt-3 text-right ${font} text-[14px] text-[#15803d] tabular-nums`} style={{ fontWeight: 700 }}>
-                      ฿{pageTotalProfit.toLocaleString()}
-                      <span className={`${font} text-[11px] block`} style={{ fontWeight: 500 }}>{pageMargin.toFixed(1)}%</span>
-                    </td>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
+              </table>
+            </div>
 
             {/* Pagination */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
@@ -2229,6 +2264,7 @@ function AdminCustomersReportContent() {
   const [yearClickPhase, setYearClickPhase] = useState<0 | 1>(0);
   const [calOpen, setCalOpen] = useState(false);
   const [custSort, setCustSort] = useState<"total_desc" | "orders_desc" | "recent" | "oldest">("total_desc");
+  const [custGroupFilter, setCustGroupFilter] = useState<string>("all");
   const [custPage, setCustPage] = useState(1);
   const [custPerPage, setCustPerPage] = useState(10);
 
@@ -2413,14 +2449,43 @@ function AdminCustomersReportContent() {
     return baseList.filter((c) => shopFilter === "all" || c.favShop === shopFilter);
   }, [shopFilter]);
 
+  // Max days-ago covered by the selected period (used to scope the top-customers table)
+  const custPeriodMaxDays = useMemo(() => {
+    if (period === "daily") {
+      // Use the actual date picker range if available; default 1 day
+      if (dateRange?.from) {
+        const to = dateRange.to ?? dateRange.from;
+        return Math.max(1, Math.ceil((to.getTime() - dateRange.from.getTime()) / 86_400_000) + 1);
+      }
+      return 1;
+    }
+    if (period === "weekly")  return 7;
+    if (period === "monthly") {
+      const months = Math.max(1, monthRange.to - monthRange.from + 1);
+      return months * 30;
+    }
+    if (period === "yearly") {
+      const years = Math.max(1, yearRange.to - yearRange.from + 1);
+      return years * 365;
+    }
+    return 30;
+  }, [period, dateRange, monthRange, yearRange]);
+
+  const custGroupOptions = useMemo(
+    () => Array.from(new Set(customers.filter((c) => c.daysAgo <= custPeriodMaxDays).map((c) => c.group))),
+    [customers, custPeriodMaxDays]
+  );
+
   const sortedCust = useMemo(() => {
-    const arr = [...customers];
+    const arr = customers
+      .filter((c) => c.daysAgo <= custPeriodMaxDays)
+      .filter((c) => custGroupFilter === "all" || c.group === custGroupFilter);
     if (custSort === "total_desc") arr.sort((a, b) => b.total - a.total);
     if (custSort === "orders_desc") arr.sort((a, b) => b.orders - a.orders);
     if (custSort === "recent") arr.sort((a, b) => a.daysAgo - b.daysAgo);
     if (custSort === "oldest") arr.sort((a, b) => b.daysAgo - a.daysAgo);
     return arr;
-  }, [customers, custSort]);
+  }, [customers, custSort, custGroupFilter, custPeriodMaxDays]);
 
   const custTotalPages = Math.max(1, Math.ceil(sortedCust.length / custPerPage));
   const custSafePage = Math.min(custPage, custTotalPages);
@@ -3019,15 +3084,27 @@ function AdminCustomersReportContent() {
               <span>ข้อมูล <span className="text-gray-600" style={{ fontWeight: 500 }}>{scopeLabel}</span> · {sortedCust.length} คน · แสดง {pagedCust.length === 0 ? 0 : custPageStart + 1}–{custPageStart + pagedCust.length}</span>
             </p>
           </div>
-          <div className="relative">
-            <select value={custSort} onChange={(e) => { setCustSort(e.target.value as any); setCustPage(1); }}
-              className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
-              <option value="total_desc">เรียง: ยอดซื้อรวม</option>
-              <option value="orders_desc">เรียง: ออเดอร์มากสุด</option>
-              <option value="recent">เรียง: ซื้อล่าสุด</option>
-              <option value="oldest">เรียง: ห่างจากซื้อ</option>
-            </select>
-            <ChevronDown className="size-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative">
+              <select value={custGroupFilter} onChange={(e) => { setCustGroupFilter(e.target.value); setCustPage(1); }}
+                className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                <option value="all">ประเภทลูกค้า: ทั้งหมด</option>
+                {custGroupOptions.map((g) => (
+                  <option key={g} value={g}>ประเภท: {g}</option>
+                ))}
+              </select>
+              <ChevronDown className="size-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+            <div className="relative">
+              <select value={custSort} onChange={(e) => { setCustSort(e.target.value as any); setCustPage(1); }}
+                className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
+                <option value="total_desc">เรียง: ยอดซื้อรวม</option>
+                <option value="orders_desc">เรียง: ออเดอร์มากสุด</option>
+                <option value="recent">เรียง: ซื้อล่าสุด</option>
+                <option value="oldest">เรียง: ห่างจากซื้อ</option>
+              </select>
+              <ChevronDown className="size-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
           </div>
         </div>
 
@@ -3310,18 +3387,40 @@ function AdminProductsReportContent() {
     }).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
   }, [allShops, period]);
 
-  // Products table — best sellers with shop attribution
+  // Products table — best sellers with shop attribution (responsive to date range selection)
   const productRows = useMemo(() => {
     const base = siteProducts.filter((p) => shopFilter === "all" || p.shopName === shopFilter);
-    const scale = period === "daily" ? 1 / 30 : period === "weekly" ? 1 / 4 : period === "monthly" ? 1 : 12;
+    // Scale + signature derived from the actual selected range so changing dates updates the table
+    let scale = 1;
+    let dateSig = 0;
+    if (period === "daily") {
+      const from = dateRange?.from ?? today;
+      const to = dateRange?.to ?? from;
+      const days = Math.max(1, Math.ceil((to.getTime() - from.getTime()) / 86_400_000) + 1);
+      scale = days / 30;
+      dateSig = from.getTime() ^ to.getTime();
+    } else if (period === "weekly") {
+      scale = 7 / 30;
+      dateSig = weekMonth.getFullYear() * 100 + weekMonth.getMonth();
+    } else if (period === "monthly") {
+      const months = Math.max(1, monthRange.to - monthRange.from + 1);
+      scale = months;
+      dateSig = monthRange.year * 1000 + monthRange.from * 10 + monthRange.to;
+    } else if (period === "yearly") {
+      const years = Math.max(1, yearRange.to - yearRange.from + 1);
+      scale = years * 12;
+      dateSig = yearRange.from * 10000 + yearRange.to;
+    }
     return base.map((p) => {
       const sold = parseInt((p.sold || "").replace(/[^0-9]/g, ""), 10) || 0;
-      const units = Math.max(0, Math.round(sold * scale * (0.7 + (hash(p.id + "u") % 60) / 100)));
+      // Mix dateSig into the jitter so different date selections produce different numbers
+      const jitter = 0.7 + (hash(p.id + "u" + dateSig) % 60) / 100;
+      const units = Math.max(0, Math.round(sold * scale * jitter));
       const revenue = units * p.price;
       const image = p.image && p.image.trim() ? p.image : `https://picsum.photos/seed/metaherb-product-${p.id}/120`;
       return { id: p.id, name: p.name, shopName: p.shopName, image, category: p.category, price: p.price, rating: p.rating, reviews: p.reviews.length, stock: p.stock, units, revenue };
     });
-  }, [shopFilter, period]);
+  }, [shopFilter, period, dateRange, weekMonth, monthRange, yearRange]);
 
   const sortedProds = useMemo(() => {
     const arr = [...productRows];
@@ -3954,14 +4053,16 @@ function AdminProductsReportContent() {
 
         <table className="w-full table-fixed">
           <colgroup>
-            <col style={{ width: "5%" }} />
-            <col style={{ width: "30%" }} />
-            <col style={{ width: "15%" }} />
-            <col style={{ width: "10%" }} />
-            <col style={{ width: "10%" }} />
+            <col style={{ width: "4%" }} />
+            <col style={{ width: "21%" }} />
             <col style={{ width: "12%" }} />
+            <col style={{ width: "7%" }} />
+            <col style={{ width: "9%" }} />
             <col style={{ width: "10%" }} />
+            <col style={{ width: "9%" }} />
             <col style={{ width: "8%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "12%" }} />
           </colgroup>
           <thead>
             <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
@@ -3971,16 +4072,22 @@ function AdminProductsReportContent() {
               <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ขายแล้ว</th>
               <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ราคา</th>
               <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดขาย</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดส่วนลด</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="รายได้เฉลี่ยต่อชิ้น = ยอดขาย ÷ ขายแล้ว">เฉลี่ย/ชิ้น</th>
               <th className="text-center pb-3 pr-3" style={{ fontWeight: 500 }}>รีวิว</th>
               <th className="text-center pb-3" style={{ fontWeight: 500 }}>สต็อก</th>
             </tr>
           </thead>
           <tbody>
             {pagedProds.length === 0 && (
-              <tr><td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบสินค้า</td></tr>
+              <tr><td colSpan={10} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบสินค้า</td></tr>
             )}
             {pagedProds.map((p, idx) => {
               const sb = stockBadge(p.stock);
+              const seed = Array.from(p.name).reduce((a, c) => a + c.charCodeAt(0), 0);
+              const discountPct = (seed % 4 === 0) ? 0 : ((seed % 18) / 100); // 0–17%
+              const discount = Math.round(p.revenue * discountPct);
+              const avgPerUnit = p.units > 0 ? Math.round(p.revenue / p.units) : 0;
               return (
                 <tr key={p.id} className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
                   <td className={`py-3 text-center ${font} text-[11px] text-gray-400 tabular-nums`} style={{ fontWeight: 500 }}>{prodPageStart + idx + 1}</td>
@@ -4002,6 +4109,10 @@ function AdminProductsReportContent() {
                   <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-700`}>{p.units.toLocaleString()} <span className="text-[10px] text-gray-400">ชิ้น</span></td>
                   <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[12px] text-gray-500`}>฿{p.price.toLocaleString()}</td>
                   <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 700, color: "#319754" }}>฿{p.revenue.toLocaleString()}</td>
+                  <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-[#a16207]`} style={{ fontWeight: 500 }}>
+                    {discount > 0 ? `−฿${discount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                  </td>
+                  <td className={`py-3 pr-3 text-right tabular-nums ${font} text-[13px] text-gray-600`}>฿{avgPerUnit.toLocaleString()}</td>
                   <td className="py-3 pr-3 text-center">
                     <span className={`${font} inline-flex items-center gap-1 text-[12px] text-[#f59e0b] tabular-nums`} style={{ fontWeight: 600 }}>
                       <Star className="size-3 fill-[#f59e0b]" strokeWidth={0} />
@@ -4010,7 +4121,7 @@ function AdminProductsReportContent() {
                     <p className={`${font} text-[10px] text-gray-400 tabular-nums`}>{p.reviews} รีวิว</p>
                   </td>
                   <td className="py-3 text-center">
-                    <span className={`${font} inline-flex items-center px-2 py-0.5 rounded-full text-[11px] tabular-nums`}
+                    <span className={`${font} inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-[11px] tabular-nums`}
                       style={{ backgroundColor: sb.bg, color: sb.fg, fontWeight: 600 }}>
                       {p.stock} · {sb.label}
                     </span>
@@ -4206,12 +4317,10 @@ function AdminMarketingReportContent() {
   const trafficSources = useMemo(() => {
     const PIE_COLORS = ["#7c3aed", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#0ea5e9"];
     return [
-      { name: "ค้นหา (Search)",  value: Math.round(kpi.visits * 0.38), color: PIE_COLORS[0] },
-      { name: "ตรง (Direct)",     value: Math.round(kpi.visits * 0.27), color: PIE_COLORS[1] },
-      { name: "Social Media",      value: Math.round(kpi.visits * 0.18), color: PIE_COLORS[2] },
-      { name: "Ads / Paid",        value: Math.round(kpi.visits * 0.10), color: PIE_COLORS[3] },
-      { name: "Referral",           value: Math.round(kpi.visits * 0.05), color: PIE_COLORS[4] },
-      { name: "Email",              value: Math.round(kpi.visits * 0.02), color: PIE_COLORS[5] },
+      { name: "ค้นหา (Search)",  value: Math.round(kpi.visits * 0.40), color: PIE_COLORS[0] },
+      { name: "ตรง (Direct)",     value: Math.round(kpi.visits * 0.28), color: PIE_COLORS[1] },
+      { name: "Social Media",      value: Math.round(kpi.visits * 0.20), color: PIE_COLORS[2] },
+      { name: "Ads / Paid",        value: Math.round(kpi.visits * 0.12), color: PIE_COLORS[3] },
     ];
   }, [kpi.visits]);
 
@@ -4236,9 +4345,7 @@ function AdminMarketingReportContent() {
       { name: "Facebook / Instagram",     type: "Social",        color: "#1877f2", icon: "📱" },
       { name: "TikTok",                    type: "Social",        color: "#ff0050", icon: "🎵" },
       { name: "LINE Official",             type: "Messaging",     color: "#06c755", icon: "💬" },
-      { name: "Email Newsletter",          type: "Email",         color: "#10b981", icon: "✉️" },
       { name: "Direct / Bookmark",         type: "Direct",        color: "#94a3b8", icon: "🔗" },
-      { name: "Affiliate / Influencer",    type: "Referral",      color: "#f59e0b", icon: "🤝" },
       { name: "YouTube",                    type: "Social",        color: "#ff0000", icon: "🎥" },
     ];
     return channels.map((c, i) => {
@@ -22621,7 +22728,7 @@ export function AdminDashboard() {
 
       <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">
         {/* BannerContent + BlogContent + VideoContent + PopupContent + LegalContent + ComplaintListContent render their own headers — skip default */}
-        {activeItem !== "content_banner" && activeItem !== "content_blog" && activeItem !== "content_video" && activeItem !== "content_index" && activeItem !== "content_terms" && activeItem !== "content_privacy" && activeItem !== "complaints_list" && activeItem !== "complaints_appeals" && activeItem !== "products_manage" && activeItem !== "products_categories" && activeItem !== "products_promotions" && activeItem !== "products_flash" && activeItem !== "products_coupons" && activeItem !== "report_sales" && activeItem !== "report_customers" && activeItem !== "report_products" && activeItem !== "report_marketing" && activeItem !== "orders" && activeItem !== "reviews" && activeItem !== "page_home" && activeItem !== "page_products" && activeItem !== "page_blog" && activeItem !== "page_about" && (
+        {activeItem !== "dashboard" && activeItem !== "content_banner" && activeItem !== "content_blog" && activeItem !== "content_video" && activeItem !== "content_index" && activeItem !== "content_terms" && activeItem !== "content_privacy" && activeItem !== "complaints_list" && activeItem !== "complaints_appeals" && activeItem !== "products_manage" && activeItem !== "products_categories" && activeItem !== "products_promotions" && activeItem !== "products_flash" && activeItem !== "products_coupons" && activeItem !== "report_sales" && activeItem !== "report_customers" && activeItem !== "report_products" && activeItem !== "report_marketing" && activeItem !== "orders" && activeItem !== "reviews" && activeItem !== "page_home" && activeItem !== "page_products" && activeItem !== "page_blog" && activeItem !== "page_about" && (
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div>
               <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{meta.title}</h2>

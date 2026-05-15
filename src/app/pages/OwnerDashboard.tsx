@@ -7692,12 +7692,15 @@ function ReportSalesTab() {
           return data.map((d) => ({ label: d.label }));
         })();
 
+        // Platform commission rate (GP) — fixed at 7% of gross sales per item
+        const GP_RATE = 0.07;
+
         // Build date groups for the table — show what was sold on each bucket.
         // Each bucket gets 3-5 products picked from the period product pool with small per-bucket qty.
         const dateGroups = tableBuckets.map((bucket, bucketIdx) => {
           const seed = ((bucketIdx * 37 + 1234) >>> 0);
           const numItems = 3 + (seed % 3); // 3..5 products
-          const items: { name: string; sku: string; qty: number; sales: number; cost: number }[] = [];
+          const items: { name: string; sku: string; qty: number; sales: number; cost: number; gp: number; discount: number; net: number }[] = [];
           for (let i = 0; i < numItems && sorted.length > 0; i++) {
             const productIdx = (seed + i * 13) % sorted.length;
             const p = sorted[productIdx];
@@ -7707,7 +7710,12 @@ function ReportSalesTab() {
             const salesAmt = qty * unitPrice;
             const costRatio = p.sales > 0 ? p.cost / p.sales : 0.5;
             const costAmt = Math.round(salesAmt * costRatio);
-            items.push({ name: p.name, sku: p.sku, qty, sales: salesAmt, cost: costAmt });
+            const gp = Math.round(salesAmt * GP_RATE);
+            // Discount: pseudo-random 0–15% of sales (sometimes 0 for variety)
+            const discountPct = (itemSeed % 4 === 0) ? 0 : ((itemSeed % 16) / 100);
+            const discount = Math.round(salesAmt * discountPct);
+            const net = salesAmt - gp;
+            items.push({ name: p.name, sku: p.sku, qty, sales: salesAmt, cost: costAmt, gp, discount, net });
           }
           // Sort items within group using same productSort key
           items.sort((a, b) => {
@@ -7726,7 +7734,10 @@ function ReportSalesTab() {
           const totalQty = items.reduce((s, it) => s + it.qty, 0);
           const totalSales = items.reduce((s, it) => s + it.sales, 0);
           const totalCost = items.reduce((s, it) => s + it.cost, 0);
-          return { label: bucket.label, items, totalQty, totalSales, totalCost };
+          const totalGp = items.reduce((s, it) => s + it.gp, 0);
+          const totalDiscount = items.reduce((s, it) => s + it.discount, 0);
+          const totalNet = items.reduce((s, it) => s + it.net, 0);
+          return { label: bucket.label, items, totalQty, totalSales, totalCost, totalGp, totalDiscount, totalNet };
         });
 
         // Paginate by groups
@@ -7738,7 +7749,10 @@ function ReportSalesTab() {
         const pageTotalQty = pageGroups.reduce((s, g) => s + g.totalQty, 0);
         const pageTotalSales = pageGroups.reduce((s, g) => s + g.totalSales, 0);
         const pageTotalCost = pageGroups.reduce((s, g) => s + g.totalCost, 0);
-        const pageTotalProfit = pageTotalSales - pageTotalCost;
+        const pageTotalGp = pageGroups.reduce((s, g) => s + g.totalGp, 0);
+        const pageTotalDiscount = pageGroups.reduce((s, g) => s + g.totalDiscount, 0);
+        const pageTotalNet = pageGroups.reduce((s, g) => s + g.totalNet, 0);
+        const pageTotalProfit = pageTotalNet - pageTotalCost;
         const pageMargin = pageTotalSales > 0 ? (pageTotalProfit / pageTotalSales) * 100 : 0;
         const totalRows = pageGroups.reduce((s, g) => s + g.items.length, 0);
 
@@ -7796,33 +7810,39 @@ function ReportSalesTab() {
             <div>
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: "16%" }} />
-                  <col style={{ width: "32%" }} />
                   <col style={{ width: "11%" }} />
-                  <col style={{ width: "13%" }} />
+                  <col style={{ width: "22%" }} />
+                  <col style={{ width: "7%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "9%" }} />
+                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "9%" }} />
                   <col style={{ width: "12%" }} />
-                  <col style={{ width: "16%" }} />
                 </colgroup>
                 <thead>
                   <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
                     <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>วันที่</th>
                     <th className="text-left pb-3 pr-3 pl-5" style={{ fontWeight: 500 }}>สินค้า</th>
-                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>จำนวนขาย</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>จำนวน</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดขาย</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ค่าธรรมเนียมแพลตฟอร์ม 7%">GP</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ส่วนลด</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ร้านรับสุทธิ = ยอดขาย − GP">ร้านรับสุทธิ</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ต้นทุน</th>
-                    <th className="text-right pb-3" style={{ fontWeight: 500 }}>กำไร / มาร์จิ้น</th>
+                    <th className="text-right pb-3" style={{ fontWeight: 500 }}>กำไร</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pageGroups.map((group, gi) => {
-                    const groupProfit = group.totalSales - group.totalCost;
+                    const groupProfit = group.totalNet - group.totalCost;
                     const groupMargin = group.totalSales > 0 ? (groupProfit / group.totalSales) * 100 : 0;
                     return (
                       <Fragment key={gi}>
                         {group.items.map((p, i) => {
-                          const profit = p.sales - p.cost;
+                          const profit = p.net - p.cost;
                           const margin = p.sales > 0 ? (profit / p.sales) * 100 : 0;
-                          const profitDown = margin < 55 && profit > 0;
+                          const profitDown = margin < 45 && profit > 0;
                           const isFirst = i === 0;
                           const isLast = i === group.items.length - 1;
                           return (
@@ -7836,7 +7856,9 @@ function ReportSalesTab() {
                                     </div>
                                     <div className={`${font} text-[10px] text-gray-500 flex flex-col gap-0.5 pl-5`}>
                                       <span>{group.items.length} รายการ · {group.totalQty} ชิ้น</span>
-                                      <span className="text-[#319754]" style={{ fontWeight: 600 }}>฿{group.totalSales.toLocaleString()}</span>
+                                      <span className="text-[#1a1a1a] tabular-nums" style={{ fontWeight: 600 }}>ยอดขาย ฿{group.totalSales.toLocaleString()}</span>
+                                      <span className="text-[#c2410c] tabular-nums" style={{ fontWeight: 500 }}>GP −฿{group.totalGp.toLocaleString()}</span>
+                                      <span className="text-[#319754] tabular-nums" style={{ fontWeight: 600 }}>สุทธิ ฿{group.totalNet.toLocaleString()}</span>
                                       <span className={groupProfit >= 0 ? "text-[#15803d]" : "text-[#dc2626]"}>กำไร {groupMargin.toFixed(1)}%</span>
                                     </div>
                                   </div>
@@ -7849,10 +7871,15 @@ function ReportSalesTab() {
                               <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
                                 {p.qty} <span className="text-gray-400 text-[11px]">ชิ้น</span>
                               </td>
-                              <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
-                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-gray-600`}>฿{p.cost.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#1a1a1a] tabular-nums`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#c2410c] tabular-nums`} style={{ fontWeight: 500 }}>−฿{p.gp.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#a16207] tabular-nums`} style={{ fontWeight: 500 }}>
+                                {p.discount > 0 ? `−฿${p.discount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                              </td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 700 }}>฿{p.net.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-gray-600 tabular-nums`}>฿{p.cost.toLocaleString()}</td>
                               <td className="py-3 text-right">
-                                <p className={`${font} text-[14px]`} style={{ fontWeight: 700, color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
+                                <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
                                   ฿{profit.toLocaleString()}
                                 </p>
                                 <p className={`${font} text-[11px]`} style={{ color: profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af" }}>
@@ -7866,18 +7893,23 @@ function ReportSalesTab() {
                     );
                   })}
                   {pageGroups.length === 0 && (
-                    <tr><td colSpan={6} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</td></tr>
+                    <tr><td colSpan={9} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</td></tr>
                   )}
                 </tbody>
                 {pageGroups.length > 0 && (
                   <tfoot>
-                    <tr className="border-t-2 border-gray-100">
+                    <tr className="border-t-2 border-gray-100 bg-gray-50/40">
                       <td className={`pt-3 pr-3 ${font} text-[12px]`} style={{ fontWeight: 600 }}>{pageGroups.length} กลุ่ม</td>
                       <td className={`pt-3 pr-3 pl-5 ${font} text-[12px]`} style={{ fontWeight: 600 }}>รวม {totalRows} รายการ</td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[13px]`} style={{ fontWeight: 700 }}>{pageTotalQty} <span className="text-gray-400 text-[11px]">ชิ้น</span></td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>฿{pageTotalSales.toLocaleString()}</td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-gray-600`} style={{ fontWeight: 600 }}>฿{pageTotalCost.toLocaleString()}</td>
-                      <td className={`pt-3 text-right ${font} text-[14px] text-[#15803d]`} style={{ fontWeight: 700 }}>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] tabular-nums`} style={{ fontWeight: 700 }}>{pageTotalQty} <span className="text-gray-400 text-[11px]">ชิ้น</span></td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[14px] tabular-nums`} style={{ fontWeight: 700 }}>฿{pageTotalSales.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-[#c2410c] tabular-nums`} style={{ fontWeight: 600 }}>−฿{pageTotalGp.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-[#a16207] tabular-nums`} style={{ fontWeight: 600 }}>
+                        {pageTotalDiscount > 0 ? `−฿${pageTotalDiscount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                      </td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 700 }}>฿{pageTotalNet.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-gray-600 tabular-nums`} style={{ fontWeight: 600 }}>฿{pageTotalCost.toLocaleString()}</td>
+                      <td className={`pt-3 text-right ${font} text-[14px] text-[#15803d] tabular-nums`} style={{ fontWeight: 700 }}>
                         ฿{pageTotalProfit.toLocaleString()}
                         <span className={`${font} text-[11px] block`} style={{ fontWeight: 500 }}>{pageMargin.toFixed(1)}%</span>
                       </td>
@@ -9389,6 +9421,14 @@ function ReportProductsTab() {
 
         const pageTotalSold = pageItems.reduce((s, p) => s + p.sold, 0);
         const pageTotalRevenue = pageItems.reduce((s, p) => s + p.revenue, 0);
+        // Per-row discount + avg revenue per unit
+        const itemDiscount = (p: { name: string; revenue: number }) => {
+          const seed = Array.from(p.name).reduce((a, c) => a + c.charCodeAt(0), 0);
+          const pct = (seed % 4 === 0) ? 0 : ((seed % 18) / 100); // 0–17%
+          return Math.round(p.revenue * pct);
+        };
+        const pageTotalDiscount = pageItems.reduce((s, p) => s + itemDiscount(p), 0);
+        const pageAvgPerUnit = pageTotalSold > 0 ? Math.round(pageTotalRevenue / pageTotalSold) : 0;
 
         const rankColor = (i: number) => i === 0 ? "#facc15" : i === 1 ? "#94a3b8" : i === 2 ? "#f97316" : "transparent";
         const rankText = (i: number) => i < 3 ? "white" : "#9ca3af";
@@ -9448,22 +9488,28 @@ function ReportProductsTab() {
             <div>
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: "8%" }} />
-                  <col style={{ width: "44%" }} />
-                  <col style={{ width: "26%" }} />
-                  <col style={{ width: "22%" }} />
+                  <col style={{ width: "6%" }} />
+                  <col style={{ width: "32%" }} />
+                  <col style={{ width: "20%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
+                  <col style={{ width: "14%" }} />
                 </colgroup>
                 <thead>
                   <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
                     <th className="text-left pb-3 pr-2" style={{ fontWeight: 500 }}>#</th>
                     <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>สินค้า</th>
                     <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ยอดขาย (ชิ้น)</th>
-                    <th className="text-right pb-3" style={{ fontWeight: 500 }}>รายได้ (฿)</th>
+                    <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>รายได้ (฿)</th>
+                    <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ยอดส่วนลด</th>
+                    <th className="text-right pb-3" style={{ fontWeight: 500 }} title="รายได้เฉลี่ยต่อชิ้น = รายได้ ÷ ยอดขาย">เฉลี่ย/ชิ้น</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pageItems.map((p, i) => {
                     const rank = pageStart + i;
+                    const discount = itemDiscount(p);
+                    const avgPerUnit = p.sold > 0 ? Math.round(p.revenue / p.sold) : 0;
                     return (
                       <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                         <td className="py-3 pr-2">
@@ -9485,27 +9531,35 @@ function ReportProductsTab() {
                         </td>
                         <td className="py-3 pr-4 text-right">
                           <div className="flex items-center justify-end gap-3">
-                            <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
                               <div className="h-full bg-[#319754] rounded-full" style={{ width: `${(p.sold / maxSold) * 100}%` }} />
                             </div>
-                            <span className={`${font} text-[14px] w-8 text-right`}>{p.sold.toLocaleString()}</span>
+                            <span className={`${font} text-[14px] w-8 text-right tabular-nums`}>{p.sold.toLocaleString()}</span>
                           </div>
                         </td>
-                        <td className={`py-3 text-right ${font} text-[14px]`} style={{ fontWeight: 600 }}>{p.revenue.toLocaleString()}</td>
+                        <td className={`py-3 pr-4 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 600 }}>฿{p.revenue.toLocaleString()}</td>
+                        <td className={`py-3 pr-4 text-right tabular-nums ${font} text-[13px] text-[#a16207]`} style={{ fontWeight: 500 }}>
+                          {discount > 0 ? `−฿${discount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                        </td>
+                        <td className={`py-3 text-right tabular-nums ${font} text-[13px] text-gray-600`}>฿{avgPerUnit.toLocaleString()}</td>
                       </tr>
                     );
                   })}
                   {pageItems.length === 0 && (
-                    <tr><td colSpan={4} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบข้อมูลสินค้า</td></tr>
+                    <tr><td colSpan={6} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบข้อมูลสินค้า</td></tr>
                   )}
                 </tbody>
                 {pageItems.length > 0 && (
                   <tfoot>
-                    <tr className="border-t-2 border-gray-100">
+                    <tr className="border-t-2 border-gray-100 bg-gray-50/40">
                       <td />
                       <td className={`pt-3 pr-4 ${font} text-[13px]`} style={{ fontWeight: 600 }}>รวม ({pageItems.length} รายการที่แสดง)</td>
-                      <td className={`pt-3 pr-4 text-right ${font} text-[14px]`} style={{ fontWeight: 700 }}>{pageTotalSold.toLocaleString()}</td>
-                      <td className={`pt-3 text-right ${font} text-[14px] text-[#319754]`} style={{ fontWeight: 700 }}>{pageTotalRevenue.toLocaleString()}</td>
+                      <td className={`pt-3 pr-4 text-right tabular-nums ${font} text-[14px]`} style={{ fontWeight: 700 }}>{pageTotalSold.toLocaleString()}</td>
+                      <td className={`pt-3 pr-4 text-right tabular-nums ${font} text-[14px] text-[#319754]`} style={{ fontWeight: 700 }}>฿{pageTotalRevenue.toLocaleString()}</td>
+                      <td className={`pt-3 pr-4 text-right tabular-nums ${font} text-[13px] text-[#a16207]`} style={{ fontWeight: 600 }}>
+                        {pageTotalDiscount > 0 ? `−฿${pageTotalDiscount.toLocaleString()}` : <span className="text-gray-300">−</span>}
+                      </td>
+                      <td className={`pt-3 text-right tabular-nums ${font} text-[13px] text-gray-600`} style={{ fontWeight: 600 }}>฿{pageAvgPerUnit.toLocaleString()}</td>
                     </tr>
                   </tfoot>
                 )}

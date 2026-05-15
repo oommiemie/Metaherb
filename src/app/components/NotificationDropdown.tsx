@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { useNotifications } from "../store/NotificationContext";
+import { useLanguage } from "../store/LanguageContext";
 import { useNavigate } from "react-router";
 import { Package, Megaphone, Monitor, MessageCircle, Check, Bell } from "lucide-react";
 
@@ -22,6 +23,7 @@ const typeColors = {
 export function NotificationDropdown({ onClose }: { onClose: () => void }) {
   const { notifications, markAsRead, markAllRead, unreadCount } = useNotifications();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,14 +39,14 @@ export function NotificationDropdown({ onClose }: { onClose: () => void }) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <Bell className="size-4 text-[#319754]" />
-          <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>การแจ้งเตือน</span>
+          <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>{t("notif_title")}</span>
           {unreadCount > 0 && (
             <span className="bg-[#ff383c] text-white text-[10px] px-1.5 py-0.5 rounded-full">{unreadCount}</span>
           )}
         </div>
         {unreadCount > 0 && (
           <button onClick={markAllRead} className={`${font} text-[12px] text-[#319754] cursor-pointer hover:underline flex items-center gap-1`}>
-            <Check className="size-3" /> อ่านทั้งหมด
+            <Check className="size-3" /> {t("notif_mark_all")}
           </button>
         )}
       </div>
@@ -53,7 +55,7 @@ export function NotificationDropdown({ onClose }: { onClose: () => void }) {
         {notifications.length === 0 ? (
           <div className="py-8 text-center">
             <Bell className="size-10 text-gray-200 mx-auto" />
-            <p className={`${font} text-[13px] text-gray-400 mt-2`}>ไม่มีการแจ้งเตือน</p>
+            <p className={`${font} text-[13px] text-gray-400 mt-2`}>{t("notif_empty")}</p>
           </div>
         ) : (
           notifications.map((n) => {
@@ -91,7 +93,7 @@ export function NotificationDropdown({ onClose }: { onClose: () => void }) {
       <div className="border-t border-gray-100 px-4 py-2.5 text-center">
         <button onClick={() => { navigate("/notifications"); onClose(); }}
           className={`${font} text-[13px] text-[#319754] cursor-pointer hover:underline`}>
-          ดูการแจ้งเตือนทั้งหมด
+          {t("common_view_all")}
         </button>
       </div>
     </div>
