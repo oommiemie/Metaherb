@@ -72,6 +72,7 @@ import { articles as realArticles, videos as realVideos } from "./BlogPage";
 import { shops as siteShops } from "../data/shops";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
+const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
 const ADMIN_PRIMARY = "#319754";
 const ADMIN_PRIMARY_DARK = "#287745";
@@ -5228,7 +5229,7 @@ function MiniToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => v
 }
 
 // FilterTabPills — แสดง tabs row บน lg+ / dropdown บน < lg
-function FilterTabPills<T extends string>({ tabs, active, onChange, pillId, singleRow }: {
+function FilterTabPills<T extends string | number>({ tabs, active, onChange, pillId, singleRow }: {
   tabs: { id: T; label: string; count: number; Icon: any }[];
   active: T;
   onChange: (id: T) => void;
@@ -5437,7 +5438,7 @@ function LayoutSlotPicker({ position, aspectClass, selected, draftImage, hasAnyI
 
   return (
     <div
-      draggable={hasImage}
+      draggable={!!hasImage}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
@@ -14188,7 +14189,7 @@ function IconPickerSection({
   iconKey: string;
   iconImage?: string;
   color: string;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   onSelectIcon: (key: string) => void;
   onUploadClick: () => void;
   onClearImage: () => void;
