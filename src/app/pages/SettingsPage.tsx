@@ -1,16 +1,15 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../store/AuthContext";
-import { ChevronLeft, ChevronDown, Store, Bell, BellOff, Truck, User as UserIcon, MapPin, Camera, Mail, Phone, BadgeCheck, Pencil, Check, Calendar as CalendarIcon, Package, PackageX, ShoppingCart, X, Wallet, MessageCircle, Megaphone, Star, AlertTriangle, Settings as SettingsIcon, Smartphone, Moon, ShieldCheck, Clock } from "lucide-react";
+import { ChevronLeft, ChevronDown, Store, Bell, BellOff, Truck, User as UserIcon, MapPin, Camera, Mail, Phone, BadgeCheck, Pencil, Check, Calendar as CalendarIcon, Package, PackageX, ShoppingCart, X, Wallet, MessageCircle, Megaphone, Star, AlertTriangle, Settings as SettingsIcon, Smartphone, Moon, ShieldCheck, Clock, Globe, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import imgLogo from "../../assets/logo.png";
-import imgThaiPost from "figma:asset/abeb9c66722ed46a330a72254347776f83a06d35.png";
-import imgKerry from "figma:asset/4bd7479b6d460823113bed1e63aa59635e44889b.png";
-import imgFlash from "figma:asset/99777e028092284d9d5e16e0183e6cbcb8c385f5.png";
-import imgDHL from "figma:asset/9ce997a9911937728e9277c6192377fc345a3a15.png";
-import imgJT from "figma:asset/9627f70566a93994285725fe9e9aa9efa3f89bf5.png";
+import imgThaiPost from "../../assets/Thaipost.png";
+import imgKerry from "../../assets/kerry.png";
+import imgFlash from "../../assets/flashexpress.png";
+import imgJT from "../../assets/jt.png";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
@@ -846,6 +845,7 @@ interface CarrierConfig {
   name: string;
   code: string;
   color: string;
+  logo?: string;           // path/URL ของรูปโลโก้ขนส่ง
   baseRate: number;        // ค่าส่งเริ่มต้น
   perKg: number;           // ค่าส่งต่อ kg
   cod: boolean;            // รองรับ COD
@@ -855,11 +855,11 @@ interface CarrierConfig {
 }
 
 const initialCarriers: CarrierConfig[] = [
-  { id: "thpost",  name: "ไปรษณีย์ไทย",  code: "TH",  color: "#f8201e", baseRate: 35, perKg: 10, cod: true,  estimatedDays: "2-4 วัน", trackingUrl: "track.thailandpost.co.th", enabled: true  },
-  { id: "kerry",   name: "Kerry Express", code: "K",   color: "#ff6600", baseRate: 50, perKg: 15, cod: true,  estimatedDays: "1-3 วัน", trackingUrl: "th.kerryexpress.com",       enabled: true  },
-  { id: "flash",   name: "Flash Express", code: "F",   color: "#fdc70d", baseRate: 30, perKg: 10, cod: true,  estimatedDays: "1-2 วัน", trackingUrl: "flashexpress.com",          enabled: false },
-  { id: "jt",      name: "J&T Express",   code: "J&T", color: "#d40511", baseRate: 40, perKg: 12, cod: true,  estimatedDays: "1-3 วัน", trackingUrl: "jtexpress.co.th",           enabled: false },
-  { id: "dhl",     name: "DHL Express",   code: "DHL", color: "#ffcc00", baseRate: 120, perKg: 50, cod: false, estimatedDays: "1 วัน",  trackingUrl: "dhl.com/th-th",             enabled: false },
+  { id: "thpost",  name: "ไปรษณีย์ไทย",  code: "TH",  color: "#f8201e", logo: imgThaiPost, baseRate: 35, perKg: 10, cod: true,  estimatedDays: "2-4 วัน", trackingUrl: "track.thailandpost.co.th", enabled: true  },
+  { id: "kerry",   name: "Kerry Express", code: "K",   color: "#ff6600", logo: imgKerry,    baseRate: 50, perKg: 15, cod: true,  estimatedDays: "1-3 วัน", trackingUrl: "th.kerryexpress.com",       enabled: true  },
+  { id: "flash",   name: "Flash Express", code: "F",   color: "#fdc70d", logo: imgFlash,    baseRate: 30, perKg: 10, cod: true,  estimatedDays: "1-2 วัน", trackingUrl: "flashexpress.com",          enabled: false },
+  { id: "jt",      name: "J&T Express",   code: "J&T", color: "#d40511", logo: imgJT,       baseRate: 40, perKg: 12, cod: true,  estimatedDays: "1-3 วัน", trackingUrl: "jtexpress.co.th",           enabled: false },
+  { id: "dhl",     name: "DHL Express",   code: "DHL", color: "#ffcc00",                    baseRate: 120, perKg: 50, cod: false, estimatedDays: "1 วัน",  trackingUrl: "dhl.com/th-th",             enabled: false },
 ];
 
 function CarrierBadge({ carrier, size = 44 }: { carrier: CarrierConfig; size?: number }) {
@@ -961,67 +961,130 @@ function ShippingSection() {
           </span>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {carriers.map((c) => (
             <div key={c.id}
-              className={`rounded-2xl border transition-all ${
-                c.enabled ? "bg-white border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)]" : "bg-gray-50/40 border-gray-100"
-              }`}>
-              {/* Top row: badge + name + meta + toggle */}
-              <div className="flex items-center gap-3 p-4">
-                <CarrierBadge carrier={c} size={44} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className={`${font} text-[14px] ${c.enabled ? "text-black" : "text-gray-500"}`} style={{ fontWeight: 600 }}>{c.name}</p>
-                    {c.cod && (
-                      <span className={`${font} inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full`}
-                        style={{ backgroundColor: c.enabled ? "#ff950020" : "#f3f4f6", color: c.enabled ? "#ff9500" : "#9ca3af", fontWeight: 600 }}>
-                        <ShieldCheck className="size-2.5" strokeWidth={2.4} />
-                        COD
-                      </span>
-                    )}
+              className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors"
+              style={{ backgroundColor: c.enabled ? c.color : "#9ca3af" }}>
+
+              {/* HEADER — brand color bg (deep) */}
+              <div className="relative overflow-hidden">
+                {/* Truck illustration — inside header, behind content */}
+                {c.logo && (
+                  <img src={c.logo} alt=""
+                    className="absolute pointer-events-none select-none z-0 transition-all"
+                    style={{
+                      right: 8,
+                      top: 8,
+                      height: "100px",
+                      width: "auto",
+                      maxWidth: "210px",
+                      objectFit: "contain",
+                      objectPosition: "right top",
+                      filter: c.enabled ? "none" : "grayscale(100%)",
+                    }} />
+                )}
+                <div className="relative z-10 flex items-start gap-3 p-4 pr-4">
+                  {/* Small logo circle — white bg with brand color text */}
+                  <div className="size-12 rounded-full flex items-center justify-center shrink-0 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.08)] bg-white transition-colors"
+                    style={{ color: c.enabled ? c.color : "#9ca3af" }}>
+                    <span className={`${font} text-[14px]`} style={{ fontWeight: 800, letterSpacing: c.code.length > 2 ? "-0.5px" : "0" }}>
+                      {c.code}
+                    </span>
                   </div>
-                  <p className={`${font} text-[11px] text-gray-500 mt-0.5 truncate`}>
-                    เริ่มต้น ฿{c.baseRate} · +฿{c.perKg}/กก. · ⏱ {c.estimatedDays}
-                  </p>
+                  {/* Name + tracking URL */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className={`${font} text-[18px] text-white`} style={{ fontWeight: 700 }}>{c.name}</h3>
+                      {c.cod && (
+                        <span className={`${font} inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-white text-black`} style={{ fontWeight: 600 }}>
+                          <ShieldCheck className="size-2.5 text-[#319754]" strokeWidth={2.4} />
+                          COD
+                        </span>
+                      )}
+                    </div>
+                    <p className={`${font} text-[12px] mt-0.5 flex items-center gap-1.5 text-white/85 leading-none`}>
+                      <Globe className="size-3 shrink-0" strokeWidth={2.4} />
+                      <span className="truncate">{c.trackingUrl || "ยังไม่ได้กรอก URL ติดตาม"}</span>
+                    </p>
+                  </div>
                 </div>
-                <ToggleSwitch enabled={c.enabled} onToggle={() => toggleCarrier(c.id)} />
               </div>
 
-              {/* Expanded settings (เฉพาะตอน enabled) */}
-              <AnimatePresence initial={false}>
-                {c.enabled && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="overflow-hidden">
-                    <div className="border-t border-gray-100 p-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="flex flex-col gap-1">
-                        <label className={`${font} text-[10px] text-gray-500`}>ค่าส่งเริ่มต้น (฿)</label>
-                        <input type="number" value={c.baseRate} onChange={(e) => updateCarrier(c.id, { baseRate: Number(e.target.value) || 0 })}
-                          className={`${font} bg-[#fafafa] h-10 rounded-full px-4 text-[13px] tabular-nums outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className={`${font} text-[10px] text-gray-500`}>ต่อ กก. (฿)</label>
-                        <input type="number" value={c.perKg} onChange={(e) => updateCarrier(c.id, { perKg: Number(e.target.value) || 0 })}
-                          className={`${font} bg-[#fafafa] h-10 rounded-full px-4 text-[13px] tabular-nums outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className={`${font} text-[10px] text-gray-500`}>ระยะเวลาจัดส่ง</label>
-                        <input value={c.estimatedDays} onChange={(e) => updateCarrier(c.id, { estimatedDays: e.target.value })}
-                          className={`${font} bg-[#fafafa] h-10 rounded-full px-4 text-[13px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow`} />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <label className={`${font} text-[10px] text-gray-500`}>เว็บไซต์ติดตาม</label>
-                        <input value={c.trackingUrl} onChange={(e) => updateCarrier(c.id, { trackingUrl: e.target.value })}
-                          className={`${font} bg-[#fafafa] h-10 rounded-full px-4 text-[13px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow`} />
-                      </div>
+              {/* BODY — white card with rounded all 4 corners */}
+              <div className="relative z-10">
+                <div className="rounded-2xl p-4 flex flex-col gap-3 bg-white">
+                  {/* Master toggle row */}
+                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-gray-200">
+                    <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 600 }}>เปิดใช้งานขนส่งนี้</span>
+                    <ToggleSwitch enabled={c.enabled} onToggle={() => toggleCarrier(c.id)} />
+                  </div>
+
+                  {/* Settings (disabled inputs when toggle off) */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className={`${font} text-[10px] text-gray-500`}>ค่าส่งเริ่มต้น (฿)</label>
+                      <input type="number" value={c.baseRate} disabled={!c.enabled}
+                        onChange={(e) => updateCarrier(c.id, { baseRate: Number(e.target.value) || 0 })}
+                        onFocus={(e) => {
+                          if (!c.enabled) return;
+                          e.currentTarget.style.borderColor = c.color;
+                          e.currentTarget.style.boxShadow = `0 0 0 3px ${c.color}33`;
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = "#e5e7eb";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                        className={`${font} bg-white h-10 rounded-full px-4 text-[13px] tabular-nums outline-none border border-gray-200 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    <div className="flex flex-col gap-1">
+                      <label className={`${font} text-[10px] text-gray-500`}>ต่อ กก. (฿)</label>
+                      <input type="number" value={c.perKg} disabled={!c.enabled}
+                        onChange={(e) => updateCarrier(c.id, { perKg: Number(e.target.value) || 0 })}
+                        onFocus={(e) => {
+                          if (!c.enabled) return;
+                          e.currentTarget.style.borderColor = c.color;
+                          e.currentTarget.style.boxShadow = `0 0 0 3px ${c.color}33`;
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = "#e5e7eb";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                        className={`${font} bg-white h-10 rounded-full px-4 text-[13px] tabular-nums outline-none border border-gray-200 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className={`${font} text-[10px] text-gray-500`}>ระยะเวลาจัดส่ง</label>
+                      <input value={c.estimatedDays} disabled={!c.enabled}
+                        onChange={(e) => updateCarrier(c.id, { estimatedDays: e.target.value })}
+                        onFocus={(e) => {
+                          if (!c.enabled) return;
+                          e.currentTarget.style.borderColor = c.color;
+                          e.currentTarget.style.boxShadow = `0 0 0 3px ${c.color}33`;
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = "#e5e7eb";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                        className={`${font} bg-white h-10 rounded-full px-4 text-[13px] outline-none border border-gray-200 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500`} />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className={`${font} text-[10px] text-gray-500`}>เว็บไซต์ติดตาม</label>
+                      <input value={c.trackingUrl} disabled={!c.enabled}
+                        onChange={(e) => updateCarrier(c.id, { trackingUrl: e.target.value })}
+                        onFocus={(e) => {
+                          if (!c.enabled) return;
+                          e.currentTarget.style.borderColor = c.color;
+                          e.currentTarget.style.boxShadow = `0 0 0 3px ${c.color}33`;
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = "#e5e7eb";
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                        className={`${font} bg-white h-10 rounded-full px-4 text-[13px] outline-none border border-gray-200 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500`} />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
