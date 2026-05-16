@@ -12,6 +12,11 @@ const ShieldCheckLite = () => <ShieldCheck className="size-[12px] text-[#46c474]
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ChatModal } from "./ChatModal";
 import imgLogo from "../../assets/logo.png";
+import imgQRCode from "../../assets/QRcordline.png";
+import imgLeafA from "../../assets/herb-leaf-a.png";
+import imgLeafB from "../../assets/herb-leaf-b.png";
+import imgLeafC from "../../assets/herb-leaf-c.png";
+import imgLeafD from "../../assets/herb-leaf-d.png";
 import imgBell from "figma:asset/bc0647483cfb5a707f778cc18a602a7932c0287f.png";
 import imgCart from "figma:asset/e7332f142579e51e8632e5d3048cd86f0f80158a.png";
 import imgAvatar from "figma:asset/02fc4d2560c804d8d3f2f8e525b1926bf3ef0ac2.png";
@@ -29,6 +34,34 @@ const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
 const APP_VERSION = "1.0.0";
+
+/* ===== Botanical leaf SVG — realistic herb leaf with veins (footer watermark) ===== */
+function BotanicalLeaf({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 100 140" className={className} style={style} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      {/* Stem */}
+      <path d="M50 138 C50 120, 50 100, 50 80" strokeWidth="1.2" />
+      {/* Leaf body — pointed oval (lanceolate) */}
+      <path d="M50 4 C28 22, 12 50, 14 80 C16 100, 30 118, 50 124 C70 118, 84 100, 86 80 C88 50, 72 22, 50 4 Z" strokeWidth="1.3" />
+      {/* Central vein (midrib) */}
+      <path d="M50 8 L50 122" strokeWidth="1" />
+      {/* Side veins — left side (curving down-out from midrib) */}
+      <path d="M50 20 Q35 28, 20 38" strokeWidth="0.7" />
+      <path d="M50 36 Q32 46, 16 56" strokeWidth="0.7" />
+      <path d="M50 54 Q30 64, 15 76" strokeWidth="0.7" />
+      <path d="M50 72 Q32 82, 20 92" strokeWidth="0.7" />
+      <path d="M50 90 Q35 98, 26 106" strokeWidth="0.7" />
+      <path d="M50 106 Q40 112, 34 118" strokeWidth="0.7" />
+      {/* Side veins — right side */}
+      <path d="M50 20 Q65 28, 80 38" strokeWidth="0.7" />
+      <path d="M50 36 Q68 46, 84 56" strokeWidth="0.7" />
+      <path d="M50 54 Q70 64, 85 76" strokeWidth="0.7" />
+      <path d="M50 72 Q68 82, 80 92" strokeWidth="0.7" />
+      <path d="M50 90 Q65 98, 74 106" strokeWidth="0.7" />
+      <path d="M50 106 Q60 112, 66 118" strokeWidth="0.7" />
+    </svg>
+  );
+}
 
 const avatarByRole: Record<string, string> = {
   user: "https://images.unsplash.com/photo-1718307701476-bf46ac964396?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0aGFpJTIwd29tYW4lMjBwb3J0cmFpdCUyMGZyaWVuZGx5fGVufDF8fHx8MTc3Mzg4ODExMnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
@@ -1038,229 +1071,151 @@ export function Layout() {
 
       {/* Footer (user only) */}
       {!isStaffRole && (
-      <footer className="relative">
-        {/* Main dark footer with decorative pattern */}
-        <div className="relative overflow-hidden text-white pt-0 pb-0"
-          style={{ background: "linear-gradient(180deg, #1d5b32 0%, #143f24 60%, #0d2a17 100%)" }}>
-          {/* Decorative blobs */}
-          <div className="absolute top-20 -right-32 size-[420px] rounded-full bg-[#319754]/20 blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 -left-40 size-[500px] rounded-full bg-[#46c474]/10 blur-3xl pointer-events-none" />
-          {/* Subtle dot pattern */}
-          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-            style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+      <footer className="relative overflow-hidden text-white"
+        style={{ background: "linear-gradient(180deg, #143f24 0%, #0d2a17 70%, #07180e 100%)" }}>
+        {/* Top accent gradient line */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#46c474]/60 to-transparent" />
+        {/* Decorative blurred orbs */}
+        <div className="absolute top-10 left-1/4 size-[420px] rounded-full bg-[#319754]/18 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 size-[520px] rounded-full bg-[#46c474]/8 blur-3xl pointer-events-none" />
+        <img src={imgLeafD} alt="" aria-hidden className="absolute -top-8 right-[6%] size-[220px] opacity-[0.07] rotate-[18deg] pointer-events-none select-none" />
+        <img src={imgLeafA} alt="" aria-hidden className="absolute bottom-24 left-[4%] size-[180px] opacity-[0.06] -rotate-[35deg] pointer-events-none select-none" />
+        {/* Subtle dot pattern */}
+        <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
+          style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
-          {/* Main columns */}
-          <div className="relative max-w-[1440px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-5 lg:gap-6 px-4 sm:px-6 lg:px-12 py-10 sm:py-12">
-            {/* Brand column — full-width card with decorative accent */}
-            <div className="lg:col-span-4 relative flex flex-col gap-5 rounded-3xl overflow-hidden p-6 transition-all duration-300 hover:-translate-y-[2px]"
-              style={{
-                background: "linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 60%, rgba(70,196,116,0.06) 100%)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.1) inset, 0 12px 32px -12px rgba(0,0,0,0.4)",
-                borderTop: "1px solid rgba(255,255,255,0.12)",
-                borderLeft: "1px solid rgba(255,255,255,0.08)",
-                borderRight: "1px solid rgba(255,255,255,0.04)",
-                borderBottom: "1px solid rgba(255,255,255,0.04)",
-              }}>
-              {/* Decorative blob */}
-              <div className="absolute -top-12 -right-12 size-[180px] rounded-full bg-[#46c474]/12 blur-2xl pointer-events-none" />
-              <Leaf className="absolute -bottom-6 -right-4 size-[100px] text-white/[0.04] rotate-12 pointer-events-none" strokeWidth={1.2} />
+        <div className="relative max-w-[1440px] mx-auto flex flex-col gap-5 px-4 sm:px-6 lg:px-12 py-6">
+          {/* ===== TOP: brand row ===== */}
+          <div className="flex items-center gap-4">
+            <div className="size-[48px] sm:size-[56px] rounded-2xl bg-white p-1.5 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.45)] ring-1 ring-white/20 shrink-0">
+              <img src={imgLogo} className="w-full h-full" alt="MetaHerb" />
+            </div>
+            <div className="min-w-0">
+              <h3 className={`${fontBold} text-[20px] sm:text-[22px] tracking-tight leading-none`} style={{ fontWeight: 800 }}>
+                <span className="text-[#ff9b9b]">META</span><span className="text-[#ffc070]">HERB</span>
+              </h3>
+              <p className={`${font} text-[12px] sm:text-[13px] text-white/65 mt-1`}>{t("footer_tagline")}</p>
+            </div>
+          </div>
 
-              <div className="relative flex items-center gap-3.5">
-                <div className="relative size-[60px] rounded-2xl bg-white p-1.5 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.4)] rotate-[-4deg] ring-1 ring-white/40">
-                  <img src={imgLogo} className="w-full h-full" alt="MetaHerb" />
+          {/* ===== 3 BOX SECTIONS ===== */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Box 1: Contact */}
+            <div className="relative rounded-[20px] bg-gradient-to-br from-black/30 to-black/50 backdrop-blur-sm p-4 flex flex-col justify-center gap-2 hover:from-black/40 hover:to-black/60 transition-all overflow-hidden">
+              {/* Watermark — botanical leaf image */}
+              <img src={imgLeafA} alt="" aria-hidden className="absolute -bottom-6 -right-8 size-[140px] opacity-[0.12] rotate-[18deg] pointer-events-none select-none" />
+              <div className="absolute -top-8 -right-8 size-[120px] rounded-full bg-[#46c474]/10 blur-2xl pointer-events-none" />
+
+              <a href="https://maps.google.com" target="_blank" rel="noreferrer"
+                className="relative group flex items-start gap-2.5 -mx-1 px-1.5 py-1.5 rounded-lg text-white/85 hover:text-white hover:bg-white/[0.05] transition-all">
+                <div className="size-[26px] rounded-lg bg-[#46c474]/15 border border-[#46c474]/30 flex items-center justify-center shrink-0 group-hover:bg-[#46c474]/25 transition-colors">
+                  <MapPin className="size-[12px] text-[#46c474]" strokeWidth={2.4} />
                 </div>
-                <div>
-                  <span className={`${fontBold} text-[26px] tracking-wide block leading-none`} style={{ fontWeight: 700 }}>
-                    <span className="text-[#ff9b9b]">META</span><span className="text-[#ffc070]">HERB</span>
-                  </span>
-                  <p className={`${font} text-[10.5px] text-white/55 mt-1.5 tracking-[0.18em]`}>PURE • POTENT • NATURAL</p>
+                <span className={`${font} text-[12.5px] leading-[1.45] pt-0.5`}>{t("footer_address")}</span>
+              </a>
+              <a href="tel:0614213111"
+                className="relative group flex items-center gap-2.5 -mx-1 px-1.5 py-1.5 rounded-lg text-white/85 hover:text-white hover:bg-white/[0.05] transition-all">
+                <div className="size-[26px] rounded-lg bg-[#46c474]/15 border border-[#46c474]/30 flex items-center justify-center shrink-0 group-hover:bg-[#46c474]/25 transition-colors">
+                  <Phone className="size-[12px] text-[#46c474]" strokeWidth={2.4} />
                 </div>
-              </div>
+                <span className={`${font} text-[13px] tabular-nums`} style={{ fontWeight: 500 }}>06-1421-3111</span>
+              </a>
+              <a href="mailto:metaherb.herb@gmail.com"
+                className="relative group flex items-center gap-2.5 -mx-1 px-1.5 py-1.5 rounded-lg text-white/85 hover:text-white hover:bg-white/[0.05] transition-all">
+                <div className="size-[26px] rounded-lg bg-[#46c474]/15 border border-[#46c474]/30 flex items-center justify-center shrink-0 group-hover:bg-[#46c474]/25 transition-colors">
+                  <Mail className="size-[12px] text-[#46c474]" strokeWidth={2.4} />
+                </div>
+                <span className={`${font} text-[12.5px]`}>metaherb.herb@gmail.com</span>
+              </a>
+            </div>
 
-              <p className={`${font} relative text-[13px] text-white/75 leading-[1.75]`}>
-                ผลิตภัณฑ์สมุนไพรคุณภาพคัดสรรอย่างพิถีพิถัน ผสานภูมิปัญญาไทยกับมาตรฐานสากล ส่งตรงสุขภาพดีถึงคุณ
-              </p>
+            {/* Box 2: Links */}
+            <div className="relative rounded-[20px] bg-gradient-to-br from-black/30 to-black/50 backdrop-blur-sm p-4 flex flex-col justify-center gap-1 hover:from-black/40 hover:to-black/60 transition-all overflow-hidden">
+              {/* Watermark — botanical leaf image */}
+              <img src={imgLeafB} alt="" aria-hidden className="absolute -top-6 -right-6 size-[130px] opacity-[0.12] -rotate-[20deg] pointer-events-none select-none" />
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 size-[140px] rounded-full bg-[#46c474]/8 blur-3xl pointer-events-none" />
 
-              {/* Trust badges */}
-              <div className="relative flex items-center gap-1.5 flex-wrap">
+              {[
+                { label: t("footer_link_privacy"),  path: "/about" },
+                { label: t("footer_link_terms"),    path: "/about" },
+                { label: t("footer_link_howto"),    path: "/about" },
+                { label: t("footer_link_shipping"), path: "/about" },
+              ].map((item) => (
+                <a key={item.label} href={item.path}
+                  className={`${font} relative group flex items-center gap-2.5 -mx-1 px-2 py-1.5 rounded-lg text-[12.5px] text-white/80 hover:text-white hover:bg-white/[0.05] transition-all`}>
+                  <span className="size-[5px] rounded-full bg-[#46c474]/50 group-hover:bg-[#46c474] group-hover:shadow-[0_0_8px_rgba(70,196,116,0.8)] group-hover:scale-150 transition-all shrink-0" />
+                  <span className="group-hover:translate-x-0.5 transition-transform flex-1">{item.label}</span>
+                  <ArrowRight className="size-[12px] text-white/0 group-hover:text-[#46c474] group-hover:translate-x-0 -translate-x-1 transition-all" strokeWidth={2.4} />
+                </a>
+              ))}
+            </div>
+
+            {/* Box 3: Social + QR */}
+            <div className="relative rounded-[20px] bg-gradient-to-br from-black/30 to-black/50 backdrop-blur-sm p-4 flex items-center justify-between gap-3 hover:from-black/40 hover:to-black/60 transition-all overflow-hidden">
+              {/* Watermark — botanical leaf image */}
+              <img src={imgLeafC} alt="" aria-hidden className="absolute -bottom-8 left-[25%] size-[140px] opacity-[0.12] rotate-[35deg] pointer-events-none select-none" />
+              <div className="absolute -bottom-8 -right-8 size-[140px] rounded-full bg-[#46c474]/8 blur-3xl pointer-events-none" />
+
+              <div className="relative flex flex-col gap-1 flex-1 min-w-0">
                 {[
-                  { label: "GMP" },
-                  { label: "HALAL" },
-                  { label: "อย." },
-                ].map((b) => (
-                  <div key={b.label} className={`${font} flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full bg-gradient-to-br from-[#46c474]/20 to-[#319754]/10 border border-[#46c474]/30 text-[11px] text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]`} style={{ fontWeight: 600 }}>
-                    <ShieldCheckLite />
-                    <span className="tracking-wide">{b.label}</span>
-                  </div>
+                  { name: "Facebook", brand: "#1877F2", icon: (
+                    <svg viewBox="0 0 32 32" className="size-[12px]"><path d="M20.4 20.6l.7-4.6h-4.4v-3c0-1.3.6-2.5 2.6-2.5h2V6.6s-1.8-.3-3.6-.3c-3.6 0-6 2.2-6 6.2V16H7.6v4.6h4.1V32h5V20.6h3.7z" fill="currentColor"/></svg>
+                  ) },
+                  { name: "Instagram", brand: "#E1306C", icon: (
+                    <svg viewBox="0 0 32 32" className="size-[12px]" fill="none" stroke="currentColor" strokeWidth="2.4">
+                      <rect x="6" y="6" width="20" height="20" rx="5"/>
+                      <circle cx="16" cy="16" r="4.5"/>
+                      <circle cx="22" cy="10" r="1.2" fill="currentColor"/>
+                    </svg>
+                  ) },
+                  { name: "Tiktok", brand: "#000", icon: (
+                    <svg viewBox="0 0 32 32" className="size-[12px]"><path d="M22 9.5c-1.6-.3-3-1.4-3.6-2.9H16v12.7c0 1.3-1 2.3-2.3 2.3-1.3 0-2.3-1-2.3-2.3 0-1.3 1-2.3 2.3-2.3.2 0 .5 0 .7.1V14c-.2 0-.5-.1-.7-.1-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9 4.9-2.2 4.9-4.9v-6.6c1.1.7 2.4 1.2 3.8 1.2V9.8c-.1 0-.3 0-.4-.3z" fill="currentColor"/></svg>
+                  ) },
+                  { name: "Youtube", brand: "#FF0000", icon: (
+                    <svg viewBox="0 0 32 32" className="size-[12px]"><path d="M13 11l9 5-9 5V11z" fill="currentColor"/></svg>
+                  ) },
+                ].map((s) => (
+                  <a key={s.name} href="#" aria-label={s.name}
+                    className={`${font} group flex items-center gap-2.5 -mx-1 px-2 py-1.5 rounded-lg text-[12.5px] text-white/85 hover:text-white hover:bg-white/[0.05] transition-all w-fit`}
+                    style={{ ["--brand" as any]: s.brand }}>
+                    <div className="size-[22px] rounded-md bg-white/[0.1] border border-white/15 flex items-center justify-center shrink-0 group-hover:bg-white group-hover:border-transparent transition-all">
+                      <span className="text-white/80 group-hover:text-[var(--brand)] transition-colors">{s.icon}</span>
+                    </div>
+                    <span className="group-hover:translate-x-0.5 transition-transform" style={{ fontWeight: 500 }}>{s.name}</span>
+                  </a>
                 ))}
               </div>
-
-              <div className="relative flex flex-col gap-2 mt-1">
-                <a href="https://maps.google.com" target="_blank" rel="noreferrer"
-                  className="group flex items-start gap-3 text-white/85 hover:text-white transition-colors">
-                  <div className="size-[36px] rounded-xl bg-white/[0.08] group-hover:bg-[#46c474]/25 border border-white/10 group-hover:border-[#46c474]/40 flex items-center justify-center shrink-0 transition-all">
-                    <MapPin className="size-[16px]" strokeWidth={2} />
-                  </div>
-                  <span className={`${font} text-[12.5px] leading-[1.6] mt-1.5`}>459/153 ถนนสุขสวัสดิ์ แขวงราษฎร์บูรณะ กรุงเทพฯ 10140</span>
-                </a>
-                <a href="tel:0614213111" className="group flex items-center gap-3 text-white/85 hover:text-white transition-colors">
-                  <div className="size-[36px] rounded-xl bg-white/[0.08] group-hover:bg-[#46c474]/25 border border-white/10 group-hover:border-[#46c474]/40 flex items-center justify-center shrink-0 transition-all">
-                    <Phone className="size-[16px]" strokeWidth={2} />
-                  </div>
-                  <span className={`${font} text-[13px] tabular-nums`}>06-1421-3111</span>
-                </a>
-                <a href="mailto:metaherb.herb@gmail.com" className="group flex items-center gap-3 text-white/85 hover:text-white transition-colors">
-                  <div className="size-[36px] rounded-xl bg-white/[0.08] group-hover:bg-[#46c474]/25 border border-white/10 group-hover:border-[#46c474]/40 flex items-center justify-center shrink-0 transition-all">
-                    <Mail className="size-[16px]" strokeWidth={2} />
-                  </div>
-                  <span className={`${font} text-[12.5px]`}>metaherb.herb@gmail.com</span>
-                </a>
-              </div>
-            </div>
-
-            {/* About column */}
-            <div className="lg:col-span-2 relative flex flex-col gap-2 rounded-3xl overflow-hidden p-6 transition-all duration-300 hover:-translate-y-[2px]"
-              style={{
-                background: "linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.08) inset, 0 12px 32px -12px rgba(0,0,0,0.4)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}>
-              <div className="flex items-center gap-2.5 mb-2 pb-3 border-b border-white/10">
-                <div className="size-[32px] rounded-xl bg-[#46c474]/15 border border-[#46c474]/25 flex items-center justify-center">
-                  <Info className="size-[14px] text-[#46c474]" strokeWidth={2.4} />
-                </div>
-                <p className={`${font} text-[14px] text-white`} style={{ fontWeight: 600 }}>เกี่ยวกับเรา</p>
-              </div>
-              {[
-                { label: "เรื่องราวของเรา", path: "/about" },
-                { label: "พันธกิจ", path: "/about" },
-                { label: "ข้อมูลติดต่อ", path: "/about" },
-                { label: "คูปองส่วนลด", path: "/coupons" },
-                { label: "บล็อกความรู้", path: "/blog" },
-              ].map((item) => (
-                <a key={item.label} href={item.path}
-                  className={`${font} group flex items-center gap-2 text-[12.5px] text-white/70 hover:text-white py-1 transition-colors`}>
-                  <span className="inline-block w-0 group-hover:w-3 h-[1.5px] bg-gradient-to-r from-[#46c474] to-transparent transition-all duration-200" />
-                  <span className="group-hover:translate-x-0.5 transition-transform">{item.label}</span>
-                </a>
-              ))}
-            </div>
-
-            {/* Help column */}
-            <div className="lg:col-span-3 relative flex flex-col gap-2 rounded-3xl overflow-hidden p-6 transition-all duration-300 hover:-translate-y-[2px]"
-              style={{
-                background: "linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.08) inset, 0 12px 32px -12px rgba(0,0,0,0.4)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}>
-              <div className="flex items-center gap-2.5 mb-2 pb-3 border-b border-white/10">
-                <div className="size-[32px] rounded-xl bg-[#46c474]/15 border border-[#46c474]/25 flex items-center justify-center">
-                  <ShieldCheck className="size-[14px] text-[#46c474]" strokeWidth={2.4} />
-                </div>
-                <p className={`${font} text-[14px] text-white`} style={{ fontWeight: 600 }}>ช่วยเหลือ</p>
-              </div>
-              {[
-                { label: "วิธีการสั่งซื้อ", path: "/about" },
-                { label: "วิธีการชำระเงิน", path: "/about" },
-                { label: "การจัดส่งสินค้า", path: "/about" },
-                { label: "การคืนเงิน / คืนสินค้า", path: "/about" },
-                { label: "นโยบายความเป็นส่วนตัว", path: "/about" },
-                { label: "เงื่อนไขการใช้งาน", path: "/about" },
-              ].map((item) => (
-                <a key={item.label} href={item.path}
-                  className={`${font} group flex items-center gap-2 text-[12.5px] text-white/70 hover:text-white py-1 transition-colors`}>
-                  <span className="inline-block w-0 group-hover:w-3 h-[1.5px] bg-gradient-to-r from-[#46c474] to-transparent transition-all duration-200" />
-                  <span className="group-hover:translate-x-0.5 transition-transform">{item.label}</span>
-                </a>
-              ))}
-            </div>
-
-            {/* Social + Payment column */}
-            <div className="lg:col-span-3 relative flex flex-col gap-5 rounded-3xl overflow-hidden p-6 transition-all duration-300 hover:-translate-y-[2px]"
-              style={{
-                background: "linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.08) inset, 0 12px 32px -12px rgba(0,0,0,0.4)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}>
-              <div>
-                <div className="flex items-center gap-2.5 mb-3.5 pb-3 border-b border-white/10">
-                  <div className="size-[32px] rounded-xl bg-[#46c474]/15 border border-[#46c474]/25 flex items-center justify-center">
-                    <Heart className="size-[14px] text-[#46c474]" strokeWidth={2.4} />
-                  </div>
-                  <p className={`${font} text-[14px] text-white`} style={{ fontWeight: 600 }}>ติดตามเรา</p>
-                </div>
-                <div className="grid grid-cols-5 gap-2">
-                  {[
-                    { name: "Facebook", brand: "#1877F2", icon: (
-                      <svg viewBox="0 0 32 32" className="size-[18px]"><path d="M20.4 20.6l.7-4.6h-4.4v-3c0-1.3.6-2.5 2.6-2.5h2V6.6s-1.8-.3-3.6-.3c-3.6 0-6 2.2-6 6.2V16H7.6v4.6h4.1V32h5V20.6h3.7z" fill="currentColor"/></svg>
-                    ) },
-                    { name: "Line", brand: "#06C755", icon: (
-                      <svg viewBox="0 0 32 32" className="size-[18px]"><path d="M26 14.7c0-4.5-4.5-8.2-10-8.2S6 10.2 6 14.7c0 4 3.6 7.4 8.4 8.1.3.1.7.2.8.5.1.3.1.7 0 1l-.1.8c0 .2-.2 1 .9.5 1.1-.5 5.7-3.4 7.8-5.8 1.4-1.6 2.2-3.3 2.2-5.1z" fill="currentColor"/></svg>
-                    ) },
-                    { name: "Instagram", brand: "#E1306C", icon: (
-                      <svg viewBox="0 0 32 32" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.2">
-                        <rect x="6" y="6" width="20" height="20" rx="5"/>
-                        <circle cx="16" cy="16" r="4.5"/>
-                        <circle cx="22" cy="10" r="1.2" fill="currentColor"/>
-                      </svg>
-                    ) },
-                    { name: "Tiktok", brand: "#000", icon: (
-                      <svg viewBox="0 0 32 32" className="size-[18px]"><path d="M22 9.5c-1.6-.3-3-1.4-3.6-2.9H16v12.7c0 1.3-1 2.3-2.3 2.3-1.3 0-2.3-1-2.3-2.3 0-1.3 1-2.3 2.3-2.3.2 0 .5 0 .7.1V14c-.2 0-.5-.1-.7-.1-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9 4.9-2.2 4.9-4.9v-6.6c1.1.7 2.4 1.2 3.8 1.2V9.8c-.1 0-.3 0-.4-.3z" fill="currentColor"/></svg>
-                    ) },
-                    { name: "Youtube", brand: "#FF0000", icon: (
-                      <svg viewBox="0 0 32 32" className="size-[18px]"><path d="M13 11l9 5-9 5V11z" fill="currentColor"/></svg>
-                    ) },
-                  ].map((s) => (
-                    <a key={s.name} href="#" aria-label={s.name}
-                      className="group/sm aspect-square w-full max-w-[44px] rounded-xl bg-white/[0.08] hover:bg-white border border-white/10 hover:border-transparent flex items-center justify-center text-white hover:-translate-y-1 hover:shadow-[0_10px_20px_-4px_rgba(0,0,0,0.3)] transition-all duration-200"
-                      style={{ ["--brand" as any]: s.brand }}>
-                      <span className="text-white group-hover/sm:text-[var(--brand)] transition-colors">{s.icon}</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-1">
-                <div className="flex items-center gap-2.5 mb-3 pb-3 border-b border-white/10">
-                  <div className="size-[32px] rounded-xl bg-[#46c474]/15 border border-[#46c474]/25 flex items-center justify-center">
-                    <Wallet className="size-[14px] text-[#46c474]" strokeWidth={2.4} />
-                  </div>
-                  <p className={`${font} text-[14px] text-white`} style={{ fontWeight: 600 }}>ช่องทางชำระเงิน</p>
-                </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {[
-                    { label: "VISA",      color: "text-[#1a1f71]" },
-                    { label: "MC",        color: "text-[#eb001b]" },
-                    { label: "PromptPay", color: "text-[#003478]" },
-                    { label: "TrueMoney", color: "text-[#ff6600]" },
-                  ].map((p) => (
-                    <div key={p.label}
-                      className={`${font} px-2.5 py-1 rounded-lg bg-white ${p.color} text-[10px] tracking-wide shadow-[0_3px_8px_-2px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.6)]`}
-                      style={{ fontWeight: 800 }}>
-                      {p.label}
-                    </div>
-                  ))}
-                </div>
+              {/* QR Code */}
+              <div className="relative size-[76px] shrink-0 self-end flex items-center justify-center">
+                <img src={imgQRCode} alt="QR Code" className="w-full h-full object-contain" />
               </div>
             </div>
           </div>
 
-          {/* Bottom bar */}
-          <div className="relative border-t border-white/10">
-            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <p className={`${font} text-[12.5px] text-white/65`}>© 2026 <span className="text-white/85" style={{ fontWeight: 600 }}>MetaHerb</span>. สงวนลิขสิทธิ์ทั้งหมด.</p>
-                <span className={`${font} inline-flex items-center gap-1 px-2 py-[3px] rounded-full bg-white/10 border border-white/15 text-[10.5px] text-white/80 tabular-nums`} style={{ fontWeight: 500 }}>
-                  <span className="size-[6px] rounded-full bg-[#46c474] shadow-[0_0_6px_rgba(70,196,116,0.8)]" />
-                  v{APP_VERSION}
-                </span>
-              </div>
-              <div className="flex items-center gap-4">
-                <a href="/about" className={`${font} text-[12px] text-white/65 hover:text-white transition-colors`}>เงื่อนไขการใช้งาน</a>
-                <span className="text-white/20">•</span>
-                <a href="/about" className={`${font} text-[12px] text-white/65 hover:text-white transition-colors`}>นโยบายความเป็นส่วนตัว</a>
-                <span className="text-white/20">•</span>
-                <a href="/about" className={`${font} text-[12px] text-white/65 hover:text-white transition-colors`}>คุกกี้</a>
+          {/* ===== BOTTOM BAR ===== */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+              <p className={`${font} text-[13px] text-white/75`}>{t("footer_copyright")}</p>
+              <span className={`${font} inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full bg-gradient-to-br from-[#46c474]/15 to-[#319754]/5 border border-[#46c474]/25 text-[11px] text-white/85 tabular-nums`} style={{ fontWeight: 600 }}>
+                <span className="size-[6px] rounded-full bg-[#46c474] shadow-[0_0_8px_rgba(70,196,116,0.9)] animate-pulse" />
+                v{APP_VERSION}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`${font} text-[12px] text-white/65`} style={{ fontWeight: 500 }}>{t("footer_payment")}</span>
+              <div className="flex items-center gap-2">
+                {[
+                  { label: "VISA", color: "#1a1f71" },
+                  { label: "MC", color: "#eb001b" },
+                  { label: "PP", color: "#003478" },
+                  { label: "TM", color: "#ff6600" },
+                ].map((p) => (
+                  <div key={p.label}
+                    className={`${font} size-[40px] rounded-full bg-white flex items-center justify-center text-[10px] tracking-wide shadow-[0_3px_8px_-2px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.6)]`}
+                    style={{ color: p.color, fontWeight: 800 }}>
+                    {p.label}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

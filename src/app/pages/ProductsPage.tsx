@@ -52,8 +52,8 @@ export function ProductsPage() {
     .filter((p) => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     .filter((p) => {
       if (productType === "สินค้า Flash Sale") return !!p.isFlashSale;
-      if (productType === "สินค้าโปรโมชัน") return !!p.discountPercent;
-      if (productType === "สินค้าแนะนำ") return !!p.isRecommended;
+      if (productType === "สินค้าโปรโมชัน")    return !p.isFlashSale && !!p.discountPercent;
+      if (productType === "สินค้าแนะนำ")       return !p.isFlashSale && !p.discountPercent && !!p.isRecommended;
       return true;
     })
     .filter((p) => {

@@ -1,6 +1,7 @@
 import React, { useState, Fragment, useEffect } from "react";
 import { useAuth } from "../store/AuthContext";
 import { useOrders } from "../store/OrderContext";
+import { useLanguage } from "../store/LanguageContext";
 import { useNavigate } from "react-router";
 import {
   BarChart3, Package, ShoppingCart, Zap, Megaphone, Ticket,
@@ -593,7 +594,30 @@ function MenuBtn({ isActive, icon: Icon, label, onClick, hasArrow, expanded, col
 function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; onSelect: (t: OwnerTab) => void; collapsed: boolean; onToggle: () => void }) {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ products: true, settings: false });
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const toggle = (id: string) => setExpandedMenus((p) => ({ ...p, [id]: !p[id] }));
+
+  // Translate sidebar labels based on tab id
+  const labelMap: Record<string, string> = {
+    overview: t("owner_sidebar_dashboard"),
+    orders: t("owner_sidebar_orders"),
+    products: t("owner_sidebar_products"),
+    flash_sale: t("owner_sidebar_flash_sale"),
+    promotions: t("owner_sidebar_promotions"),
+    coupons: t("owner_sidebar_coupons"),
+    reports: t("owner_sidebar_reports"),
+    report_sales: t("owner_sidebar_report_sales"),
+    report_customers: t("owner_sidebar_report_customers"),
+    report_products: t("owner_sidebar_report_products"),
+    report_market: t("owner_sidebar_report_market"),
+    finance: t("owner_sidebar_finance"),
+    complaints: t("owner_sidebar_complaints"),
+  };
+  // For parent items like "products", child id "products" overlaps — special-case the manage products label
+  const childLabel = (id: string, fallback: string) => {
+    if (id === "products") return t("owner_sidebar_manage_products");
+    return labelMap[id] ?? fallback;
+  };
 
   const withTooltip = (label: string, node: React.ReactNode) => collapsed ? (
     <TooltipPrimitive.Root>
@@ -622,7 +646,7 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.2 }}
-                className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>ภาพรวม</motion.p>
+                className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>{t("admin_topbar_overview")}</motion.p>
             )}
           </AnimatePresence>
           <motion.button
@@ -643,11 +667,12 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
           animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } } }}
           className={`flex-1 pb-4 space-y-2.5 overflow-y-auto ${collapsed ? "px-2" : "px-4"}`}>
-          {sidebarItems.map((item) =>
-            !item.children ? (
+          {sidebarItems.map((item) => {
+            const itemLabel = labelMap[item.id] ?? item.label;
+            return !item.children ? (
               <motion.div key={item.id} variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.25 }}>
-                {withTooltip(item.label,
-                  <MenuBtn isActive={active === item.id} icon={item.icon} label={item.label} onClick={() => onSelect(item.id)} collapsed={collapsed} />
+                {withTooltip(itemLabel,
+                  <MenuBtn isActive={active === item.id} icon={item.icon} label={itemLabel} onClick={() => onSelect(item.id)} collapsed={collapsed} />
                 )}
               </motion.div>
             ) : (
@@ -656,24 +681,25 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
                   <HoverCard openDelay={80} closeDelay={120}>
                     <HoverCardTrigger asChild>
                       <div>
-                        <MenuBtn icon={item.icon} label={item.label} hasArrow={false} collapsed={collapsed}
+                        <MenuBtn icon={item.icon} label={itemLabel} hasArrow={false} collapsed={collapsed}
                           onClick={() => { /* noop in collapsed: hover-only */ }} />
                       </div>
                     </HoverCardTrigger>
                     <HoverCardContent side="right" align="start" sideOffset={12}
                       className="w-auto min-w-[200px] p-2.5 rounded-[16px] border-gray-100 bg-white shadow-[0px_8px_24px_rgba(0,0,0,0.12)]">
-                      <p className={`${font} text-[11px] text-gray-400 px-2 pt-1 pb-2`} style={{ fontWeight: 500 }}>{item.label}</p>
+                      <p className={`${font} text-[11px] text-gray-400 px-2 pt-1 pb-2`} style={{ fontWeight: 500 }}>{itemLabel}</p>
                       <div className="space-y-1.5">
                         {item.children.map((child) => {
                           const isActive = active === child.id;
                           const Icon = childIconMap[child.id] || Package;
+                          const cLabel = childLabel(child.id, child.label);
                           return (
                             <button key={child.id + child.label} onClick={() => onSelect(child.id)}
                               className={`w-full flex items-center gap-2.5 pl-2 pr-3 py-2 rounded-[200px] cursor-pointer transition-colors ${isActive ? "bg-[#319754]/10" : "hover:bg-gray-50"}`}>
                               <div className={`size-[24px] rounded-full flex items-center justify-center shrink-0 transition-colors ${isActive ? "bg-[#319754]" : "bg-[#f5f5f5]"}`}>
                                 <Icon className={`size-3 ${isActive ? "text-white" : "text-black/85"}`} />
                               </div>
-                              <span className={`${font} text-[13px] whitespace-nowrap ${isActive ? "text-[#319754]" : "text-black"}`} style={{ fontWeight: isActive ? 500 : 400 }}>{child.label}</span>
+                              <span className={`${font} text-[13px] whitespace-nowrap ${isActive ? "text-[#319754]" : "text-black"}`} style={{ fontWeight: isActive ? 500 : 400 }}>{cLabel}</span>
                             </button>
                           );
                         })}
@@ -682,7 +708,7 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
                   </HoverCard>
                 ) : (
                   <>
-                    <MenuBtn icon={item.icon} label={item.label} onClick={() => toggle(item.id)} hasArrow expanded={expandedMenus[item.id]} collapsed={collapsed} />
+                    <MenuBtn icon={item.icon} label={itemLabel} onClick={() => toggle(item.id)} hasArrow expanded={expandedMenus[item.id]} collapsed={collapsed} />
                     <AnimatePresence initial={false}>
                       {expandedMenus[item.id] && (
                         <motion.div
@@ -697,11 +723,14 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
                             animate="show"
                             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.03 } } }}
                             className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
-                            {item.children.map((child) => (
-                              <motion.div key={child.id + child.label} variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.2 }}>
-                                <MenuBtn isActive={active === child.id} icon={childIconMap[child.id] || Package} label={child.label} onClick={() => onSelect(child.id)} collapsed={collapsed} />
-                              </motion.div>
-                            ))}
+                            {item.children.map((child) => {
+                              const cLabel = childLabel(child.id, child.label);
+                              return (
+                                <motion.div key={child.id + child.label} variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.2 }}>
+                                  <MenuBtn isActive={active === child.id} icon={childIconMap[child.id] || Package} label={cLabel} onClick={() => onSelect(child.id)} collapsed={collapsed} />
+                                </motion.div>
+                              );
+                            })}
                           </motion.div>
                         </motion.div>
                       )}
@@ -709,13 +738,13 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
                   </>
                 )}
               </motion.div>
-            )
-          )}
+            );
+          })}
 
           {/* Complaints */}
           <motion.div variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.25 }}>
-            {withTooltip("การร้องเรียน",
-              <MenuBtn isActive={active === "complaints" || active === "complaint_detail"} icon={AlertTriangle} label="การร้องเรียน" onClick={() => onSelect("complaints")} collapsed={collapsed} />
+            {withTooltip(t("owner_sidebar_complaints"),
+              <MenuBtn isActive={active === "complaints" || active === "complaint_detail"} icon={AlertTriangle} label={t("owner_sidebar_complaints")} onClick={() => onSelect("complaints")} collapsed={collapsed} />
             )}
           </motion.div>
         </motion.nav>
@@ -742,6 +771,7 @@ function CancelOrderModal({ open, order, onClose, onConfirm }: {
   onClose: () => void;
   onConfirm: (reason: string, note: string) => void;
 }) {
+  const { t } = useLanguage();
   const [selectedReason, setSelectedReason] = useState<string>("");
   const [note, setNote] = useState("");
 
@@ -769,7 +799,7 @@ function CancelOrderModal({ open, order, onClose, onConfirm }: {
                   <AlertCircle className="size-5 text-[#ff3b30]" strokeWidth={2.4} />
                 </div>
                 <div className="flex-1">
-                  <h3 className={`${font} text-[16px]`} style={{ fontWeight: 700 }}>ยกเลิกคำสั่งซื้อ</h3>
+                  <h3 className={`${font} text-[16px]`} style={{ fontWeight: 700 }}>{t("owner_orders_cancel_title")}</h3>
                   <p className={`${font} text-[12px] text-gray-500 mt-0.5`}>{order.id}</p>
                 </div>
                 <button onClick={onClose} className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer shrink-0">
@@ -778,7 +808,7 @@ function CancelOrderModal({ open, order, onClose, onConfirm }: {
               </div>
             </div>
             <div className="p-5">
-              <p className={`${font} text-[13px] text-black mb-3`} style={{ fontWeight: 500 }}>เลือกเหตุผลการยกเลิก <span className="text-[#ff3b30]">*</span></p>
+              <p className={`${font} text-[13px] text-black mb-3`} style={{ fontWeight: 500 }}>{t("owner_orders_cancel_reason_ph")} <span className="text-[#ff3b30]">*</span></p>
               <div className="flex flex-col gap-2 mb-4">
                 {CANCEL_REASONS.map((reason) => {
                   const isSelected = selectedReason === reason;
@@ -815,14 +845,14 @@ function CancelOrderModal({ open, order, onClose, onConfirm }: {
               <div className="flex gap-2">
                 <button onClick={onClose}
                   className={`${font} flex-1 h-11 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer text-[14px] transition-colors`}>
-                  ปิด
+                  {t("common_close")}
                 </button>
                 <button
                   onClick={() => canSubmit && onConfirm(selectedReason, note.trim())}
                   disabled={!canSubmit}
                   className={`${font} flex-1 h-11 rounded-full bg-[#ff3b30] hover:bg-[#dc2626] disabled:bg-gray-300 disabled:cursor-not-allowed text-white cursor-pointer text-[14px] shadow-[0_2px_8px_rgba(255,59,48,0.25)] transition-colors`}
                   style={{ fontWeight: 600 }}>
-                  ยืนยันยกเลิก
+                  {t("owner_orders_cancel_submit")}
                 </button>
               </div>
             </div>
@@ -842,21 +872,23 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
   onConfirmShip: (id: string) => void;
   onRequestCancel: (id: string) => void;
 }) {
+  const { t } = useLanguage();
   const cfg = statusConfig[order.status];
+  const statusLabel = t(`owner_orders_status_${order.status}` as any);
 
   // Status-specific action button row
   const actions = (() => {
     const cancelBtn = (
       <button onClick={(e) => { e.stopPropagation(); onRequestCancel(order.id); }}
         className={`${font} border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors`}>
-        ยกเลิก
+        {t("common_cancel")}
       </button>
     );
     const contactBtn = (
       <button onClick={(e) => { e.stopPropagation(); onContact(order.id); }}
         className={`${font} border border-gray-300 text-gray-700 hover:bg-gray-50 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
         <MessageCircle className="size-3.5" />
-        ติดต่อลูกค้า
+        {t("owner_orders_contact")}
       </button>
     );
     switch (order.status) {
@@ -867,9 +899,9 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
           <>
             {contactBtn}
             {cancelBtn}
-            <button onClick={(e) => { e.stopPropagation(); onUpdate(order.id, { status: "ready_ship" }); toast.success("เปลี่ยนสถานะเป็นพร้อมจัดส่ง"); }}
+            <button onClick={(e) => { e.stopPropagation(); onUpdate(order.id, { status: "ready_ship" }); toast.success(t("owner_orders_status_ready_ship")); }}
               className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
-              พร้อมจัดส่ง
+              {t("owner_orders_status_ready_ship")}
               <ArrowRightCircle className="size-4" />
             </button>
           </>
@@ -881,7 +913,7 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
             <button onClick={(e) => { e.stopPropagation(); onConfirmShip(order.id); }}
               className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
               <Truck className="size-4" />
-              ยืนยันการจัดส่ง
+              {t("owner_orders_confirm_ship")}
             </button>
           </>
         );
@@ -905,7 +937,7 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
           <button onClick={(e) => { e.stopPropagation(); onBlock(order.id); }}
             className={`${font} border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
             <Ban className="size-3.5" />
-            บล็อกลูกค้า
+            {t("owner_orders_block")}
           </button>
         );
     }
@@ -921,7 +953,7 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
             <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{order.id}</span>
             <span className={`${font} text-[12px] text-white px-4 py-1 rounded-full whitespace-nowrap`}
               style={{ backgroundColor: cfg.pillBg, fontWeight: 500 }}>
-              {cfg.label}
+              {statusLabel}
             </span>
           </div>
           <div className="flex items-center gap-2.5">
@@ -1103,6 +1135,7 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
   onUpdate: (id: string, patch: Partial<Order>) => void;
   onOpenDetail: (id: string) => void;
 }) {
+  const { t } = useLanguage();
   const [activeFilter, setActiveFilter] = useState<OrderFilterTab>(initialFilter);
   const [searchQuery, setSearchQuery] = useState("");
   const [shipModalOrderId, setShipModalOrderId] = useState<string | null>(null);
@@ -1121,26 +1154,26 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
   const handleConfirmCancel = (reason: string, note: string) => {
     if (!cancelModalOrderId) return;
     onUpdate(cancelModalOrderId, { status: "cancelled", cancelReason: reason, cancelNote: note || undefined, cancelledBy: "shop", cancellationStatus: "approved" });
-    toast.success(`ยกเลิกคำสั่งซื้อแล้ว — เหตุผล: ${reason}`);
+    toast.success(t("owner_toast_order_cancelled"));
     setCancelModalOrderId(null);
   };
 
   const submitShip = () => {
     if (!shipModalOrderId || !shipTrackingInput.trim()) return;
     onUpdate(shipModalOrderId, { status: "shipping", trackingNumber: shipTrackingInput.trim() });
-    toast.success("อัปเดตสถานะการจัดส่งเรียบร้อย — ลูกค้าจะติดตามพัสดุได้");
+    toast.success(t("owner_toast_order_shipped"));
     setShipModalOrderId(null);
   };
 
   const handleContact = (id: string) => {
     const o = orders.find((x) => x.id === id);
-    if (o) toast.info(`เปิดแชทกับ ${o.customer} (${o.phone})`);
+    if (o) toast.info(`${t("owner_orders_contact")}: ${o.customer} (${o.phone})`);
   };
 
   const handleBlock = (id: string) => {
     const o = orders.find((x) => x.id === id);
-    if (o && confirm(`บล็อกลูกค้า ${o.customer}? ลูกค้าจะไม่สามารถสั่งซื้อจากร้านได้อีก`)) {
-      toast.success(`บล็อก ${o.customer} เรียบร้อย`);
+    if (o && confirm(`${t("owner_orders_block")}: ${o.customer}?`)) {
+      toast.success(`${t("owner_orders_block")}: ${o.customer}`);
     }
   };
 
@@ -1150,11 +1183,20 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
   // Counts derived from current orders state so tabs stay in sync after status updates
   const liveCounts = (status: OrderFilterTab) =>
     status === "all" ? orders.length : orders.filter((o) => o.status === status).length;
-  const liveTabs = orderTabs.map((t) => ({ ...t, count: liveCounts(t.id) }));
+  const tabLabelMap: Record<OrderFilterTab, string> = {
+    all: t("owner_orders_tab_all"),
+    pending_payment: t("owner_orders_tab_pending_payment"),
+    pending_verify: t("owner_orders_tab_pending_verify"),
+    ready_ship: t("owner_orders_tab_ready_ship"),
+    shipping: t("owner_orders_tab_shipping"),
+    shipped: t("owner_orders_tab_shipped"),
+    cancelled: t("owner_orders_tab_cancelled"),
+  };
+  const liveTabs = orderTabs.map((tb) => ({ ...tb, label: tabLabelMap[tb.id], count: liveCounts(tb.id) }));
 
   return (
     <div>
-      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>จัดการคำสั่งซื้อ</h2>
+      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>{t("owner_orders_title")}</h2>
 
       {/* Filter tabs + search (in one pill) */}
       <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
@@ -1163,14 +1205,14 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
             all: ClipboardList, pending_payment: Wallet, pending_verify: ScanSearch,
             ready_ship: Package, shipping: Truck, shipped: PackageCheck, cancelled: PackageX,
           };
-          const tabsWithIcon = liveTabs.map((t) => ({ ...t, Icon: orderIcons[t.id] }));
+          const tabsWithIcon = liveTabs.map((tb) => ({ ...tb, Icon: orderIcons[tb.id] }));
           return <FilterTabPills tabs={tabsWithIcon} active={activeFilter} onChange={setActiveFilter} pillId="orderTabActivePill" />;
         })()}
         {/* Search (inside same pill) */}
         <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
-            placeholder="ค้นหาเลขคำสั่งซื้อ, ชื่อลูกค้า...."
+            placeholder={t("owner_orders_search_ph")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -1195,7 +1237,7 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
           return (
             <div className="bg-white rounded-xl border border-gray-100 py-16 flex flex-col items-center justify-center gap-2">
               <ClipboardList className="size-10 text-gray-300" strokeWidth={1.5} />
-              <p className={`${font} text-[14px] text-gray-400`}>ไม่มีคำสั่งซื้อในสถานะนี้</p>
+              <p className={`${font} text-[14px] text-gray-400`}>{t("owner_orders_no_orders")}</p>
             </div>
           );
         }
@@ -1227,40 +1269,40 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
               className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl"
               onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className={`${font} text-[18px]`} style={{ fontWeight: 700 }}>ยืนยันการจัดส่ง</h3>
+                <h3 className={`${font} text-[18px]`} style={{ fontWeight: 700 }}>{t("owner_orders_confirm_ship")}</h3>
                 <button onClick={() => setShipModalOrderId(null)} className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer">
                   <X className="size-4" />
                 </button>
               </div>
               <div className="bg-gray-50 rounded-xl p-3 mb-4">
-                <p className={`${font} text-[12px] text-gray-500`}>คำสั่งซื้อ</p>
+                <p className={`${font} text-[12px] text-gray-500`}>{t("owner_orders_order_no")}</p>
                 <p className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>{shipOrder.id}</p>
-                <p className={`${font} text-[12px] text-gray-500 mt-2`}>ผู้รับ</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>{t("owner_orders_customer")}</p>
                 <p className={`${font} text-[14px]`}>{shipOrder.customer} · {shipOrder.phone}</p>
-                <p className={`${font} text-[12px] text-gray-500 mt-2`}>วิธีจัดส่ง</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>{t("common_shipping")}</p>
                 <p className={`${font} text-[14px]`}>{shipOrder.shippingMethod}</p>
-                <p className={`${font} text-[12px] text-gray-500 mt-2`}>ที่อยู่</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>{t("address_title")}</p>
                 <p className={`${font} text-[13px]`}>{shipOrder.address}</p>
               </div>
-              <label className={`${font} text-[13px] text-black block mb-2`} style={{ fontWeight: 500 }}>หมายเลขพัสดุ <span className="text-[#ff3b30]">*</span></label>
+              <label className={`${font} text-[13px] text-black block mb-2`} style={{ fontWeight: 500 }}>{t("orders_tracking_no")} <span className="text-[#ff3b30]">*</span></label>
               <input
                 value={shipTrackingInput}
                 onChange={(e) => setShipTrackingInput(e.target.value)}
-                placeholder="เช่น TH1234567890"
+                placeholder="TH1234567890"
                 className={`${font} bg-[#fafafa] h-11 w-full rounded-full px-4 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow mb-4`}
               />
               <p className={`${font} text-[11px] text-gray-500 mb-5`}>
-                ลูกค้าจะได้รับแจ้งเตือนเพื่อติดตามพัสดุ และสถานะออเดอร์จะเปลี่ยนเป็น "กำลังจัดส่ง"
+                {t("owner_orders_status_shipping")}
               </p>
               <div className="flex gap-2">
                 <button onClick={() => setShipModalOrderId(null)}
                   className={`${font} flex-1 h-11 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer text-[14px] transition-colors`}>
-                  ยกเลิก
+                  {t("common_cancel")}
                 </button>
                 <button onClick={submitShip} disabled={!shipTrackingInput.trim()}
                   className={`${font} flex-1 h-11 rounded-full bg-[#319754] hover:bg-[#287745] disabled:bg-gray-300 disabled:cursor-not-allowed text-white cursor-pointer text-[14px] shadow-[0_2px_8px_rgba(49,151,84,0.25)] transition-colors`}
                   style={{ fontWeight: 600 }}>
-                  ยืนยันการจัดส่ง
+                  {t("owner_orders_confirm_ship")}
                 </button>
               </div>
             </motion.div>
@@ -1922,6 +1964,7 @@ function OrderDetailTab({ order, onBack, onUpdate }: {
 
 /* ========== PRODUCTS TAB ========== */
 function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
+  const { t } = useLanguage();
   const [productFilter, setProductFilter] = useState("all");
   const [previewProduct, setPreviewProduct] = useState<typeof mockProducts[0] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -1936,10 +1979,10 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
   };
 
   const productFilterTabs = [
-    { id: "all",      label: "สินค้าทั้งหมด", count: counts.all },
-    { id: "active",   label: "สินค้าเปิดขาย", count: counts.active },
-    { id: "inactive", label: "สินค้าปิดขาย", count: counts.inactive },
-    { id: "out",      label: "สินค้าหมด",     count: counts.out },
+    { id: "all",      label: t("owner_products_tab_all"),      count: counts.all },
+    { id: "active",   label: t("owner_products_tab_active"),   count: counts.active },
+    { id: "inactive", label: t("owner_products_tab_inactive"), count: counts.inactive },
+    { id: "out",      label: t("owner_products_tab_outofstock"), count: counts.out },
   ];
 
   const filteredProducts = mockProducts.filter((p) => {
@@ -1959,7 +2002,7 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการสินค้า</h2>
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_products_title")}</h2>
         <motion.button
           onClick={onAddProduct}
           whileTap={{ scale: 0.96 }}
@@ -1971,7 +2014,7 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มสินค้า</span>
+          <span style={{ fontWeight: 600 }}>{t("owner_products_add")}</span>
         </motion.button>
       </div>
 
@@ -1981,14 +2024,14 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
           const productIcons: Record<string, any> = {
             all: Package, active: PackageCheck, inactive: EyeOff, out: AlertTriangle,
           };
-          const tabsWithIcon = productFilterTabs.map((t) => ({ ...t, Icon: productIcons[t.id] }));
+          const tabsWithIcon = productFilterTabs.map((tb) => ({ ...tb, Icon: productIcons[tb.id] }));
           return <FilterTabPills tabs={tabsWithIcon} active={productFilter} onChange={(id) => { setProductFilter(id); setCurrentPage(1); }} pillId="productTabActivePill" />;
         })()}
         {/* Search (inside same pill) */}
         <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
-            placeholder="ค้นหาสินค้าของคุณ...."
+            placeholder={t("owner_products_search_ph")}
           />
           <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
             <Search className="size-4 text-white" />
@@ -2012,20 +2055,20 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
             </colgroup>
             <thead>
               <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
-                <th className="text-left pb-3 pr-0 pl-0" style={{ fontWeight: 500 }}>รูปภาพ</th>
-                <th className="text-left pb-3 pr-4 pl-2" style={{ fontWeight: 500 }}>สินค้า</th>
-                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>หมวดหมู่</th>
-                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ประเภท</th>
-                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>ราคา</th>
-                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>คงเหลือ</th>
-                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>สถานะ</th>
-                <th className="text-center pb-3" style={{ fontWeight: 500 }}>จัดการ</th>
+                <th className="text-left pb-3 pr-0 pl-0" style={{ fontWeight: 500 }}>{t("owner_products_name")}</th>
+                <th className="text-left pb-3 pr-4 pl-2" style={{ fontWeight: 500 }}>{t("owner_products_name")}</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>{t("owner_products_category")}</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>{t("owner_finance_type")}</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>{t("owner_products_price")}</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>{t("owner_products_stock")}</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>{t("owner_orders_status")}</th>
+                <th className="text-center pb-3" style={{ fontWeight: 500 }}>{t("owner_products_actions")}</th>
               </tr>
             </thead>
             <tbody>
               {pageItems.length === 0 && (
                 <tr>
-                  <td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบสินค้าในหมวดนี้</td>
+                  <td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>{t("owner_products_no_results")}</td>
                 </tr>
               )}
               {pageItems.map((p) => {
@@ -2607,6 +2650,7 @@ function FlashEventCard({
 
 /* ========== FLASH SALE TAB ========== */
 function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?: { isNewJoin?: boolean }) => void }) {
+  const { t } = useLanguage();
   const [flashFilter, setFlashFilter] = useState("all");
   const [flashSearch, setFlashSearch] = useState("");
   const [flashStorePage, setFlashStorePage] = useState(1);
@@ -2632,10 +2676,10 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
   const storeCountSoldOut   = storeProducts.filter((p) => p.quantity - p.sold <= 0).length;
   const storeCountScheduled = storeProducts.filter(_isScheduled).length;
   const flashFilterTabs = [
-    { id: "all",       label: "ทั้งหมด",          count: storeProducts.length,     Icon: ClipboardList   },
-    { id: "active",    label: "กำลังขาย",          count: storeCountActive,         Icon: Zap             },
-    { id: "soldout",   label: "สินค้าหมด",         count: storeCountSoldOut,        Icon: AlertTriangle   },
-    { id: "scheduled", label: "กำหนดไว้ล่วงหน้า", count: storeCountScheduled,      Icon: Clock           },
+    { id: "all",       label: t("owner_flash_tab_all"),     count: storeProducts.length,     Icon: ClipboardList   },
+    { id: "active",    label: t("owner_flash_tab_ongoing"),  count: storeCountActive,         Icon: Zap             },
+    { id: "soldout",   label: t("owner_products_tab_outofstock"), count: storeCountSoldOut, Icon: AlertTriangle   },
+    { id: "scheduled", label: t("owner_flash_tab_upcoming"), count: storeCountScheduled,      Icon: Clock           },
   ];
 
   // กรองตาม tab + keyword
@@ -2669,10 +2713,10 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
               <Zap className="size-5 text-[#e62e05]" strokeWidth={2.2} fill="#e62e05" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>Flash Sale Event</h3>
+              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>Flash Sale</h3>
               <div className="flex items-center gap-1.5 mt-1">
                 <AlertCircle className="size-3.5 text-gray-400" />
-                <span className={`${font} text-[12px] text-[#8e8e93]`}>เข้าร่วม Flash Sale กับทาง METAHERB เพื่อรับข้อเสนอสุดพิเศษ</span>
+                <span className={`${font} text-[12px] text-[#8e8e93]`}>{t("owner_flash_subtitle")}</span>
               </div>
             </div>
           </div>
@@ -4758,6 +4802,7 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
 
 /* ========== OVERVIEW ========== */
 function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab) => void }) {
+  const { t } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(16);
   const [currentMonth, setCurrentMonth] = useState(0);
   const [currentYear, setCurrentYear] = useState(2026);
@@ -4973,15 +5018,15 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
         <div className="flex-1 flex flex-col items-start justify-between p-4 relative min-w-0 z-10">
           <p className={`${font} text-[14px] text-white whitespace-nowrap`} style={{ fontWeight: 700 }}>กระเป๋าตังค์</p>
           <div className="flex flex-col gap-[10px] items-start">
-            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>ยอดพร้อมถอน</p>
+            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>{t("owner_finance_balance")}</p>
             <p className={`${font} text-[24px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
               <AnimatedValue value="฿2,775.21" />
             </p>
-            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>+12.5% เทียบเดือนก่อน</p>
+            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>+12.5%</p>
             <button className={`${font} bg-white hover:bg-gray-50 text-[#287745] h-10 w-[110px] rounded-full text-[13px] inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)]`}
               style={{ fontWeight: 600 }}>
               <Wallet className="size-3.5" />
-              ถอนเงิน
+              {t("owner_finance_withdraw")}
             </button>
           </div>
         </div>
@@ -4991,17 +5036,17 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
           {/* ยอด Escrow */}
           <div className="bg-white/15 backdrop-blur-[10px] rounded-2xl flex-1 flex flex-col gap-2 items-start p-4 overflow-hidden">
             <div className={`flex items-center gap-1.5`}>
-              <p className={`${font} text-[10px] text-white whitespace-nowrap`}>ยอด Escrow</p>
+              <p className={`${font} text-[10px] text-white whitespace-nowrap`}>{t("owner_finance_pending")}</p>
               <span className="inline-flex items-center justify-center size-2.5 rounded-full border border-white/50 text-[7px] text-white/80">i</span>
             </div>
             <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
               <AnimatedValue value="฿1,370.6" />
             </p>
-            <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>8 ออเดอร์รอ</p>
+            <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>8 {t("owner_overview_orders")}</p>
           </div>
           {/* รายได้สะสม */}
           <div className="bg-white/15 backdrop-blur-[10px] rounded-2xl flex-1 flex flex-col gap-2 items-start p-4 overflow-hidden">
-            <p className={`${font} text-[10px] text-white whitespace-nowrap`}>รายได้สะสม</p>
+            <p className={`${font} text-[10px] text-white whitespace-nowrap`}>{t("owner_finance_total_income")}</p>
             <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
               <AnimatedValue value="฿2,775.21" />
             </p>
@@ -5014,24 +5059,24 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
       <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-[0px_1px_4px_rgba(0,0,0,0.04)] flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <h3 className={`${font} text-[14px] text-[#101828]`} style={{ fontWeight: 700 }}>ติดตามคำสั่งซื้อ</h3>
-            <span className={`${font} text-[11px] text-gray-400`}>ทั้งหมด</span>
+            <h3 className={`${font} text-[14px] text-[#101828]`} style={{ fontWeight: 700 }}>{t("owner_overview_recent_orders")}</h3>
+            <span className={`${font} text-[11px] text-gray-400`}>{t("owner_orders_tab_all")}</span>
           </div>
           <button onClick={() => onViewOrders?.()}
             className={`${font} text-[11px] inline-flex items-center gap-0.5 text-[#319754] hover:text-[#287745] cursor-pointer transition-colors`}
             style={{ fontWeight: 600 }}>
-            ดูทั้งหมด
+            {t("common_view_all")}
             <ChevronRight className="size-3" />
           </button>
         </div>
         <div className="grid grid-cols-3 gap-2 flex-1">
           {[
-            { id: "pending_payment" as OrderFilterTab, label: "รอชำระเงิน", count: countByStatus("pending_payment"), accent: "#ff3b30", Icon: Wallet },
-            { id: "pending_verify" as OrderFilterTab, label: "รอตรวจสอบ", count: countByStatus("pending_verify"), accent: "#f59e0b", Icon: ScanSearch },
-            { id: "ready_ship" as OrderFilterTab, label: "พร้อมจัดส่ง", count: countByStatus("ready_ship"), accent: "#3b82f6", Icon: PackageCheck },
-            { id: "shipping" as OrderFilterTab, label: "กำลังจัดส่ง", count: countByStatus("shipping"), accent: "#319754", Icon: Truck },
-            { id: "shipped" as OrderFilterTab, label: "ส่งสำเร็จ", count: countByStatus("shipped"), accent: "#10b981", Icon: Check },
-            { id: "cancelled" as OrderFilterTab, label: "ยกเลิก", count: countByStatus("cancelled"), accent: "#6b7280", Icon: PackageX },
+            { id: "pending_payment" as OrderFilterTab, label: t("owner_orders_status_pending_payment"), count: countByStatus("pending_payment"), accent: "#ff3b30", Icon: Wallet },
+            { id: "pending_verify" as OrderFilterTab, label: t("owner_orders_status_pending_verify"), count: countByStatus("pending_verify"), accent: "#f59e0b", Icon: ScanSearch },
+            { id: "ready_ship" as OrderFilterTab, label: t("owner_orders_status_ready_ship"), count: countByStatus("ready_ship"), accent: "#3b82f6", Icon: PackageCheck },
+            { id: "shipping" as OrderFilterTab, label: t("owner_orders_status_shipping"), count: countByStatus("shipping"), accent: "#319754", Icon: Truck },
+            { id: "shipped" as OrderFilterTab, label: t("owner_orders_status_shipped"), count: countByStatus("shipped"), accent: "#10b981", Icon: Check },
+            { id: "cancelled" as OrderFilterTab, label: t("owner_orders_status_cancelled"), count: countByStatus("cancelled"), accent: "#6b7280", Icon: PackageX },
           ].map((s) => (
             <button key={s.id} onClick={() => onViewOrders?.(s.id)}
               className="group bg-[#fafbfc] hover:bg-[#e8f7ed] border border-transparent hover:border-[#319754] rounded-2xl p-4 text-left transition-all cursor-pointer flex flex-col gap-2">
@@ -5480,6 +5525,7 @@ const financeTransactions = [
 ];
 
 function FinanceTab({ onBankSettings }: { onBankSettings: () => void }) {
+  const { t } = useLanguage();
   const [activeView, setActiveView] = useState<"all" | "withdraw">("all");
   const [selectedMonth, setSelectedMonth] = useState("มี.ค. 2569");
   const [page, setPage] = useState(1);
@@ -5516,22 +5562,22 @@ function FinanceTab({ onBankSettings }: { onBankSettings: () => void }) {
       {/* Header — title + actions (ตรงธีมหลัก: ProductsTab) */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>กระเป๋าเงิน</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการรายได้และการถอนเงินของร้านค้า</p>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_finance_title")}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("owner_finance_subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={onBankSettings}
             className={`${font} inline-flex items-center gap-2 text-[13px] text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-4 h-[36px] rounded-full cursor-pointer transition-colors`}
             style={{ fontWeight: 500 }}>
             <Settings className="size-4" strokeWidth={2.2} />
-            ตั้งค่าการเงิน
+            {t("owner_finance_bank_settings")}
           </button>
           <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
-            onClick={() => toast.success("เปิดหน้าถอนเงิน")}
+            onClick={() => toast.success(t("owner_finance_withdraw"))}
             className={`${font} inline-flex items-center gap-2 text-[13px] text-white bg-[#319754] hover:bg-[#287745] px-5 h-[36px] rounded-full cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
             style={{ fontWeight: 500 }}>
             <ArrowDownToLine className="size-4" strokeWidth={2.4} />
-            ถอนเงิน
+            {t("owner_finance_withdraw")}
           </motion.button>
         </div>
       </div>
@@ -5729,6 +5775,7 @@ function BankBadge({ bank, size = 40 }: { bank: typeof bankOptions[0]; size?: nu
 }
 
 function BankSettingsTab({ onBack }: { onBack: () => void }) {
+  const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [bankData, setBankData] = useState({ bank: "KTB", account: "000-000-0000", name: "บริษัท เมต้าเฮิร์บ จำกัด" });
   const [draft, setDraft] = useState(bankData);
@@ -5737,7 +5784,7 @@ function BankSettingsTab({ onBack }: { onBack: () => void }) {
   const handleSave = () => {
     setBankData(draft);
     setEditing(false);
-    toast.success("บันทึกข้อมูลบัญชีธนาคารแล้ว");
+    toast.success(t("owner_toast_saved"));
   };
 
   const selectedBank = bankOptions.find(b => b.value === bankData.bank) || bankOptions[0];
@@ -5750,15 +5797,15 @@ function BankSettingsTab({ onBack }: { onBack: () => void }) {
           className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
           style={{ fontWeight: 500 }}>
           <ChevronLeft className="size-3.5" strokeWidth={2.5} />
-          กลับ
+          {t("common_back")}
         </button>
       </div>
 
       {/* Header — title + subtitle (ตรงธีม FinanceTab/ProductsTab) */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>ตั้งค่าการเงิน</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการบัญชีธนาคารสำหรับรับเงินจากการขาย</p>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_bank_title")}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("owner_bank_security_note")}</p>
         </div>
         {/* Action buttons */}
         {!editing ? (
@@ -5767,21 +5814,21 @@ function BankSettingsTab({ onBack }: { onBack: () => void }) {
             className={`${font} inline-flex items-center gap-2 text-[13px] text-[#319754] bg-white border border-[#319754] hover:bg-[#319754]/10 px-5 h-[36px] rounded-full cursor-pointer transition-colors`}
             style={{ fontWeight: 500 }}>
             <Pencil className="size-3.5" strokeWidth={2.4} />
-            แก้ไข
+            {t("common_edit")}
           </motion.button>
         ) : (
           <div className="flex items-center gap-2">
             <button onClick={() => setEditing(false)}
               className={`${font} inline-flex items-center gap-2 text-[13px] text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-5 h-[36px] rounded-full cursor-pointer transition-colors`}
               style={{ fontWeight: 500 }}>
-              ยกเลิก
+              {t("common_cancel")}
             </button>
             <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
               onClick={handleSave}
               className={`${font} inline-flex items-center gap-2 text-[13px] text-white bg-[#319754] hover:bg-[#287745] px-5 h-[36px] rounded-full cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
               style={{ fontWeight: 500 }}>
               <Check className="size-4" strokeWidth={2.4} />
-              บันทึก
+              {t("owner_bank_save")}
             </motion.button>
           </div>
         )}
@@ -6135,6 +6182,7 @@ const mockComplaints: Complaint[] = [
 
 /* ========== COMPLAINTS TAB (List) ========== */
 function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void }) {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ComplaintStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState<ComplaintType | "all">("all");
@@ -6142,20 +6190,20 @@ function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void })
   const [perPage, setPerPage] = useState(10);
 
   const statusTabs: { id: ComplaintStatus | "all"; label: string; count: number; Icon: any }[] = [
-    { id: "all",            label: "ทั้งหมด",            count: mockComplaints.length, Icon: ClipboardList },
-    { id: "pending",        label: "รอดำเนินการ",        count: mockComplaints.filter((c) => c.status === "pending").length, Icon: Clock },
-    { id: "acknowledged",   label: "ยืนยันรับแจ้งปัญหา", count: mockComplaints.filter((c) => c.status === "acknowledged").length, Icon: Check },
-    { id: "refund_full",    label: "คืนเงินเต็มจำนวน",   count: mockComplaints.filter((c) => c.status === "refund_full").length, Icon: RotateCcw },
-    { id: "refund_partial", label: "คืนเงินบางส่วน",      count: mockComplaints.filter((c) => c.status === "refund_partial").length, Icon: PackageCheck },
-    { id: "rejected",       label: "ปฏิเสธ",             count: mockComplaints.filter((c) => c.status === "rejected").length, Icon: Ban },
+    { id: "all",            label: t("owner_complaint_tab_all"),    count: mockComplaints.length, Icon: ClipboardList },
+    { id: "pending",        label: t("owner_complaint_tab_new"),     count: mockComplaints.filter((c) => c.status === "pending").length, Icon: Clock },
+    { id: "acknowledged",   label: t("owner_complaint_tab_progress"),count: mockComplaints.filter((c) => c.status === "acknowledged").length, Icon: Check },
+    { id: "refund_full",    label: t("owner_complaint_refund"),      count: mockComplaints.filter((c) => c.status === "refund_full").length, Icon: RotateCcw },
+    { id: "refund_partial", label: t("owner_complaint_refund"),      count: mockComplaints.filter((c) => c.status === "refund_partial").length, Icon: PackageCheck },
+    { id: "rejected",       label: t("owner_complaint_status_rejected"), count: mockComplaints.filter((c) => c.status === "rejected").length, Icon: Ban },
   ];
 
   const typeTabs: { id: ComplaintType | "all"; label: string }[] = [
-    { id: "all",        label: "ทุกประเภท" },
-    { id: "damaged",    label: "สินค้าเสียหาย" },
-    { id: "wrong_item", label: "สินค้าไม่ตรงตามสั่ง" },
-    { id: "return",     label: "ต้องการคืนสินค้า" },
-    { id: "refund",     label: "ต้องการขอเงินคืน" },
+    { id: "all",        label: t("owner_complaint_tab_all") },
+    { id: "damaged",    label: t("owner_complaint_type_damaged") },
+    { id: "wrong_item", label: t("owner_complaint_type_wrong") },
+    { id: "return",     label: t("owner_complaint_type_missing") },
+    { id: "refund",     label: t("owner_complaint_refund") },
   ];
 
   const filtered = mockComplaints.filter((c) => {
@@ -6175,7 +6223,7 @@ function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void })
     <div>
       {/* Header — title only (เหมือน ProductsTab) */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>การร้องเรียน</h2>
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_complaint_title")}</h2>
       </div>
 
       {/* Status filter tabs + search (in one pill) — เหมือน ProductsTab */}
@@ -6235,7 +6283,7 @@ function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void })
         {/* Search (inside same pill, aligned right) */}
         <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0">
           <input value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-            placeholder="ค้นหาเลขร้องเรียน, ชื่อลูกค้า..."
+            placeholder={t("owner_complaint_search_ph")}
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
           <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
             <Search className="size-4 text-white" />
@@ -10888,6 +10936,7 @@ function CreateCouponModal({ open, onClose, onCreate }: {
 }
 
 function CouponsTab() {
+  const { t } = useLanguage();
   const [coupons, setCoupons] = useState<Coupon[]>(mockCoupons);
   const [filter, setFilter] = useState<"all" | CouponStatus>("all");
   const [search, setSearch] = useState("");
@@ -10908,10 +10957,10 @@ function CouponsTab() {
   const cnDisabled = coupons.filter((c) => computedStatus(c) === "disabled").length;
 
   const tabs: { id: "all" | CouponStatus; label: string; count: number; Icon: any }[] = [
-    { id: "all",      label: "คูปองทั้งหมด", count: cnAll,      Icon: Ticket         },
-    { id: "active",   label: "ใช้งานอยู่",    count: cnActive,   Icon: Check          },
-    { id: "expired",  label: "หมดอายุ",       count: cnExpired,  Icon: Clock          },
-    { id: "disabled", label: "ปิดใช้งาน",     count: cnDisabled, Icon: Ban            },
+    { id: "all",      label: t("owner_coupon_title"),    count: cnAll,      Icon: Ticket         },
+    { id: "active",   label: t("owner_coupon_active"),   count: cnActive,   Icon: Check          },
+    { id: "expired",  label: t("owner_coupon_expired"),  count: cnExpired,  Icon: Clock          },
+    { id: "disabled", label: t("owner_products_tab_inactive"), count: cnDisabled, Icon: Ban    },
   ];
 
   const filtered = coupons.filter((c) => {
@@ -10930,7 +10979,7 @@ function CouponsTab() {
     <div>
       {/* Header — title + add button (เหมือน ProductsTab) */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>คูปองร้านค้า</h2>
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_coupon_title")}</h2>
         <motion.button onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -10939,7 +10988,7 @@ function CouponsTab() {
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้างคูปอง</span>
+          <span style={{ fontWeight: 600 }}>{t("owner_coupon_create")}</span>
         </motion.button>
       </div>
 
@@ -10949,7 +10998,7 @@ function CouponsTab() {
         {/* Search */}
         <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input value={search} onChange={(e) => { setSearch(e.target.value); setCouponPage(1); }}
-            placeholder="ค้นหาคูปอง...."
+            placeholder={t("owner_coupon_search_ph")}
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
           <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
             <Search className="size-4 text-white" />
@@ -11789,6 +11838,7 @@ function CreatePromotionView({ onClose, onCreate }: {
 }
 
 function PromotionsTab() {
+  const { t } = useLanguage();
   const [promotions, setPromotions] = useState<Promotion[]>(mockPromotions);
   const [filter, setFilter] = useState<"all" | PromoStatus>("all");
   const [search, setSearch] = useState("");
@@ -11800,7 +11850,7 @@ function PromotionsTab() {
     return (
       <CreatePromotionView
         onClose={() => setShowCreate(false)}
-        onCreate={(p) => { setPromotions((prev) => [p, ...prev]); setShowCreate(false); toast.success(`สร้างโปรโมชั่น "${p.name}" แล้ว`); }}
+        onCreate={(p) => { setPromotions((prev) => [p, ...prev]); setShowCreate(false); toast.success(t("owner_toast_promo_created")); }}
       />
     );
   }
@@ -11818,10 +11868,10 @@ function PromotionsTab() {
   const cEnded = promotions.filter((p) => computedStatus(p) === "ended").length;
 
   const tabs: { id: "all" | PromoStatus; label: string; count: number; Icon: any }[] = [
-    { id: "all",       label: "ทั้งหมด",           count: cAll,       Icon: ClipboardList },
-    { id: "active",    label: "กำลังดำเนินการ",     count: cActive,    Icon: Zap           },
-    { id: "scheduled", label: "กำหนดไว้",          count: cScheduled, Icon: Clock         },
-    { id: "ended",     label: "สิ้นสุดแล้ว",         count: cEnded,     Icon: Ban           },
+    { id: "all",       label: t("owner_promo_tab_all"),       count: cAll,       Icon: ClipboardList },
+    { id: "active",    label: t("owner_promo_tab_active"),    count: cActive,    Icon: Zap           },
+    { id: "scheduled", label: t("owner_promo_tab_scheduled"), count: cScheduled, Icon: Clock         },
+    { id: "ended",     label: t("owner_promo_tab_expired"),   count: cEnded,     Icon: Ban           },
   ];
 
   const filtered = promotions.filter((p) => {
@@ -11840,7 +11890,7 @@ function PromotionsTab() {
     <div>
       {/* Header — title + add button (เหมือน ProductsTab) */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>โปรโมชั่น</h2>
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_promo_title")}</h2>
         <motion.button onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -11849,7 +11899,7 @@ function PromotionsTab() {
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</span>
+          <span style={{ fontWeight: 600 }}>{t("owner_promo_create")}</span>
         </motion.button>
       </div>
 
@@ -11859,7 +11909,7 @@ function PromotionsTab() {
         {/* Search */}
         <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="ค้นหาโปรโมชั่น...."
+            placeholder={t("owner_promo_search_ph")}
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
           <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
             <Search className="size-4 text-white" />

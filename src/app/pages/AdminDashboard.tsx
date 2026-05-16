@@ -1,5 +1,6 @@
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
+import { useLanguage } from "../store/LanguageContext";
 import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
   Shield, DollarSign, Megaphone, UserCog, BarChart2, ShoppingBag,
@@ -55,11 +56,11 @@ import imgCost from "../../assets/cost.png";
 import imgCoinUp from "../../assets/cion-up.png";
 import imgBestStore from "../../assets/best-store.png";
 import imgPlatformFees from "../../assets/Platform-fees.png";
-import imgNewCustomer from "../../assets/new-customer.png";
-import imgRepeatCustomers from "../../assets/repeat-customers.png";
-import imgGroupCustomer from "../../assets/gourp-customer.png";
-import imgMember from "../../assets/member.png";
-import imgProductsSold from "../../assets/products-sold.png";
+import imgNewCustomer from "../../assets/new-customer2.png";
+import imgRepeatCustomers from "../../assets/repeat-customers2.png";
+import imgGroupCustomer from "../../assets/new-customer 13.png";
+import imgMember from "../../assets/LTV.png";
+import imgProductsSold from "../../assets/All-stores-system.png";
 import imgProductsStore from "../../assets/products-store.png";
 import imgStock from "../../assets/stock.png";
 import imgRating from "../../assets/rating.png";
@@ -233,6 +234,42 @@ function MenuBtn({ isActive, icon: Icon, label, onClick, hasArrow, expanded, col
 function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
   section: AdminSection; active: ItemId; onSelect: (id: ItemId) => void; collapsed: boolean; onToggle: () => void;
 }) {
+  const { t } = useLanguage();
+  // Map admin sidebar item ids to translation keys
+  const adminLabelMap: Record<string, string> = {
+    dashboard: t("admin_sidebar_dashboard"),
+    report: t("admin_sidebar_reports"),
+    report_sales: t("owner_sidebar_report_sales"),
+    report_customers: t("owner_sidebar_report_customers"),
+    report_products: t("owner_sidebar_report_products"),
+    report_marketing: t("owner_sidebar_report_market"),
+    complaints: t("admin_sidebar_complaints"),
+    products: t("admin_sidebar_products"),
+    products_manage: t("owner_sidebar_manage_products"),
+    products_categories: t("admin_sidebar_categories"),
+    products_promotions: t("admin_sidebar_promotions"),
+    products_flash: t("admin_sidebar_flash_sale"),
+    products_coupons: t("admin_sidebar_coupons"),
+    reviews: t("admin_sidebar_reviews"),
+    orders: t("admin_sidebar_orders"),
+    content_banner: t("admin_sidebar_banners"),
+    content_blog: t("admin_sidebar_blog"),
+    page_home: t("admin_sidebar_homepage"),
+    page_about: t("admin_sidebar_about"),
+    settings_shipping: t("settings_shipping"),
+    settings_notifications: t("admin_sidebar_notifications"),
+    settings_users: t("admin_sidebar_users"),
+    users_list: t("admin_sidebar_users"),
+    shops_list: t("admin_sidebar_shops"),
+  };
+  const labelOf = (id: string, fallback: string) => adminLabelMap[id] ?? fallback;
+
+  const sectionLabelsI18n: Record<AdminSection, string> = {
+    overview: t("admin_topbar_overview"),
+    content: t("admin_topbar_content"),
+    pages: t("admin_topbar_pages"),
+    settings: t("admin_topbar_settings"),
+  };
   const items = sectionMenus[section];
   // Auto-expand parent that contains active child on mount/change
   const initialExpanded = useMemo(() => {
@@ -275,7 +312,7 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
                 transition={{ duration: 0.2 }}
                 className="flex items-center gap-2">
                 <Shield className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.4} />
-                <p className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>{sectionLabels[section]}</p>
+                <p className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>{sectionLabelsI18n[section]}</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -298,13 +335,14 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
             animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } } }}
             className={`flex-1 pb-4 space-y-2.5 overflow-y-auto ${collapsed ? "px-2" : "px-4"}`}>
-            {items.map((item) =>
-              !item.children ? (
+            {items.map((item) => {
+              const itemL = labelOf(item.id, item.label);
+              return !item.children ? (
                 <motion.div key={item.id}
                   variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
                   transition={{ duration: 0.25 }}>
-                  {withTooltip(item.label,
-                    <MenuBtn isActive={active === item.id} icon={item.icon} label={item.label} onClick={() => onSelect(item.id)} collapsed={collapsed} />
+                  {withTooltip(itemL,
+                    <MenuBtn isActive={active === item.id} icon={item.icon} label={itemL} onClick={() => onSelect(item.id)} collapsed={collapsed} />
                   )}
                 </motion.div>
               ) : (
@@ -312,10 +350,10 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
                   variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
                   transition={{ duration: 0.25 }}
                   className="space-y-2.5">
-                  {withTooltip(item.label,
+                  {withTooltip(itemL,
                     <MenuBtn
                       isActive={item.children.some((c) => c.id === active)}
-                      icon={item.icon} label={item.label}
+                      icon={item.icon} label={itemL}
                       onClick={() => toggle(item.id)}
                       collapsed={collapsed} hasArrow={!collapsed} expanded={expandedMenus[item.id]}
                     />
@@ -335,21 +373,24 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
                             animate="show"
                             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.03 } } }}
                             className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
-                            {item.children.map((child) => (
-                              <motion.div key={child.id}
-                                variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }}
-                                transition={{ duration: 0.2 }}>
-                                <MenuBtn isActive={active === child.id} icon={child.icon || Package} label={child.label} onClick={() => onSelect(child.id)} collapsed={collapsed} />
-                              </motion.div>
-                            ))}
+                            {item.children.map((child) => {
+                              const cL = labelOf(child.id, child.label);
+                              return (
+                                <motion.div key={child.id}
+                                  variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }}
+                                  transition={{ duration: 0.2 }}>
+                                  <MenuBtn isActive={active === child.id} icon={child.icon || Package} label={cL} onClick={() => onSelect(child.id)} collapsed={collapsed} />
+                                </motion.div>
+                              );
+                            })}
                           </motion.div>
                         </motion.div>
                       )}
                     </AnimatePresence>
                   )}
                 </motion.div>
-              )
-            )}
+              );
+            })}
           </motion.nav>
         </TooltipPrimitive.Provider>
       </div>
@@ -359,23 +400,24 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
 
 /* ========== DASHBOARD CONTENT ========== */
 function DashboardContent() {
+  const { t } = useLanguage();
   const now = new Date();
   const hour = now.getHours();
   const greeting = hour < 12 ? "สวัสดีตอนเช้า" : hour < 17 ? "สวัสดีตอนบ่าย" : "สวัสดีตอนเย็น";
   const dayLabel = now.toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" }) + " " + (now.getFullYear() + 543);
 
   const stats = [
-    { label: "รายได้รวมเดือนนี้",    value: "฿3,160,000", subLabel: "+18% เทียบเดือนที่แล้ว", accent: "#10b981", Icon: DollarSign,    img: imgCoin       },
-    { label: "คำสั่งซื้อเดือนนี้",     value: "8,850",       subLabel: "+24 จากสัปดาห์ที่แล้ว",   accent: "#0ea5e9", Icon: ShoppingCart, img: imgBox         },
-    { label: "ลูกค้าทั้งหมด",           value: "18,420",      subLabel: "+56 ลูกค้าใหม่",          accent: "#6366f1", Icon: Users,         img: imgGroupCustomer },
-    { label: "ร้านค้าทั้งหมด",          value: "32",          subLabel: "+3 รออนุมัติ",             accent: "#f59e0b", Icon: Store,         img: imgBestStore   },
+    { label: t("admin_overview_total_revenue"), value: "฿3,160,000", subLabel: "+18%",  accent: "#10b981", Icon: DollarSign,    img: imgCoin       },
+    { label: t("admin_overview_total_orders"),  value: "8,850",       subLabel: "+24",    accent: "#0ea5e9", Icon: ShoppingCart, img: imgBox         },
+    { label: t("admin_overview_total_users"),   value: "18,420",      subLabel: "+56",    accent: "#6366f1", Icon: Users,         img: imgGroupCustomer },
+    { label: t("admin_overview_total_shops"),   value: "32",          subLabel: "+3",     accent: "#f59e0b", Icon: Store,         img: imgBestStore   },
   ];
 
   const quickActions = [
-    { label: "รายงานยอดขาย",      Icon: TrendingUp,    to: "report_sales",     color: "#319754" },
-    { label: "คำสั่งซื้อ",            Icon: ShoppingCart,  to: "orders",           color: "#3b82f6" },
-    { label: "ร้องเรียน",              Icon: AlertCircle,   to: "complaints_list",  color: "#ef4444" },
-    { label: "Flash Sale",            Icon: Zap,           to: "products_flash",   color: "#e62e05" },
+    { label: t("owner_sidebar_report_sales"),  Icon: TrendingUp,    to: "report_sales",     color: "#319754" },
+    { label: t("admin_sidebar_orders"),         Icon: ShoppingCart,  to: "orders",           color: "#3b82f6" },
+    { label: t("admin_sidebar_complaints"),     Icon: AlertCircle,   to: "complaints_list",  color: "#ef4444" },
+    { label: "Flash Sale",                       Icon: Zap,           to: "products_flash",   color: "#e62e05" },
   ];
 
   const pendingActions: { label: string; count: number; sub: string; color: string; urgent?: boolean; Icon: any }[] = [
@@ -809,6 +851,7 @@ function AnimatedValue({ value, duration = 1000 }: { value: string; duration?: n
 }
 
 function AdminSalesReportContent() {
+  const { t } = useLanguage();
   type Period = "daily" | "weekly" | "monthly" | "yearly";
   type ChartKind = "line" | "bar" | "pie";
 
@@ -1113,7 +1156,7 @@ function AdminSalesReportContent() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานผลยอดขาย</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_report_sales_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวมยอดขายของทั้งระบบ Metaherb · กรองตามร้านค้าได้</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -2255,6 +2298,7 @@ function AdminSalesReportContent() {
 }
 
 function AdminCustomersReportContent() {
+  const { t } = useLanguage();
   type Period = "daily" | "weekly" | "monthly" | "yearly";
   type ChartKind = "line" | "bar" | "pie";
 
@@ -2551,7 +2595,7 @@ function AdminCustomersReportContent() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานข้อมูลลูกค้า</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_report_customers_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวมลูกค้าทั้งระบบ Metaherb · แบ่งกลุ่มและจัดอันดับร้านที่ดึงลูกค้า</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -3225,6 +3269,7 @@ function AdminCustomersReportContent() {
 }
 
 function AdminProductsReportContent() {
+  const { t } = useLanguage();
   type Period = "daily" | "weekly" | "monthly" | "yearly";
   type ChartKind = "line" | "bar" | "pie";
 
@@ -3493,7 +3538,7 @@ function AdminProductsReportContent() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานข้อมูลสินค้า</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_report_products_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวมสินค้าทั้งระบบ Metaherb · หมวดหมู่ขายดี · ร้านขายเก่ง</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -4178,6 +4223,7 @@ function AdminProductsReportContent() {
 }
 
 function AdminMarketingReportContent() {
+  const { t } = useLanguage();
   type Period = "daily" | "weekly" | "monthly" | "yearly";
   type ChartKind = "line" | "bar" | "pie";
 
@@ -4422,7 +4468,7 @@ function AdminMarketingReportContent() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานผลการตลาด</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_report_market_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวม traffic · channels · campaign ROI ทั้งระบบ Metaherb</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -5241,29 +5287,45 @@ function FilterTabPills<T extends string | number>({ tabs, active, onChange, pil
 
   return (
     <>
-      {/* Desktop (lg+): tabs row */}
-      <div className={`hidden lg:flex items-center gap-2 flex-1 min-w-0 ${singleRow ? "flex-nowrap" : "flex-wrap"}`}>
+      {/* Desktop (lg+): tabs row — frosted glass pill container with gradient active state */}
+      <div className={`hidden lg:flex items-center gap-1 flex-1 min-w-0 ${singleRow ? "flex-nowrap" : "flex-wrap"}`}>
         {tabs.map((tab) => {
           const isAct = active === tab.id;
           return (
             <motion.button key={tab.id} onClick={() => onChange(tab.id)}
-              whileTap={{ scale: 0.94 }} whileHover={!isAct ? { scale: 1.04 } : undefined}
+              whileTap={{ scale: 0.96 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
+              className={`group/tab relative flex items-center gap-2 h-[38px] pl-1.5 pr-3.5 rounded-full cursor-pointer shrink-0 transition-all duration-200 ${
+                isAct ? "" : "text-[#1d5b32] hover:text-[#287745] hover:-translate-y-[1px]"
+              }`}>
+              {!isAct && (
+                <span className="absolute inset-0 rounded-full bg-[#319754]/0 group-hover/tab:bg-[#319754]/8 transition-colors duration-200" />
+              )}
               {isAct && (
                 <motion.span layoutId={pillId}
-                  className="absolute inset-0 bg-[#319754] rounded-full"
+                  className="absolute inset-0 rounded-full shadow-[0_4px_14px_-2px_rgba(49,151,84,0.55),inset_0_1px_0_rgba(255,255,255,0.25)]"
+                  style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 50%, #267a43 100%)" }}
                   transition={{ type: "spring", stiffness: 380, damping: 32 }} />
               )}
-              <motion.span layout className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
-                transition={{ duration: 0.2 }}>
-                <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
+              <motion.span layout className="relative flex items-center justify-center size-[28px] rounded-full shrink-0 transition-colors duration-200"
+                style={{
+                  backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "rgba(49,151,84,0.12)",
+                  boxShadow: isAct ? "inset 0 1px 0 rgba(255,255,255,0.3)" : "none",
+                }}>
+                <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.4} />
               </motion.span>
-              <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>{tab.label}</span>
-              <span className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>{tab.count}</span>
+              <span className={`${font} relative text-[13px] leading-none whitespace-nowrap transition-colors duration-200`}
+                style={{ color: isAct ? "#fff" : undefined, fontWeight: isAct ? 600 : 500 }}>{tab.label}</span>
+              {tab.count > 0 && (
+                <span className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[20px] h-[20px] rounded-full inline-flex items-center justify-center transition-all duration-200 ring-[1.5px]`}
+                  style={{
+                    background: isAct ? "rgba(255,255,255,0.22)" : "linear-gradient(135deg, #ff8a8a, #ef4444)",
+                    color: "#fff",
+                    fontWeight: 700,
+                    boxShadow: isAct ? "none" : "0 2px 6px rgba(239,56,60,0.5)",
+                    ["--tw-ring-color" as any]: isAct ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.95)",
+                  }}>{tab.count}</span>
+              )}
             </motion.button>
           );
         })}
@@ -5311,15 +5373,18 @@ function FormSection({ icon: Icon, title, desc, action, iconColor, children }: {
 }) {
   const c = iconColor || ADMIN_PRIMARY;
   return (
-    <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
-      <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-3">
+    <div className="bg-white rounded-[20px] border border-gray-100 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.06)] hover:shadow-[0_8px_24px_-8px_rgba(16,24,40,0.1)] transition-shadow duration-300 p-5 sm:p-6 flex flex-col gap-4">
+      <div className="pb-4 border-b border-gray-100 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="size-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${c}1a` }}>
-            <Icon className="size-4" style={{ color: c }} strokeWidth={2.2} />
+          <span className="w-[3px] h-[28px] rounded-full shrink-0"
+            style={{ background: `linear-gradient(to bottom, ${c} 0%, ${c}cc 100%)`, boxShadow: `0 0 8px ${c}66` }} />
+          <div className="size-[36px] rounded-xl flex items-center justify-center shrink-0 border"
+            style={{ background: `linear-gradient(135deg, ${c}26 0%, ${c}14 100%)`, borderColor: `${c}40` }}>
+            <Icon className="size-[16px]" style={{ color: c }} strokeWidth={2.4} />
           </div>
           <div className="min-w-0">
-            <p className={`${font} text-[14px] text-black leading-tight truncate`} style={{ fontWeight: 600 }}>{title}</p>
-            {desc && <p className={`${font} text-[11px] text-[#8e8e93] mt-0.5 truncate`}>{desc}</p>}
+            <p className={`${font} text-[15.5px] text-black leading-tight truncate`} style={{ fontWeight: 600 }}>{title}</p>
+            {desc && <p className={`${font} text-[12px] text-gray-500 mt-0.5 truncate`}>{desc}</p>}
           </div>
         </div>
         {action && <div className="shrink-0">{action}</div>}
@@ -5831,6 +5896,7 @@ function BannerEditView({ initial, allBanners, onSave, onCancel }: {
 }
 
 function BannerContent() {
+  const { t } = useLanguage();
   const [banners, setBanners] = useState<Banner[]>(initialBanners);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | BannerStatus>("all");
@@ -5900,8 +5966,8 @@ function BannerContent() {
       {/* Page header — title + subtitle + add button (row เดียวกัน, ธีมหลัก) */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>Banner</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการ Banner ที่แสดงบนหน้าเว็บไซต์</p>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_banners_title")}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("admin_banners_title")}</p>
         </div>
         <motion.button
           onClick={startAdd}
@@ -6212,6 +6278,7 @@ const initialArticles: Article[] = [
 ];
 
 function BlogContent() {
+  const { t } = useLanguage();
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ArticleStatus>("all");
@@ -6267,8 +6334,8 @@ function BlogContent() {
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>บทความ</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการบทความและสาระความรู้บนหน้าเว็บไซต์</p>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_blog_title")}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("admin_blog_title")}</p>
         </div>
         <motion.button
           onClick={startAdd}
@@ -6280,7 +6347,7 @@ function BlogContent() {
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มบทความ</span>
+          <span style={{ fontWeight: 600 }}>{t("admin_blog_add")}</span>
         </motion.button>
       </div>
 
@@ -7712,6 +7779,7 @@ const initialVideos: VideoItem[] = [
 ];
 
 function VideoContent() {
+  const { t } = useLanguage();
   const [videos, setVideos] = useState<VideoItem[]>(initialVideos);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | VideoStatus>("all");
@@ -7765,7 +7833,7 @@ function VideoContent() {
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>วิดีโอ</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_sidebar_blog")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการวิดีโอที่แสดงในหน้าสาระความรู้</p>
         </div>
         <motion.button
@@ -8559,6 +8627,7 @@ const initialPopups: WelcomePopup[] = [
 ];
 
 function PopupContent() {
+  const { t } = useLanguage();
   const [popups, setPopups] = useState<WelcomePopup[]>(initialPopups);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | PopupStatus>("all");
@@ -11689,6 +11758,7 @@ function ComplaintDetailContent({ complaint, onBack, onUpdate }: {
 }
 
 function ComplaintListContent() {
+  const { t } = useLanguage();
   const [complaints, setComplaints] = useState<AdminComplaint[]>(initialAdminComplaints);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AdminComplaintStatus>("all");
@@ -11736,7 +11806,7 @@ function ComplaintListContent() {
       {/* Header — pattern เดียวกับ default + ปุ่มขวา (export) ให้สูงเท่าหน้าอื่น */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายการการร้องเรียน</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_complaints_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>รายละเอียดคำร้องเรียนทุกร้านค้า พร้อมการจัดสรรผู้ดูแลและบันทึกภายใน</p>
         </div>
         <motion.button
@@ -11747,7 +11817,7 @@ function ComplaintListContent() {
           <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
             <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>ส่งออกรายการ</span>
+          <span style={{ fontWeight: 600 }}>{t("owner_report_export")}</span>
         </motion.button>
       </div>
 
@@ -12065,6 +12135,7 @@ const initialAppeals: ComplaintAppeal[] = [
 ];
 
 function ComplaintAppealsContent() {
+  const { t } = useLanguage();
   const [appeals, setAppeals] = useState<ComplaintAppeal[]>(initialAppeals);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AppealStatus>("all");
@@ -12112,7 +12183,7 @@ function ComplaintAppealsContent() {
       {/* Header — pattern เดียวกับ default + ปุ่มขวา (export) */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>ข้ออุทธรณ์</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_complaints_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>เคสที่ลูกค้าขอโต้แย้งผลการตัดสินของผู้ดูแล (เคสที่ถูกปฏิเสธ)</p>
         </div>
         <motion.button
@@ -12123,7 +12194,7 @@ function ComplaintAppealsContent() {
           <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
             <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>ส่งออกรายการ</span>
+          <span style={{ fontWeight: 600 }}>{t("owner_report_export")}</span>
         </motion.button>
       </div>
 
@@ -12842,6 +12913,7 @@ type AdminProductModalKind = "history" | "warn" | "category" | null;
 interface AuditEntry { id: string; action: string; by: string; when: string; reason?: string }
 
 function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplaints?: () => void }) {
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   type FilterTab = "all" | "pinned" | "low" | "out" | "issues";
   const [filter, setFilter] = useState<FilterTab>("all");
@@ -13017,8 +13089,8 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการสินค้า</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ดูสินค้าทั้งหมดในระบบ ควบคุมมาตรฐาน และจัดทำสินค้าแนะนำของเว็บไซต์</p>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_sidebar_manage_products")}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("owner_products_subtitle")}</p>
         </div>
         <motion.button
           onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
@@ -13028,7 +13100,7 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
           <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
             <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>ส่งออกรายการ</span>
+          <span style={{ fontWeight: 600 }}>{t("owner_report_export")}</span>
         </motion.button>
       </div>
 
@@ -13792,6 +13864,7 @@ function seedCategories(): CategoryRow[] {
 }
 
 function ProductsCategoriesContent() {
+  const { t } = useLanguage();
   const [categories, setCategories] = useState<CategoryRow[]>(() => seedCategories());
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<CategoryRow | null>(null);
@@ -13902,7 +13975,7 @@ function ProductsCategoriesContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>หมวดหมู่สินค้า</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_categories_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดหมวดสินค้าและกำหนดสีไอคอนที่ใช้บนเว็บไซต์</p>
         </div>
         <motion.button
@@ -17243,21 +17316,21 @@ const DEFAULT_ABOUT_CONFIGS: AboutConfigs = {
 /* Editing helpers */
 function TextField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className={`${font} text-[11px] text-gray-500`}>{label}</label>
+    <div className="flex flex-col gap-1.5">
+      <label className={`${font} text-[12px] text-gray-600`} style={{ fontWeight: 500 }}>{label}</label>
       <input type="text" value={value} placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className={`${font} h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+        className={`${font} h-[40px] px-3.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-[3px] focus:ring-[#319754]/12 bg-gray-50/50 focus:bg-white placeholder:text-gray-400 transition-all`} />
     </div>
   );
 }
 function TextareaField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className={`${font} text-[11px] text-gray-500`}>{label}</label>
-      <textarea value={value} rows={2}
+    <div className="flex flex-col gap-1.5">
+      <label className={`${font} text-[12px] text-gray-600`} style={{ fontWeight: 500 }}>{label}</label>
+      <textarea value={value} rows={3}
         onChange={(e) => onChange(e.target.value)}
-        className={`${font} px-2.5 py-1.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white resize-none transition-all`} />
+        className={`${font} px-3.5 py-2.5 rounded-xl border border-gray-200 text-[13px] leading-relaxed focus:outline-none focus:border-[#319754] focus:ring-[3px] focus:ring-[#319754]/12 bg-gray-50/50 focus:bg-white placeholder:text-gray-400 resize-none transition-all`} />
     </div>
   );
 }
@@ -17828,7 +17901,7 @@ function AboutSectionSettings({ id, configs, setConfigs }: {
                       upd("about_trust", { tags: next });
                     }}
                     placeholder="เช่น ✓ อย. ไทย"
-                    className={`${font} flex-1 h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`}
+                    className={`${font} flex-1 h-[40px] px-3.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-[3px] focus:ring-[#319754]/12 bg-gray-50/50 focus:bg-white transition-all`}
                   />
                   <button
                     onClick={() => upd("about_trust", { tags: c.tags.filter((_, idx) => idx !== i) })}
@@ -19206,14 +19279,16 @@ function SettingsCard({ icon: Icon, title, desc, children }: {
   icon: any; title: string; desc?: string; children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 sm:p-5">
-      <div className="pb-3 mb-4 border-b border-[#e8e8e8] flex items-center gap-2">
-        <div className="size-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${ADMIN_PRIMARY}1a` }}>
-          <Icon className="size-3.5" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.4} />
+    <div className="bg-white rounded-[20px] border border-gray-100 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.06)] hover:shadow-[0_8px_24px_-8px_rgba(16,24,40,0.1)] transition-shadow duration-300 p-5 sm:p-6">
+      <div className="pb-4 mb-5 border-b border-gray-100 flex items-center gap-3">
+        {/* Green accent bar (matches site design system) */}
+        <span className="w-[3px] h-[28px] rounded-full bg-gradient-to-b from-[#46c474] to-[#319754] shadow-[0_0_8px_rgba(70,196,116,0.4)]" />
+        <div className="size-[36px] rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-[#46c474]/15 to-[#319754]/10 border border-[#46c474]/25">
+          <Icon className="size-[16px]" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.4} />
         </div>
-        <div className="min-w-0">
-          <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{title}</p>
-          {desc && <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>{desc}</p>}
+        <div className="min-w-0 flex-1">
+          <p className={`${font} text-[15.5px] text-black leading-tight`} style={{ fontWeight: 600 }}>{title}</p>
+          {desc && <p className={`${font} text-[12px] text-gray-500 mt-0.5`}>{desc}</p>}
         </div>
       </div>
       {children}
@@ -19310,7 +19385,7 @@ function SiteInfoGeneralPage() {
           <div className="flex flex-col gap-1">
             <label className={`${font} text-[11px] text-gray-500`}>ภาษาเริ่มต้น</label>
             <select value={cfg.defaultLang} onChange={(e) => upd("defaultLang", e.target.value as "th" | "en")}
-              className={`${font} h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all cursor-pointer`}>
+              className={`${font} h-[40px] px-3.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-[3px] focus:ring-[#319754]/12 bg-gray-50/50 focus:bg-white transition-all cursor-pointer`}>
               <option value="th">ไทย</option>
               <option value="en">English</option>
             </select>
@@ -19319,7 +19394,7 @@ function SiteInfoGeneralPage() {
           <div className="flex flex-col gap-1">
             <label className={`${font} text-[11px] text-gray-500`}>สกุลเงิน</label>
             <select value={cfg.currency} onChange={(e) => upd("currency", e.target.value as any)}
-              className={`${font} h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all cursor-pointer`}>
+              className={`${font} h-[40px] px-3.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-[3px] focus:ring-[#319754]/12 bg-gray-50/50 focus:bg-white transition-all cursor-pointer`}>
               <option value="THB">บาท (THB)</option>
               <option value="USD">USD</option>
               <option value="EUR">EUR</option>
@@ -20240,6 +20315,7 @@ function UserAvatar({ user, size = 36 }: { user: UserRecord; size?: number }) {
 }
 
 function UsersListPage() {
+  const { t } = useLanguage();
   const [users, setUsers] = useState<UserRecord[]>(MOCK_USERS);
   const [filter, setFilter] = useState<UserRecord["role"] | "all">("all");
   const [search, setSearch] = useState("");
@@ -20288,10 +20364,10 @@ function UsersListPage() {
     <div className="flex flex-col gap-5 pb-2">
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard icon={Users}   label="ผู้ใช้ทั้งหมด"      value={stats.total}    color="#319754" />
-        <KpiCard icon={Users}   label="ลูกค้า"               value={stats.customer} color="#6b7280" />
-        <KpiCard icon={Store}   label="ร้านค้า"               value={stats.owner}    color="#319754" />
-        <KpiCard icon={Shield}  label="ผู้ดูแลระบบ"          value={stats.admin}    color="#3b82f6" />
+        <KpiCard icon={Users}   label={t("admin_overview_total_users")} value={stats.total}    color="#319754" />
+        <KpiCard icon={Users}   label={t("admin_users_tab_customer")}   value={stats.customer} color="#6b7280" />
+        <KpiCard icon={Store}   label={t("admin_users_tab_owner")}      value={stats.owner}    color="#319754" />
+        <KpiCard icon={Shield}  label={t("admin_users_tab_admin")}      value={stats.admin}    color="#3b82f6" />
       </div>
 
       {/* Filter + Search */}
@@ -20299,12 +20375,12 @@ function UsersListPage() {
         <div className="flex items-center gap-3 flex-wrap mb-4">
           <FilterTabs value={filter} onChange={setFilter}
             options={[
-              { id: "all" as const,      label: "ทั้งหมด",        count: stats.total },
-              { id: "customer" as const, label: "ลูกค้า",          count: stats.customer },
-              { id: "owner" as const,    label: "ร้านค้า",         count: stats.owner },
-              { id: "admin" as const,    label: "ผู้ดูแลระบบ",    count: stats.admin },
+              { id: "all" as const,      label: t("admin_users_tab_all"),      count: stats.total },
+              { id: "customer" as const, label: t("admin_users_tab_customer"), count: stats.customer },
+              { id: "owner" as const,    label: t("admin_users_tab_owner"),    count: stats.owner },
+              { id: "admin" as const,    label: t("admin_users_tab_admin"),    count: stats.admin },
             ]} />
-          <SearchInput value={search} onChange={setSearch} placeholder="ค้นหา ชื่อผู้ใช้ / อีเมล / ชื่อ-นามสกุล" />
+          <SearchInput value={search} onChange={setSearch} placeholder={t("admin_users_search_ph")} />
         </div>
 
         {/* Table */}
@@ -20313,12 +20389,12 @@ function UsersListPage() {
             <thead>
               <tr className={`${font} text-[11px] text-gray-500 uppercase tracking-wide bg-gray-50 border-y border-gray-100`} style={{ fontWeight: 600 }}>
                 <th className="px-4 py-3 text-left w-12">ID</th>
-                <th className="px-4 py-3 text-left">ชื่อผู้ใช้</th>
-                <th className="px-4 py-3 text-left">อีเมล</th>
-                <th className="px-4 py-3 text-left">ชื่อ-นามสกุล</th>
-                <th className="px-4 py-3 text-left">บทบาท</th>
-                <th className="px-4 py-3 text-left">สถานะ</th>
-                <th className="px-4 py-3 text-right">จัดการ</th>
+                <th className="px-4 py-3 text-left">{t("admin_users_col_user")}</th>
+                <th className="px-4 py-3 text-left">{t("settings_email")}</th>
+                <th className="px-4 py-3 text-left">{t("admin_users_col_user")}</th>
+                <th className="px-4 py-3 text-left">{t("admin_users_col_role")}</th>
+                <th className="px-4 py-3 text-left">{t("admin_users_col_status")}</th>
+                <th className="px-4 py-3 text-right">{t("admin_users_col_actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -20327,7 +20403,7 @@ function UsersListPage() {
                   <td colSpan={7} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-2 text-gray-400">
                       <Users className="size-8" strokeWidth={1.5} />
-                      <p className={`${font} text-[13px]`}>ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข</p>
+                      <p className={`${font} text-[13px]`}>{t("admin_users_no_users")}</p>
                     </div>
                   </td>
                 </tr>
@@ -20505,6 +20581,7 @@ function ShopLogo({ shop, size = 44 }: { shop: ShopRecord; size?: number }) {
 }
 
 function ShopsListPage() {
+  const { t } = useLanguage();
   const [filter, setFilter] = useState<ShopRecord["status"] | "all">("all");
   const [search, setSearch] = useState("");
 
@@ -20530,10 +20607,10 @@ function ShopsListPage() {
     <div className="flex flex-col gap-5 pb-2">
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard icon={Store}        label="ร้านค้าทั้งหมด"   value={stats.total}     color="#319754" />
-        <KpiCard icon={Check}        label="ใช้งาน"             value={stats.active}    color="#319754" />
-        <KpiCard icon={Clock}        label="รออนุมัติ"          value={stats.pending}   color="#f59e0b" />
-        <KpiCard icon={AlertCircle}  label="ระงับ"               value={stats.suspended} color="#ff3b30" />
+        <KpiCard icon={Store}        label={t("admin_overview_total_shops")} value={stats.total}     color="#319754" />
+        <KpiCard icon={Check}        label={t("admin_shops_tab_active")}     value={stats.active}    color="#319754" />
+        <KpiCard icon={Clock}        label={t("admin_shops_tab_pending")}    value={stats.pending}   color="#f59e0b" />
+        <KpiCard icon={AlertCircle}  label={t("admin_shops_tab_suspended")}  value={stats.suspended} color="#ff3b30" />
       </div>
 
       {/* Filter + Search */}
@@ -20541,12 +20618,12 @@ function ShopsListPage() {
         <div className="flex items-center gap-3 flex-wrap mb-4">
           <FilterTabs value={filter} onChange={setFilter}
             options={[
-              { id: "all" as const,       label: "ทั้งหมด",     count: stats.total },
-              { id: "active" as const,    label: "ใช้งาน",       count: stats.active },
-              { id: "pending" as const,   label: "รออนุมัติ",    count: stats.pending },
-              { id: "suspended" as const, label: "ระงับ",         count: stats.suspended },
+              { id: "all" as const,       label: t("admin_shops_tab_all"),       count: stats.total },
+              { id: "active" as const,    label: t("admin_shops_tab_active"),    count: stats.active },
+              { id: "pending" as const,   label: t("admin_shops_tab_pending"),   count: stats.pending },
+              { id: "suspended" as const, label: t("admin_shops_tab_suspended"), count: stats.suspended },
             ]} />
-          <SearchInput value={search} onChange={setSearch} placeholder="ค้นหา ชื่อร้าน / เจ้าของ / หมวดหมู่" />
+          <SearchInput value={search} onChange={setSearch} placeholder={t("admin_shops_search_ph")} />
         </div>
 
         {/* Table */}
@@ -20554,13 +20631,13 @@ function ShopsListPage() {
           <table className="w-full min-w-[900px]">
             <thead>
               <tr className={`${font} text-[11px] text-gray-500 uppercase tracking-wide bg-gray-50 border-y border-gray-100`} style={{ fontWeight: 600 }}>
-                <th className="px-4 py-3 text-left">ร้านค้า</th>
-                <th className="px-4 py-3 text-left">หมวดหมู่</th>
-                <th className="px-4 py-3 text-left">สถานะ</th>
-                <th className="px-4 py-3 text-right">สินค้า</th>
-                <th className="px-4 py-3 text-right">ออเดอร์</th>
-                <th className="px-4 py-3 text-right">รายได้</th>
-                <th className="px-4 py-3 text-left">เรตติ้ง</th>
+                <th className="px-4 py-3 text-left">{t("admin_shops_col_shop")}</th>
+                <th className="px-4 py-3 text-left">{t("owner_products_category")}</th>
+                <th className="px-4 py-3 text-left">{t("admin_shops_col_status")}</th>
+                <th className="px-4 py-3 text-right">{t("admin_shops_col_products")}</th>
+                <th className="px-4 py-3 text-right">{t("admin_shops_col_orders")}</th>
+                <th className="px-4 py-3 text-right">{t("admin_shops_col_revenue")}</th>
+                <th className="px-4 py-3 text-left">{t("admin_shops_col_rating")}</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -20570,7 +20647,7 @@ function ShopsListPage() {
                   <td colSpan={8} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-2 text-gray-400">
                       <Store className="size-8" strokeWidth={1.5} />
-                      <p className={`${font} text-[13px]`}>ไม่พบร้านค้าที่ตรงกับเงื่อนไข</p>
+                      <p className={`${font} text-[13px]`}>{t("admin_shops_no_shops")}</p>
                     </div>
                   </td>
                 </tr>
@@ -21212,6 +21289,7 @@ const adminInviteStatusMeta: Record<ShopInviteStatus, { label: string; color: st
 };
 
 function AdminPromotionsContent() {
+  const { t } = useLanguage();
   const [promotions, setPromotions] = useState<AdminPromotion[]>(initialAdminPromotions);
   const [search, setSearch] = useState("");
   type PromoFilter = "all" | AdminPromoStatus;
@@ -21302,7 +21380,7 @@ function AdminPromotionsContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการโปรโมชั่น</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_promo_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>สร้างโปรโมชั่นแคมเปญของระบบและเชิญร้านค้าเข้าร่วม</p>
         </div>
         <motion.button
@@ -22546,6 +22624,7 @@ function AdminFlashEventCard({
 }
 
 function AdminFlashSaleEventsContent() {
+  const { t } = useLanguage();
   const [events, setEvents] = useState<AdminFlashEvent[]>(() => seedFlashEvents());
   const [search, setSearch] = useState("");
   type FlashFilter = "all" | AdminFlashStatus;
@@ -23520,6 +23599,7 @@ function fmtAdminReviewDate(iso: number): string {
 }
 
 function AdminReviewsContent() {
+  const { t } = useLanguage();
   const [reviews, setReviews] = useState<AdminReview[]>(() => seedAdminReviews());
   const [ratingFilter, setRatingFilter] = useState<"all" | 5 | 4 | 3 | 2 | 1>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | AdminReviewStatus>("all");
@@ -23645,7 +23725,7 @@ function AdminReviewsContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการรีวิว</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_reviews_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ตรวจสอบและจัดการรีวิวสินค้าทั้งระบบ · {reviews.length.toLocaleString()} รายการ</p>
         </div>
         <button onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
@@ -24183,6 +24263,7 @@ function AdminOrderDetailView({ order, onBack }: { order: AdminOrder; onBack: ()
 }
 
 function AdminOrdersContent() {
+  const { t } = useLanguage();
   const [orders] = useState<AdminOrder[]>(() => seedAdminOrders());
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | AdminOrderStatus>("all");
@@ -24297,7 +24378,7 @@ function AdminOrdersContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>คำสั่งซื้อทั้งระบบ</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_orders_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ออเดอร์ทุกร้านใน Metaherb · {orders.length.toLocaleString()} รายการ</p>
         </div>
         <div className="flex items-center gap-2">
@@ -24611,6 +24692,7 @@ function AdminOrdersContent() {
 }
 
 function AdminCouponsContent() {
+  const { t } = useLanguage();
   const [coupons, setCoupons] = useState<AdminCoupon[]>(mockAdminCoupons);
   const [filter, setFilter] = useState<"all" | AdminCouponStatus>("all");
   const [issuerFilter, setIssuerFilter] = useState<"all" | AdminCouponIssuer>("all");
@@ -24678,7 +24760,7 @@ function AdminCouponsContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>คูปอง</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_coupon_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>คูปองส่วนลดทั้งระบบและคูปองที่ร้านค้าเปิดเอง</p>
         </div>
         <motion.button onClick={() => setShowCreate(true)}
@@ -25383,10 +25465,37 @@ function CreateAdminCouponView({ allShops, onCancel, onCreate }: {
 /* ========== MAIN ========== */
 export function AdminDashboard() {
   const location = useLocation();
+  const { t } = useLanguage();
   const section = pathToSection(location.pathname);
   const [activeItem, setActiveItem] = useState<ItemId>(defaultItem[section]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const mainRef = React.useRef<HTMLElement>(null);
+
+  // Translation overrides for select item titles/subtitles
+  const i18nItem: Record<string, { title: string; subtitle: string }> = {
+    dashboard:           { title: t("admin_sidebar_dashboard"),       subtitle: t("admin_overview_subtitle") },
+    report_sales:        { title: t("owner_report_sales_title"),      subtitle: "" },
+    report_customers:    { title: t("owner_report_customers_title"),  subtitle: "" },
+    report_products:     { title: t("owner_report_products_title"),   subtitle: "" },
+    report_marketing:    { title: t("owner_report_market_title"),     subtitle: "" },
+    complaints_stats:    { title: t("admin_sidebar_complaints"),      subtitle: "" },
+    complaints_list:     { title: t("admin_complaints_title"),        subtitle: t("admin_complaints_subtitle") },
+    products_manage:     { title: t("owner_sidebar_manage_products"), subtitle: "" },
+    products_categories: { title: t("admin_categories_title"),         subtitle: "" },
+    products_promotions: { title: t("owner_promo_title"),              subtitle: "" },
+    products_coupons:    { title: t("owner_coupon_title"),             subtitle: "" },
+    reviews:             { title: t("admin_reviews_title"),            subtitle: t("admin_reviews_subtitle") },
+    orders:              { title: t("admin_orders_title"),             subtitle: t("admin_orders_subtitle") },
+    content_banner:      { title: t("admin_banners_title"),            subtitle: "" },
+    content_blog:        { title: t("admin_blog_title"),               subtitle: "" },
+    page_home:           { title: t("admin_pages_homepage_title"),     subtitle: t("admin_pages_homepage_sub") },
+    page_about:          { title: t("admin_pages_about_title"),        subtitle: "" },
+    site_info_general:   { title: t("admin_settings_title"),           subtitle: t("admin_settings_subtitle") },
+    settings_shipping:   { title: t("settings_shipping"),              subtitle: "" },
+    settings_notifications:{ title: t("admin_sidebar_notifications"),  subtitle: "" },
+    users_list:          { title: t("admin_users_title"),              subtitle: t("admin_users_subtitle") },
+    shops_list:          { title: t("admin_shops_title"),              subtitle: t("admin_shops_subtitle") },
+  };
 
   // Reset active item when section changes
   React.useEffect(() => {
@@ -25400,7 +25509,7 @@ export function AdminDashboard() {
     mainRef.current?.scrollTo({ top: 0, behavior: "auto" });
   }, [activeItem, location.pathname]);
 
-  const meta = itemLabels[activeItem] ?? { title: activeItem, subtitle: "" };
+  const meta = i18nItem[activeItem] ?? itemLabels[activeItem] ?? { title: activeItem, subtitle: "" };
 
   const renderContent = () => {
     if (activeItem === "dashboard") return <DashboardContent />;

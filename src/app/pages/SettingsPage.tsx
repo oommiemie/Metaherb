@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../store/AuthContext";
+import { useLanguage } from "../store/LanguageContext";
 import { ChevronLeft, ChevronDown, Store, Bell, BellOff, Truck, User as UserIcon, MapPin, Camera, Mail, Phone, BadgeCheck, Pencil, Check, Calendar as CalendarIcon, Package, PackageX, ShoppingCart, X, Wallet, MessageCircle, Megaphone, Star, AlertTriangle, Settings as SettingsIcon, Smartphone, Moon, ShieldCheck, Clock, Globe, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
@@ -80,8 +81,18 @@ function MenuBtn({ isActive, icon: Icon, label, onClick, collapsed, hasArrow, ex
 function SettingsSidebar({ active, onSelect, collapsed, onToggle }: {
   active: SectionId; onSelect: (id: SectionId) => void; collapsed: boolean; onToggle: () => void;
 }) {
+  const { t } = useLanguage();
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ shop_info: true });
   const toggle = (id: string) => setExpandedMenus((p) => ({ ...p, [id]: !p[id] }));
+
+  const settingsLabelMap: Record<string, string> = {
+    shop_info: t("settings_shop_info"),
+    shop_account: t("settings_shop_account"),
+    shop_address: t("settings_shop_address"),
+    notifications: t("settings_notifications_label"),
+    shipping: t("settings_shipping"),
+  };
+  const lbl = (id: string, fallback: string) => settingsLabelMap[id] ?? fallback;
 
   const withTooltip = (label: string, node: React.ReactNode) => collapsed ? (
     <TooltipPrimitive.Root>
@@ -110,7 +121,7 @@ function SettingsSidebar({ active, onSelect, collapsed, onToggle }: {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.2 }}
-                className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>ตั้งค่า</motion.p>
+                className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>{t("settings_title")}</motion.p>
             )}
           </AnimatePresence>
           <motion.button
@@ -131,13 +142,14 @@ function SettingsSidebar({ active, onSelect, collapsed, onToggle }: {
             animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } } }}
             className={`flex-1 pb-4 space-y-2.5 overflow-y-auto ${collapsed ? "px-2" : "px-4"}`}>
-            {settingsSections.map((s) =>
-              !s.children ? (
+            {settingsSections.map((s) => {
+              const sL = lbl(s.id, s.label);
+              return !s.children ? (
                 <motion.div key={s.id}
                   variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
                   transition={{ duration: 0.25 }}>
-                  {withTooltip(s.label,
-                    <MenuBtn isActive={active === s.id} icon={s.icon} label={s.label} onClick={() => onSelect(s.id as SectionId)} collapsed={collapsed} />
+                  {withTooltip(sL,
+                    <MenuBtn isActive={active === s.id} icon={s.icon} label={sL} onClick={() => onSelect(s.id as SectionId)} collapsed={collapsed} />
                   )}
                 </motion.div>
               ) : (
@@ -146,11 +158,11 @@ function SettingsSidebar({ active, onSelect, collapsed, onToggle }: {
                   transition={{ duration: 0.25 }}
                   className="space-y-2.5">
                   {/* Parent: คลิกเพื่อ toggle expand */}
-                  {withTooltip(s.label,
+                  {withTooltip(sL,
                     <MenuBtn
                       isActive={s.children.some((c) => c.id === active)}
                       icon={s.icon}
-                      label={s.label}
+                      label={sL}
                       onClick={() => toggle(s.id)}
                       collapsed={collapsed}
                       hasArrow={!collapsed}
@@ -173,21 +185,24 @@ function SettingsSidebar({ active, onSelect, collapsed, onToggle }: {
                             animate="show"
                             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.03 } } }}
                             className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
-                            {s.children.map((child) => (
-                              <motion.div key={child.id}
-                                variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }}
-                                transition={{ duration: 0.2 }}>
-                                <MenuBtn isActive={active === child.id} icon={child.icon} label={child.label} onClick={() => onSelect(child.id)} collapsed={collapsed} />
-                              </motion.div>
-                            ))}
+                            {s.children.map((child) => {
+                              const cL = lbl(child.id, child.label);
+                              return (
+                                <motion.div key={child.id}
+                                  variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }}
+                                  transition={{ duration: 0.2 }}>
+                                  <MenuBtn isActive={active === child.id} icon={child.icon} label={cL} onClick={() => onSelect(child.id)} collapsed={collapsed} />
+                                </motion.div>
+                              );
+                            })}
                           </motion.div>
                         </motion.div>
                       )}
                     </AnimatePresence>
                   )}
                 </motion.div>
-              )
-            )}
+              );
+            })}
           </motion.nav>
         </TooltipPrimitive.Provider>
       </div>
@@ -210,20 +225,22 @@ function Divider() {
 
 /* ========== EDIT BUTTON ========== */
 function EditButton({ onClick }: { onClick: () => void }) {
+  const { t } = useLanguage();
   return (
     <button onClick={onClick} className="bg-[#f5f5f5] flex gap-2.5 items-center justify-center px-4 py-1 rounded-full cursor-pointer shrink-0 hover:bg-[#eee] transition-colors">
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M12 0H0V12H12V0Z" fill="black" opacity="0" /><path d="M10.1464 1.14645C9.95118 0.951184 9.63459 0.951184 9.43934 1.14645L1.5 9.08578V10.5H2.91421L10.8536 2.56066C11.0488 2.36541 11.0488 2.04882 10.8536 1.85357L10.1464 1.14645Z" fill="black" fillOpacity="0.85" /></svg>
-      <span className={`${font} text-[12px] text-black`}>แก้ไข</span>
+      <span className={`${font} text-[12px] text-black`}>{t("settings_edit_label")}</span>
     </button>
   );
 }
 
 /* ========== SAVE/CANCEL BUTTONS ========== */
 function SaveCancelButtons({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) {
+  const { t } = useLanguage();
   return (
     <div className="flex gap-2.5 shrink-0">
-      <button onClick={onCancel} className="border border-[#ff3b30] text-[#ff3b30] px-5 py-1.5 rounded-full text-[13px] cursor-pointer hover:bg-red-50 transition-colors" style={{ fontWeight: 500 }}>ยกเลิก</button>
-      <button onClick={onSave} className="bg-[#319754] text-white px-5 py-1.5 rounded-full text-[13px] cursor-pointer hover:bg-[#2a8248] transition-colors" style={{ fontWeight: 500 }}>บันทึก</button>
+      <button onClick={onCancel} className="border border-[#ff3b30] text-[#ff3b30] px-5 py-1.5 rounded-full text-[13px] cursor-pointer hover:bg-red-50 transition-colors" style={{ fontWeight: 500 }}>{t("settings_cancel")}</button>
+      <button onClick={onSave} className="bg-[#319754] text-white px-5 py-1.5 rounded-full text-[13px] cursor-pointer hover:bg-[#2a8248] transition-colors" style={{ fontWeight: 500 }}>{t("settings_save")}</button>
     </div>
   );
 }
@@ -249,7 +266,8 @@ function ShopInfoSection() {
   const [phone, setPhone] = useState("090-000-0000");
   const [tagline, setTagline] = useState("ร้านค้าสมุนไพรออร์แกนิก เพื่อสุขภาพที่ดีของทุกคน");
 
-  const handleSave = () => { setEditing(false); toast.success("บันทึกข้อมูลร้านค้าเรียบร้อย"); };
+  const { t } = useLanguage();
+  const handleSave = () => { setEditing(false); toast.success(t("settings_toast_saved")); };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
@@ -340,7 +358,7 @@ function ShopInfoSection() {
                 <Mail className="size-3.5 text-[#319754]" strokeWidth={2.2} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className={`${font} text-[10px] text-gray-500 leading-none`}>อีเมล</p>
+                <p className={`${font} text-[10px] text-gray-500 leading-none`}>{t("settings_email")}</p>
                 <p className={`${font} text-[12px] text-gray-800 truncate mt-0.5`} style={{ fontWeight: 500 }}>{email}</p>
               </div>
             </div>
@@ -349,7 +367,7 @@ function ShopInfoSection() {
                 <Phone className="size-3.5 text-[#0088ff]" strokeWidth={2.2} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className={`${font} text-[10px] text-gray-500 leading-none`}>เบอร์โทรศัพท์</p>
+                <p className={`${font} text-[10px] text-gray-500 leading-none`}>{t("settings_phone")}</p>
                 <p className={`${font} text-[12px] text-gray-800 truncate mt-0.5 tabular-nums`} style={{ fontWeight: 500 }}>{phone}</p>
               </div>
             </div>
@@ -363,7 +381,7 @@ function ShopInfoSection() {
         <div className="flex items-center justify-between pb-3 border-b border-[#e8e8e8]">
           <div className="flex items-center gap-2">
             <UserIcon className="size-4 text-[#319754]" strokeWidth={2.2} />
-            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลบัญชี</p>
+            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{t("settings_account_info")}</p>
           </div>
           {!editing ? (
             <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
@@ -404,8 +422,8 @@ function ShopInfoSection() {
             className="bg-[#319754]/5 border border-[#319754]/20 rounded-xl px-4 py-3 flex items-start gap-2.5">
             <Camera className="size-4 text-[#319754] shrink-0 mt-0.5" strokeWidth={2.2} />
             <div className="flex-1 min-w-0">
-              <p className={`${font} text-[12px] text-[#287745]`} style={{ fontWeight: 600 }}>เปลี่ยนรูปโปรไฟล์</p>
-              <p className={`${font} text-[11px] text-gray-600 mt-0.5`}>รองรับไฟล์ JPEG, PNG, GIF, WebP · ขนาดไม่เกิน 5MB</p>
+              <p className={`${font} text-[12px] text-[#287745]`} style={{ fontWeight: 600 }}>{t("settings_change_avatar")}</p>
+              <p className={`${font} text-[11px] text-gray-600 mt-0.5`}>{t("settings_avatar_hint")}</p>
             </div>
           </motion.div>
         )}
@@ -452,7 +470,8 @@ function StoreAddressSection() {
   const [province, setProvince] = useState("กรุงเทพมหานคร");
   const [postalCode, setPostalCode] = useState("10140");
 
-  const handleSave = () => { setEditing(false); toast.success("บันทึกที่อยู่ร้านค้าเรียบร้อย"); };
+  const { t } = useLanguage();
+  const handleSave = () => { setEditing(false); toast.success(t("settings_toast_saved")); };
 
   // ที่อยู่เต็ม — รวมจาก fields ทั้งหมด (สำหรับแสดงบนการ์ดสรุป)
   const fullAddress = [
@@ -516,7 +535,7 @@ function StoreAddressSection() {
           {/* "พิกัดร้าน" label top-left */}
           <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-white/90 backdrop-blur rounded-full px-3 py-1 shadow-sm">
             <MapPin className="size-3 text-[#319754]" strokeWidth={2.4} />
-            <span className={`${font} text-[11px] text-gray-700`} style={{ fontWeight: 500 }}>พิกัดร้านค้า</span>
+            <span className={`${font} text-[11px] text-gray-700`} style={{ fontWeight: 500 }}>{t("settings_shop_coords")}</span>
           </div>
         </div>
 
@@ -527,7 +546,7 @@ function StoreAddressSection() {
               <MapPin className="size-5 text-[#319754]" strokeWidth={2.2} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`${font} text-[11px] text-gray-500`}>ที่อยู่ร้านค้า</p>
+              <p className={`${font} text-[11px] text-gray-500`}>{t("settings_shop_address")}</p>
               <p className={`${font} text-[14px] text-black leading-relaxed mt-0.5`} style={{ fontWeight: 500 }}>
                 {fullAddress || "ยังไม่ได้กรอกที่อยู่"}
               </p>
@@ -537,7 +556,7 @@ function StoreAddressSection() {
           {/* Quick actions */}
           <div className="grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-gray-100">
             <button
-              onClick={() => { navigator.clipboard?.writeText(fullAddress); toast.success("คัดลอกที่อยู่แล้ว"); }}
+              onClick={() => { navigator.clipboard?.writeText(fullAddress); toast.success(t("settings_toast_saved")); }}
               className={`${font} inline-flex items-center justify-center gap-2 text-[12px] text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 h-[36px] rounded-full cursor-pointer transition-colors`}
               style={{ fontWeight: 500 }}
             >
@@ -562,7 +581,7 @@ function StoreAddressSection() {
         <div className="flex items-center justify-between pb-3 border-b border-[#e8e8e8]">
           <div className="flex items-center gap-2">
             <MapPin className="size-4 text-[#319754]" strokeWidth={2.2} />
-            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลที่อยู่</p>
+            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{t("settings_address_info")}</p>
           </div>
           {!editing ? (
             <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
@@ -705,6 +724,7 @@ const channelMeta: Record<NotifChannel, { label: string; Icon: any; color: strin
 };
 
 function NotificationsSection() {
+  const { t } = useLanguage();
   const [categories, setCategories] = useState<NotifCategory[]>(initialCategories);
 
   const toggleItem = (catId: string, itemKey: string) => {
@@ -753,7 +773,7 @@ function NotificationsSection() {
                     {/* Channel selector — แสดงเฉพาะตอน enabled */}
                     {item.enabled && (
                       <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-                        <span className={`${font} text-[11px] text-gray-400 mr-0.5`}>ส่งผ่าน:</span>
+                        <span className={`${font} text-[11px] text-gray-400 mr-0.5`}>{t("settings_notif_via")}</span>
                         {(Object.keys(channelMeta) as NotifChannel[]).map((ch) => {
                           const meta = channelMeta[ch];
                           const active = item.channels[ch];
@@ -883,6 +903,7 @@ function CarrierBadge({ carrier, size = 44 }: { carrier: CarrierConfig; size?: n
 }
 
 function ShippingSection() {
+  const { t } = useLanguage();
   const [carriers, setCarriers] = useState<CarrierConfig[]>(initialCarriers);
   const [freeShippingMin, setFreeShippingMin] = useState(500);
   const [baseShippingCost, setBaseShippingCost] = useState(35);
@@ -914,7 +935,7 @@ function ShippingSection() {
       <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
         <div className="pb-3 border-b border-[#e8e8e8] flex items-center gap-2">
           <SettingsIcon className="size-4 text-[#319754]" strokeWidth={2.2} />
-          <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ค่าตั้งต้นการจัดส่ง</p>
+          <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{t("settings_default_shipping")}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -934,7 +955,7 @@ function ShippingSection() {
               ค่าจัดส่งเริ่มต้น (฿)
             </label>
             <StepperInput value={baseShippingCost} onChange={setBaseShippingCost} />
-            <p className={`${font} text-[10px] text-gray-400 pl-3`}>ใช้เมื่อไม่มี shipping rate ที่ตรงกับสินค้า</p>
+            <p className={`${font} text-[10px] text-gray-400 pl-3`}>{t("settings_default_shipping_hint")}</p>
           </div>
           {/* Default weight */}
           <div className="flex flex-col gap-1.5">
@@ -943,7 +964,7 @@ function ShippingSection() {
               น้ำหนักเริ่มต้น (กรัม)
             </label>
             <StepperInput value={defaultWeight} onChange={setDefaultWeight} />
-            <p className={`${font} text-[10px] text-gray-400 pl-3`}>สำหรับสินค้าที่ยังไม่กรอกน้ำหนัก</p>
+            <p className={`${font} text-[10px] text-gray-400 pl-3`}>{t("settings_default_for_unweighted")}</p>
           </div>
         </div>
       </div>
@@ -953,7 +974,7 @@ function ShippingSection() {
         <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Truck className="size-4 text-[#319754]" strokeWidth={2.2} />
-            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>ขนส่งที่ร้านใช้บริการ</p>
+            <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{t("settings_carriers")}</p>
           </div>
           <span className={`${font} text-[11px] text-gray-500`}>
             <span className="text-[#319754] tabular-nums" style={{ fontWeight: 600 }}>{enabledCount}</span>
@@ -1016,14 +1037,14 @@ function ShippingSection() {
                 <div className="rounded-2xl p-4 flex flex-col gap-3 bg-white">
                   {/* Master toggle row */}
                   <div className="flex items-center justify-between gap-3 pb-3 border-b border-gray-200">
-                    <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 600 }}>เปิดใช้งานขนส่งนี้</span>
+                    <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 600 }}>{t("settings_carrier_enable")}</span>
                     <ToggleSwitch enabled={c.enabled} onToggle={() => toggleCarrier(c.id)} />
                   </div>
 
                   {/* Settings (disabled inputs when toggle off) */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1">
-                      <label className={`${font} text-[10px] text-gray-500`}>ค่าส่งเริ่มต้น (฿)</label>
+                      <label className={`${font} text-[10px] text-gray-500`}>{t("settings_base_shipping")}</label>
                       <input type="number" value={c.baseRate} disabled={!c.enabled}
                         onChange={(e) => updateCarrier(c.id, { baseRate: Number(e.target.value) || 0 })}
                         onFocus={(e) => {
@@ -1038,7 +1059,7 @@ function ShippingSection() {
                         className={`${font} bg-white h-10 rounded-full px-4 text-[13px] tabular-nums outline-none border border-gray-200 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className={`${font} text-[10px] text-gray-500`}>ต่อ กก. (฿)</label>
+                      <label className={`${font} text-[10px] text-gray-500`}>{t("settings_per_kg")}</label>
                       <input type="number" value={c.perKg} disabled={!c.enabled}
                         onChange={(e) => updateCarrier(c.id, { perKg: Number(e.target.value) || 0 })}
                         onFocus={(e) => {
@@ -1053,7 +1074,7 @@ function ShippingSection() {
                         className={`${font} bg-white h-10 rounded-full px-4 text-[13px] tabular-nums outline-none border border-gray-200 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className={`${font} text-[10px] text-gray-500`}>ระยะเวลาจัดส่ง</label>
+                      <label className={`${font} text-[10px] text-gray-500`}>{t("settings_delivery_time")}</label>
                       <input value={c.estimatedDays} disabled={!c.enabled}
                         onChange={(e) => updateCarrier(c.id, { estimatedDays: e.target.value })}
                         onFocus={(e) => {
@@ -1068,7 +1089,7 @@ function ShippingSection() {
                         className={`${font} bg-white h-10 rounded-full px-4 text-[13px] outline-none border border-gray-200 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500`} />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <label className={`${font} text-[10px] text-gray-500`}>เว็บไซต์ติดตาม</label>
+                      <label className={`${font} text-[10px] text-gray-500`}>{t("settings_carrier_tracking")}</label>
                       <input value={c.trackingUrl} disabled={!c.enabled}
                         onChange={(e) => updateCarrier(c.id, { trackingUrl: e.target.value })}
                         onFocus={(e) => {
@@ -1099,12 +1120,12 @@ function ShippingSection() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>รับสินค้าที่ร้าน</p>
+                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{t("settings_pickup")}</p>
                 <span className={`${font} inline-flex items-center gap-1 bg-[#319754] text-white text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 700 }}>
                   ฟรี
                 </span>
               </div>
-              <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>เปิดให้ลูกค้าเลือกมารับสินค้าด้วยตัวเองที่หน้าร้าน — ไม่มีค่าจัดส่ง</p>
+              <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>{t("settings_pickup_desc")}</p>
             </div>
           </div>
           <ToggleSwitch enabled={pickupEnabled} onToggle={() => setPickupEnabled(!pickupEnabled)} />
@@ -1123,7 +1144,7 @@ function ShippingSection() {
                 <div className="bg-[#319754]/5 border border-[#319754]/20 rounded-xl p-3 flex items-start gap-2.5">
                   <MapPin className="size-4 text-[#319754] shrink-0 mt-0.5" strokeWidth={2.2} />
                   <div className="flex-1 min-w-0">
-                    <p className={`${font} text-[11px] text-[#287745]`} style={{ fontWeight: 600 }}>จุดรับสินค้า</p>
+                    <p className={`${font} text-[11px] text-[#287745]`} style={{ fontWeight: 600 }}>{t("settings_pickup")}</p>
                     <p className={`${font} text-[12px] text-gray-700 mt-0.5 leading-relaxed`}>{pickupAddress}</p>
                   </div>
                 </div>
@@ -1179,12 +1200,12 @@ function ShippingSection() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>จัดส่งพื้นที่ห่างไกล</p>
+                <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{t("settings_remote_area")}</p>
                 <span className={`${font} inline-flex items-center gap-1 bg-[#0088ff]/10 text-[#0088ff] text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>
                   ราคาเหมา
                 </span>
               </div>
-              <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>เปิดรับออเดอร์จากเกาะ / พื้นที่จัดส่งยาก พร้อมตั้งค่าจัดส่งเหมาจ่าย</p>
+              <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>{t("settings_remote_desc")}</p>
             </div>
           </div>
           <ToggleSwitch enabled={remoteEnabled} onToggle={() => setRemoteEnabled(!remoteEnabled)} />
@@ -1207,13 +1228,13 @@ function ShippingSection() {
                       ค่าจัดส่งเหมาจ่าย (฿)
                     </label>
                     <StepperInput value={remoteFee} onChange={setRemoteFee} />
-                    <p className={`${font} text-[10px] text-gray-400 pl-3`}>ใช้แทนค่าส่งปกติเมื่อปลายทางอยู่ในพื้นที่ห่างไกล</p>
+                    <p className={`${font} text-[10px] text-gray-400 pl-3`}>{t("settings_remote_alt")}</p>
                   </div>
                   {/* Tip / warning */}
                   <div className="bg-[#0088ff]/5 border border-[#0088ff]/20 rounded-xl p-4 flex items-start gap-2.5">
                     <AlertTriangle className="size-4 text-[#0088ff] shrink-0 mt-0.5" strokeWidth={2.2} />
                     <div>
-                      <p className={`${font} text-[12px] text-[#0066b8]`} style={{ fontWeight: 600 }}>วิธีคำนวณ</p>
+                      <p className={`${font} text-[12px] text-[#0066b8]`} style={{ fontWeight: 600 }}>{t("settings_method")}</p>
                       <p className={`${font} text-[11px] text-gray-600 mt-0.5 leading-relaxed`}>
                         ค่าส่งจะถูก override เป็นราคาเหมา (฿{remoteFee.toLocaleString()}) ทันที เมื่อระบบตรวจพบที่อยู่อยู่ในรายการพื้นที่ห่างไกล
                       </p>
@@ -1235,7 +1256,7 @@ function ShippingSection() {
                     className={`${font} bg-[#fafafa] rounded-2xl px-5 py-3 text-[13px] outline-none focus:ring-2 focus:ring-[#319754]/30 focus:bg-white transition-all resize-none placeholder:text-[#a3a3a3]`}
                     style={{ fontWeight: 500 }}
                   />
-                  <p className={`${font} text-[10px] text-gray-400 pl-3`}>ระบบจะตรวจที่อยู่ลูกค้าตาม keyword ในรายการนี้ (case-insensitive)</p>
+                  <p className={`${font} text-[10px] text-gray-400 pl-3`}>{t("settings_remote_keyword_hint")}</p>
                 </div>
               </div>
             </motion.div>
@@ -1251,8 +1272,8 @@ function ShippingSection() {
               <Wallet className="size-5 text-[#ff9500]" strokeWidth={2.2} />
             </div>
             <div>
-              <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>เก็บเงินปลายทาง (COD)</p>
-              <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>เปิดให้ลูกค้าเลือกชำระเงินเมื่อรับสินค้า</p>
+              <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{t("settings_cod")}</p>
+              <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>{t("settings_cod_desc")}</p>
             </div>
           </div>
           <ToggleSwitch enabled={codEnabled} onToggle={() => setCodEnabled(!codEnabled)} />
@@ -1268,14 +1289,14 @@ function ShippingSection() {
               className="overflow-hidden">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className={`${font} text-[12px] text-gray-500`}>ค่าธรรมเนียม COD (฿)</label>
+                  <label className={`${font} text-[12px] text-gray-500`}>{t("settings_cod_fee")}</label>
                   <StepperInput value={codFee} onChange={setCodFee} />
-                  <p className={`${font} text-[10px] text-gray-400 pl-3`}>เพิ่มต่อออเดอร์ที่ใช้ COD</p>
+                  <p className={`${font} text-[10px] text-gray-400 pl-3`}>{t("settings_cod_fee_hint")}</p>
                 </div>
                 <div className="bg-[#ff9500]/5 border border-[#ff9500]/20 rounded-xl p-4 flex items-start gap-2.5">
                   <AlertTriangle className="size-4 text-[#ff9500] shrink-0 mt-0.5" strokeWidth={2.2} />
                   <div>
-                    <p className={`${font} text-[12px] text-[#9a3412]`} style={{ fontWeight: 600 }}>ข้อแนะนำ COD</p>
+                    <p className={`${font} text-[12px] text-[#9a3412]`} style={{ fontWeight: 600 }}>{t("settings_cod_tip")}</p>
                     <p className={`${font} text-[11px] text-gray-600 mt-0.5 leading-relaxed`}>
                       ออเดอร์ COD มีโอกาสถูกปฏิเสธรับสินค้าสูงกว่า แนะนำให้เก็บค่าธรรมเนียมเพื่อชดเชยความเสี่ยง
                     </p>
@@ -1294,8 +1315,16 @@ function ShippingSection() {
 /* ========== MAIN ========== */
 export function SettingsPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState<SectionId>("shop_account");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const i18nSectionLabels: Record<SectionId, string> = {
+    shop_account: t("settings_shop_account"),
+    shop_address: t("settings_shop_address"),
+    notifications: t("settings_notifications_label"),
+    shipping: t("settings_shipping"),
+  };
 
   return (
     <div className={`flex h-full overflow-hidden bg-[#fafafa] ${font}`}>
@@ -1314,7 +1343,7 @@ export function SettingsPage() {
         {/* Page title */}
         <div className="flex items-center h-[100px]">
           <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>
-            {sectionLabels[activeSection]}
+            {i18nSectionLabels[activeSection]}
           </p>
         </div>
 
