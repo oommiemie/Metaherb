@@ -90,7 +90,7 @@ export function ComplaintFormPage() {
         {/* Left column */}
         <div className="flex-1 space-y-6">
           {/* Reason */}
-          <div className="bg-white rounded-2xl p-6">
+          <div className="bg-white rounded-2xl p-4 sm:p-6">
             <div className="border-b border-[#d4d4d8] pb-2 mb-5">
               <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 500 }}>{t("cf_reason_title")}</p>
             </div>
@@ -109,7 +109,7 @@ export function ComplaintFormPage() {
 
           {/* Address */}
           {(type === "return" || type === "damaged") && (
-            <div className="bg-white rounded-2xl p-6">
+            <div className="bg-white rounded-2xl p-4 sm:p-6">
               <div className="border-b border-[#d4d4d8] pb-2 mb-5">
                 <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 500 }}>{t("cf_return_addr_title")}</p>
               </div>
@@ -126,7 +126,7 @@ export function ComplaintFormPage() {
           )}
 
           {/* Evidence */}
-          <div className="bg-white rounded-2xl p-6">
+          <div className="bg-white rounded-2xl p-4 sm:p-6">
             <div className="border-b border-[#d4d4d8] pb-2 mb-5">
               <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 500 }}>{t("cf_evidence")}</p>
             </div>
@@ -162,7 +162,7 @@ export function ComplaintFormPage() {
           </div>
 
           {/* More detail */}
-          <div className="bg-white rounded-2xl p-6">
+          <div className="bg-white rounded-2xl p-4 sm:p-6">
             <div className="border-b border-[#d4d4d8] pb-2 mb-5">
               <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 500 }}>{t("cf_more_detail")}</p>
             </div>
@@ -244,11 +244,11 @@ export function ComplaintFormPage() {
 
       {/* Change type popup */}
       {showChangePopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowChangePopup(false)}>
-          <div className="bg-white rounded-[16px] w-[90%] max-w-[720px] p-6 flex flex-col gap-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={() => setShowChangePopup(false)}>
+          <div className="bg-white rounded-[16px] w-full max-w-[720px] p-4 sm:p-6 flex flex-col gap-4 my-auto max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-start justify-between">
-              <p className={`${font} text-[24px] text-black`} style={{ fontWeight: 600 }}>{t("complaint_select_title")}</p>
+            <div className="flex items-start justify-between gap-2">
+              <p className={`${font} text-[18px] sm:text-[24px] text-black`} style={{ fontWeight: 600 }}>{t("complaint_select_title")}</p>
               <button onClick={() => setShowChangePopup(false)}
                 className="bg-[#f4f4f4] rounded-full size-[40px] flex items-center justify-center cursor-pointer hover:bg-[#e5e5e5] shrink-0">
                 <X className="size-5 text-[#1C1B1F]" />
@@ -256,20 +256,20 @@ export function ComplaintFormPage() {
             </div>
 
             {/* 2x2 grid */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {Object.entries(typeLabels).map(([key, info]) => (
                 <button key={key} onClick={() => {
                   navigate(`/complaint/form/${orderId}?type=${key}`, { replace: true });
                   setShowChangePopup(false);
                 }}
-                  className={`bg-white rounded-[16px] border cursor-pointer transition-all text-left p-4 ${
+                  className={`bg-white rounded-[16px] border cursor-pointer transition-all text-left p-3 sm:p-4 ${
                     key === type ? "border-[#319754] bg-[#f0fdf4]" : "border-[#d9d9d9] hover:border-[#319754]"
                   }`}>
-                  <div className="flex gap-[13px] items-center w-full">
-                    <img src={info.icon} alt={info.title} className="size-[80px] shrink-0 object-contain" />
+                  <div className="flex gap-3 items-center w-full">
+                    <img src={info.icon} alt={info.title} className="size-[56px] sm:size-[80px] shrink-0 object-contain" />
                     <div className="flex-1 min-w-0 flex flex-col gap-[2px]">
-                      <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 600 }}>{info.title}</p>
-                      <p className={`${font} text-[14px] text-[rgba(0,0,0,0.8)]`}>{info.desc}</p>
+                      <p className={`${font} text-[14px] sm:text-[16px] text-black`} style={{ fontWeight: 600 }}>{info.title}</p>
+                      <p className={`${font} text-[12px] sm:text-[14px] text-[rgba(0,0,0,0.8)]`}>{info.desc}</p>
                     </div>
                   </div>
                 </button>

@@ -59,11 +59,11 @@ export function ComplaintStatusPage() {
       <div className="flex gap-6 flex-col lg:flex-row">
         {/* Left: complaint info */}
         <div className="flex-1 space-y-6">
-          <div className="bg-white rounded-2xl p-6">
+          <div className="bg-white rounded-2xl p-4 sm:p-6">
             <p className={`${font} text-[16px] text-black pb-2 mb-6 border-b border-[#d4d4d8]`} style={{ fontWeight: 500 }}>{t("cs_complaint_info")}</p>
 
             {/* Info grid */}
-            <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-4 sm:gap-x-8 mb-6">
               <div>
                 <p className={`${font} text-[12px] text-[#999]`}>{t("cs_order_no")}</p>
                 <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{order.id}</p>
@@ -103,9 +103,9 @@ export function ComplaintStatusPage() {
             </div>
 
             {/* Evidence */}
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3 flex-wrap">
               {evidenceImages.map((img, i) => (
-                <img key={i} src={img} alt={`${t("cf_evidence")} ${i + 1}`} className="size-[120px] rounded-lg object-cover" />
+                <img key={i} src={img} alt={`${t("cf_evidence")} ${i + 1}`} className="size-[80px] sm:size-[120px] rounded-lg object-cover" />
               ))}
             </div>
           </div>
@@ -125,7 +125,7 @@ export function ComplaintStatusPage() {
           <div>
             <p className={`${font} text-[16px] text-black mb-4`} style={{ fontWeight: 500 }}>{t("cs_progress")}</p>
 
-            <div className="bg-white rounded-2xl p-6">
+            <div className="bg-white rounded-2xl p-4 sm:p-6">
               <div className="space-y-0">
                 {timeline.map((step, i) => (
                   <div key={i} className="flex gap-4">
@@ -167,7 +167,7 @@ export function ComplaintStatusPage() {
 
         {/* Right: help */}
         <div className="w-full lg:w-[320px]">
-          <div className="bg-white rounded-2xl p-6">
+          <div className="bg-white rounded-2xl p-4 sm:p-6">
             <p className={`${font} text-[16px] text-black mb-4`} style={{ fontWeight: 500 }}>{t("cs_help")}</p>
             <p className={`${font} text-[14px] text-[#666] mb-4`}>{t("cs_help_sub")}</p>
 

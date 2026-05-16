@@ -41,10 +41,10 @@ function CouponCard({ coupon, onCollect }: { coupon: Coupon; onCollect: (id: str
     <div className="bg-white rounded-lg relative overflow-hidden border border-[#e8e8e8] shadow-[0px_1px_4px_0px_rgba(0,0,0,0.08)]">
       <div className="flex items-center">
         {/* Left badge */}
-        <div className="relative shrink-0 w-[100px] h-[118px] flex items-center justify-center" style={{ backgroundColor: coupon.bgColor }}>
+        <div className="relative shrink-0 w-[72px] sm:w-[100px] h-[118px] flex items-center justify-center" style={{ backgroundColor: coupon.bgColor }}>
           <div className="flex flex-col items-center text-white text-center">
-            <span className={`${fontBold} text-[22px]`} style={{ fontWeight: 700 }}>{coupon.label}</span>
-            <span className={`${font} text-[10px]`}>{coupon.sublabel}</span>
+            <span className={`${fontBold} text-[16px] sm:text-[22px]`} style={{ fontWeight: 700 }}>{coupon.label}</span>
+            <span className={`${font} text-[9px] sm:text-[10px]`}>{coupon.sublabel}</span>
           </div>
           {/* Cutout circles */}
           <div className="absolute right-[-6px] top-[24px] size-3 rounded-full bg-[#fafafa]" />
@@ -52,26 +52,26 @@ function CouponCard({ coupon, onCollect }: { coupon: Coupon; onCollect: (id: str
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex items-center justify-between px-4 py-3">
-          <div className="flex flex-col gap-1.5">
-            <p className={`${font} text-[14px] text-[#222]`} style={{ fontWeight: 500 }}>{coupon.title}</p>
-            <p className={`${font} text-[12px] text-[#757575]`}>{coupon.minSpend}</p>
+        <div className="flex-1 flex items-center justify-between gap-2 px-3 sm:px-4 py-3 min-w-0">
+          <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+            <p className={`${font} text-[13px] sm:text-[14px] text-[#222]`} style={{ fontWeight: 500 }}>{coupon.title}</p>
+            <p className={`${font} text-[11px] sm:text-[12px] text-[#757575]`}>{coupon.minSpend}</p>
             {coupon.tag && (
               <span className={`inline-block w-fit border rounded px-2 py-0.5 text-[10px] ${font}`} style={{ borderColor: coupon.tagColor, color: coupon.tagColor }}>{coupon.tag}</span>
             )}
-            <div className="flex items-center gap-1">
-              <Clock className="size-3 text-[#999]" />
-              <span className={`${font} text-[11px] text-[#999]`}>{coupon.expiry}</span>
-              <span className={`${font} text-[11px] text-[#319754] ml-2 cursor-pointer`}>{t("coupon_terms")}</span>
+            <div className="flex items-center gap-1 flex-wrap">
+              <Clock className="size-3 text-[#999] shrink-0" />
+              <span className={`${font} text-[10px] sm:text-[11px] text-[#999]`}>{coupon.expiry}</span>
+              <span className={`${font} text-[10px] sm:text-[11px] text-[#319754] sm:ml-2 cursor-pointer`}>{t("coupon_terms")}</span>
             </div>
           </div>
 
           {/* Collect button */}
           {coupon.collected ? (
-            <span className={`${font} text-[13px] text-[#999] bg-[#f0f0f0] px-4 py-1.5 rounded-full`}>{t("coupon_collected")}</span>
+            <span className={`${font} text-[12px] sm:text-[13px] text-[#999] bg-[#f0f0f0] px-3 sm:px-4 py-1.5 rounded-full shrink-0`}>{t("coupon_collected")}</span>
           ) : (
             <button onClick={() => onCollect(coupon.id)}
-              className={`${font} text-[13px] text-white bg-[#319754] px-5 py-1.5 rounded-full cursor-pointer hover:bg-[#267a43]`}>{t("coupon_collect")}</button>
+              className={`${font} text-[12px] sm:text-[13px] text-white bg-[#319754] px-4 sm:px-5 py-1.5 rounded-full cursor-pointer hover:bg-[#267a43] shrink-0`}>{t("coupon_collect")}</button>
           )}
         </div>
       </div>
@@ -104,16 +104,16 @@ export function CouponPage() {
 
   return (
     <div>
-      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
-        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("coupon_title")}</h1>
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center px-4">
+        <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("coupon_title")}</h1>
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         {/* Tabs */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex gap-2 sm:gap-3 mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
           {tabItems.map((tab) => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-[14px] ${font} cursor-pointer transition-colors ${
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-[12px] sm:text-[14px] ${font} cursor-pointer transition-colors shrink-0 ${
                 activeTab === tab.key ? "bg-[#319754] text-white" : "bg-white text-gray-600 border border-gray-300"
               }`}>
               {tab.label}

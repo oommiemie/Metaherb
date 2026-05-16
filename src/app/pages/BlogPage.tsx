@@ -70,8 +70,8 @@ export function BlogPage() {
 
   return (
     <div>
-      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
-        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("blog_title")}</h1>
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center px-4">
+        <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("blog_title")}</h1>
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">

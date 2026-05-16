@@ -655,11 +655,11 @@ export function Layout() {
   const NonStaffHeader = (
     <header className="sticky top-0 z-50">
       {/* Green strip — 80px tall, behind the pill (subtle gradient + inner highlight) */}
-      <div className="absolute inset-x-0 top-0 h-[80px] backdrop-blur-[8px] shadow-[inset_0_-1px_0_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.12)]"
+      <div className="absolute inset-x-0 top-0 h-[64px] md:h-[80px] backdrop-blur-[8px] shadow-[inset_0_-1px_0_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.12)]"
         style={{ background: "linear-gradient(180deg, #3aa55e 0%, #319754 55%, #287745 100%)" }} />
 
-      {/* Content wrapper — pt-[20px] then flex-col gap-[6px] items-end */}
-      <div className="relative w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 pt-[20px] flex flex-col gap-[6px] items-end">
+      {/* Content wrapper — pt set so pill half-overlaps the green strip on both mobile + desktop */}
+      <div className="relative w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-12 pt-[38px] md:pt-[20px] flex flex-col gap-[6px] items-end">
         {/* Lang row — sits inside the green strip */}
         <div className="hidden md:flex w-full items-center justify-end px-[24px]">
           <div ref={langRef} className="relative">
@@ -697,7 +697,7 @@ export function Layout() {
 
         {/* Pill — overlaps the bottom of the green strip */}
         <div ref={pillRef} className="relative w-full">
-          <div className="w-full backdrop-blur-[14px] rounded-[100px] py-2 px-3 md:py-[14px] md:px-[16px] min-h-[64px] md:min-h-[76px] flex items-center ring-1 ring-white/60"
+          <div className="w-full backdrop-blur-[14px] rounded-[100px] py-1.5 px-2 md:py-[14px] md:px-[16px] min-h-[52px] md:min-h-[76px] flex items-center ring-1 ring-white/60"
             style={{
               background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)",
               boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(255,255,255,0.5) inset, 0 2px 6px rgba(0,0,0,0.06), 0 12px 28px -8px rgba(20,63,36,0.18)"
@@ -745,17 +745,12 @@ export function Layout() {
               exit={{ opacity: 0, scale: 0.97, y: 6 }}
               transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
               className="w-full h-full flex items-center justify-between">
-          {/* Mobile menu */}
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-1.5 cursor-pointer">
-            {mobileMenuOpen ? <X className="size-6 text-gray-600" /> : <Menu className="size-6 text-gray-600" />}
-          </button>
-
           {/* Logo group — gap-[10px] (+ role badge for staff) */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="group/logo flex items-center gap-2 sm:gap-[10px] cursor-pointer transition-transform duration-300 hover:scale-[1.03]"
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
+            <div className="group/logo flex items-center gap-1.5 sm:gap-[10px] cursor-pointer transition-transform duration-300 hover:scale-[1.03]"
               onClick={() => navigate(isOwner ? "/owner" : isAdmin ? "/admin" : "/")}>
-              <img src={imgLogo} className="shrink-0 size-[40px] sm:size-[48px] transition-transform duration-500 group-hover/logo:rotate-[8deg]" alt="MetaHerb" />
-              <span className={`${fontBold} text-[18px] sm:text-[24px] whitespace-nowrap leading-none tracking-tight`} style={{ fontWeight: 700 }}>
+              <img src={imgLogo} className="shrink-0 size-[34px] sm:size-[48px] transition-transform duration-500 group-hover/logo:rotate-[8deg]" alt="MetaHerb" />
+              <span className={`${fontBold} text-[15px] sm:text-[24px] whitespace-nowrap leading-none tracking-tight`} style={{ fontWeight: 700 }}>
                 <span className="text-[#ed1c24]">META</span>
                 <span className="text-[#f7931d]">HERB</span>
               </span>
@@ -809,12 +804,17 @@ export function Layout() {
           </nav>
 
           {/* Right group — gap-[16px] */}
-          <div className="flex items-center gap-2 sm:gap-[16px] justify-end shrink-0">
-            {/* Mobile search toggle (customer only) */}
+          <div className="flex items-center gap-1.5 sm:gap-[16px] justify-end shrink-0">
+            {/* Mobile search — opens the SAME pill-morph search as desktop */}
             {!isStaffRole && (
-              <button onClick={() => setMobileSearchOpen(!mobileSearchOpen)} className="md:hidden p-1 cursor-pointer">
-                <Search className="size-5 text-gray-600" />
-              </button>
+              <motion.button onClick={() => setPillSearchOpen(true)}
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.08 }}
+                transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                className="md:hidden group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
+                aria-label={t("search_aria")}>
+                <Search className="size-[16px] text-[#1d5b32]" strokeWidth={2} />
+              </motion.button>
             )}
 
             {/* Desktop search — morphs the pill into a search bar (customer only) */}
@@ -924,11 +924,45 @@ export function Layout() {
               </div>
             ) : (
               <button onClick={() => navigate("/login")}
-                className={`border border-[#319754] text-[#1d5b32] h-[40px] sm:h-[48px] px-4 sm:w-[120px] rounded-[100px] text-[13px] sm:text-[14px] ${font} cursor-pointer hover:bg-[#319754]/5 flex items-center justify-center`}
+                className={`hidden md:flex border border-[#319754] text-[#1d5b32] h-[48px] px-4 w-[120px] rounded-[100px] text-[14px] ${font} cursor-pointer hover:bg-[#319754]/5 items-center justify-center`}
                 style={{ fontWeight: 500 }}>
                 <span className="leading-none">{t("button_login")}</span>
               </button>
             )}
+
+            {/* Mobile menu — at the end (right side) of the pill, with morph animation */}
+            <motion.button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.08 }}
+              transition={{ type: "spring", stiffness: 400, damping: 18 }}
+              className={`md:hidden size-[32px] rounded-full flex items-center justify-center cursor-pointer relative transition-colors duration-200 ${
+                mobileMenuOpen
+                  ? "bg-[#267a43] text-white shadow-[0_4px_12px_-2px_rgba(49,151,84,0.45)]"
+                  : "bg-white text-[#1d5b32] shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
+              }`}
+              aria-label="Menu">
+              <AnimatePresence mode="wait" initial={false}>
+                {mobileMenuOpen ? (
+                  <motion.span key="x"
+                    initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+                    animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                    exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute inset-0 flex items-center justify-center">
+                    <X className="size-[16px]" strokeWidth={2.4} />
+                  </motion.span>
+                ) : (
+                  <motion.span key="menu"
+                    initial={{ rotate: 90, opacity: 0, scale: 0.6 }}
+                    animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                    exit={{ rotate: -90, opacity: 0, scale: 0.6 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute inset-0 flex items-center justify-center">
+                    <Menu className="size-[16px]" strokeWidth={2.4} />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
           </div>
             </motion.div>
           )}
@@ -1031,26 +1065,91 @@ export function Layout() {
         </div>
       )}
 
-      {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden relative bg-white border-t border-gray-100 shadow-lg">
-          <div className="flex flex-col py-2">
-            {[...userMenuItems, { label: t("menu_about"), path: "/about" }].map((item) => (
-              <button key={item.path} onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
-                className={`px-6 py-3 text-left text-[14px] ${font} cursor-pointer ${
-                  location.pathname === item.path ? "text-[#319754] bg-[#319754]/5" : "text-gray-700 hover:bg-gray-50"
-                }`}>
-                {item.label}
-              </button>
-            ))}
-            <button onClick={() => navigate("/wishlist")}
-              className={`px-6 py-3 text-left text-[14px] ${font} cursor-pointer text-gray-700 hover:bg-gray-50 flex items-center gap-2`}>
-              <Heart className="size-4" /> สินค้าที่ชอบ
-              {wishlistCount > 0 && <span className="bg-[#ff383c] text-white text-[10px] px-1.5 rounded-full">{wishlistCount}</span>}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Mobile menu — slide-down with staggered items */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -8, height: 0 }}
+            transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+            className="md:hidden relative bg-white border-t border-gray-100 shadow-lg overflow-hidden">
+            <motion.div
+              initial="hidden" animate="visible" exit="hidden"
+              variants={{
+                hidden: { transition: { staggerChildren: 0.03, staggerDirection: -1 } },
+                visible: { transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
+              }}
+              className="flex flex-col py-2">
+              {[...userMenuItems, { label: t("menu_about"), path: "/about" }].map((item) => (
+                <motion.button key={item.path} onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
+                  variants={{ hidden: { opacity: 0, x: -16 }, visible: { opacity: 1, x: 0 } }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  whileTap={{ scale: 0.97 }}
+                  className={`group/mitem px-6 py-3 text-left text-[14px] ${font} cursor-pointer transition-colors flex items-center gap-2 ${
+                    location.pathname === item.path ? "text-[#319754] bg-[#319754]/5" : "text-gray-700 hover:bg-gray-50"
+                  }`}>
+                  <span className={`size-1.5 rounded-full transition-all ${
+                    location.pathname === item.path
+                      ? "bg-[#319754] shadow-[0_0_8px_rgba(49,151,84,0.6)]"
+                      : "bg-transparent group-hover/mitem:bg-[#319754]/40"
+                  }`} />
+                  <span className="group-hover/mitem:translate-x-0.5 transition-transform">{item.label}</span>
+                </motion.button>
+              ))}
+              {/* Language switcher section */}
+              <motion.div
+                variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+                className="h-px bg-gray-100 my-1" />
+              <motion.div
+                variants={{ hidden: { opacity: 0, x: -16 }, visible: { opacity: 1, x: 0 } }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="px-6 pt-2 pb-1">
+                <p className={`${font} text-[11px] text-gray-400 uppercase tracking-[0.15em]`} style={{ fontWeight: 600 }}>Language</p>
+              </motion.div>
+              <motion.div
+                variants={{ hidden: { opacity: 0, y: 4 }, visible: { opacity: 1, y: 0 } }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="px-4 pb-2 flex flex-wrap gap-1.5">
+                {LANG_OPTIONS.map((opt) => {
+                  const isActive = opt.code === lang;
+                  return (
+                    <button key={opt.code} onClick={() => { setLang(opt.code); setMobileMenuOpen(false); }}
+                      className={`${font} flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] cursor-pointer transition-all active:scale-95 ${
+                        isActive
+                          ? "text-white shadow-[0_3px_8px_-2px_rgba(49,151,84,0.4)]"
+                          : "bg-gray-100 text-gray-700 hover:bg-[#319754]/10 hover:text-[#319754]"
+                      }`}
+                      style={isActive
+                        ? { background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }
+                        : { fontWeight: 500 }}>
+                      <span className="text-[14px] leading-none">{opt.flag}</span>
+                      <span>{opt.native}</span>
+                    </button>
+                  );
+                })}
+              </motion.div>
+
+              {/* Login — shown only when not authenticated */}
+              {!isAuthenticated && (
+                <>
+                  <motion.div
+                    variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
+                    className="h-px bg-gray-100 my-1" />
+                  <motion.button onClick={() => { navigate("/login"); setMobileMenuOpen(false); }}
+                    variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`mx-4 my-2 px-4 py-2.5 rounded-full text-white text-[14px] ${font} cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_12px_-2px_rgba(49,151,84,0.4)] hover:shadow-[0_8px_20px_-4px_rgba(49,151,84,0.55)] hover:-translate-y-[1px] active:translate-y-0 transition-all`}
+                    style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 500 }}>
+                    <User className="size-4" strokeWidth={2.2} /> {t("button_login")}
+                  </motion.button>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 
@@ -1201,7 +1300,7 @@ export function Layout() {
                 v{APP_VERSION}
               </span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap justify-center">
               <span className={`${font} text-[12px] text-white/65`} style={{ fontWeight: 500 }}>{t("footer_payment")}</span>
               <div className="flex items-center gap-2">
                 {[
@@ -1211,7 +1310,7 @@ export function Layout() {
                   { label: "TM", color: "#ff6600" },
                 ].map((p) => (
                   <div key={p.label}
-                    className={`${font} size-[40px] rounded-full bg-white flex items-center justify-center text-[10px] tracking-wide shadow-[0_3px_8px_-2px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.6)]`}
+                    className={`${font} size-[34px] sm:size-[40px] rounded-full bg-white flex items-center justify-center text-[9px] sm:text-[10px] tracking-wide shadow-[0_3px_8px_-2px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.6)]`}
                     style={{ color: p.color, fontWeight: 800 }}>
                     {p.label}
                   </div>

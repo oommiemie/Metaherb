@@ -113,15 +113,15 @@ export function OrdersPage() {
     <div>
       {/* Header with shipping box pattern — extends up behind the appbar */}
       <div className="bg-[#eaf3ee] relative overflow-hidden -mt-[64px] md:-mt-[116px] pt-[64px] md:pt-[116px]">
-        <div className="relative py-6 text-center">
-          <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("orders_title")}</h1>
+        <div className="relative py-6 text-center px-4">
+          <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("orders_title")}</h1>
         </div>
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         {/* Tabs — frosted glass pill with gradient active state */}
-        <div className="flex justify-center -mt-10 mb-5 sm:mb-7 relative z-10">
-          <div className="backdrop-blur-[14px] rounded-full p-[6px] flex gap-1 overflow-x-auto max-w-full ring-1 ring-white/60"
+        <div className="flex justify-center -mt-10 mb-5 sm:mb-7 relative z-10 -mx-4 sm:mx-0">
+          <div className="backdrop-blur-[14px] rounded-full p-[6px] flex gap-1 overflow-x-auto max-w-full scrollbar-hide ring-1 ring-white/60"
             style={{
               background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)",
               boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(255,255,255,0.5) inset, 0 2px 6px rgba(0,0,0,0.06), 0 12px 28px -8px rgba(20,63,36,0.18)"
@@ -176,7 +176,7 @@ export function OrdersPage() {
             {filtered.map((order) => {
               const isExpanded = expandedOrder === order.id;
               return (
-                <div key={order.id} className="bg-white rounded-[20px] overflow-hidden p-5 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.08)] border border-gray-100 hover:shadow-[0_12px_28px_-8px_rgba(16,24,40,0.12)] transition-shadow duration-300">
+                <div key={order.id} className="bg-white rounded-[20px] overflow-hidden p-4 sm:p-5 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.08)] border border-gray-100 hover:shadow-[0_12px_28px_-8px_rgba(16,24,40,0.12)] transition-shadow duration-300">
                   {/* Top: Shop name + View detail */}
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
@@ -386,10 +386,10 @@ export function OrdersPage() {
       {complaintModal && (() => {
         const complaintOrder = orders.find((o) => o.id === complaintModal);
         return (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setComplaintModal(null)}>
-            <div className="bg-white rounded-2xl p-6 w-full max-w-[720px]" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-start justify-between mb-6">
-                <h3 className={`${font} text-[24px] text-black`} style={{ fontWeight: 600 }}>{t("complaint_select_title")}</h3>
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setComplaintModal(null)}>
+            <div className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-[720px] my-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between mb-4 sm:mb-6">
+                <h3 className={`${font} text-[18px] sm:text-[24px] text-black`} style={{ fontWeight: 600 }}>{t("complaint_select_title")}</h3>
                 <button onClick={() => setComplaintModal(null)}
                   className="size-10 rounded-full bg-[#f4f4f4] flex items-center justify-center cursor-pointer hover:bg-[#e8e8e8]">
                   <XCircle className="size-5 text-gray-500" />
@@ -403,16 +403,16 @@ export function OrdersPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {problemTypes.map((type) => (
                   <button key={type.id}
                     onClick={() => { setComplaintModal(null); navigate(`/complaint/form/${complaintModal}?type=${type.id}`); }}
-                    className="bg-white rounded-2xl border border-[#d9d9d9] p-4 cursor-pointer hover:border-[#319754] hover:shadow-md transition-all text-left group">
+                    className="bg-white rounded-2xl border border-[#d9d9d9] p-3 sm:p-4 cursor-pointer hover:border-[#319754] hover:shadow-md transition-all text-left group">
                     <div className="flex gap-3 items-center">
-                      <img src={type.icon} alt={type.title} className="size-[60px] shrink-0 object-contain" />
+                      <img src={type.icon} alt={type.title} className="size-[48px] sm:size-[60px] shrink-0 object-contain" />
                       <div className="flex-1 min-w-0">
-                        <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 600 }}>{type.title}</p>
-                        <p className={`${font} text-[14px] text-[rgba(0,0,0,0.8)] mt-0.5`}>{type.desc}</p>
+                        <p className={`${font} text-[14px] sm:text-[16px] text-black`} style={{ fontWeight: 600 }}>{type.title}</p>
+                        <p className={`${font} text-[12px] sm:text-[14px] text-[rgba(0,0,0,0.8)] mt-0.5`}>{type.desc}</p>
                       </div>
                     </div>
                   </button>

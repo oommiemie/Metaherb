@@ -45,10 +45,10 @@ const collectedCoupons: CollectedCoupon[] = [
 function CouponBadge({ coupon, inactive }: { coupon: CollectedCoupon; inactive: boolean }) {
   const bg = inactive ? "#999" : coupon.bgColor;
   return (
-    <div className="relative shrink-0 w-[100px] h-[118px]" style={{ backgroundColor: bg }}>
-      <div className="flex flex-col items-center justify-center h-full text-white text-center">
-        <span className={`${font} text-[22px]`} style={{ fontWeight: 700 }}>{coupon.label}</span>
-        <span className={`${font} text-[10px]`}>{coupon.sublabel}</span>
+    <div className="relative shrink-0 w-[72px] sm:w-[100px] h-[118px]" style={{ backgroundColor: bg }}>
+      <div className="flex flex-col items-center justify-center h-full text-white text-center px-1">
+        <span className={`${font} text-[16px] sm:text-[22px]`} style={{ fontWeight: 700 }}>{coupon.label}</span>
+        <span className={`${font} text-[9px] sm:text-[10px]`}>{coupon.sublabel}</span>
       </div>
       {/* Semicircle cutouts */}
       <div className="absolute right-[-6px] top-[24px] size-3 rounded-full bg-[#fafafa]" />
@@ -74,10 +74,10 @@ function MyCouponCard({ coupon }: { coupon: CollectedCoupon }) {
         <CouponBadge coupon={coupon} inactive={isInactive} />
 
         {/* Content */}
-        <div className="flex-1 flex items-center justify-between px-4 py-3 min-w-0">
+        <div className="flex-1 flex items-center justify-between gap-2 px-3 sm:px-4 py-3 min-w-0">
           <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-            <p className={`${font} text-[14px] text-[#222] truncate`} style={{ fontWeight: 500 }}>{coupon.title}</p>
-            <p className={`${font} text-[12px] text-[#757575]`}>{coupon.minSpend}</p>
+            <p className={`${font} text-[13px] sm:text-[14px] text-[#222]`} style={{ fontWeight: 500 }}>{coupon.title}</p>
+            <p className={`${font} text-[11px] sm:text-[12px] text-[#757575]`}>{coupon.minSpend}</p>
             {coupon.tag && (
               <span
                 className={`inline-block w-fit border rounded px-2 py-0.5 text-[10px] ${font}`}
@@ -164,14 +164,14 @@ export function MyCouponsPage() {
       {/* Top section */}
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 space-y-4">
         {/* Back + Title */}
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-2 sm:gap-4 items-center min-w-0">
           <button
             onClick={() => navigate(-1)}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-[12px] ${font} cursor-pointer hover:bg-[#f0f0f0]`}
+            className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-white text-[12px] ${font} cursor-pointer hover:bg-[#f0f0f0] shrink-0`}
           >
             <ChevronLeft className="size-3" /> {t("common_back")}
           </button>
-          <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("my_coupons_title")}</p>
+          <p className={`${font} text-[16px] sm:text-[20px] text-black truncate`} style={{ fontWeight: 500 }}>{t("my_coupons_title")}</p>
         </div>
 
         {/* Collect more coupons banner */}

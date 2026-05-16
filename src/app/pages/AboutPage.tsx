@@ -47,7 +47,7 @@ export function AboutPage() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 lg:pl-[69px] flex flex-col gap-6 justify-center h-full pt-[64px] md:pt-[116px]">
+        <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-8 lg:pl-[69px] flex flex-col gap-4 sm:gap-6 justify-center h-full pt-[64px] md:pt-[116px]">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-[rgba(125,184,112,0.2)] border border-[rgba(125,184,112,0.4)] rounded-full px-4 py-2 w-fit">
             <Leaf className="size-3.5 text-[#a8d5a0]" />
@@ -55,7 +55,7 @@ export function AboutPage() {
           </div>
 
           {/* Heading */}
-          <h1 className={`${fontHeading} text-[40px] sm:text-[56px] lg:text-[80px] leading-[1.25] lg:leading-[1.2]`}>
+          <h1 className={`${fontHeading} text-[32px] sm:text-[56px] lg:text-[80px] leading-[1.2] lg:leading-[1.2]`}>
             <span className="block text-white">{t("about_hero_1")}</span>
             <span className="block text-[#a8d5a0]">{t("about_hero_2")}</span>
             <span className="block text-white">{t("about_hero_3")}</span>

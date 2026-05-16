@@ -25468,7 +25468,7 @@ export function AdminDashboard() {
   const { t } = useLanguage();
   const section = pathToSection(location.pathname);
   const [activeItem, setActiveItem] = useState<ItemId>(defaultItem[section]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   const mainRef = React.useRef<HTMLElement>(null);
 
   // Translation overrides for select item titles/subtitles
@@ -25555,15 +25555,29 @@ export function AdminDashboard() {
 
   return (
     <div className="flex h-full overflow-hidden relative">
-      <div className="h-full md:overflow-y-auto shrink-0">
+      {!sidebarCollapsed && (
+        <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarCollapsed(true)} />
+      )}
+      <div className={`${sidebarCollapsed ? "hidden md:block" : "fixed inset-y-0 left-0 md:static md:inset-auto z-30 md:z-auto"} h-full md:overflow-y-auto shrink-0`}>
         <AdminSidebar
           section={section}
           active={activeItem}
-          onSelect={setActiveItem}
+          onSelect={(item) => { setActiveItem(item); if (typeof window !== "undefined" && window.innerWidth < 768) setSidebarCollapsed(true); }}
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
       </div>
+
+      {/* Mobile floating menu button */}
+      {sidebarCollapsed && (
+        <button
+          onClick={() => setSidebarCollapsed(false)}
+          className="md:hidden fixed bottom-4 left-4 z-40 size-12 rounded-full bg-[#3b82f6] text-white shadow-lg flex items-center justify-center hover:bg-[#2563eb] active:scale-95 transition-all"
+          aria-label="Open menu"
+        >
+          <Menu className="size-5" />
+        </button>
+      )}
 
       <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">
         {/* BannerContent + BlogContent + VideoContent + PopupContent + LegalContent + ComplaintListContent render their own headers — skip default */}

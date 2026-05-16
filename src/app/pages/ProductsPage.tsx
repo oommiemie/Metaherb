@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { products, categories } from "../data/products";
-import { Star, ChevronDown, RotateCcw, Heart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, ChevronDown, RotateCcw, Heart, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useWishlist } from "../store/WishlistContext";
 import { useLanguage } from "../store/LanguageContext";
@@ -40,6 +41,7 @@ export function ProductsPage() {
   const [priceRange, setPriceRange] = useState<[number, number]>([PRICE_MIN, PRICE_MAX]);
   const [minPrice, maxPrice] = priceRange;
   const [loading, setLoading] = useState(true);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1000);
@@ -95,12 +97,12 @@ export function ProductsPage() {
   return (
     <div>
       {/* Title banner — extends up behind the appbar (appbar sits on top, transparent areas show through) */}
-      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
-        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center px-4">
+        <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>
           {searchQuery ? `${t("common_search_results")} "${searchQuery}"` : t("products_title")}
         </h1>
         {searchQuery && (
-          <p className={`${font} text-[13px] text-gray-500 mt-1`}>{t("common_results_found")} {filtered.length} {t("products_results")}</p>
+          <p className={`${font} text-[12px] sm:text-[13px] text-gray-500 mt-1`}>{t("common_results_found")} {filtered.length} {t("products_results")}</p>
         )}
       </div>
 
@@ -209,20 +211,176 @@ export function ProductsPage() {
         </aside>
 
         {/* Products grid */}
-        <div className="flex-1">
-          {/* Mobile filter */}
-          <div className="lg:hidden flex gap-2 mb-4 overflow-x-auto pb-1">
-            <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}
-              className={`border border-gray-300 rounded-lg px-3 py-2 text-[13px] ${font} outline-none shrink-0`}>
-              <option>ทั้งหมด</option>
-              {categories.map((c) => <option key={c}>{c}</option>)}
-            </select>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-              className={`border border-gray-300 rounded-lg px-3 py-2 text-[13px] ${font} outline-none shrink-0`}>
-              <option value="จากมากไปน้อย">{t("common_sort_desc")}</option>
-              <option value="จากน้อยไปมาก">{t("common_sort_asc")}</option>
-            </select>
-          </div>
+        <div className="flex-1 min-w-0">
+          {/* Mobile filter trigger row */}
+          {(() => {
+            const activeCount =
+              (selectedCategory !== "ทั้งหมด" ? 1 : 0) +
+              (productType !== "ทั้งหมด" ? 1 : 0) +
+              (minPrice !== PRICE_MIN || maxPrice !== PRICE_MAX ? 1 : 0);
+            return (
+              <div className="lg:hidden flex gap-2 mb-4 items-center">
+                <button onClick={() => setMobileFilterOpen(true)}
+                  className={`group flex items-center gap-2 px-3.5 h-[40px] rounded-full text-[13px] ${font} cursor-pointer shrink-0 transition-all active:scale-95 ${
+                    activeCount > 0
+                      ? "text-white shadow-[0_4px_12px_-2px_rgba(49,151,84,0.45)]"
+                      : "bg-white border border-gray-200 text-[#1d5b32] shadow-[0_1px_3px_rgba(16,24,40,0.06)] hover:border-[#319754]/40"
+                  }`}
+                  style={activeCount > 0
+                    ? { background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }
+                    : { fontWeight: 500 }}>
+                  <SlidersHorizontal className="size-[15px]" strokeWidth={2.2} />
+                  <span>{t("products_filter")}</span>
+                  {activeCount > 0 && (
+                    <span className={`${font} inline-flex items-center justify-center size-[20px] rounded-full text-[10px] tabular-nums bg-white text-[#319754] shadow-[0_2px_4px_rgba(0,0,0,0.15)]`} style={{ fontWeight: 700 }}>
+                      {activeCount}
+                    </span>
+                  )}
+                </button>
+                <div className="relative flex-1 min-w-0">
+                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                    className={`w-full appearance-none bg-white border border-gray-200 rounded-full pl-4 pr-9 h-[40px] text-[13px] ${font} outline-none cursor-pointer focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/15 shadow-[0_1px_3px_rgba(16,24,40,0.06)]`} style={{ fontWeight: 500 }}>
+                    <option value="จากมากไปน้อย">{t("common_sort_desc")}</option>
+                    <option value="จากน้อยไปมาก">{t("common_sort_asc")}</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-3.5 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Mobile filter drawer */}
+          <AnimatePresence>
+            {mobileFilterOpen && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="lg:hidden fixed inset-0 z-[100] flex">
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setMobileFilterOpen(false)} />
+                <motion.div
+                  initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+                  transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
+                  className="relative ml-auto w-[88vw] max-w-[360px] h-full bg-white shadow-[0_-12px_40px_rgba(0,0,0,0.2)] flex flex-col">
+                  {/* Header */}
+                  <div className="relative bg-gradient-to-br from-[#46c474] via-[#319754] to-[#1d5b32] px-5 py-4 flex items-center justify-between overflow-hidden">
+                    <div className="absolute -top-4 -right-4 size-[120px] rounded-full bg-white/10 blur-2xl pointer-events-none" />
+                    <div className="relative flex items-center gap-2.5">
+                      <div className="size-[34px] rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center ring-1 ring-white/30">
+                        <SlidersHorizontal className="size-[16px] text-white" strokeWidth={2.4} />
+                      </div>
+                      <div>
+                        <p className={`${font} text-[16px] text-white leading-none`} style={{ fontWeight: 600 }}>{t("products_filter")}</p>
+                        <p className={`${font} text-[11px] text-white/75 mt-1`}>พบ {filtered.length} รายการ</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setMobileFilterOpen(false)}
+                      className="relative size-[34px] rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors active:scale-95"
+                      aria-label={t("close_aria")}>
+                      <X className="size-[16px]" strokeWidth={2.4} />
+                    </button>
+                  </div>
+
+                  {/* Scrollable body */}
+                  <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6">
+                    {/* category */}
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-1 h-4 rounded-full bg-gradient-to-b from-[#46c474] to-[#319754]" />
+                        <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 600 }}>{t("products_category")}</span>
+                      </div>
+                      <div className="relative">
+                        <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}
+                          className={`w-full appearance-none bg-gray-50 hover:bg-white border border-gray-200 hover:border-[#319754]/40 focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/15 h-[44px] rounded-xl pl-4 pr-10 text-[13.5px] ${font} outline-none cursor-pointer transition-all`}>
+                          <option>ทั้งหมด</option>
+                          {categories.map((c) => <option key={c}>{c}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    {/* type — pill chips */}
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-1 h-4 rounded-full bg-gradient-to-b from-[#46c474] to-[#319754]" />
+                        <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 600 }}>{t("products_type")}</span>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        {[
+                          { key: "ทั้งหมด", label: t("products_all") },
+                          { key: "สินค้า Flash Sale", label: t("products_type_flash") },
+                          { key: "สินค้าโปรโมชัน", label: t("products_type_promo") },
+                          { key: "สินค้าแนะนำ", label: t("products_type_rec") },
+                        ].map((opt) => {
+                          const checked = productType === opt.key;
+                          return (
+                            <button key={opt.key} onClick={() => setProductType(opt.key)}
+                              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-left transition-all active:scale-[0.98] ${
+                                checked ? "bg-[#319754]/8 border border-[#319754]/30" : "border border-gray-100 hover:bg-gray-50"
+                              }`}>
+                              <span className={`size-[20px] rounded-full border-[2px] flex items-center justify-center shrink-0 transition-all ${
+                                checked ? "border-[#319754] shadow-[0_0_0_4px_rgba(49,151,84,0.12)]" : "border-gray-300"
+                              }`}>
+                                <span className={`rounded-full bg-[#319754] transition-all ${checked ? "size-[10px]" : "size-0"}`} />
+                              </span>
+                              <span className={`${font} text-[13.5px] ${checked ? "text-[#319754]" : "text-gray-700"}`} style={{ fontWeight: checked ? 600 : 500 }}>{opt.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* price */}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-1 h-4 rounded-full bg-gradient-to-b from-[#46c474] to-[#319754]" />
+                        <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 600 }}>{t("products_price_range")}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className={`${font} flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-center`}>
+                          <p className={`${font} text-[10px] text-gray-400 uppercase tracking-wider`} style={{ fontWeight: 500 }}>MIN</p>
+                          <p className={`${font} text-[14px] text-[#319754] tabular-nums leading-tight`} style={{ fontWeight: 700 }}>฿{minPrice.toLocaleString()}</p>
+                        </div>
+                        <span className="text-gray-300 text-[14px]">—</span>
+                        <div className={`${font} flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-center`}>
+                          <p className={`${font} text-[10px] text-gray-400 uppercase tracking-wider`} style={{ fontWeight: 500 }}>MAX</p>
+                          <p className={`${font} text-[14px] text-[#319754] tabular-nums leading-tight`} style={{ fontWeight: 700 }}>฿{maxPrice.toLocaleString()}</p>
+                        </div>
+                      </div>
+                      <SliderPrimitive.Root
+                        min={PRICE_MIN}
+                        max={PRICE_MAX}
+                        step={10}
+                        value={priceRange}
+                        onValueChange={(v) => setPriceRange(v as [number, number])}
+                        className="relative flex w-full touch-none items-center select-none h-6 px-1"
+                      >
+                        <SliderPrimitive.Track className="relative grow h-2 rounded-full bg-gray-200">
+                          <SliderPrimitive.Range className="absolute h-full rounded-full bg-gradient-to-r from-[#46c474] to-[#319754]" />
+                        </SliderPrimitive.Track>
+                        {[0, 1].map((i) => (
+                          <SliderPrimitive.Thumb key={i}
+                            className="block size-6 rounded-full bg-white border-2 border-[#319754] shadow-[0_3px_10px_-2px_rgba(49,151,84,0.4)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#319754]/20 cursor-grab active:cursor-grabbing transition-shadow" />
+                        ))}
+                      </SliderPrimitive.Root>
+                    </div>
+                  </div>
+
+                  {/* Sticky action bar */}
+                  <div className="border-t border-gray-100 p-4 flex gap-2 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
+                    <button onClick={() => { setSelectedCategory("ทั้งหมด"); setProductType("ทั้งหมด"); setPriceRange([PRICE_MIN, PRICE_MAX]); setSortBy("จากมากไปน้อย"); }}
+                      className={`px-4 h-[44px] rounded-full border border-gray-200 ${font} text-[13.5px] text-gray-700 cursor-pointer hover:bg-gray-50 hover:border-gray-300 active:scale-[0.97] transition-all inline-flex items-center justify-center gap-1.5`} style={{ fontWeight: 500 }}>
+                      <RotateCcw className="size-4" strokeWidth={2.2} /> {t("common_reset_filter")}
+                    </button>
+                    <button onClick={() => setMobileFilterOpen(false)}
+                      className={`flex-1 h-[44px] rounded-full text-white ${font} text-[13.5px] cursor-pointer shadow-[0_4px_14px_-2px_rgba(49,151,84,0.45)] hover:shadow-[0_8px_20px_-4px_rgba(49,151,84,0.6)] hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97] transition-all`}
+                      style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }}>
+                      {t("common_view_all")} ({filtered.length})
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[16px]">
             {paginatedItems.map((p, i) => {

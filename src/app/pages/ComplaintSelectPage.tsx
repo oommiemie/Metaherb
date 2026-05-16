@@ -78,9 +78,9 @@ export function ComplaintSelectPage() {
       </button>
 
       {/* Content */}
-      <div className="bg-white rounded-2xl p-6 max-w-[720px] mx-auto">
-        <div className="flex items-start justify-between mb-6">
-          <h1 className={`${font} text-[24px] text-black`} style={{ fontWeight: 600 }}>{t("complaint_select_title")}</h1>
+      <div className="bg-white rounded-2xl p-4 sm:p-6 max-w-[720px] mx-auto">
+        <div className="flex items-start justify-between mb-4 sm:mb-6 gap-2">
+          <h1 className={`${font} text-[18px] sm:text-[24px] text-black`} style={{ fontWeight: 600 }}>{t("complaint_select_title")}</h1>
           <button onClick={() => navigate("/orders")}
             className="size-10 rounded-full bg-[#f4f4f4] flex items-center justify-center cursor-pointer hover:bg-[#e8e8e8]">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -96,16 +96,16 @@ export function ComplaintSelectPage() {
         </div>
 
         {/* Problem types grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {problemTypes.map((type) => (
             <button key={type.id}
               onClick={() => navigate(`/complaint/form/${orderId}?type=${type.id}`)}
-              className="bg-white rounded-2xl border border-[#d9d9d9] p-4 cursor-pointer hover:border-[#319754] hover:shadow-md transition-all text-left group">
+              className="bg-white rounded-2xl border border-[#d9d9d9] p-3 sm:p-4 cursor-pointer hover:border-[#319754] hover:shadow-md transition-all text-left group">
               <div className="flex gap-3 items-center">
                 <BoxIcon badgeColor={type.badgeColor} badgeType={type.badgeType} />
                 <div className="flex-1 min-w-0">
-                  <p className={`${font} text-[16px] text-black`} style={{ fontWeight: 600 }}>{type.title}</p>
-                  <p className={`${font} text-[14px] text-[rgba(0,0,0,0.8)] mt-0.5`}>{type.desc}</p>
+                  <p className={`${font} text-[14px] sm:text-[16px] text-black`} style={{ fontWeight: 600 }}>{type.title}</p>
+                  <p className={`${font} text-[12px] sm:text-[14px] text-[rgba(0,0,0,0.8)] mt-0.5`}>{type.desc}</p>
                 </div>
               </div>
             </button>

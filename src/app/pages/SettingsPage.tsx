@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../store/AuthContext";
 import { useLanguage } from "../store/LanguageContext";
-import { ChevronLeft, ChevronDown, Store, Bell, BellOff, Truck, User as UserIcon, MapPin, Camera, Mail, Phone, BadgeCheck, Pencil, Check, Calendar as CalendarIcon, Package, PackageX, ShoppingCart, X, Wallet, MessageCircle, Megaphone, Star, AlertTriangle, Settings as SettingsIcon, Smartphone, Moon, ShieldCheck, Clock, Globe, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronDown, Store, Bell, BellOff, Truck, User as UserIcon, MapPin, Camera, Mail, Phone, BadgeCheck, Pencil, Check, Calendar as CalendarIcon, Package, PackageX, ShoppingCart, X, Wallet, MessageCircle, Megaphone, Star, AlertTriangle, Settings as SettingsIcon, Smartphone, Moon, ShieldCheck, Clock, Globe, Trash2, Menu } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
@@ -1317,7 +1317,7 @@ export function SettingsPage() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState<SectionId>("shop_account");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
 
   const i18nSectionLabels: Record<SectionId, string> = {
     shop_account: t("settings_shop_account"),
@@ -1327,16 +1327,30 @@ export function SettingsPage() {
   };
 
   return (
-    <div className={`flex h-full overflow-hidden bg-[#fafafa] ${font}`}>
+    <div className={`flex h-full overflow-hidden bg-[#fafafa] relative ${font}`}>
+      {!sidebarCollapsed && (
+        <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarCollapsed(true)} />
+      )}
       {/* Sidebar — fixed (ไม่เลื่อนตามหน้า) */}
-      <div className="h-full md:overflow-y-auto shrink-0">
+      <div className={`${sidebarCollapsed ? "hidden md:block" : "fixed inset-y-0 left-0 md:static md:inset-auto z-30 md:z-auto"} h-full md:overflow-y-auto shrink-0`}>
         <SettingsSidebar
           active={activeSection}
-          onSelect={setActiveSection}
+          onSelect={(s) => { setActiveSection(s); if (typeof window !== "undefined" && window.innerWidth < 768) setSidebarCollapsed(true); }}
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
       </div>
+
+      {/* Mobile floating menu button */}
+      {sidebarCollapsed && (
+        <button
+          onClick={() => setSidebarCollapsed(false)}
+          className="md:hidden fixed bottom-4 left-4 z-40 size-12 rounded-full bg-[#319754] text-white shadow-lg flex items-center justify-center hover:bg-[#267a43] active:scale-95 transition-all"
+          aria-label="Open menu"
+        >
+          <Menu className="size-5" />
+        </button>
+      )}
 
       {/* Content — เฉพาะส่วนนี้ที่ scroll */}
       <main className="flex-1 px-4 overflow-y-auto min-w-0 min-h-0">

@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router";
 import { useOrders } from "../store/OrderContext";
 import { useLanguage } from "../store/LanguageContext";
 import { QrCode, Upload, AlertTriangle, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
@@ -16,13 +17,15 @@ export function VerifyPaymentPage() {
 
   const handleUpload = () => {
     updateOrderStatus(order.id, "pending_verify");
+    toast.success(t("vp_checkout_complete"), { description: t("vp_checkout_complete_desc") });
+    setTimeout(() => navigate("/"), 600);
   };
 
   return (
     <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6 flex flex-col lg:flex-row gap-6">
       {/* Left - Payment Info */}
       <div className="flex-1">
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
+        <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
           <h2 className={`${font} text-[20px] text-[#319754]`} style={{ fontWeight: 600 }}>{t("vp_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-1`}>{t("vp_subtitle")}</p>
 
@@ -60,7 +63,7 @@ export function VerifyPaymentPage() {
 
       {/* Right - Order + Upload */}
       <div className="lg:w-[400px] space-y-6">
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
+        <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
           <h3 className={`${font} text-[16px]`} style={{ fontWeight: 600 }}>{order.id}</h3>
           <p className={`${font} text-[12px] text-gray-400 mt-1`}>{order.date}</p>
           <div className={`mt-3 bg-gray-50 rounded-lg p-3 ${font} text-[13px] text-gray-600 space-y-1`}>
@@ -79,7 +82,7 @@ export function VerifyPaymentPage() {
         </div>
 
         {/* Upload proof */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
+        <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
           <h3 className={`${font} text-[18px] text-[#319754]`} style={{ fontWeight: 600 }}>{t("vp_upload_title")}</h3>
           <p className={`${font} text-[12px] text-gray-500 mt-1 bg-[#319754]/10 rounded-lg p-3`}>{t("vp_upload_sub")}</p>
           <div onClick={handleUpload} className="mt-4 border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-[#319754]">

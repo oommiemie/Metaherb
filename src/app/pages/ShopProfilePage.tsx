@@ -274,7 +274,7 @@ export function ShopProfilePage() {
               </div>
 
               {/* Stats */}
-              <div className="flex items-center gap-6 mt-1">
+              <div className="flex items-center gap-3 sm:gap-6 mt-1 flex-wrap">
                 <div className="text-center">
                   <p className="text-[18px] text-[#319754]" style={{ fontWeight: 700 }}>{shop.rating}</p>
                   <div className="flex items-center gap-0.5 justify-center">
@@ -305,7 +305,7 @@ export function ShopProfilePage() {
 
       {/* Tabs */}
       <div className="max-w-5xl mx-auto px-4 mt-6">
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 overflow-x-auto">
           <button
             onClick={() => setActiveTab("products")}
             className={`px-6 py-3 text-[14px] cursor-pointer transition-all relative ${

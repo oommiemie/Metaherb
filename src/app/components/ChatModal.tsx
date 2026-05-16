@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useChat } from "../store/ChatContext";
 import { useAuth } from "../store/AuthContext";
 import { useLanguage } from "../store/LanguageContext";
-import { X, Send, Image, Smile, Minus, MessageCircle, ChevronLeft, Headset, Package } from "lucide-react";
+import { X, Send, Image, Smile, Minus, MessageCircle, ChevronLeft, Headset, Package, Video } from "lucide-react";
+import { VideoCallModal } from "./VideoCallModal";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
@@ -36,6 +37,9 @@ function UserChat() {
     closeChat();
     setShowList(true);
   };
+
+  // Video call overlay state (customer side only)
+  const [videoCallOpen, setVideoCallOpen] = useState(false);
 
   // Floating chat bubble
   if (!activeChatShop && !showList) {
@@ -129,6 +133,11 @@ function UserChat() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={() => setVideoCallOpen(true)}
+            title={t("chat_video_call")} aria-label={t("chat_video_call")}
+            className="cursor-pointer hover:bg-white/15 rounded-full p-1.5 transition-colors">
+            <Video className="size-[18px]" strokeWidth={2.2} />
+          </button>
           <button onClick={() => setMinimized(true)} className="cursor-pointer hover:bg-white/10 rounded p-1">
             <Minus className="size-4" />
           </button>
@@ -137,6 +146,12 @@ function UserChat() {
           </button>
         </div>
       </div>
+      <VideoCallModal
+        open={videoCallOpen}
+        shopName={room?.shopName || t("chat_header")}
+        online={!!room?.online}
+        onClose={() => setVideoCallOpen(false)}
+      />
 
       <div className="px-3 py-2 border-b border-gray-100 flex gap-2 overflow-x-auto shrink-0">
         {[t("chat_quick_q1"), t("chat_quick_q2"), t("chat_quick_q3"), t("chat_quick_q4")].map((q) => (

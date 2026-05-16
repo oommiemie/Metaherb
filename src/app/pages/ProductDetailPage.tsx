@@ -380,7 +380,7 @@ export default function ProductDetailPage() {
         <div className="flex-1 flex flex-col gap-[24px]">
           {/* Name + Rating */}
           <div className="flex flex-col gap-[10px]">
-            <h1 className={`${font} text-[20px] text-black truncate`} style={{ fontWeight: 500 }}>{product.name}</h1>
+            <h1 className={`${font} text-[18px] sm:text-[20px] text-black break-words`} style={{ fontWeight: 500 }}>{product.name}</h1>
             <div className="flex gap-[16px] items-center">
               <div className="flex items-center gap-[10px]">
                 <svg className="size-[14px] shrink-0" fill="none" viewBox="0 0 14 14">

@@ -10,7 +10,7 @@ import {
   AlertTriangle, Phone, Mail, ChevronRight, Filter,
   FileText, TrendingUp, Users, ShoppingBag, BarChart2, Download, FileSpreadsheet,
   ClipboardList, ScanSearch, Truck, PackageCheck, PackageX, EyeOff, Send,
-  Lock, Banknote, ArrowDownToLine, Info, Save
+  Lock, Banknote, ArrowDownToLine, Info, Save, Menu
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from "recharts";
@@ -12084,7 +12084,7 @@ function PromotionsTab() {
 export function OwnerDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<OwnerTab>("overview");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   const [selectedComplaintId, setSelectedComplaintId] = useState("CPL-001");
   const [flashEventIsNewJoin, setFlashEventIsNewJoin] = useState(false);
   const [selectedFlashEvent, setSelectedFlashEvent] = useState<FlashEvent | null>(null);
@@ -12136,6 +12136,17 @@ export function OwnerDashboard() {
       <div className={`${sidebarCollapsed ? "hidden md:block" : "fixed inset-y-0 left-0 md:static md:inset-auto z-30 md:z-auto"} h-full md:overflow-y-auto shrink-0 transition-all duration-300`}>
         <Sidebar active={sidebarActive} onSelect={handleSelect} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
       </div>
+
+      {/* Mobile floating menu button */}
+      {sidebarCollapsed && (
+        <button
+          onClick={() => setSidebarCollapsed(false)}
+          className="md:hidden fixed bottom-4 left-4 z-40 size-12 rounded-full bg-[#319754] text-white shadow-lg flex items-center justify-center hover:bg-[#267a43] active:scale-95 transition-all"
+          aria-label="Open menu"
+        >
+          <Menu className="size-5" />
+        </button>
+      )}
 
       {/* Content — only this area scrolls, sidebar stays fixed */}
       <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">

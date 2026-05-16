@@ -410,15 +410,16 @@ export function HomePage() {
           <div className="min-w-0 lg:flex-[775_1_0%] lg:aspect-[775/160]">
             <BannerCarousel />
           </div>
-          <div className="hidden lg:flex flex-col gap-[10px] lg:flex-[230_1_0%] min-w-0">
-            <div className="rounded-[16px] overflow-hidden flex-1 relative min-h-0">
+          {/* Side promo banners — 2 cols on mobile/tablet, stacked on desktop */}
+          <div className="grid grid-cols-2 gap-[10px] lg:flex lg:flex-col lg:flex-[230_1_0%] min-w-0">
+            <div className="rounded-[16px] overflow-hidden flex-1 relative aspect-[230/105] lg:aspect-auto lg:min-h-0">
               <ImageWithFallback
                 src="https://www.figma.com/api/mcp/asset/0f3a054e-37ab-4007-84bb-9cbb2d875abe"
                 alt="Bewell promo"
                 className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
-            <div className="rounded-[16px] overflow-hidden flex-1 relative min-h-0">
+            <div className="rounded-[16px] overflow-hidden flex-1 relative aspect-[230/105] lg:aspect-auto lg:min-h-0">
               <ImageWithFallback
                 src="https://www.figma.com/api/mcp/asset/5f63c3f3-0721-44d3-8df8-e13edff65d77"
                 alt="Beauty promo"
