@@ -33,28 +33,31 @@ import { ChatProvider } from "./store/ChatContext";
 import { ShopProvider } from "./store/ShopContext";
 import { RecentlyViewedProvider } from "./store/RecentlyViewedContext";
 import { LanguageProvider } from "./store/LanguageContext";
+import { ProductsProvider } from "./store/ProductsContext";
 import { Toaster } from "sonner";
 
 function Providers() {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <CartProvider>
-          <OrderProvider>
-            <WishlistProvider>
-              <NotificationProvider>
-                <ShopProvider>
-                  <ChatProvider>
-                    <RecentlyViewedProvider>
-                      <Toaster position="top-center" richColors />
-                      <Layout />
-                    </RecentlyViewedProvider>
-                  </ChatProvider>
-                </ShopProvider>
-              </NotificationProvider>
-            </WishlistProvider>
-          </OrderProvider>
-        </CartProvider>
+        <ProductsProvider>
+          <CartProvider>
+            <OrderProvider>
+              <WishlistProvider>
+                <NotificationProvider>
+                  <ShopProvider>
+                    <ChatProvider>
+                      <RecentlyViewedProvider>
+                        <Toaster position="top-center" richColors />
+                        <Layout />
+                      </RecentlyViewedProvider>
+                    </ChatProvider>
+                  </ShopProvider>
+                </NotificationProvider>
+              </WishlistProvider>
+            </OrderProvider>
+          </CartProvider>
+        </ProductsProvider>
       </AuthProvider>
     </LanguageProvider>
   );

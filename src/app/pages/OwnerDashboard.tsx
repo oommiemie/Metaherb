@@ -1,7 +1,8 @@
-import React, { useState, Fragment, useEffect } from "react";
+import React, { useState, Fragment, useEffect, useMemo } from "react";
 import { useAuth } from "../store/AuthContext";
 import { useOrders } from "../store/OrderContext";
 import { useLanguage } from "../store/LanguageContext";
+import { useProducts } from "../store/ProductsContext";
 import { useNavigate } from "react-router";
 import {
   BarChart3, Package, ShoppingCart, Zap, Megaphone, Ticket,
@@ -1965,17 +1966,58 @@ function OrderDetailTab({ order, onBack, onUpdate }: {
 /* ========== PRODUCTS TAB ========== */
 function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const { products: ctxProducts, removeProduct } = useProducts();
   const [productFilter, setProductFilter] = useState("all");
   const [previewProduct, setPreviewProduct] = useState<typeof mockProducts[0] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
+  // Merge in real products from context (filtered to this owner's shop) so
+  // additions/deletions made through CRUD show up here in dashboard format.
+  const shopName = user?.shopName ?? "METAHERB Store";
+  const shopProducts = useMemo(() => {
+    const ownProducts = ctxProducts.filter((p) => p.shopName === shopName);
+    return ownProducts.map((p) => {
+      const isMulti = (p.options?.length ?? 0) > 1;
+      const stockNum = typeof p.stock === "number" ? p.stock : parseInt(String(p.stock) || "0", 10) || 0;
+      const status = stockNum === 0 ? "สินค้าหมด" : "เปิดขาย";
+      const statusColor = stockNum === 0 ? "#dc2626" : "#319754";
+      return {
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        type: isMulti ? "หลายตัวเลือก" : "ราคาเดียว",
+        typeColor: isMulti ? "#007aff" : "#ff9500",
+        price: `฿ ${p.price.toFixed(2)}`,
+        stock: `${stockNum} ชิ้น`,
+        status,
+        statusColor,
+        flash: !!p.isFlashSale,
+        recommended: !!p.isRecommended,
+        image: p.image || "",
+      } as typeof mockProducts[0];
+    });
+  }, [ctxProducts, shopName]);
+
+  // Combine context products + the original mockProducts demo set (deduped by id)
+  const allProducts = useMemo(() => {
+    const seen = new Set<string>();
+    const out: typeof mockProducts = [];
+    [...shopProducts, ...mockProducts].forEach((p) => {
+      if (seen.has(p.id)) return;
+      seen.add(p.id);
+      out.push(p);
+    });
+    return out;
+  }, [shopProducts]);
+
   // Counts derived from data so tabs always match current inventory
   const counts = {
-    all: mockProducts.length,
-    active: mockProducts.filter((p) => p.status === "เปิดขาย").length,
-    inactive: mockProducts.filter((p) => p.status === "ปิดขาย").length,
-    out: mockProducts.filter((p) => p.status === "สินค้าหมด").length,
+    all: allProducts.length,
+    active: allProducts.filter((p) => p.status === "เปิดขาย").length,
+    inactive: allProducts.filter((p) => p.status === "ปิดขาย").length,
+    out: allProducts.filter((p) => p.status === "สินค้าหมด").length,
   };
 
   const productFilterTabs = [
@@ -1985,13 +2027,14 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
     { id: "out",      label: t("owner_products_tab_outofstock"), count: counts.out },
   ];
 
-  const filteredProducts = mockProducts.filter((p) => {
+  const filteredProducts = allProducts.filter((p) => {
     if (productFilter === "all") return true;
     if (productFilter === "active") return p.status === "เปิดขาย";
     if (productFilter === "inactive") return p.status === "ปิดขาย";
     if (productFilter === "out") return p.status === "สินค้าหมด";
     return true;
   });
+
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / perPage));
@@ -2209,7 +2252,7 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
                             <div className="h-px bg-gray-100 my-1" />
                             {/* ลบ */}
                             <button
-                              onClick={() => { if (confirm(`ลบสินค้า "${p.name}"?`)) toast.success(`ลบ: ${p.name}`); }}
+                              onClick={() => { if (confirm(`ลบสินค้า "${p.name}"?`)) { removeProduct(p.id); toast.success(`ลบ: ${p.name}`); } }}
                               className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
                               <Trash2 className="size-3.5" strokeWidth={2.2} />
                               <span style={{ fontWeight: 500 }}>ลบ</span>
@@ -4231,6 +4274,8 @@ function NumberStepper({ value, onChange, min = 0, step = 1 }: { value: number; 
 }
 
 function AddProductTab({ onBack }: { onBack: () => void }) {
+  const { user } = useAuth();
+  const { addProduct } = useProducts();
   const [activeStep, setActiveStep] = useState(0);
   const [maxVisitedStep, setMaxVisitedStep] = useState(0); // furthest step the user has visited (clicked or scrolled past)
   const [hasVariants, setHasVariants] = useState(false);
@@ -4784,7 +4829,36 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
           {/* Action buttons */}
           <div className="h-px bg-gray-100 my-4" />
           <div className="flex flex-col gap-2">
-            <button onClick={() => toast.success("เพิ่มสินค้าเรียบร้อย")}
+            <button onClick={() => {
+              if (!productName.trim()) { toast.error("กรุณาระบุชื่อสินค้า"); return; }
+              if (!category.trim())    { toast.error("กรุณาเลือกหมวดหมู่"); return; }
+              const finalPrice  = hasVariants ? Math.min(...variantRows.map((r) => r.price)) : price;
+              const finalStock  = hasVariants ? variantRows.reduce((s, r) => s + r.stock, 0)  : stock;
+              const finalWeight = hasVariants ? variantRows[0]?.weight ?? 0                    : weight;
+              const options = hasVariants && variantRows.length > 1
+                ? variantRows.map((r) => r.name).filter(Boolean)
+                : [];
+              addProduct({
+                name: productName.trim(),
+                price: finalPrice,
+                rating: 0,
+                sold: "0",
+                image: productImages[0] ?? "",
+                category: category.trim(),
+                description: "",
+                weight: `${finalWeight} g`,
+                type: hasVariants ? "หลายตัวเลือก" : "ราคาเดียว",
+                sku: sku.trim(),
+                format: "",
+                shopName: user?.shopName ?? "METAHERB Store",
+                options,
+                stock: finalStock,
+                reviews: [],
+                isRecommended: recommended,
+              });
+              toast.success(openForSale ? "เพิ่มสินค้าและเผยแพร่เรียบร้อย" : "บันทึกสินค้าเป็นแบบร่างเรียบร้อย");
+              onBack();
+            }}
               className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-10 w-full rounded-full text-[14px] cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
               style={{ fontWeight: 500 }}>
               เพิ่มสินค้า

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { products, categories } from "../data/products";
+import { useProducts } from "../store/ProductsContext";
 import { useRecentlyViewed } from "../store/RecentlyViewedContext";
 import { useWishlist } from "../store/WishlistContext";
 import { useLanguage } from "../store/LanguageContext";
@@ -340,6 +340,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const { recentIds } = useRecentlyViewed();
   const { t } = useLanguage();
+  const { products } = useProducts();
   const [loading, setLoading] = useState(true);
   const [recPage, setRecPage] = useState(0);
   const [recDirection, setRecDirection] = useState(0);
@@ -432,7 +433,7 @@ export function HomePage() {
 
       {/* Categories */}
       <div className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
-        <div className="flex items-center justify-center gap-3 sm:gap-4 overflow-x-auto py-3 scrollbar-hide w-full">
+        <div className="flex items-center justify-evenly gap-3 sm:gap-4 overflow-x-auto py-3 px-4 sm:px-8 lg:px-12 scrollbar-hide w-full">
           {([
             { name: "สมุนไพร", label: t("cat_herb"), icon: Leaf },
             { name: "อาหาร", label: t("cat_food"), icon: UtensilsCrossed },

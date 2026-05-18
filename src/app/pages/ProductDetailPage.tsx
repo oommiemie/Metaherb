@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
-import { products } from "../data/products";
+import { useProducts } from "../store/ProductsContext";
 import { useCart } from "../store/CartContext";
 import { useAuth } from "../store/AuthContext";
 import { useWishlist } from "../store/WishlistContext";
@@ -228,6 +228,7 @@ export default function ProductDetailPage() {
   const { openChat } = useChat();
   const { addRecent } = useRecentlyViewed();
   const { t } = useLanguage();
+  const { products } = useProducts();
   const product = products.find((p) => p.id === id);
   const [selectedOption, setSelectedOption] = useState(0);
   const [quantity, setQuantity] = useState(1);

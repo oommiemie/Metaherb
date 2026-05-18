@@ -3,7 +3,7 @@ import { useWishlist } from "../store/WishlistContext";
 import { useCart } from "../store/CartContext";
 import { useAuth } from "../store/AuthContext";
 import { useLanguage } from "../store/LanguageContext";
-import { products } from "../data/products";
+import { useProducts } from "../store/ProductsContext";
 import { Heart, ShoppingCart, Star, Trash2 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ export function WishlistPage() {
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
   const { t } = useLanguage();
+  const { products } = useProducts();
 
   const wishlistProducts = products.filter((p) => wishlist.has(p.id));
 

@@ -6,7 +6,7 @@ import { Trash2, Minus, Plus, ChevronLeft, Store, Tag, MessageCircle, ShieldChec
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useChat } from "../store/ChatContext";
 import { toast } from "sonner";
-import { products } from "../data/products";
+import { useProducts } from "../store/ProductsContext";
 import imgShop from "figma:asset/f9c837257a7dc5d10d1ea92a733813c293a76a81.png";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
@@ -24,6 +24,7 @@ export function CartPage() {
   const { items, removeItem, updateQuantity, total } = useCart();
   const { openChat } = useChat();
   const { t } = useLanguage();
+  const { products } = useProducts();
   const [selected, setSelected] = useState<Set<string>>(new Set(items.filter((i) => i.inStock).map((i) => i.productId)));
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);

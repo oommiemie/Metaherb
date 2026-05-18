@@ -4,7 +4,7 @@ import { useShop } from "../store/ShopContext";
 import { useAuth } from "../store/AuthContext";
 import { useChat } from "../store/ChatContext";
 import { useLanguage } from "../store/LanguageContext";
-import { products } from "../data/products";
+import { useProducts } from "../store/ProductsContext";
 import { getShopIdByName } from "../data/shops";
 import { Star, Heart, MessageCircle, MapPin, Clock, ShieldCheck, Package, Users, TrendingUp, ChevronRight, ChevronDown, ThumbsUp, Flag, Eye, EyeOff, Trash2, Edit3, Camera, X, Send, Store, Search } from "lucide-react";
 import { motion } from "motion/react";
@@ -105,6 +105,7 @@ export function ShopProfilePage() {
   const { openChat } = useChat();
   const { toggleWishlist, isWishlisted } = useWishlist();
   const { t } = useLanguage();
+  const { products } = useProducts();
 
   const [activeTab, setActiveTab] = useState<"products" | "reviews">("products");
   const [showReviewForm, setShowReviewForm] = useState(false);

@@ -1,6 +1,7 @@
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { useLanguage } from "../store/LanguageContext";
+import { useProducts } from "../store/ProductsContext";
 import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
   Shield, DollarSign, Megaphone, UserCog, BarChart2, ShoppingBag,
@@ -12917,6 +12918,9 @@ interface AuditEntry { id: string; action: string; by: string; when: string; rea
 
 function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplaints?: () => void }) {
   const { t } = useLanguage();
+  // Live products from context — shadows the module-level `siteProducts` so add/delete
+  // performed in the dashboard reflect across the whole app immediately.
+  const { products: siteProducts, removeProduct, updateProduct } = useProducts();
   const [search, setSearch] = useState("");
   type FilterTab = "all" | "pinned" | "low" | "out" | "issues";
   const [filter, setFilter] = useState<FilterTab>("all");
@@ -12934,12 +12938,12 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
   const [modalKind, setModalKind] = useState<AdminProductModalKind>(null);
   const [modalProductId, setModalProductId] = useState<string | null>(null);
 
-  const shopNames = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), []);
+  const shopNames = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), [siteProducts]);
   const allCategories = useMemo(() => {
     const set = new Set<string>(productCategories);
     siteProducts.forEach((p) => set.add(p.category));
     return Array.from(set);
-  }, []);
+  }, [siteProducts]);
 
   const getStatus = (p: typeof siteProducts[number]): ProductStatus => {
     if (suspended.has(p.id)) return "suspended";
@@ -13051,6 +13055,7 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
     if (kind === "unsuspend")    setSuspended((prev) => { const n = new Set(prev); ids.forEach((id) => n.delete(id)); return n; });
     if (kind === "pin")          setPinned((prev) => new Set([...prev, ...ids]));
     if (kind === "unpin")        setPinned((prev) => { const n = new Set(prev); ids.forEach((id) => n.delete(id)); return n; });
+    if (kind === "delete")       ids.forEach((id) => removeProduct(id));
     const labelMap = { recommend: "ตั้งเป็นสินค้าแนะนำ", unrecommend: "ยกเลิกสินค้าแนะนำ", suspend: "ระงับ", unsuspend: "ปลดระงับ", pin: "ปักหมุด", unpin: "ปลดปักหมุด", delete: "ลบ" } as const;
     ids.forEach((id) => addAudit(id, `${labelMap[kind]} (bulk)`));
     toast.success(`${labelMap[kind]} ${ids.length} รายการแล้ว`);
@@ -13076,6 +13081,7 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
     if (!p) return;
     const old = productCategory(p);
     setCategoryOverrides((prev) => ({ ...prev, [productId]: newCategory }));
+    updateProduct(productId, { category: newCategory });
     addAudit(productId, "เปลี่ยนหมวดหมู่", `${old} → ${newCategory}`);
     toast.success(`เปลี่ยนหมวดหมู่ "${p.name}" แล้ว`, { description: `${old} → ${newCategory}` });
   };
@@ -13515,7 +13521,7 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
                             <div className="h-px bg-gray-100 my-1" />
                             {/* ลบสินค้า */}
                             <button
-                              onClick={() => { if (confirm(`ลบสินค้า "${p.name}" ออกจากระบบ?`)) { addAudit(p.id, "ลบสินค้า"); toast.success(`ลบ: ${p.name}`); } }}
+                              onClick={() => { if (confirm(`ลบสินค้า "${p.name}" ออกจากระบบ?`)) { addAudit(p.id, "ลบสินค้า"); removeProduct(p.id); toast.success(`ลบ: ${p.name}`); } }}
                               className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
                               <Trash2 className="size-3.5" strokeWidth={2.2} />
                               <span style={{ fontWeight: 500 }}>ลบสินค้า</span>

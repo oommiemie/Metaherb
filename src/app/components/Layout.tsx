@@ -27,7 +27,7 @@ import imgOrderShip from "figma:asset/6fe3df791a7ffa4eb26dc3d280886d11308e2b73.p
 import imgOrderDone from "figma:asset/affa7b2c27f58769e6b6bc5c0bac9bbeee21a3ef.png";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { products } from "../data/products";
+import { useProducts } from "../store/ProductsContext";
 import { useLanguage, LANG_OPTIONS } from "../store/LanguageContext";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
@@ -72,6 +72,7 @@ const avatarByRole: Record<string, string> = {
 /* ========== SEARCH with suggestions ========== */
 function SearchBar({ className = "" }: { className?: string }) {
   const navigate = useNavigate();
+  const { products } = useProducts();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [searchHistory] = useState(["ชาออร์แกนิก", "น้ำผึ้ง", "สมุนไพร", "กาแฟดริป"]);
@@ -518,6 +519,7 @@ export function Layout() {
   const { items: cartItems, itemCount, total: cartTotal } = useCart();
   const { notifications, unreadCount } = useNotifications();
   const { wishlistCount } = useWishlist();
+  const { products } = useProducts();
   const navigate = useNavigate();
   const location = useLocation();
 
