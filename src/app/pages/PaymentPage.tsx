@@ -37,13 +37,16 @@ export function PaymentPage() {
   const grandTotal = total - discount + vat + shipping;
 
   const handleConfirm = () => {
+    // Derive shop from cart items (first item's shop wins) so owner notifications
+    // route to the right shop. Falls back to METAHERB Store for legacy carts.
+    const shopName = items[0]?.shopName ?? "METAHERB Store";
     const orderId = addOrder({
       items,
       total: grandTotal,
       status: selectedPayment === "cod" ? "preparing" : "pending_payment",
       shippingAddress: "เลขที่ 2 ชั้นที่ 2 ซอยสุขสวัสดิ์33 แขวงราษฎร์บูรณะ, เขตราษฎร์บูรณะ กรุงเทพมหานคร 10140",
       paymentMethod: paymentMethods.find((p) => p.id === selectedPayment)?.label || "",
-      shopName: "METAHERB Store",
+      shopName,
     });
     clearCart();
     // COD: skip verify-payment slip step → go straight home with confirmation
