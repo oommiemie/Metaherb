@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { useAuth } from "./AuthContext";
+import { usePersistentState } from "./usePersistentState";
 
 export interface ChatMessage {
   id: string;
@@ -199,11 +200,11 @@ const mockCustomerChatRooms: CustomerChatRoom[] = [
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>(mockChatRooms);
+  const [chatRooms, setChatRooms] = usePersistentState<ChatRoom[]>("metaherb:chat:user", mockChatRooms);
   const [activeChatShop, setActiveChatShop] = useState<string | null>(null);
 
   /* Owner-side state */
-  const [customerChatRooms, setCustomerChatRooms] = useState<CustomerChatRoom[]>(mockCustomerChatRooms);
+  const [customerChatRooms, setCustomerChatRooms] = usePersistentState<CustomerChatRoom[]>("metaherb:chat:owner", mockCustomerChatRooms);
   const [activeCustomerChat, setActiveCustomerChat] = useState<string | null>(null);
 
   /* ─── User-side functions ─── */
