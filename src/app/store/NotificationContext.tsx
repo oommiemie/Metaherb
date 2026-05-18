@@ -109,3 +109,18 @@ export function useNotifications() {
   if (!ctx) throw new Error("useNotifications must be used within NotificationProvider");
   return ctx;
 }
+
+/**
+ * Same as useNotifications but never throws when the provider is missing —
+ * returns no-op fallbacks instead. Use this from other context providers
+ * (which may render before the notification provider during HMR) so the
+ * whole tree doesn't crash for a recoverable wiring issue.
+ */
+const NOOP_NOTIFICATIONS: NotificationContextType = {
+  notifications: [], unreadCount: 0, allNotifications: [],
+  markAsRead: () => {}, markAllRead: () => {},
+  addNotification: () => {}, notifyOwner: () => {}, notifyAdmin: () => {},
+};
+export function useNotificationsOptional(): NotificationContextType {
+  return useContext(NotificationContext) ?? NOOP_NOTIFICATIONS;
+}

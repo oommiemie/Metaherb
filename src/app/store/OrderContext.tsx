@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { CartItem } from "./CartContext";
-import { useNotifications } from "./NotificationContext";
+import { useNotificationsOptional } from "./NotificationContext";
 import { usePersistentState } from "./usePersistentState";
 
 export type OrderStatus = "pending_payment" | "pending_verify" | "preparing" | "shipped" | "delivered" | "completed" | "cancelled";
@@ -136,7 +136,9 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = usePersistentState<Order[]>("metaherb:orders", mockOrders);
-  const { addNotification, notifyOwner, notifyAdmin } = useNotifications();
+  // Notifications are best-effort — fall back to no-ops so OrderProvider never
+  // crashes if it happens to mount before NotificationProvider during HMR.
+  const { addNotification, notifyOwner, notifyAdmin } = useNotificationsOptional();
 
   const addOrder = (order: Omit<Order, "id" | "date">) => {
     const id = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(Math.floor(Math.random() * 100000)).padStart(5, "0")}`;
