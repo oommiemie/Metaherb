@@ -41,10 +41,10 @@ function Providers() {
     <LanguageProvider>
       <AuthProvider>
         <ProductsProvider>
-          <CartProvider>
-            <OrderProvider>
-              <WishlistProvider>
-                <NotificationProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <NotificationProvider>
+                <OrderProvider>
                   <ShopProvider>
                     <ChatProvider>
                       <RecentlyViewedProvider>
@@ -53,10 +53,10 @@ function Providers() {
                       </RecentlyViewedProvider>
                     </ChatProvider>
                   </ShopProvider>
-                </NotificationProvider>
-              </WishlistProvider>
-            </OrderProvider>
-          </CartProvider>
+                </OrderProvider>
+              </NotificationProvider>
+            </CartProvider>
+          </WishlistProvider>
         </ProductsProvider>
       </AuthProvider>
     </LanguageProvider>

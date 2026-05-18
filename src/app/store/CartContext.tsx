@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
+import { usePersistentState } from "./usePersistentState";
 
 export interface CartItem {
   productId: string;
@@ -25,7 +26,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = usePersistentState<CartItem[]>("metaherb:cart", []);
 
   const addItem = (item: CartItem) => {
     setItems((prev) => {

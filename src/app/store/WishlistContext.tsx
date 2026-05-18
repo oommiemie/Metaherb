@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { usePersistentState } from "./usePersistentState";
 
 interface WishlistContextType {
   wishlist: Set<string>;
@@ -10,14 +11,12 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | null>(null);
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
-  const [wishlist, setWishlist] = useState<Set<string>>(new Set(["1", "3", "5"]));
+  // Persisted as array — Sets don't survive JSON.stringify cleanly.
+  const [ids, setIds] = usePersistentState<string[]>("metaherb:wishlist", ["1", "3", "5"]);
+  const wishlist = useMemo(() => new Set(ids), [ids]);
 
   const toggleWishlist = (productId: string) => {
-    setWishlist((prev) => {
-      const next = new Set(prev);
-      next.has(productId) ? next.delete(productId) : next.add(productId);
-      return next;
-    });
+    setIds((prev) => prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]);
   };
 
   const isWishlisted = (productId: string) => wishlist.has(productId);
