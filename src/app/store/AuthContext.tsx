@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
+import { usePersistentState } from "./usePersistentState";
 
 export type UserRole = "user" | "owner" | "admin";
 
@@ -30,7 +31,7 @@ const mockUsers: (User & { password: string })[] = [
 ];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = usePersistentState<User | null>("metaherb:auth", null);
 
   const login = (email: string, password: string) => {
     const found = mockUsers.find((u) => (u.email === email || u.username === email) && u.password === password);
