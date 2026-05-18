@@ -598,6 +598,9 @@ export function Layout() {
   const isOwner = isAuthenticated && user?.role === "owner";
   const isAdmin = isAuthenticated && user?.role === "admin";
   const isStaffRole = isOwner || isAdmin;
+  // The staff shell (locked h-screen + internal scrolling) only applies inside the dashboards themselves.
+  // On customer-facing pages (e.g. /shop/:id, /about, /products) the page needs normal page-level scrolling.
+  const useStaffShell = isStaffRole && (location.pathname.startsWith("/owner") || location.pathname.startsWith("/admin"));
 
   const userMenuItems = [
     { label: t("menu_home"),     path: "/" },
@@ -652,11 +655,16 @@ export function Layout() {
    *     </wrapper>
    *   </header>
    */
+  // Pages whose own hero banner extends behind the appbar — drop the green strip so the banner shows through.
+  const hasHeroBanner = location.pathname === "/about" || location.pathname.startsWith("/shop/");
+
   const NonStaffHeader = (
     <header className="sticky top-0 z-50">
-      {/* Green strip — 80px tall, behind the pill (subtle gradient + inner highlight) */}
-      <div className="absolute inset-x-0 top-0 h-[64px] md:h-[80px] backdrop-blur-[8px] shadow-[inset_0_-1px_0_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.12)]"
-        style={{ background: "linear-gradient(180deg, #3aa55e 0%, #319754 55%, #287745 100%)" }} />
+      {/* Green strip — 80px tall, behind the pill. Hidden on hero pages so their banner can extend behind the appbar. */}
+      {!hasHeroBanner && (
+        <div className="absolute inset-x-0 top-0 h-[64px] md:h-[80px] backdrop-blur-[8px] shadow-[inset_0_-1px_0_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.12)]"
+          style={{ background: "linear-gradient(180deg, #3aa55e 0%, #319754 55%, #287745 100%)" }} />
+      )}
 
       {/* Content wrapper — pt set so pill half-overlaps the green strip on both mobile + desktop */}
       <div className="relative w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-12 pt-[38px] md:pt-[20px] flex flex-col gap-[6px] items-end">
@@ -1155,12 +1163,12 @@ export function Layout() {
 
 
   return (
-    <div className={`flex flex-col w-full ${isStaffRole ? "h-screen overflow-hidden" : "min-h-screen"}`} style={{ backgroundColor: "#fafafa" }}>
+    <div className={`flex flex-col w-full ${useStaffShell ? "h-screen overflow-hidden" : "min-h-screen"}`} style={{ backgroundColor: "#fafafa" }}>
       {NonStaffHeader}
 
       {/* Content */}
-      <main className={`flex-1 ${isStaffRole ? "overflow-hidden min-h-0" : ""}`} style={{ backgroundColor: "#fafafa" }}>
-        <div className={isStaffRole ? "h-full" : ""}>
+      <main className={`flex-1 ${useStaffShell ? "overflow-hidden min-h-0" : ""}`} style={{ backgroundColor: "#fafafa" }}>
+        <div className={useStaffShell ? "h-full" : ""}>
           <Outlet />
         </div>
       </main>

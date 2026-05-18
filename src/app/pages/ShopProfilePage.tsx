@@ -6,7 +6,8 @@ import { useChat } from "../store/ChatContext";
 import { useLanguage } from "../store/LanguageContext";
 import { products } from "../data/products";
 import { getShopIdByName } from "../data/shops";
-import { Star, Heart, MessageCircle, MapPin, Clock, ShieldCheck, Package, Users, TrendingUp, ChevronRight, ThumbsUp, Flag, Eye, EyeOff, Trash2, Edit3, Camera, X, Send, Store } from "lucide-react";
+import { Star, Heart, MessageCircle, MapPin, Clock, ShieldCheck, Package, Users, TrendingUp, ChevronRight, ChevronDown, ThumbsUp, Flag, Eye, EyeOff, Trash2, Edit3, Camera, X, Send, Store, Search } from "lucide-react";
+import { motion } from "motion/react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { toast } from "sonner";
 import { useWishlist } from "../store/WishlistContext";
@@ -113,6 +114,8 @@ export function ShopProfilePage() {
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [productSort, setProductSort] = useState<"default" | "price-asc" | "price-desc" | "rating">("default");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [productSearch, setProductSearch] = useState<string>("");
 
   const shop = getShop(shopId || "");
 
@@ -133,7 +136,25 @@ export function ShopProfilePage() {
     return sid === shop.id;
   });
 
-  const sortedProducts = [...shopProducts].sort((a, b) => {
+  // Derive distinct categories from this shop's products + count per category
+  const shopCategories = (() => {
+    const map = new Map<string, number>();
+    shopProducts.forEach((p) => map.set(p.category, (map.get(p.category) || 0) + 1));
+    return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
+  })();
+
+  const filteredByCategory = categoryFilter === "all"
+    ? shopProducts
+    : shopProducts.filter((p) => p.category === categoryFilter);
+
+  const filteredBySearch = productSearch.trim()
+    ? filteredByCategory.filter((p) => {
+        const q = productSearch.trim().toLowerCase();
+        return p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
+      })
+    : filteredByCategory;
+
+  const sortedProducts = [...filteredBySearch].sort((a, b) => {
     if (productSort === "price-asc") return a.price - b.price;
     if (productSort === "price-desc") return b.price - a.price;
     if (productSort === "rating") return b.rating - a.rating;
@@ -185,8 +206,8 @@ export function ShopProfilePage() {
 
   return (
     <div className={`${font} min-h-screen bg-gray-50`}>
-      {/* Banner */}
-      <div className="relative h-[200px] md:h-[280px] overflow-hidden">
+      {/* Banner — extends behind appbar (matches AboutPage hero pattern) */}
+      <div className="relative -mt-[64px] md:-mt-[116px] h-[264px] md:h-[396px] overflow-hidden">
         <ImageWithFallback
           src={shop.banner}
           alt={shop.name}
@@ -196,7 +217,7 @@ export function ShopProfilePage() {
         {isOwner && (
           <button
             onClick={openEditModal}
-            className="absolute top-4 right-4 bg-white/90 text-gray-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 cursor-pointer hover:bg-white text-[13px] shadow"
+            className="absolute top-[80px] md:top-[132px] right-4 bg-white/90 text-gray-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 cursor-pointer hover:bg-white text-[13px] shadow"
           >
             <Edit3 className="size-4" />
             แก้ไขโปรไฟล์
@@ -205,7 +226,7 @@ export function ShopProfilePage() {
       </div>
 
       {/* Shop Info Card */}
-      <div className="max-w-5xl mx-auto px-4 -mt-16 relative z-10">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 -mt-16 relative z-10">
         <div className="bg-white rounded-2xl shadow-lg p-5 md:p-6">
           <div className="relative pl-0 md:pl-[120px]">
             {/* Avatar */}
@@ -303,62 +324,126 @@ export function ShopProfilePage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="max-w-5xl mx-auto px-4 mt-6">
-        <div className="flex border-b border-gray-200 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab("products")}
-            className={`px-6 py-3 text-[14px] cursor-pointer transition-all relative ${
-              activeTab === "products" ? "text-[#319754]" : "text-gray-500 hover:text-gray-700"
-            }`}
-            style={{ fontWeight: activeTab === "products" ? 600 : 400 }}
-          >
-            <Package className="size-4 inline mr-1.5 -mt-0.5" />
-            สินค้า ({shopProducts.length})
-            {activeTab === "products" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#319754]" />}
-          </button>
-          <button
-            onClick={() => setActiveTab("reviews")}
-            className={`px-6 py-3 text-[14px] cursor-pointer transition-all relative ${
-              activeTab === "reviews" ? "text-[#319754]" : "text-gray-500 hover:text-gray-700"
-            }`}
-            style={{ fontWeight: activeTab === "reviews" ? 600 : 400 }}
-          >
-            <Star className="size-4 inline mr-1.5 -mt-0.5" />
-            รีวิวร้านค้า ({visibleReviews.length})
-            {activeTab === "reviews" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#319754]" />}
-          </button>
+      {/* Tabs — FilterTabPills pattern (matches admin Complaints/Orders pages) */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 mt-6">
+        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 flex items-center gap-2">
+          {/* Tab pills */}
+          <div className="flex items-center gap-1 flex-1 min-w-0 flex-wrap">
+            {[
+              { id: "products" as const, label: "สินค้า",      icon: Package, count: shopProducts.length },
+              { id: "reviews"  as const, label: "รีวิวร้านค้า", icon: Star,    count: visibleReviews.length },
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <motion.button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  whileTap={{ scale: 0.96 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className={`group/tab relative flex items-center gap-2 h-[38px] pl-1.5 pr-3.5 rounded-full cursor-pointer shrink-0 transition-all duration-200 ${
+                    isActive ? "" : "text-[#1d5b32] hover:text-[#287745] hover:-translate-y-[1px]"
+                  }`}>
+                  {!isActive && (
+                    <span className="absolute inset-0 rounded-full bg-[#319754]/0 group-hover/tab:bg-[#319754]/[0.08] transition-colors duration-200" />
+                  )}
+                  {isActive && (
+                    <motion.span layoutId="shop-profile-pill"
+                      className="absolute inset-0 rounded-full shadow-[0_4px_14px_-2px_rgba(49,151,84,0.55),inset_0_1px_0_rgba(255,255,255,0.25)]"
+                      style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 50%, #267a43 100%)" }}
+                      transition={{ type: "spring", stiffness: 380, damping: 32 }} />
+                  )}
+                  <motion.span layout className="relative flex items-center justify-center size-[28px] rounded-full shrink-0 transition-colors duration-200"
+                    style={{
+                      backgroundColor: isActive ? "rgba(255,255,255,0.22)" : "rgba(49,151,84,0.12)",
+                      boxShadow: isActive ? "inset 0 1px 0 rgba(255,255,255,0.3)" : "none",
+                    }}>
+                    <tab.icon className="size-[14px]" style={{ color: isActive ? "#fff" : "#319754" }} strokeWidth={2.4} />
+                  </motion.span>
+                  <span className={`${font} relative text-[13px] leading-none whitespace-nowrap transition-colors duration-200`}
+                    style={{ color: isActive ? "#fff" : undefined, fontWeight: isActive ? 600 : 500 }}>{tab.label}</span>
+                  {tab.count > 0 && (
+                    <span className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[20px] h-[20px] rounded-full inline-flex items-center justify-center transition-all duration-200 ring-[1.5px]`}
+                      style={{
+                        background: isActive ? "rgba(255,255,255,0.22)" : "linear-gradient(135deg, #ff8a8a, #ef4444)",
+                        color: "#fff",
+                        fontWeight: 700,
+                        boxShadow: isActive ? "none" : "0 2px 6px rgba(239,56,60,0.5)",
+                        ["--tw-ring-color" as any]: isActive ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.95)",
+                      }}>{tab.count}</span>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+
+          {/* Search — only on products tab, inside the same pill container */}
+          {activeTab === "products" && (
+            <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 sm:flex-none sm:w-[280px] sm:ml-auto">
+              <input value={productSearch} onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="ค้นหาสินค้าในร้านนี้"
+                className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+              {productSearch ? (
+                <button onClick={() => setProductSearch("")}
+                  title="ล้างคำค้นหา"
+                  className="size-[28px] rounded-full bg-gray-200 hover:bg-gray-300 cursor-pointer flex items-center justify-center shrink-0">
+                  <X className="size-3.5 text-gray-600" strokeWidth={2.4} />
+                </button>
+              ) : (
+                <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+                  <Search className="size-4 text-white" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 py-6 pb-20">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-6 pb-20">
         {activeTab === "products" && (
           <div>
-            {/* Sort */}
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[14px] text-gray-600">สินค้าทั้งหมด {shopProducts.length} รายการ</p>
-              <div className="relative">
-                <select
-                  value={productSort}
-                  onChange={(e) => setProductSort(e.target.value as typeof productSort)}
-                  className={`${font} text-[14px] text-black bg-white rounded-full px-6 py-2.5 pr-12 cursor-pointer appearance-none outline-none`}
-                >
-                  <option value="default">เรียงตามค่าเริ่มต้น</option>
-                  <option value="price-asc">ราคาต่ำ → สูง</option>
-                  <option value="price-desc">ราคาสูง → ต่ำ</option>
-                  <option value="rating">คะแนนสูงสุด</option>
-                </select>
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg width="16" height="9" viewBox="0 0 16 9" fill="none">
-                    <path d="M7.83767 9C8.06314 9 8.28862 8.91545 8.44194 8.75493L15.4228 2.05352C15.5761 1.90986 15.6663 1.72394 15.6663 1.51268C15.6663 1.07323 15.3145 0.73521 14.8455 0.73521C14.6201 0.73521 14.4127 0.819718 14.2594 0.954933L7.35062 7.57182H8.31568L1.40699 0.954933C1.26269 0.819718 1.05525 0.73521 0.820745 0.73521C0.351748 0.73521 0 1.07323 0 1.51268C0 1.72394 0.0901917 1.90986 0.243518 2.06197L7.22436 8.75493C7.39572 8.91545 7.60316 9 7.83767 9Z" fill="black" fillOpacity="0.85" />
-                  </svg>
+            {/* Filter row — count on the left, category + sort dropdowns on the right */}
+            <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Package className="size-4 text-[#319754]" strokeWidth={2.2} />
+                <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>
+                  {categoryFilter === "all" ? "สินค้าทั้งหมด" : categoryFilter} <span className="text-[#319754]" style={{ fontWeight: 600 }}>{sortedProducts.length}</span> รายการ
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Category dropdown */}
+                {shopCategories.length > 0 && (
+                  <div className="relative">
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className={`${font} text-[13px] text-black bg-white border border-[#d4d4d4] hover:border-[#319754]/40 rounded-full pl-4 pr-10 h-[36px] cursor-pointer appearance-none outline-none focus:border-[#319754] transition-colors`}
+                      style={{ fontWeight: 500 }}>
+                      <option value="all">ทุกหมวดหมู่ ({shopProducts.length})</option>
+                      {shopCategories.map((c) => (
+                        <option key={c.name} value={c.name}>{c.name} ({c.count})</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="size-4 text-[#319754] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.4} />
+                  </div>
+                )}
+                {/* Sort dropdown */}
+                <div className="relative">
+                  <select
+                    value={productSort}
+                    onChange={(e) => setProductSort(e.target.value as typeof productSort)}
+                    className={`${font} text-[13px] text-black bg-white border border-[#d4d4d4] hover:border-[#319754]/40 rounded-full pl-4 pr-10 h-[36px] cursor-pointer appearance-none outline-none focus:border-[#319754] transition-colors`}
+                    style={{ fontWeight: 500 }}>
+                    <option value="default">เรียงตามค่าเริ่มต้น</option>
+                    <option value="price-asc">ราคาต่ำ → สูง</option>
+                    <option value="price-desc">ราคาสูง → ต่ำ</option>
+                    <option value="rating">คะแนนสูงสุด</option>
+                  </select>
+                  <ChevronDown className="size-4 text-[#319754] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.4} />
                 </div>
               </div>
             </div>
 
             {/* Product Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[16px]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-[16px]">
               {sortedProducts.map((p) => {
                 const wishlisted = isWishlisted(p.id);
                 const tag: "flashsale" | "discount" | "recommended" | null =
@@ -433,10 +518,22 @@ export function ShopProfilePage() {
               })}
             </div>
 
-            {shopProducts.length === 0 && (
+            {sortedProducts.length === 0 && (
               <div className="text-center py-16 text-gray-400">
                 <Package className="size-12 mx-auto mb-3 opacity-30" />
-                <p className="text-[14px]">ยังไม่มีสินค้าในร้านนี้</p>
+                <p className={`${font} text-[14px]`}>
+                  {shopProducts.length === 0
+                    ? "ยังไม่มีสินค้าในร้านนี้"
+                    : productSearch.trim()
+                      ? `ไม่พบสินค้าที่ตรงกับ "${productSearch}"`
+                      : `ไม่มีสินค้าในหมวด ${categoryFilter}`}
+                </p>
+                {shopProducts.length > 0 && (productSearch.trim() || categoryFilter !== "all") && (
+                  <button onClick={() => { setCategoryFilter("all"); setProductSearch(""); }}
+                    className={`${font} mt-3 text-[12px] text-[#319754] cursor-pointer hover:underline`}>
+                    ล้างตัวกรอง
+                  </button>
+                )}
               </div>
             )}
           </div>
