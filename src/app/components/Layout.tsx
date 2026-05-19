@@ -26,6 +26,7 @@ import imgOrderVerify from "figma:asset/bc3856a249e9261822188ed229ddd0e2ad6d0b2d
 import imgOrderShip from "figma:asset/6fe3df791a7ffa4eb26dc3d280886d11308e2b73.png";
 import imgOrderDone from "figma:asset/affa7b2c27f58769e6b6bc5c0bac9bbeee21a3ef.png";
 import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import { useProducts } from "../store/ProductsContext";
 import { useSiteInfo } from "../store/SiteInfoContext";
@@ -522,6 +523,27 @@ export function Layout() {
   const { wishlistCount } = useWishlist();
   const { products } = useProducts();
   const { info: siteInfo } = useSiteInfo();
+
+  // Surface localStorage failures (mostly quota — e.g. user uploaded a banner
+  // image that pushes the store past ~5MB). Without this they'd silently
+  // disappear on reload.
+  useEffect(() => {
+    const onStorageError = (e: any) => {
+      const kind = e?.detail?.kind;
+      const key = e?.detail?.key as string | undefined;
+      if (kind === "quota") {
+        toast.error("พื้นที่จัดเก็บเต็ม — การเปลี่ยนแปลงนี้จะหายไปเมื่อรีโหลด", {
+          description: key ? `key: ${key} · ลองลบรูปเก่าหรือลดขนาดรูปก่อนอัปโหลดใหม่` : undefined,
+        });
+      } else if (kind === "unknown") {
+        toast.error("บันทึกลง storage ไม่สำเร็จ", {
+          description: key ? `key: ${key}` : undefined,
+        });
+      }
+    };
+    window.addEventListener("metaherb:storage-error", onStorageError);
+    return () => window.removeEventListener("metaherb:storage-error", onStorageError);
+  }, []);
   const navigate = useNavigate();
   const location = useLocation();
 

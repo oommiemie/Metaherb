@@ -5470,10 +5470,39 @@ function LayoutSlotPicker({ position, aspectClass, selected, draftImage, hasAnyI
       toast.error("ไฟล์ใหญ่เกิน 5MB");
       return;
     }
+    // Downscale before storing: localStorage maxes out around 5 MB total per
+    // origin, so a single multi-MB base64 banner can blow the budget for the
+    // whole app. Render onto a canvas capped at 1600 px wide, encode as JPEG
+    // at quality 0.85 — typically lands the result under ~400 KB.
     const reader = new FileReader();
     reader.onload = () => {
-      onSelectImage(reader.result as string);
-      toast.success(`เพิ่มภาพใน ${positionLabels[position]} แล้ว`);
+      const srcUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const MAX_W = 1600;
+        const scale = img.width > MAX_W ? MAX_W / img.width : 1;
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          onSelectImage(srcUrl);
+        } else {
+          ctx.drawImage(img, 0, 0, w, h);
+          // GIFs lose animation but the carousel doesn't honour it anyway.
+          const out = canvas.toDataURL("image/jpeg", 0.85);
+          // If JPEG somehow ends up bigger (rare for already-compressed input),
+          // fall back to the original.
+          onSelectImage(out.length < srcUrl.length ? out : srcUrl);
+        }
+        toast.success(`เพิ่มภาพใน ${positionLabels[position]} แล้ว`);
+      };
+      img.onerror = () => {
+        onSelectImage(srcUrl); // fall back to raw data URL
+        toast.success(`เพิ่มภาพใน ${positionLabels[position]} แล้ว`);
+      };
+      img.src = srcUrl;
     };
     reader.onerror = () => toast.error("อ่านไฟล์ไม่สำเร็จ");
     reader.readAsDataURL(file);

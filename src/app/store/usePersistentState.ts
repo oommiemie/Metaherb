@@ -32,8 +32,23 @@ export function usePersistentState<T>(key: string, initial: T | (() => T)): [T, 
     }
     try {
       window.localStorage.setItem(key, JSON.stringify(state));
-    } catch {
-      // Quota exceeded / private mode — fail silently, runtime state still works.
+    } catch (err) {
+      // Quota exceeded / private mode — runtime state still works for this
+      // session, but the change won't survive a reload. Broadcast so the app
+      // can surface it (toast, console). Previously silent → users couldn't
+      // tell their upload didn't persist.
+      const isQuota = err instanceof DOMException && (
+        err.name === "QuotaExceededError" ||
+        err.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+        err.code === 22
+      );
+      // eslint-disable-next-line no-console
+      console.warn(`[usePersistentState] persist failed for "${key}"`, isQuota ? "(quota exceeded)" : err);
+      try {
+        window.dispatchEvent(new CustomEvent("metaherb:storage-error", {
+          detail: { key, kind: isQuota ? "quota" : "unknown" },
+        }));
+      } catch { /* ignore */ }
     }
   }, [key, state]);
 
