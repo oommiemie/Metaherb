@@ -3,6 +3,7 @@ import { useAuth } from "../store/AuthContext";
 import { useOrders } from "../store/OrderContext";
 import { useLanguage } from "../store/LanguageContext";
 import { useProducts } from "../store/ProductsContext";
+import { readImageFile } from "../data/imageUpload";
 import { useNavigate } from "react-router";
 import {
   BarChart3, Package, ShoppingCart, Zap, Megaphone, Ticket,
@@ -4288,7 +4289,57 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
   const [productName, setProductName] = useState("");
   const [category, setCategory] = useState("");
   const [sku, setSku] = useState("");
-  const [productImages] = useState<string[]>([]); // demo only — not actually uploaded
+  // 3 cover-image slots; null = empty, string = data URL. Use array of 3 so
+  // each upload tile owns a specific slot (cover / image-2 / image-3).
+  const [productImages, setProductImages] = useState<(string | null)[]>([null, null, null]);
+  const productImageInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
+
+  const triggerProductImageUpload = (slot: number) => {
+    setUploadingSlot(slot);
+    productImageInputRef.current?.click();
+  };
+
+  const handleProductImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const slot = uploadingSlot;
+    setUploadingSlot(null);
+    if (!file || slot === null) return;
+    const result = await readImageFile(file, { maxWidth: 1200, quality: 0.85 });
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    setProductImages((prev) => prev.map((v, i) => (i === slot ? result.dataUrl : v)));
+    toast.success("เพิ่มรูปสินค้าแล้ว");
+  };
+
+  const removeProductImage = (slot: number) => {
+    setProductImages((prev) => prev.map((v, i) => (i === slot ? null : v)));
+  };
+
+  // Variant image upload — shares the same file input via a different slot key
+  const variantImageInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingVariantId, setUploadingVariantId] = useState<string | null>(null);
+  const triggerVariantUpload = (id: string) => {
+    setUploadingVariantId(id);
+    variantImageInputRef.current?.click();
+  };
+  const handleVariantImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const id = uploadingVariantId;
+    setUploadingVariantId(null);
+    if (!file || !id) return;
+    const result = await readImageFile(file, { maxWidth: 800, quality: 0.85 });
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    updateRow(id, { image: result.dataUrl });
+    toast.success("เพิ่มรูปตัวเลือกแล้ว");
+  };
   type VariantRow = { id: string; image: string | null; name: string; price: number; stock: number; weight: number };
   const [variantRows, setVariantRows] = useState<VariantRow[]>([
     { id: "v1", image: null, name: "", price: 0, stock: 0, weight: 0 },
@@ -4302,7 +4353,8 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
 
   // Validation per section
   const infoValid = productName.trim().length > 0 && category.length > 0 && sku.trim().length > 0;
-  const imagesValid = productImages.length > 0;
+  const uploadedImages = productImages.filter((x): x is string => !!x);
+  const imagesValid = uploadedImages.length > 0;
   const variantsValid = hasVariants
     ? variantRows.every((r) => r.name.trim().length > 0 && r.price > 0 && r.stock > 0 && r.weight > 0)
     : price > 0 && stock > 0 && weight > 0;
@@ -4391,29 +4443,57 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
               { label: "รูปปกสินค้า", sub: "รูปหลัก", primary: true },
               { label: "รูป 2", sub: "เพิ่มเติม", primary: false },
               { label: "รูป 3", sub: "เพิ่มเติม", primary: false },
-            ].map((item) => (
-              <motion.button key={item.label} type="button"
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.97 }}
-                className={`group/upload relative bg-gradient-to-br from-gray-50 to-gray-100/60 border-2 border-dashed rounded-2xl size-[150px] flex flex-col items-center justify-center gap-2 cursor-pointer transition-all shrink-0 overflow-hidden ${
-                  item.primary
-                    ? "border-[#319754]/40 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
-                    : "border-gray-300 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
-                }`}>
-                {item.primary && (
-                  <span className={`${font} absolute top-2 right-2 text-[9px] bg-[#319754] text-white px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>
-                    หลัก
-                  </span>
-                )}
-                <div className="size-10 rounded-full bg-white border border-gray-200 flex items-center justify-center transition-transform group-hover/upload:scale-110 group-hover/upload:rotate-90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
-                  <Plus className="size-4 text-gray-500 group-hover/upload:text-[#319754] transition-colors" strokeWidth={2.4} />
-                </div>
-                <div className="text-center px-2">
-                  <p className={`${font} text-[12px] text-black`} style={{ fontWeight: 500 }}>{item.label}</p>
-                  <p className={`${font} text-[10px] text-gray-400 mt-0.5`}>{item.sub}</p>
-                </div>
-              </motion.button>
-            ))}
+            ].map((item, slot) => {
+              const uploaded = productImages[slot];
+              return (
+                <motion.button key={item.label} type="button"
+                  onClick={() => triggerProductImageUpload(slot)}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  className={`group/upload relative bg-gradient-to-br from-gray-50 to-gray-100/60 border-2 border-dashed rounded-2xl size-[150px] flex flex-col items-center justify-center gap-2 cursor-pointer transition-all shrink-0 overflow-hidden ${
+                    uploaded
+                      ? "border-[#319754] from-white to-white"
+                      : item.primary
+                        ? "border-[#319754]/40 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
+                        : "border-gray-300 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
+                  }`}>
+                  {uploaded ? (
+                    <>
+                      <img src={uploaded} alt={item.label} className="absolute inset-0 w-full h-full object-cover" />
+                      {item.primary && (
+                        <span className={`${font} absolute top-2 right-2 text-[9px] bg-[#319754] text-white px-2 py-0.5 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.2)]`} style={{ fontWeight: 600 }}>
+                          หลัก
+                        </span>
+                      )}
+                      <span
+                        onClick={(e) => { e.stopPropagation(); removeProductImage(slot); }}
+                        role="button"
+                        className="absolute top-2 left-2 size-6 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer transition-colors"
+                        aria-label="ลบรูป">
+                        <X className="size-3.5" strokeWidth={2.4} />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {item.primary && (
+                        <span className={`${font} absolute top-2 right-2 text-[9px] bg-[#319754] text-white px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>
+                          หลัก
+                        </span>
+                      )}
+                      <div className="size-10 rounded-full bg-white border border-gray-200 flex items-center justify-center transition-transform group-hover/upload:scale-110 group-hover/upload:rotate-90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
+                        <Plus className="size-4 text-gray-500 group-hover/upload:text-[#319754] transition-colors" strokeWidth={2.4} />
+                      </div>
+                      <div className="text-center px-2">
+                        <p className={`${font} text-[12px] text-black`} style={{ fontWeight: 500 }}>{item.label}</p>
+                        <p className={`${font} text-[10px] text-gray-400 mt-0.5`}>{item.sub}</p>
+                      </div>
+                    </>
+                  )}
+                </motion.button>
+              );
+            })}
+            <input ref={productImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleProductImageFile} />
+            <input ref={variantImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleVariantImageFile} />
           </div>
         </section>
 
@@ -4563,13 +4643,33 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
                 <div key={row.id} className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center gap-4 relative group/row">
                   {/* Image upload — 200x200, styled like รูปภาพสินค้า */}
                   <motion.button type="button"
+                    onClick={() => triggerVariantUpload(row.id)}
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.97 }}
-                    className="group/upload relative bg-gradient-to-br from-gray-50 to-gray-100/60 border-2 border-dashed border-gray-300 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10 rounded-2xl size-[200px] shrink-0 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden">
-                    <div className="size-12 rounded-full bg-white border border-gray-200 flex items-center justify-center transition-transform group-hover/upload:scale-110 group-hover/upload:rotate-90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
-                      <Plus className="size-5 text-gray-500 group-hover/upload:text-[#319754] transition-colors" strokeWidth={2.4} />
-                    </div>
-                    <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เพิ่มรูป</span>
+                    className={`group/upload relative bg-gradient-to-br from-gray-50 to-gray-100/60 border-2 border-dashed rounded-2xl size-[200px] shrink-0 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden ${
+                      row.image
+                        ? "border-[#319754] from-white to-white"
+                        : "border-gray-300 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
+                    }`}>
+                    {row.image ? (
+                      <>
+                        <img src={row.image} alt="variant" className="absolute inset-0 w-full h-full object-cover" />
+                        <span
+                          onClick={(e) => { e.stopPropagation(); updateRow(row.id, { image: null }); }}
+                          role="button"
+                          className="absolute top-2 left-2 size-7 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer transition-colors"
+                          aria-label="ลบรูป">
+                          <X className="size-4" strokeWidth={2.4} />
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="size-12 rounded-full bg-white border border-gray-200 flex items-center justify-center transition-transform group-hover/upload:scale-110 group-hover/upload:rotate-90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
+                          <Plus className="size-5 text-gray-500 group-hover/upload:text-[#319754] transition-colors" strokeWidth={2.4} />
+                        </div>
+                        <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เพิ่มรูป</span>
+                      </>
+                    )}
                   </motion.button>
 
                   {/* Right side fields */}
@@ -4843,7 +4943,7 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
                 price: finalPrice,
                 rating: 0,
                 sold: "0",
-                image: productImages[0] ?? "",
+                image: uploadedImages[0] ?? "",
                 category: category.trim(),
                 description: "",
                 weight: `${finalWeight} g`,
