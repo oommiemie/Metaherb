@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useProducts } from "../store/ProductsContext";
 import { useBanners } from "../store/BannersContext";
+import { useCategories } from "../store/CategoriesContext";
+import { getCategoryIcon } from "../data/categoryIcons";
 import { useRecentlyViewed } from "../store/RecentlyViewedContext";
 import { useWishlist } from "../store/WishlistContext";
 import { useLanguage } from "../store/LanguageContext";
@@ -349,6 +351,7 @@ export function HomePage() {
   const { recentIds } = useRecentlyViewed();
   const { t } = useLanguage();
   const { products } = useProducts();
+  const { activeCategories } = useCategories();
   const [loading, setLoading] = useState(true);
   const [recPage, setRecPage] = useState(0);
   const [recDirection, setRecDirection] = useState(0);
@@ -439,34 +442,31 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* Categories */}
+      {/* Categories — driven by admin CategoriesContext (active categories only) */}
       <div className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         <div className="flex items-center justify-evenly gap-3 sm:gap-4 overflow-x-auto py-3 px-4 sm:px-8 lg:px-12 scrollbar-hide w-full">
-          {([
-            { name: "สมุนไพร", label: t("cat_herb"), icon: Leaf },
-            { name: "อาหาร", label: t("cat_food"), icon: UtensilsCrossed },
-            { name: "ยา", label: t("cat_medicine"), icon: Pill },
-            { name: "เครื่องหอม", label: t("cat_aroma"), icon: Sparkles },
-            { name: "ความสวย", label: t("cat_beauty"), icon: Flower2 },
-            { name: "ชุดของขวัญ", label: t("cat_giftset"), icon: Gift },
-            { name: "ชาสมุนไพร", label: t("cat_tea"), icon: Coffee },
-            { name: "อาหารเสริม", label: t("cat_supplement"), icon: FlaskConical },
-            { name: "น้ำมันสกัด", label: t("cat_oil"), icon: Droplets },
-          ]).map((cat) => {
-            const Icon = cat.icon;
+          {activeCategories.map((cat) => {
+            const Icon = getCategoryIcon(cat.iconKey);
             return (
               <button
-                key={cat.name}
+                key={cat.id}
                 onClick={() => navigate(`/products?category=${cat.name}`)}
                 className={`flex flex-col items-center gap-1.5 sm:gap-2 min-w-[64px] sm:min-w-[80px] cursor-pointer group`}
               >
-                <div className="size-[40px] sm:size-[56px] rounded-full bg-[#319754]/10 flex items-center justify-center group-hover:bg-[#319754]/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-md group-hover:shadow-[#319754]/20">
-                  <Icon className="size-5 text-[#319754]" strokeWidth={1.8} />
+                <div
+                  className="size-[40px] sm:size-[56px] rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-md"
+                  style={{ backgroundColor: `${cat.color}1a` }}
+                >
+                  {cat.iconImage ? (
+                    <img src={cat.iconImage} alt="" className="size-5 sm:size-7 object-cover rounded" />
+                  ) : (
+                    <Icon className="size-5" style={{ color: cat.color }} strokeWidth={1.8} />
+                  )}
                 </div>
                 <span
                   className={`${font} text-[11px] sm:text-[12px] text-gray-600 whitespace-nowrap transition-colors duration-300 group-hover:text-[#319754]`}
                 >
-                  {cat.label}
+                  {cat.name}
                 </span>
               </button>
             );

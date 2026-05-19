@@ -36,6 +36,7 @@ import { LanguageProvider } from "./store/LanguageContext";
 import { ProductsProvider } from "./store/ProductsContext";
 import { SiteInfoProvider } from "./store/SiteInfoContext";
 import { BannersProvider } from "./store/BannersContext";
+import { CategoriesProvider } from "./store/CategoriesContext";
 import { Toaster } from "sonner";
 
 function Providers() {
@@ -44,6 +45,7 @@ function Providers() {
       <SiteInfoProvider>
       <AuthProvider>
         <BannersProvider>
+        <CategoriesProvider>
         <ProductsProvider>
           <WishlistProvider>
             <CartProvider>
@@ -62,6 +64,7 @@ function Providers() {
             </CartProvider>
           </WishlistProvider>
         </ProductsProvider>
+        </CategoriesProvider>
         </BannersProvider>
       </AuthProvider>
       </SiteInfoProvider>

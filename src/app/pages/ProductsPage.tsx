@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useProducts } from "../store/ProductsContext";
+import { useCategories } from "../store/CategoriesContext";
 import { Star, ChevronDown, RotateCcw, Heart, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -32,7 +33,10 @@ export function ProductsPage() {
   const [searchParams] = useSearchParams();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { t } = useLanguage();
-  const { products, categories } = useProducts();
+  const { products } = useProducts();
+  const { activeCategories } = useCategories();
+  // Customer-facing filter: only show active categories from the admin store
+  const categories = activeCategories.map((c) => c.name);
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "ทั้งหมด");
   const [productType, setProductType] = useState("ทั้งหมด");
   const [sortBy, setSortBy] = useState("จากมากไปน้อย");

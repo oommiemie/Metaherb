@@ -4,6 +4,7 @@ import { useLanguage } from "../store/LanguageContext";
 import { useProducts } from "../store/ProductsContext";
 import { useSiteInfo, DEFAULT_SITE_INFO } from "../store/SiteInfoContext";
 import { useBanners } from "../store/BannersContext";
+import { useCategories, type Category as CtxCategory } from "../store/CategoriesContext";
 import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
   Shield, DollarSign, Megaphone, UserCog, BarChart2, ShoppingBag,
@@ -13886,7 +13887,19 @@ function seedCategories(): CategoryRow[] {
 
 function ProductsCategoriesContent() {
   const { t } = useLanguage();
-  const [categories, setCategories] = useState<CategoryRow[]>(() => seedCategories());
+  // Wire to live CategoriesContext so admin add/edit/delete/toggle/reorder
+  // reflect on HomePage's icon row + ProductsPage's filter immediately.
+  const {
+    categories: ctxCategories,
+    addCategory: ctxAdd,
+    updateCategory: ctxUpdate,
+    removeCategory: ctxRemove,
+    reorder: ctxReorder,
+    toggleActive: ctxToggleActive,
+  } = useCategories();
+  // CategoryRow and CtxCategory have the same fields — treat them as the same shape.
+  const categories = ctxCategories as unknown as CategoryRow[];
+  void seedCategories; // seed lives in CategoriesContext now
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<CategoryRow | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -13902,16 +13915,10 @@ function ProductsCategoriesContent() {
 
   const reorder = (sourceId: string, targetId: string) => {
     if (sourceId === targetId) return;
-    setCategories((prev) => {
-      const srcIdx = prev.findIndex((c) => c.id === sourceId);
-      const tgtIdx = prev.findIndex((c) => c.id === targetId);
-      if (srcIdx < 0 || tgtIdx < 0) return prev;
-      const next = prev.slice();
-      const [moved] = next.splice(srcIdx, 1);
-      next.splice(tgtIdx, 0, moved);
-      toast.success(`ย้ายตำแหน่ง "${moved.name}" แล้ว`);
-      return next;
-    });
+    const moved = categories.find((c) => c.id === sourceId);
+    if (!moved) return;
+    ctxReorder(sourceId, targetId);
+    toast.success(`ย้ายตำแหน่ง "${moved.name}" แล้ว`);
   };
 
   const counts = useMemo(() => {
@@ -13939,11 +13946,10 @@ function ProductsCategoriesContent() {
   });
 
   const toggleActive = (id: string) => {
-    setCategories((prev) => prev.map((c) => c.id === id ? (() => {
-      const next = { ...c, active: !c.active };
-      toast.success(`${next.active ? "เปิดแสดง" : "ซ่อน"}หมวด "${c.name}" แล้ว`);
-      return next;
-    })() : c));
+    const cat = categories.find((c) => c.id === id);
+    if (!cat) return;
+    ctxToggleActive(id);
+    toast.success(`${!cat.active ? "เปิดแสดง" : "ซ่อน"}หมวด "${cat.name}" แล้ว`);
   };
 
   const deleteCategory = (id: string) => {
@@ -13955,38 +13961,31 @@ function ProductsCategoriesContent() {
       return;
     }
     if (!confirm(`ลบหมวด "${cat.name}"?`)) return;
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+    ctxRemove(id);
     toast.success(`ลบหมวด "${cat.name}" แล้ว`);
   };
 
   const move = (id: string, dir: "up" | "down") => {
-    setCategories((prev) => {
-      const idx = prev.findIndex((c) => c.id === id);
-      if (idx < 0) return prev;
-      const target = dir === "up" ? idx - 1 : idx + 1;
-      if (target < 0 || target >= prev.length) return prev;
-      const next = prev.slice();
-      [next[idx], next[target]] = [next[target], next[idx]];
-      return next;
-    });
+    const idx = categories.findIndex((c) => c.id === id);
+    if (idx < 0) return;
+    const target = dir === "up" ? idx - 1 : idx + 1;
+    if (target < 0 || target >= categories.length) return;
+    ctxReorder(id, categories[target].id);
   };
 
   const openAdd = () => { setEditing(null); setShowForm(true); };
   const openEdit = (cat: CategoryRow) => { setEditing(cat); setShowForm(true); };
   const saveForm = (form: CategoryRow) => {
-    setCategories((prev) => {
-      const exists = prev.find((c) => c.id === form.id);
-      if (exists) {
-        toast.success(`บันทึกหมวด "${form.name}" แล้ว`);
-        return prev.map((c) => c.id === form.id ? form : c);
-      }
-      if (prev.some((c) => c.name === form.name)) {
-        toast.error("ชื่อหมวดหมู่ซ้ำในระบบ");
-        return prev;
-      }
+    const exists = categories.find((c) => c.id === form.id);
+    if (exists) {
+      ctxUpdate(form.id, form as unknown as Partial<CtxCategory>);
+      toast.success(`บันทึกหมวด "${form.name}" แล้ว`);
+    } else if (categories.some((c) => c.name === form.name)) {
+      toast.error("ชื่อหมวดหมู่ซ้ำในระบบ");
+    } else {
+      ctxAdd(form as unknown as CtxCategory);
       toast.success(`เพิ่มหมวด "${form.name}" แล้ว`);
-      return [...prev, form];
-    });
+    }
     setShowForm(false);
     setEditing(null);
   };
