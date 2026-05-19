@@ -34,12 +34,16 @@ import { ShopProvider } from "./store/ShopContext";
 import { RecentlyViewedProvider } from "./store/RecentlyViewedContext";
 import { LanguageProvider } from "./store/LanguageContext";
 import { ProductsProvider } from "./store/ProductsContext";
+import { SiteInfoProvider } from "./store/SiteInfoContext";
+import { BannersProvider } from "./store/BannersContext";
 import { Toaster } from "sonner";
 
 function Providers() {
   return (
     <LanguageProvider>
+      <SiteInfoProvider>
       <AuthProvider>
+        <BannersProvider>
         <ProductsProvider>
           <WishlistProvider>
             <CartProvider>
@@ -58,7 +62,9 @@ function Providers() {
             </CartProvider>
           </WishlistProvider>
         </ProductsProvider>
+        </BannersProvider>
       </AuthProvider>
+      </SiteInfoProvider>
     </LanguageProvider>
   );
 }

@@ -2,6 +2,8 @@ import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import { useLanguage } from "../store/LanguageContext";
 import { useProducts } from "../store/ProductsContext";
+import { useSiteInfo, DEFAULT_SITE_INFO } from "../store/SiteInfoContext";
+import { useBanners } from "../store/BannersContext";
 import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
   Shield, DollarSign, Megaphone, UserCog, BarChart2, ShoppingBag,
@@ -5900,7 +5902,17 @@ function BannerEditView({ initial, allBanners, onSave, onCancel }: {
 
 function BannerContent() {
   const { t } = useLanguage();
-  const [banners, setBanners] = useState<Banner[]>(initialBanners);
+  // Live banners via context — admin add/edit/delete reflects on customer HomePage immediately.
+  const { banners, saveBanner: ctxSave, removeBanner: ctxRemove } = useBanners();
+  const setBanners = (updater: Banner[] | ((prev: Banner[]) => Banner[])) => {
+    const next = typeof updater === "function" ? updater(banners) : updater;
+    // Diff against current: delete missing, save the rest.
+    const nextIds = new Set(next.map((b) => b.id));
+    banners.forEach((b) => { if (!nextIds.has(b.id)) ctxRemove(b.id); });
+    next.forEach((b) => ctxSave(b));
+  };
+  void setBanners; // kept for potential future setBanners(prev => …) usage
+  void initialBanners; // seed already absorbed by BannersProvider
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | BannerStatus>("all");
   const [positionFilter, setPositionFilter] = useState<"all" | BannerPosition>("all");
@@ -19332,8 +19344,31 @@ const DEFAULT_SITE_GENERAL: SiteGeneralConfig = {
 };
 
 function SiteInfoGeneralPage() {
-  const [cfg, setCfg] = useState<SiteGeneralConfig>(DEFAULT_SITE_GENERAL);
-  const isDirty = JSON.stringify(cfg) !== JSON.stringify(DEFAULT_SITE_GENERAL);
+  // Wire to live SiteInfoContext so admin changes flow into Layout / Footer / HomePage.
+  const { info: ctxInfo, update: ctxUpdate, reset: ctxReset } = useSiteInfo();
+  const [cfg, setCfg] = useState<SiteGeneralConfig>({
+    siteNameTh: ctxInfo.siteNameTh,
+    siteNameEn: ctxInfo.siteNameEn,
+    tagline: ctxInfo.tagline,
+    description: ctxInfo.description,
+    logoUrl: ctxInfo.logoUrl,
+    faviconUrl: ctxInfo.faviconUrl,
+    metaTitle: ctxInfo.metaTitle,
+    metaDescription: ctxInfo.metaDescription,
+    metaKeywords: ctxInfo.metaKeywords,
+    ogImage: ctxInfo.ogImage,
+    defaultLang: ctxInfo.defaultLang,
+    timezone: ctxInfo.timezone,
+    currency: ctxInfo.currency,
+  });
+  const isDirty = JSON.stringify(cfg) !== JSON.stringify({
+    siteNameTh: ctxInfo.siteNameTh, siteNameEn: ctxInfo.siteNameEn,
+    tagline: ctxInfo.tagline, description: ctxInfo.description,
+    logoUrl: ctxInfo.logoUrl, faviconUrl: ctxInfo.faviconUrl,
+    metaTitle: ctxInfo.metaTitle, metaDescription: ctxInfo.metaDescription,
+    metaKeywords: ctxInfo.metaKeywords, ogImage: ctxInfo.ogImage,
+    defaultLang: ctxInfo.defaultLang, timezone: ctxInfo.timezone, currency: ctxInfo.currency,
+  });
   const upd = <K extends keyof SiteGeneralConfig>(key: K, v: SiteGeneralConfig[K]) =>
     setCfg(prev => ({ ...prev, [key]: v }));
 
@@ -19410,7 +19445,15 @@ function SiteInfoGeneralPage() {
             </select>
           </div>
         </div>
-        <SaveBar isDirty={isDirty} onReset={() => setCfg(DEFAULT_SITE_GENERAL)} onSave={() => toast.success("บันทึกข้อมูลเว็บไซต์เรียบร้อย")} />
+        <SaveBar isDirty={isDirty}
+          onReset={() => {
+            setCfg(DEFAULT_SITE_GENERAL);
+            ctxReset();
+          }}
+          onSave={() => {
+            ctxUpdate(cfg);
+            toast.success("บันทึกข้อมูลเว็บไซต์เรียบร้อย — มีผลทั่วทั้งเว็บแล้ว");
+          }} />
       </SettingsCard>
     </div>
   );

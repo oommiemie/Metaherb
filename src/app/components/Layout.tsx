@@ -28,6 +28,7 @@ import imgOrderDone from "figma:asset/affa7b2c27f58769e6b6bc5c0bac9bbeee21a3ef.p
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useProducts } from "../store/ProductsContext";
+import { useSiteInfo } from "../store/SiteInfoContext";
 import { useLanguage, LANG_OPTIONS } from "../store/LanguageContext";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
@@ -520,6 +521,7 @@ export function Layout() {
   const { notifications, unreadCount } = useNotifications();
   const { wishlistCount } = useWishlist();
   const { products } = useProducts();
+  const { info: siteInfo } = useSiteInfo();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -759,10 +761,21 @@ export function Layout() {
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
             <div className="group/logo flex items-center gap-1.5 sm:gap-[10px] cursor-pointer transition-transform duration-300 hover:scale-[1.03]"
               onClick={() => navigate(isOwner ? "/owner" : isAdmin ? "/admin" : "/")}>
-              <img src={imgLogo} className="shrink-0 size-[34px] sm:size-[48px] transition-transform duration-500 group-hover/logo:rotate-[8deg]" alt="MetaHerb" />
+              <img
+                src={siteInfo.logoUrl?.trim() ? siteInfo.logoUrl : imgLogo}
+                className="shrink-0 size-[34px] sm:size-[48px] transition-transform duration-500 group-hover/logo:rotate-[8deg] object-contain"
+                alt={siteInfo.siteNameEn || "MetaHerb"} />
               <span className={`${fontBold} text-[15px] sm:text-[24px] whitespace-nowrap leading-none tracking-tight`} style={{ fontWeight: 700 }}>
-                <span className="text-[#ed1c24]">META</span>
-                <span className="text-[#f7931d]">HERB</span>
+                {(() => {
+                  const name = (siteInfo.siteNameEn || "METAHERB").toUpperCase();
+                  const split = Math.ceil(name.length / 2);
+                  return (
+                    <>
+                      <span className="text-[#ed1c24]">{name.slice(0, split)}</span>
+                      <span className="text-[#f7931d]">{name.slice(split)}</span>
+                    </>
+                  );
+                })()}
               </span>
             </div>
             {/* Role badge — only for staff */}
@@ -934,9 +947,9 @@ export function Layout() {
               </div>
             ) : (
               <button onClick={() => navigate("/login")}
-                className={`hidden md:flex border border-[#319754] text-[#1d5b32] h-[48px] px-4 w-[120px] rounded-[100px] text-[14px] ${font} cursor-pointer hover:bg-[#319754]/5 items-center justify-center`}
+                className={`hidden md:flex border border-[#319754] text-[#1d5b32] h-[36px] px-4 rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#319754] hover:text-white hover:border-[#287745] hover:shadow-[0_2px_8px_-2px_rgba(49,151,84,0.45)] items-center justify-center transition-colors`}
                 style={{ fontWeight: 500 }}>
-                <span className="leading-none">{t("button_login")}</span>
+                <span className="leading-none whitespace-nowrap">{t("button_login")}</span>
               </button>
             )}
 
@@ -1197,13 +1210,22 @@ export function Layout() {
           {/* ===== TOP: brand row ===== */}
           <div className="flex items-center gap-4">
             <div className="size-[48px] sm:size-[56px] rounded-2xl bg-white p-1.5 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.45)] ring-1 ring-white/20 shrink-0">
-              <img src={imgLogo} className="w-full h-full" alt="MetaHerb" />
+              <img src={siteInfo.logoUrl?.trim() ? siteInfo.logoUrl : imgLogo} className="w-full h-full object-contain" alt={siteInfo.siteNameEn || "MetaHerb"} />
             </div>
             <div className="min-w-0">
               <h3 className={`${fontBold} text-[20px] sm:text-[22px] tracking-tight leading-none`} style={{ fontWeight: 800 }}>
-                <span className="text-[#ff9b9b]">META</span><span className="text-[#ffc070]">HERB</span>
+                {(() => {
+                  const name = (siteInfo.siteNameEn || "METAHERB").toUpperCase();
+                  const split = Math.ceil(name.length / 2);
+                  return (
+                    <>
+                      <span className="text-[#ff9b9b]">{name.slice(0, split)}</span>
+                      <span className="text-[#ffc070]">{name.slice(split)}</span>
+                    </>
+                  );
+                })()}
               </h3>
-              <p className={`${font} text-[12px] sm:text-[13px] text-white/65 mt-1`}>{t("footer_tagline")}</p>
+              <p className={`${font} text-[12px] sm:text-[13px] text-white/65 mt-1`}>{siteInfo.tagline || t("footer_tagline")}</p>
             </div>
           </div>
 

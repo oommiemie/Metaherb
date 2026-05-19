@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useProducts } from "../store/ProductsContext";
+import { useBanners } from "../store/BannersContext";
 import { useRecentlyViewed } from "../store/RecentlyViewedContext";
 import { useWishlist } from "../store/WishlistContext";
 import { useLanguage } from "../store/LanguageContext";
@@ -277,19 +278,26 @@ function ProductCard({
 /* ===== Banner Carousel ===== */
 function BannerCarousel() {
   const [currentBanner, setCurrentBanner] = useState(0);
-  const banners = [
-    "https://www.figma.com/api/mcp/asset/6ecb91a6-f03f-4d55-a93e-347438b3c4c3", // Nature's Remedies (Figma)
-    "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=1600&q=80", // herbs in bowl
-    "https://images.unsplash.com/photo-1611073615452-04d76e76e8b2?w=1600&q=80", // herb collection
-    "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=1600&q=80", // chamomile tea
-  ];
+  // Pull active hero banners from the live admin store — admin add/edit/delete
+  // in /admin/content → Banner reflects here immediately.
+  const { activeByPosition } = useBanners();
+  const heroBanners = activeByPosition("hero");
+  const banners = heroBanners.length > 0
+    ? heroBanners.map((b) => b.image)
+    : ["https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=1600&q=80"];
 
   useEffect(() => {
+    if (banners.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentBanner((prev) => (prev + 1) % banners.length);
     }, 4000);
     return () => clearInterval(timer);
-  }, []);
+  }, [banners.length]);
+
+  // Reset to first slide if banner list shrinks
+  useEffect(() => {
+    if (currentBanner >= banners.length) setCurrentBanner(0);
+  }, [banners.length, currentBanner]);
 
   return (
     <div className="group relative rounded-[16px] overflow-hidden w-full h-full bg-[#faf8f5]">
