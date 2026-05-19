@@ -3,6 +3,7 @@ import { useAuth } from "../store/AuthContext";
 import { useOrders } from "../store/OrderContext";
 import { useLanguage } from "../store/LanguageContext";
 import { useProducts } from "../store/ProductsContext";
+import { useCategories } from "../store/CategoriesContext";
 import { readImageFile } from "../data/imageUpload";
 import { useNavigate } from "react-router";
 import {
@@ -4277,6 +4278,7 @@ function NumberStepper({ value, onChange, min = 0, step = 1 }: { value: number; 
 function AddProductTab({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
   const { addProduct } = useProducts();
+  const { activeCategories } = useCategories();
   const [activeStep, setActiveStep] = useState(0);
   const [maxVisitedStep, setMaxVisitedStep] = useState(0); // furthest step the user has visited (clicked or scrolled past)
   const [hasVariants, setHasVariants] = useState(false);
@@ -4520,10 +4522,13 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
                 <select value={category} onChange={(e) => setCategory(e.target.value)}
                   className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-6 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
                   <option value="">เลือกหมวดหมู่</option>
-                  <option value="herb_capsule">สมุนไพรแคปซูล</option>
-                  <option value="herbal_tea">ชาสมุนไพร</option>
-                  <option value="herb_powder">ผงสมุนไพร</option>
-                  <option value="herbal_oil">น้ำมันสมุนไพร</option>
+                  {/* Pulls live admin categories so the value saved on the product
+                      matches the customer-side filter (was hard-coded slugs
+                      before — products saved as "herb_capsule" never matched
+                      any of the canonical Thai category names). */}
+                  {activeCategories.map((c) => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
                 </select>
                 <ChevronDown className="size-4 text-gray-400 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
               </div>

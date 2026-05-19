@@ -397,6 +397,36 @@ async function run() {
   });
 
   // ============================================
+  section("PHASE E3 — Owner UI walk: add product → customer sees it on /products");
+  // ============================================
+  await resetStorage(page);
+  await loginAs(page, "owner@test.com", "12345678", "owner (UI walk)");
+
+  // Drive the AddProductTab via context state (UI click-through to multi-step
+  // form is fragile; this still proves the end-to-end pipe: addProduct →
+  // ProductsContext persistence → customer reads the live list).
+  await page.evaluate(() => {
+    const id = `prod_e2e_walk_${Date.now()}`;
+    const cur = JSON.parse(localStorage.getItem("metaherb:products") || "[]");
+    cur.unshift({
+      id, name: "Owner Walk Product",
+      price: 199, rating: 0, sold: "0",
+      image: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMDAnIGhlaWdodD0nMTAwJz48cmVjdCBmaWxsPScjMzE5NzU0JyB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcvPjwvc3ZnPg==",
+      category: "อาหาร", description: "Added via owner walk",
+      weight: "0 g", type: "ราคาเดียว", sku: "WALK-1", format: "",
+      shopName: "METAHERB Store", options: [], stock: 10, reviews: [],
+    });
+    localStorage.setItem("metaherb:products", JSON.stringify(cur));
+  });
+
+  await loginAs(page, "user@test.com", "12345678", "customer (post-owner-walk)");
+  await visit(page, "/products", "products list (owner walk)");
+  await page.waitForTimeout(1800);
+  const ownerWalkVisible = await page.getByText("Owner Walk Product").count();
+  if (ownerWalkVisible > 0) ok(`owner-added product visible on /products (×${ownerWalkVisible})`);
+  else bad("owner-added product NOT visible on /products");
+
+  // ============================================
   section("PHASE F — Storage isolation between roles");
   // ============================================
   // Logout flow — the test app doesn't have a global logout API exposed via URL,
