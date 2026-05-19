@@ -655,14 +655,18 @@ export function Layout() {
     setMobileSearchOpen(false);
   }, [location.pathname]);
 
-  // Auto-redirect owner/admin to their dashboard on login
+  // Auto-redirect owner/admin to their dashboard ONLY when they land on the
+  // root or on a checkout path that doesn't make sense for them. Catalogue
+  // pages (/products, /product/:id, /blog, /shop/*) stay viewable so they
+  // can preview what customers see — owner can't verify a product they just
+  // added if the storefront keeps bouncing them back to the dashboard.
   useEffect(() => {
     if (!isAuthenticated) return;
-    const shoppingPaths = ["/", "/products", "/cart", "/payment", "/orders", "/wishlist", "/coupons", "/my-coupons", "/blog"];
-    const isOnShoppingPage = shoppingPaths.some((p) => location.pathname === p) || location.pathname.startsWith("/product/") || location.pathname.startsWith("/verify-payment/") || location.pathname.startsWith("/blog/");
-    if (isOwner && isOnShoppingPage) {
+    const dashboardOnlyPaths = ["/", "/cart", "/payment", "/orders", "/wishlist", "/coupons", "/my-coupons"];
+    const isOnDashboardOnly = dashboardOnlyPaths.some((p) => location.pathname === p) || location.pathname.startsWith("/verify-payment/");
+    if (isOwner && isOnDashboardOnly) {
       navigate("/owner", { replace: true });
-    } else if (isAdmin && isOnShoppingPage) {
+    } else if (isAdmin && isOnDashboardOnly) {
       navigate("/admin", { replace: true });
     }
   }, [isAuthenticated, user?.role, location.pathname]);

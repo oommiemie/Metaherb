@@ -12918,9 +12918,10 @@ interface AuditEntry { id: string; action: string; by: string; when: string; rea
 
 function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplaints?: () => void }) {
   const { t } = useLanguage();
-  // Live products from context — shadows the module-level `siteProducts` so add/delete
-  // performed in the dashboard reflect across the whole app immediately.
+  // Live products + categories from context — shadows the module-level
+  // imports so add/delete/rename in the admin reflects everywhere.
   const { products: siteProducts, removeProduct, updateProduct } = useProducts();
+  const { categories: liveCategories } = useCategories();
   const [search, setSearch] = useState("");
   type FilterTab = "all" | "pinned" | "low" | "out" | "issues";
   const [filter, setFilter] = useState<FilterTab>("all");
@@ -12940,10 +12941,14 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
 
   const shopNames = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), [siteProducts]);
   const allCategories = useMemo(() => {
-    const set = new Set<string>(productCategories);
+    // Union: admin-managed categories (live) + any category found on existing products.
+    // The static productCategories import is the historical seed — kept as fallback only.
+    const set = new Set<string>();
+    liveCategories.forEach((c) => set.add(c.name));
+    productCategories.forEach((c) => set.add(c));
     siteProducts.forEach((p) => set.add(p.category));
     return Array.from(set);
-  }, [siteProducts]);
+  }, [siteProducts, liveCategories]);
 
   const getStatus = (p: typeof siteProducts[number]): ProductStatus => {
     if (suspended.has(p.id)) return "suspended";

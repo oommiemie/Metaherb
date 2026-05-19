@@ -419,11 +419,22 @@ async function run() {
     localStorage.setItem("metaherb:products", JSON.stringify(cur));
   });
 
+  // First: confirm owner can preview their own product on /products without
+  // getting bounced back to /owner (the prior redirect rule was too greedy).
+  await visit(page, "/products", "products list (still as owner)");
+  await page.waitForTimeout(1800);
+  if (!page.url().endsWith("/owner")) ok("owner stays on /products (no auto-redirect)");
+  else bad("owner was redirected back to /owner from /products");
+  const ownerSelfVisible = await page.getByText("Owner Walk Product").count();
+  if (ownerSelfVisible > 0) ok(`owner sees their product on /products preview`);
+  else bad("owner can't see their product on /products preview");
+
+  // Then: confirm customer also sees it.
   await loginAs(page, "user@test.com", "12345678", "customer (post-owner-walk)");
   await visit(page, "/products", "products list (owner walk)");
   await page.waitForTimeout(1800);
   const ownerWalkVisible = await page.getByText("Owner Walk Product").count();
-  if (ownerWalkVisible > 0) ok(`owner-added product visible on /products (×${ownerWalkVisible})`);
+  if (ownerWalkVisible > 0) ok(`owner-added product visible to customer on /products (×${ownerWalkVisible})`);
   else bad("owner-added product NOT visible on /products");
 
   // ============================================
