@@ -346,6 +346,99 @@ function BannerCarousel() {
 }
 
 /* ===== Home Page ===== */
+/* ===== Categories row — paginates to match the admin preview's 4/6/9 logic ===== */
+function useResponsivePerPage(): number {
+  const [perPage, setPerPage] = useState<number>(() => {
+    if (typeof window === "undefined") return 9;
+    if (window.innerWidth < 640) return 4;
+    if (window.innerWidth < 1024) return 6;
+    return 9;
+  });
+  useEffect(() => {
+    const onResize = () => {
+      const w = window.innerWidth;
+      setPerPage(w < 640 ? 4 : w < 1024 ? 6 : 9);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return perPage;
+}
+
+function CategoryRow({
+  categories, page, setPage, onPick,
+}: {
+  categories: Array<{ id: string; name: string; iconKey: string; iconImage?: string; color: string }>;
+  page: number;
+  setPage: (n: number | ((p: number) => number)) => void;
+  onPick: (name: string) => void;
+}) {
+  const perPage = useResponsivePerPage();
+  const pageCount = Math.max(1, Math.ceil(categories.length / perPage));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageCats = categories.slice(safePage * perPage, safePage * perPage + perPage);
+
+  // Reset to first page if pageCount shrinks (e.g. admin hides categories)
+  useEffect(() => {
+    if (safePage !== page) setPage(safePage);
+  }, [safePage, page, setPage]);
+
+  if (categories.length === 0) return null;
+
+  return (
+    <div className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+      <div className="relative">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={safePage}
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center justify-evenly gap-3 sm:gap-4 py-3 px-4 sm:px-8 lg:px-12 w-full">
+            {pageCats.map((cat) => {
+              const Icon = getCategoryIcon(cat.iconKey);
+              return (
+                <button key={cat.id} onClick={() => onPick(cat.name)}
+                  className="flex flex-col items-center gap-1.5 sm:gap-2 min-w-[64px] sm:min-w-[80px] cursor-pointer group shrink-0">
+                  <div
+                    className="size-[40px] sm:size-[56px] rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-md overflow-hidden"
+                    style={{ backgroundColor: `${cat.color}1a` }}>
+                    {cat.iconImage ? (
+                      <img src={cat.iconImage} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <Icon className="size-5" style={{ color: cat.color }} strokeWidth={1.8} />
+                    )}
+                  </div>
+                  <span className={`${font} text-[11px] sm:text-[12px] text-gray-600 whitespace-nowrap transition-colors duration-300 group-hover:text-[#319754]`}>
+                    {cat.name}
+                  </span>
+                </button>
+              );
+            })}
+          </motion.div>
+        </AnimatePresence>
+        {/* Prev arrow */}
+        {safePage > 0 && (
+          <button onClick={() => setPage((p) => Math.max(0, p - 1))}
+            className="absolute left-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.6)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10"
+            aria-label="Previous categories">
+            <ChevronLeft className="size-5" strokeWidth={2.4} />
+          </button>
+        )}
+        {/* Next arrow */}
+        {safePage < pageCount - 1 && (
+          <button onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+            className="absolute right-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.6)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10"
+            aria-label="Next categories">
+            <ChevronRight className="size-5" strokeWidth={2.4} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function HomePage() {
   const navigate = useNavigate();
   const { recentIds } = useRecentlyViewed();
@@ -354,6 +447,7 @@ export function HomePage() {
   const { activeCategories } = useCategories();
   const [loading, setLoading] = useState(true);
   const [recPage, setRecPage] = useState(0);
+  const [catPage, setCatPage] = useState(0);
   const [recDirection, setRecDirection] = useState(0);
   const [flashPage, setFlashPage] = useState(0);
   const [flashDirection, setFlashDirection] = useState(0);
@@ -442,37 +536,9 @@ export function HomePage() {
         </div>
       </div>
 
-      {/* Categories — driven by admin CategoriesContext (active categories only) */}
-      <div className="px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
-        <div className="flex items-center justify-evenly gap-3 sm:gap-4 overflow-x-auto py-3 px-4 sm:px-8 lg:px-12 scrollbar-hide w-full">
-          {activeCategories.map((cat) => {
-            const Icon = getCategoryIcon(cat.iconKey);
-            return (
-              <button
-                key={cat.id}
-                onClick={() => navigate(`/products?category=${cat.name}`)}
-                className={`flex flex-col items-center gap-1.5 sm:gap-2 min-w-[64px] sm:min-w-[80px] cursor-pointer group`}
-              >
-                <div
-                  className="size-[40px] sm:size-[56px] rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-md"
-                  style={{ backgroundColor: `${cat.color}1a` }}
-                >
-                  {cat.iconImage ? (
-                    <img src={cat.iconImage} alt="" className="size-5 sm:size-7 object-cover rounded" />
-                  ) : (
-                    <Icon className="size-5" style={{ color: cat.color }} strokeWidth={1.8} />
-                  )}
-                </div>
-                <span
-                  className={`${font} text-[11px] sm:text-[12px] text-gray-600 whitespace-nowrap transition-colors duration-300 group-hover:text-[#319754]`}
-                >
-                  {cat.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Categories — driven by admin CategoriesContext, paginated to match the admin preview:
+          mobile 4 / tablet 6 / desktop 9 per page, with prev/next arrows when overflow */}
+      <CategoryRow categories={activeCategories} page={catPage} setPage={setCatPage} onPick={(name) => navigate(`/products?category=${name}`)} />
 
       {/* Recommended Products */}
       <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">

@@ -343,11 +343,36 @@ async function run() {
   const catVisible = await page.getByText("E2E Test Cat").count();
   if (catVisible > 0) ok(`new category visible on HomePage row (×${catVisible})`);
   else bad(`new category NOT visible on HomePage`);
-  // Clean up
+
+  // Pagination check — write exactly 10 active categories and confirm the next arrow appears.
   await page.evaluate(() => {
-    const cur = JSON.parse(localStorage.getItem("metaherb:categories") || "[]");
-    localStorage.setItem("metaherb:categories", JSON.stringify(cur.filter((c) => c.id !== "E2E_TEST_CAT")));
+    const cats = Array.from({ length: 10 }, (_, i) => ({
+      id: `PAGE_TEST_${i}`, name: `Cat ${i}`, description: "",
+      iconKey: "leaf", color: "#319754", active: true,
+    }));
+    localStorage.setItem("metaherb:categories", JSON.stringify(cats));
   });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("load").catch(() => {});
+  await page.waitForTimeout(1500);
+  const nextArrow = await page.locator('button[aria-label="Next categories"]').count();
+  if (nextArrow > 0) ok("next arrow appears when categories > 9 (pagination engaged)");
+  else bad("next arrow missing despite 10 active categories");
+
+  // Drop back to 9, next arrow should disappear.
+  await page.evaluate(() => {
+    const cats = Array.from({ length: 9 }, (_, i) => ({
+      id: `PAGE_TEST_${i}`, name: `Cat ${i}`, description: "",
+      iconKey: "leaf", color: "#319754", active: true,
+    }));
+    localStorage.setItem("metaherb:categories", JSON.stringify(cats));
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("load").catch(() => {});
+  await page.waitForTimeout(1500);
+  const nextArrowAfterClean = await page.locator('button[aria-label="Next categories"]').count();
+  if (nextArrowAfterClean === 0) ok("next arrow disappears when categories drop back to 9");
+  else bad("next arrow still visible after cleanup");
 
   // SiteInfo round-trip — admin name change → appbar updates
   await page.evaluate(() => {
