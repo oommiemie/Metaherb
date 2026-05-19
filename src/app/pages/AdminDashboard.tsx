@@ -5903,16 +5903,8 @@ function BannerEditView({ initial, allBanners, onSave, onCancel }: {
 
 function BannerContent() {
   const { t } = useLanguage();
-  // Live banners via context — admin add/edit/delete reflects on customer HomePage immediately.
-  const { banners, saveBanner: ctxSave, removeBanner: ctxRemove } = useBanners();
-  const setBanners = (updater: Banner[] | ((prev: Banner[]) => Banner[])) => {
-    const next = typeof updater === "function" ? updater(banners) : updater;
-    // Diff against current: delete missing, save the rest.
-    const nextIds = new Set(next.map((b) => b.id));
-    banners.forEach((b) => { if (!nextIds.has(b.id)) ctxRemove(b.id); });
-    next.forEach((b) => ctxSave(b));
-  };
-  void setBanners; // kept for potential future setBanners(prev => …) usage
+  // Live banners via context — admin add/edit/delete/toggle reflects on customer HomePage immediately.
+  const { banners, saveBanner: ctxSave, updateBanner: ctxUpdate, removeBanner: ctxRemove } = useBanners();
   void initialBanners; // seed already absorbed by BannersProvider
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | BannerStatus>("all");
@@ -5928,7 +5920,9 @@ function BannerContent() {
   const closeEdit = () => { setView("list"); setEditingBanner(null); };
 
   const saveBanner = (b: Banner) => {
-    setBanners((prev) => editingBanner ? prev.map((x) => x.id === b.id ? b : x) : [...prev, b]);
+    // ctxSave is upsert — same call handles both add and edit.
+    ctxSave(b);
+    toast.success(editingBanner ? `บันทึก "${b.name}" แล้ว` : `เพิ่ม "${b.name}" แล้ว`);
     closeEdit();
   };
 
@@ -5972,9 +5966,9 @@ function BannerContent() {
   };
 
   const toggleBannerStatus = (id: string) => {
-    setBanners((prev) => prev.map((b) =>
-      b.id === id ? { ...b, status: b.status === "active" ? "draft" : "active" } : b
-    ));
+    const b = banners.find((x) => x.id === id);
+    if (!b) return;
+    ctxUpdate(id, { status: b.status === "active" ? "draft" : "active" });
   };
 
   return (
@@ -6197,7 +6191,7 @@ function BannerContent() {
                             </button>
                           )}
                           <div className="h-px bg-gray-100 my-1" />
-                          <button onClick={() => { if (confirm(`ลบ "${b.name}"?`)) { setBanners((prev) => prev.filter((x) => x.id !== b.id)); toast.success(`ลบ: ${b.name}`); } }}
+                          <button onClick={() => { if (confirm(`ลบ "${b.name}"?`)) { ctxRemove(b.id); toast.success(`ลบ: ${b.name}`); } }}
                             className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
                             <Trash2 className="size-3.5" strokeWidth={2.2} />
                             <span style={{ fontWeight: 500 }}>ลบ</span>

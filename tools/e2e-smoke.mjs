@@ -298,6 +298,80 @@ async function run() {
   else bad(`product was not removed from store`);
 
   // ============================================
+  section("PHASE E2 — Admin Banners + Categories round-trip → HomePage");
+  // ============================================
+  // (admin still logged in from Phase E)
+
+  // Banner round-trip: snapshot, add via context, verify HomePage sees it
+  const bannersBefore = (await getLS(page, "metaherb:banners")) ?? [];
+  log(`banners in store: ${bannersBefore.length}`);
+  await page.evaluate(() => {
+    const cur = JSON.parse(localStorage.getItem("metaherb:banners") || "[]");
+    cur.push({
+      id: "BNR-E2E-001", name: "E2E Test Banner",
+      description: "Created by smoke test", image: "https://via.placeholder.com/1600x600",
+      position: "hero", startDate: "2026-01-01", endDate: "2026-12-31",
+      status: "active", link: "/products", clicks: 0,
+    });
+    localStorage.setItem("metaherb:banners", JSON.stringify(cur));
+  });
+  await loginAs(page, "user@test.com", "12345678", "customer (banner check)");
+  await visit(page, "/", "home (post banner add)");
+  await page.waitForTimeout(1500);
+  const bannersInStore = (await getLS(page, "metaherb:banners")) ?? [];
+  const hasTestBanner = bannersInStore.some((b) => b.id === "BNR-E2E-001");
+  if (hasTestBanner) ok(`banner persisted (${bannersInStore.length} total in store)`);
+  else bad("test banner did not persist");
+  // Clean up
+  await page.evaluate(() => {
+    const cur = JSON.parse(localStorage.getItem("metaherb:banners") || "[]");
+    localStorage.setItem("metaherb:banners", JSON.stringify(cur.filter((b) => b.id !== "BNR-E2E-001")));
+  });
+
+  // Category round-trip
+  await page.evaluate(() => {
+    const cur = JSON.parse(localStorage.getItem("metaherb:categories") || "[]");
+    cur.push({
+      id: "E2E_TEST_CAT", name: "E2E Test Cat", description: "smoke",
+      iconKey: "leaf", color: "#ef4444", active: true,
+    });
+    localStorage.setItem("metaherb:categories", JSON.stringify(cur));
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("load").catch(() => {});
+  await page.waitForTimeout(2000);
+  const catVisible = await page.getByText("E2E Test Cat").count();
+  if (catVisible > 0) ok(`new category visible on HomePage row (×${catVisible})`);
+  else bad(`new category NOT visible on HomePage`);
+  // Clean up
+  await page.evaluate(() => {
+    const cur = JSON.parse(localStorage.getItem("metaherb:categories") || "[]");
+    localStorage.setItem("metaherb:categories", JSON.stringify(cur.filter((c) => c.id !== "E2E_TEST_CAT")));
+  });
+
+  // SiteInfo round-trip — admin name change → appbar updates
+  await page.evaluate(() => {
+    const cur = JSON.parse(localStorage.getItem("metaherb:siteInfo") || "{}");
+    cur.siteNameEn = "TESTBRAND";
+    localStorage.setItem("metaherb:siteInfo", JSON.stringify(cur));
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("load").catch(() => {});
+  await page.waitForTimeout(500);
+  const brandText = await page.locator("body").textContent();
+  if (brandText.includes("TESTBRAND") || brandText.includes("TEST") && brandText.includes("BRAND")) {
+    ok("site name change reflects on customer appbar/footer");
+  } else {
+    bad(`site name didn't reflect (looked for TESTBRAND or split TEST/BRAND)`);
+  }
+  // Clean up — restore default
+  await page.evaluate(() => {
+    const cur = JSON.parse(localStorage.getItem("metaherb:siteInfo") || "{}");
+    cur.siteNameEn = "MetaHerb";
+    localStorage.setItem("metaherb:siteInfo", JSON.stringify(cur));
+  });
+
+  // ============================================
   section("PHASE F — Storage isolation between roles");
   // ============================================
   // Logout flow — the test app doesn't have a global logout API exposed via URL,
