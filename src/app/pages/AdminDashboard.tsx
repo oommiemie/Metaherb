@@ -5229,10 +5229,10 @@ function MiniToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => v
 }
 
 // FilterTabPills — แสดง tabs row บน lg+ / dropdown บน < lg
-function FilterTabPills<T extends string | number>({ tabs, active, onChange, pillId, singleRow }: {
-  tabs: { id: T; label: string; count: number; Icon: any }[];
-  active: T;
-  onChange: (id: T) => void;
+function FilterTabPills({ tabs, active, onChange, pillId, singleRow }: {
+  tabs: { id: string | number; label: string; count: number; Icon: any }[];
+  active: string | number;
+  onChange: (id: any) => void;
   pillId: string;
   singleRow?: boolean;
 }) {
@@ -20193,8 +20193,10 @@ function KpiCard({ icon: Icon, label, value, color }: { icon: any; label: string
   );
 }
 
-function FilterTabs<T extends string>({ value, options, onChange }: {
-  value: T; options: { id: T; label: string; count?: number }[]; onChange: (v: T) => void;
+function FilterTabs({ value, options, onChange }: {
+  value: string;
+  options: { id: string; label: string; count?: number }[];
+  onChange: (v: any) => void;
 }) {
   return (
     <div className="inline-flex bg-gray-100 rounded-full p-1 flex-wrap">
