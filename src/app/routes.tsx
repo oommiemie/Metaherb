@@ -37,6 +37,7 @@ import { ProductsProvider } from "./store/ProductsContext";
 import { SiteInfoProvider } from "./store/SiteInfoContext";
 import { BannersProvider } from "./store/BannersContext";
 import { CategoriesProvider } from "./store/CategoriesContext";
+import { AIAssistantProvider } from "./store/AIAssistantContext";
 import { Toaster } from "sonner";
 
 function Providers() {
@@ -54,8 +55,10 @@ function Providers() {
                   <ShopProvider>
                     <ChatProvider>
                       <RecentlyViewedProvider>
-                        <Toaster position="top-center" richColors />
-                        <Layout />
+                        <AIAssistantProvider>
+                          <Toaster position="top-center" richColors />
+                          <Layout />
+                        </AIAssistantProvider>
                       </RecentlyViewedProvider>
                     </ChatProvider>
                   </ShopProvider>

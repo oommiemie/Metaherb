@@ -9,11 +9,14 @@ const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
 /* ========== USER CHAT (chat with shops) ========== */
 function UserChat() {
-  const { chatRooms, activeChatShop, closeChat, sendMessage, totalUnread, openChat } = useChat();
+  const { chatRooms, activeChatShop, closeChat, sendMessage, openChat,
+          showChatList, openChatList, closeChatList } = useChat();
   const { t } = useLanguage();
   const [input, setInput] = useState("");
   const [minimized, setMinimized] = useState(false);
-  const [showList, setShowList] = useState(false);
+  // List visibility is driven by context now — the appbar bell-style icon opens it.
+  const showList = showChatList;
+  const setShowList = (v: boolean) => (v ? openChatList() : closeChatList());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const room = chatRooms.find((r) => r.shopId === activeChatShop);
@@ -30,33 +33,19 @@ function UserChat() {
 
   const handleOpenShopChat = (shopId: string) => {
     openChat(shopId);
-    setShowList(false);
+    closeChatList();
   };
 
   const handleBackToList = () => {
     closeChat();
-    setShowList(true);
+    openChatList();
   };
 
   // Video call overlay state (customer side only)
   const [videoCallOpen, setVideoCallOpen] = useState(false);
 
-  // Floating chat bubble
-  if (!activeChatShop && !showList) {
-    return (
-      <button
-        onClick={() => setShowList(true)}
-        className="fixed bottom-6 right-6 z-40 bg-[#319754] text-white rounded-full size-14 flex items-center justify-center shadow-lg cursor-pointer hover:bg-[#267a43] transition-all hover:scale-110"
-      >
-        <MessageCircle className="size-6" />
-        {totalUnread > 0 && (
-          <span className="absolute -top-1 -right-1 bg-[#ff383c] text-white text-[10px] size-5 rounded-full flex items-center justify-center">
-            {totalUnread}
-          </span>
-        )}
-      </button>
-    );
-  }
+  // No floating bubble — the chat is opened from the appbar icon (Layout.tsx).
+  if (!activeChatShop && !showList && !minimized) return null;
 
   // Shop list view
   if (showList && !activeChatShop) {
@@ -105,16 +94,8 @@ function UserChat() {
     );
   }
 
-  if (minimized) {
-    return (
-      <button
-        onClick={() => setMinimized(false)}
-        className="fixed bottom-6 right-6 z-40 bg-[#319754] text-white rounded-full size-14 flex items-center justify-center shadow-lg cursor-pointer hover:bg-[#267a43]"
-      >
-        <MessageCircle className="size-6" />
-      </button>
-    );
-  }
+  // Minimize = close panel; user can re-open from the chat icon in the appbar.
+  if (minimized) return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 w-[360px] max-w-[calc(100vw-32px)] h-[500px] max-h-[calc(100vh-100px)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200">
@@ -138,7 +119,7 @@ function UserChat() {
             className="cursor-pointer hover:bg-white/15 rounded-full p-1.5 transition-colors">
             <Video className="size-[18px]" strokeWidth={2.2} />
           </button>
-          <button onClick={() => setMinimized(true)} className="cursor-pointer hover:bg-white/10 rounded p-1">
+          <button onClick={() => { closeChat(); closeChatList(); }} className="cursor-pointer hover:bg-white/10 rounded p-1" aria-label="ย่อ">
             <Minus className="size-4" />
           </button>
           <button onClick={() => { closeChat(); setShowList(false); }} className="cursor-pointer hover:bg-white/10 rounded p-1">

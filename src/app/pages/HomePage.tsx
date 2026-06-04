@@ -316,7 +316,7 @@ function BannerCarousel() {
           />
         </div>
       ))}
-      {/* Fallback fixed-aspect image to drive height when parent has no aspect */}
+      {/* Fallback fixed-aspect image to drive height when parent has no aspect — same 775/160 stripe on every viewport. */}
       <div className="invisible aspect-[775/160] w-full" />
       {/* Dots */}
       <div className="absolute bottom-[14px] left-1/2 -translate-x-1/2 flex gap-1.5">
@@ -359,6 +359,26 @@ function useResponsivePerPage(): number {
       const w = window.innerWidth;
       setPerPage(w < 640 ? 4 : w < 1024 ? 6 : 9);
     };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return perPage;
+}
+
+/** Page size for product rows on Home (Recommended / Flash Sale) — mirrors the
+ * grid: 2 mobile, 3 sm, 4 md, 6 lg. Phones now show one row of 2 then ▸. */
+function useProductsPerPage(): number {
+  const compute = () => {
+    if (typeof window === "undefined") return 6;
+    const w = window.innerWidth;
+    if (w < 640)  return 2;
+    if (w < 768)  return 3;
+    if (w < 1024) return 4;
+    return 6;
+  };
+  const [perPage, setPerPage] = useState<number>(compute);
+  useEffect(() => {
+    const onResize = () => setPerPage(compute());
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -451,6 +471,13 @@ export function HomePage() {
   const [recDirection, setRecDirection] = useState(0);
   const [flashPage, setFlashPage] = useState(0);
   const [flashDirection, setFlashDirection] = useState(0);
+  const [videoPage, setVideoPage] = useState(0);
+  const [videoDirection, setVideoDirection] = useState(0);
+  const productsPerPage = useProductsPerPage();
+
+  // Reset paging when viewport changes the page size (e.g. rotate to mobile
+  // and the old page index falls off the end of the resized list).
+  useEffect(() => { setRecPage(0); setFlashPage(0); setVideoPage(0); }, [productsPerPage]);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1200);
@@ -518,14 +545,14 @@ export function HomePage() {
           </div>
           {/* Side promo banners — 2 cols on mobile/tablet, stacked on desktop */}
           <div className="grid grid-cols-2 gap-[10px] lg:flex lg:flex-col lg:flex-[230_1_0%] min-w-0">
-            <div className="rounded-[16px] overflow-hidden flex-1 relative aspect-[230/105] lg:aspect-auto lg:min-h-0">
+            <div className="rounded-[16px] overflow-hidden flex-1 relative aspect-[230/75] lg:aspect-auto lg:min-h-0">
               <ImageWithFallback
                 src="https://www.figma.com/api/mcp/asset/0f3a054e-37ab-4007-84bb-9cbb2d875abe"
                 alt="Bewell promo"
                 className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
-            <div className="rounded-[16px] overflow-hidden flex-1 relative aspect-[230/105] lg:aspect-auto lg:min-h-0">
+            <div className="rounded-[16px] overflow-hidden flex-1 relative aspect-[230/75] lg:aspect-auto lg:min-h-0">
               <ImageWithFallback
                 src="https://www.figma.com/api/mcp/asset/5f63c3f3-0721-44d3-8df8-e13edff65d77"
                 alt="Beauty promo"
@@ -554,8 +581,8 @@ export function HomePage() {
           {/* Product Grid */}
           {(() => {
             const recProducts = products.filter(p => !p.isFlashSale && (p.isRecommended || p.discountPercent));
-            const totalRecPages = Math.ceil(recProducts.length / 6);
-            const pagedProducts = recProducts.slice(recPage * 6, recPage * 6 + 6);
+            const totalRecPages = Math.max(1, Math.ceil(recProducts.length / productsPerPage));
+            const pagedProducts = recProducts.slice(recPage * productsPerPage, recPage * productsPerPage + productsPerPage);
             return (
             <div className="group relative overflow-x-clip py-2 -my-2">
             <AnimatePresence mode="wait" initial={false} custom={recDirection}>
@@ -570,7 +597,7 @@ export function HomePage() {
               style={{ backgroundColor: "transparent" }}
             >
               {pagedProducts.map((p, i) => {
-                const globalIdx = recPage * 6 + i;
+                const globalIdx = recPage * productsPerPage + i;
                 const tag = getProductTag(p);
                 return (
                   <div
@@ -671,8 +698,8 @@ export function HomePage() {
           {/* Flash Sale Grid */}
           {(() => {
             const flashProducts = products.filter(p => p.isFlashSale);
-            const totalFlashPages = Math.ceil(flashProducts.length / 6);
-            const pagedFlash = flashProducts.slice(flashPage * 6, flashPage * 6 + 6);
+            const totalFlashPages = Math.max(1, Math.ceil(flashProducts.length / productsPerPage));
+            const pagedFlash = flashProducts.slice(flashPage * productsPerPage, flashPage * productsPerPage + productsPerPage);
             return (
           <div className="group relative overflow-x-clip py-2 -my-2">
             <AnimatePresence mode="wait" initial={false} custom={flashDirection}>
@@ -687,7 +714,7 @@ export function HomePage() {
               style={{ backgroundColor: "transparent" }}
             >
               {pagedFlash.map((p, i) => {
-                const globalIdx = flashPage * 6 + i;
+                const globalIdx = flashPage * productsPerPage + i;
                 return (
                 <div
                   key={p.id}
@@ -836,40 +863,70 @@ export function HomePage() {
               <ChevronRight className="size-4" />
             </button>
           </div>
-          {/* Video Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]">
-            {[
-              { img: SAFE_IMAGES[9], views: "12K", title: "ทำน้ำมันสมุนไพรทาแก้ปวดเมื่อยจาก 5 สมุนไพรหาง่าย" },
-              { img: SAFE_IMAGES[2], views: "15K", title: "เปิดสวนน้ำผึ้งดอกลำไย จ.ลำพูน บุกถึงต้นรัง" },
-              { img: SAFE_IMAGES[4], views: "9K", title: "วิธีคั้นน้ำขิงสด ดื่มอุ่นๆ บรรเทาหวัด" },
-              { img: SAFE_IMAGES[0], views: "20K", title: "ชาคาโมมายล์ — ชงให้หอม ผ่อนคลาย หลับสนิท" },
+          {/* Video Grid — paginated to match Recommended / Flash Sale (2 per page on mobile) */}
+          {(() => {
+            const videos = [
+              { img: SAFE_IMAGES[9],  views: "12K", title: "ทำน้ำมันสมุนไพรทาแก้ปวดเมื่อยจาก 5 สมุนไพรหาง่าย" },
+              { img: SAFE_IMAGES[2],  views: "15K", title: "เปิดสวนน้ำผึ้งดอกลำไย จ.ลำพูน บุกถึงต้นรัง" },
+              { img: SAFE_IMAGES[4],  views: "9K",  title: "วิธีคั้นน้ำขิงสด ดื่มอุ่นๆ บรรเทาหวัด" },
+              { img: SAFE_IMAGES[0],  views: "20K", title: "ชาคาโมมายล์ — ชงให้หอม ผ่อนคลาย หลับสนิท" },
               { img: SAFE_IMAGES[10], views: "25K", title: "5 สูตรน้ำสมุนไพรดื่มแล้วผิวใส" },
-              { img: SAFE_IMAGES[7], views: "30K", title: "ตำรับยาสมุนไพรไทยโบราณ ที่หลวงปู่ส่งต่อกันมา" },
-            ].map((v, i) => (
-              <div
-                key={i}
-                className="relative h-[180px] sm:h-[259px] rounded-[16px] overflow-hidden cursor-pointer group hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
-              >
-                <img src={v.img} alt={v.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-                <div className="relative flex flex-col items-start justify-between p-[10px] h-full">
-                  {/* View Count */}
-                  <div className="bg-black/50 flex items-center gap-[10px] px-[12px] py-[4px] rounded-[100px]">
-                    <svg className="size-[12px] shrink-0" fill="none" viewBox="0 0 12 12.2116">
-                      <path d={svgArticlePaths.p450bbc0} fill="white" />
-                    </svg>
-                    <span className={`${font} text-[12px] text-white`}>{v.views}</span>
-                  </div>
-                  {/* Title */}
-                  <div className="bg-black/50 rounded-[100px] w-full">
-                    <div className="flex items-center justify-center px-[12px] py-[4px]">
-                      <span className={`${font} text-[12px] text-white truncate`}>{v.title}</span>
-                    </div>
-                  </div>
-                </div>
+              { img: SAFE_IMAGES[7],  views: "30K", title: "ตำรับยาสมุนไพรไทยโบราณ ที่หลวงปู่ส่งต่อกันมา" },
+            ];
+            const totalVideoPages = Math.max(1, Math.ceil(videos.length / productsPerPage));
+            const pagedVideos = videos.slice(videoPage * productsPerPage, videoPage * productsPerPage + productsPerPage);
+            return (
+              <div className="group relative overflow-x-clip py-2 -my-2">
+                <AnimatePresence mode="wait" initial={false} custom={videoDirection}>
+                  <motion.div
+                    key={videoPage}
+                    custom={videoDirection}
+                    initial={{ x: videoDirection > 0 ? 300 : -300, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: videoDirection > 0 ? -300 : 300, opacity: 0 }}
+                    transition={{ duration: 0.35, ease: "easeInOut" }}
+                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]">
+                    {pagedVideos.map((v, i) => (
+                      <div
+                        key={`vid-${videoPage}-${i}`}
+                        className="relative h-[180px] sm:h-[259px] rounded-[16px] overflow-hidden cursor-pointer group/card hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                      >
+                        <img src={v.img} alt={v.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
+                        <div className="absolute inset-0 bg-black/0 group-hover/card:bg-black/20 transition-colors duration-300" />
+                        <div className="relative flex flex-col items-start justify-between p-[10px] h-full">
+                          <div className="bg-black/50 flex items-center gap-[10px] px-[12px] py-[4px] rounded-[100px]">
+                            <svg className="size-[12px] shrink-0" fill="none" viewBox="0 0 12 12.2116">
+                              <path d={svgArticlePaths.p450bbc0} fill="white" />
+                            </svg>
+                            <span className={`${font} text-[12px] text-white`}>{v.views}</span>
+                          </div>
+                          <div className="bg-black/50 rounded-[100px] w-full">
+                            <div className="flex items-center justify-center px-[12px] py-[4px]">
+                              <span className={`${font} text-[12px] text-white truncate`}>{v.title}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </motion.div>
+                </AnimatePresence>
+                {/* Left Arrow */}
+                {videoPage > 0 && (
+                  <button onClick={() => { setVideoDirection(-1); setVideoPage(p => p - 1); }}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10">
+                    <ChevronLeft className="size-5" strokeWidth={2.4} />
+                  </button>
+                )}
+                {/* Right Arrow */}
+                {videoPage < totalVideoPages - 1 && (
+                  <button onClick={() => { setVideoDirection(1); setVideoPage(p => p + 1); }}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10">
+                    <ChevronRight className="size-5" strokeWidth={2.4} />
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
       </section>
 

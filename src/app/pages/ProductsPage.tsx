@@ -39,7 +39,9 @@ export function ProductsPage() {
   const categories = activeCategories.map((c) => c.name);
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "ทั้งหมด");
   const [productType, setProductType] = useState("ทั้งหมด");
-  const [sortBy, setSortBy] = useState("จากมากไปน้อย");
+  // Default to "newest" so owners who just added a product see it on page 1
+  // (price-desc used to be the default and hid low-priced new products on page 2+).
+  const [sortBy, setSortBy] = useState("ใหม่ล่าสุด");
   const [page, setPage] = useState(1);
   const PRICE_MIN = 0;
   const PRICE_MAX = Math.max(500, ...products.map((p) => p.originalPrice ?? p.price));
@@ -54,6 +56,8 @@ export function ProductsPage() {
   }, []);
 
   const searchQuery = searchParams.get("search") || "";
+  // Preserve insertion order so we can sort by "newest" (addProduct prepends).
+  const indexById = new Map(products.map((p, i) => [p.id, i]));
   const filtered = products
     .filter((p) => selectedCategory === "ทั้งหมด" || p.category === selectedCategory)
     .filter((p) => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -67,6 +71,7 @@ export function ProductsPage() {
       return p.price >= minPrice && p.price <= maxPrice;
     })
     .sort((a, b) => {
+      if (sortBy === "ใหม่ล่าสุด")  return (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0);
       if (sortBy === "จากมากไปน้อย") return b.price - a.price;
       if (sortBy === "จากน้อยไปมาก") return a.price - b.price;
       return 0;
@@ -118,7 +123,7 @@ export function ProductsPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <span className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("products_filter")}</span>
-              <button onClick={() => { setSelectedCategory("ทั้งหมด"); setProductType("ทั้งหมด"); setPriceRange([PRICE_MIN, PRICE_MAX]); setSortBy("จากมากไปน้อย"); }}
+              <button onClick={() => { setSelectedCategory("ทั้งหมด"); setProductType("ทั้งหมด"); setPriceRange([PRICE_MIN, PRICE_MAX]); setSortBy("ใหม่ล่าสุด"); }}
                 title={t("common_reset_filter")}
                 className="cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
                 <RotateCcw className="size-4" strokeWidth={2} />
@@ -202,6 +207,7 @@ export function ProductsPage() {
               <div className="relative w-full">
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
                   className={`w-full bg-[#fafafa] h-[40px] rounded-full px-4 text-[13px] ${font} outline-none appearance-none cursor-pointer pr-10`}>
+                  <option value="ใหม่ล่าสุด">{t("common_sort_newest")}</option>
                   <option value="จากมากไปน้อย">{t("common_sort_desc")}</option>
                   <option value="จากน้อยไปมาก">{t("common_sort_asc")}</option>
                 </select>
@@ -245,6 +251,7 @@ export function ProductsPage() {
                 <div className="relative flex-1 min-w-0">
                   <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
                     className={`w-full appearance-none bg-white border border-gray-200 rounded-full pl-4 pr-9 h-[40px] text-[13px] ${font} outline-none cursor-pointer focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/15 shadow-[0_1px_3px_rgba(16,24,40,0.06)]`} style={{ fontWeight: 500 }}>
+                    <option value="ใหม่ล่าสุด">{t("common_sort_newest")}</option>
                     <option value="จากมากไปน้อย">{t("common_sort_desc")}</option>
                     <option value="จากน้อยไปมาก">{t("common_sort_asc")}</option>
                   </select>
@@ -372,7 +379,7 @@ export function ProductsPage() {
 
                   {/* Sticky action bar */}
                   <div className="border-t border-gray-100 p-4 flex gap-2 bg-white shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
-                    <button onClick={() => { setSelectedCategory("ทั้งหมด"); setProductType("ทั้งหมด"); setPriceRange([PRICE_MIN, PRICE_MAX]); setSortBy("จากมากไปน้อย"); }}
+                    <button onClick={() => { setSelectedCategory("ทั้งหมด"); setProductType("ทั้งหมด"); setPriceRange([PRICE_MIN, PRICE_MAX]); setSortBy("ใหม่ล่าสุด"); }}
                       className={`px-4 h-[44px] rounded-full border border-gray-200 ${font} text-[13.5px] text-gray-700 cursor-pointer hover:bg-gray-50 hover:border-gray-300 active:scale-[0.97] transition-all inline-flex items-center justify-center gap-1.5`} style={{ fontWeight: 500 }}>
                       <RotateCcw className="size-4" strokeWidth={2.2} /> {t("common_reset_filter")}
                     </button>

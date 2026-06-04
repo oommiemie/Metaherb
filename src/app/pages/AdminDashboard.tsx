@@ -6,6 +6,7 @@ import { readImageFile } from "../data/imageUpload";
 import { useSiteInfo, DEFAULT_SITE_INFO } from "../store/SiteInfoContext";
 import { useBanners } from "../store/BannersContext";
 import { useCategories, type Category as CtxCategory } from "../store/CategoriesContext";
+import { useAuth, type DisplayRole, type RegistryStatus } from "../store/AuthContext";
 import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
   Shield, DollarSign, Megaphone, UserCog, BarChart2, ShoppingBag,
@@ -147,6 +148,7 @@ const sectionMenus: Record<AdminSection, AdminItem[]> = {
     ]},
     { id: "reviews",    label: "จัดการรีวิว",     icon: Star },
     { id: "orders",     label: "คำสั่งซื้อ",       icon: ShoppingCart },
+    { id: "ai_assistant", label: "AI Assistant",   icon: Sparkles },
   ],
   content: [
     { id: "content_banner", label: "Banner",   icon: ImageIcon },
@@ -5977,13 +5979,13 @@ function BannerContent() {
           whileTap={{ scale: 0.96 }}
           whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}
         >
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่ม Banner</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่ม Banner</span>
         </motion.button>
       </div>
 
@@ -6345,12 +6347,12 @@ function BlogContent() {
           whileTap={{ scale: 0.96 }}
           whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>{t("admin_blog_add")}</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>{t("admin_blog_add")}</span>
         </motion.button>
       </div>
 
@@ -7843,12 +7845,12 @@ function VideoContent() {
           onClick={startAdd}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มวิดีโอ</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่มวิดีโอ</span>
         </motion.button>
       </div>
 
@@ -8688,12 +8690,12 @@ function PopupContent() {
         <motion.button onClick={startAdd}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่ม Popup</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่ม Popup</span>
         </motion.button>
       </div>
 
@@ -9684,7 +9686,7 @@ function LegalFileEditor({ doc, file, onSave, onBack }: {
             <motion.button onClick={() => setMode("edit")}
               whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}>
+              className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}>
               <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center">
                 <Pencil className="size-[14px]" strokeWidth={2.6} />
               </span>
@@ -9700,7 +9702,7 @@ function LegalFileEditor({ doc, file, onSave, onBack }: {
               </motion.button>
               <motion.button onClick={handleSave} disabled={!isDirty}
                 whileTap={isDirty ? { scale: 0.96 } : undefined} whileHover={isDirty ? { y: -1 } : undefined}
-                className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] ${isDirty ? "cursor-pointer hover:bg-[#267a43]" : "opacity-50 cursor-not-allowed"}`}>
+                className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] ${isDirty ? "cursor-pointer hover:bg-[#267a43]" : "opacity-50 cursor-not-allowed"}`}>
                 <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center">
                   <Save className="size-[14px]" strokeWidth={2.6} />
                 </span>
@@ -10406,11 +10408,11 @@ function LegalContent({ docId }: { docId: LegalDocId }) {
         <motion.button onClick={handleStartCreate}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}>
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้างเอกสารใหม่</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>สร้างเอกสารใหม่</span>
         </motion.button>
       </div>
 
@@ -11816,7 +11818,7 @@ function ComplaintListContent() {
           onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
+          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
           <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
             <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
           </span>
@@ -12193,7 +12195,7 @@ function ComplaintAppealsContent() {
           onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
+          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
           <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
             <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
           </span>
@@ -13110,7 +13112,7 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
           onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
+          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
           <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
             <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
           </span>
@@ -13994,11 +13996,11 @@ function ProductsCategoriesContent() {
           onClick={openAdd}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
           <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
             <Plus className="size-[14px] text-white" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มหมวดหมู่</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่มหมวดหมู่</span>
         </motion.button>
       </div>
 
@@ -20271,19 +20273,7 @@ interface UserRecord {
   status: "active" | "banned" | "pending";
 }
 
-const MOCK_USERS: UserRecord[] = [
-  { id: "u-1",  username: "admin0001",    email: "test0001@gmail.com",        name: "Admin TestKUB",         role: "admin",    status: "active" },
-  { id: "u-2",  username: "customertest", email: "customer@test.com",         name: "customer test",          role: "customer", status: "active" },
-  { id: "u-3",  username: "metaherb",     email: "metaherb.herb@gmail.com",   name: "metaherb store",         role: "owner",    status: "active" },
-  { id: "u-4",  username: "registest",    email: "registertest@test.com",     name: "ทดสอบ ลงทะเบียน",        role: "customer", status: "active" },
-  { id: "u-5",  username: "bmsdevging",   email: "ging.buppa@gmail.com",      name: "บุปผา ทดสอบ",            role: "customer", status: "active" },
-  { id: "u-6",  username: "BMStester",    email: "d0879876440@gmail.com",     name: "ชาลิสา ทดสอบ12",         role: "admin",    status: "active" },
-  { id: "u-7",  username: "0pom33pom0",   email: "pom33120pom@gmail.com",     name: "พอม พอม",                role: "customer", status: "active" },
-  { id: "u-8",  username: "AomTantarat",  email: "tanyarat.160344@gmail.com", name: "อัญญารัตน์ คำบุญเรือง", role: "customer", status: "active" },
-  { id: "u-9",  username: "pakjira5245",  email: "namepjk2002@gmail.com",     name: "ภัคจิรา ชัยฮะ",          role: "customer", status: "active" },
-  { id: "u-10", username: "Adthapon.u",   email: "adthapon.u@gmail.com",      name: "อรรถพล อุทัยเรือง",     role: "customer", status: "active" },
-  { id: "u-11", username: "torlarp99",    email: "torlarp999@hotmail.co.th",  name: "ต่อลาภ นาคทอง",          role: "customer", status: "active" },
-];
+// Seeded users live in AuthContext now — admin and register share the same list.
 
 const ROLE_META: Record<UserRecord["role"], { label: string; color: string; bg: string }> = {
   customer: { label: "ลูกค้า",          color: "#6b7280", bg: "#f3f4f6" },
@@ -20359,7 +20349,7 @@ function UserAvatar({ user, size = 36 }: { user: UserRecord; size?: number }) {
 
 function UsersListPage() {
   const { t } = useLanguage();
-  const [users, setUsers] = useState<UserRecord[]>(MOCK_USERS);
+  const { users, updateUserRole: ctxUpdateRole, removeUser: ctxRemoveUser } = useAuth();
   const [filter, setFilter] = useState<UserRecord["role"] | "all">("all");
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -20376,7 +20366,7 @@ function UsersListPage() {
         return;
       }
     }
-    setUsers(prev => prev.map(x => x.id === id ? { ...x, role: newRole } : x));
+    ctxUpdateRole(id, newRole as DisplayRole);
     toast.success(`เปลี่ยน ${u.name} เป็น ${ROLE_META[newRole].label}`);
   };
 
@@ -20399,7 +20389,7 @@ function UsersListPage() {
   const deleteUser = (id: string) => {
     const u = users.find(x => x.id === id);
     if (!u) return;
-    setUsers(prev => prev.filter(x => x.id !== id));
+    ctxRemoveUser(id);
     toast.success(`ลบ ${u.username} เรียบร้อย`);
   };
 
@@ -22242,11 +22232,11 @@ function AdminPromotionsContent() {
           onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
           <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px] text-white" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</span>
         </motion.button>
       </div>
 
@@ -22621,7 +22611,7 @@ function CreateAdminPromotionView({ allShops, onCancel, onCreate }: {
           <motion.button onClick={submit} disabled={!canSubmit}
             whileTap={{ scale: 0.96 }} whileHover={canSubmit ? { y: -1 } : undefined}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
             <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
               <Send className="size-[14px] text-white" strokeWidth={2.6} />
             </span>
@@ -23570,11 +23560,11 @@ function AdminFlashSaleEventsContent() {
         <motion.button onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
           <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px] text-white" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้าง Flash Sale</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>สร้าง Flash Sale</span>
         </motion.button>
       </div>
 
@@ -23809,7 +23799,7 @@ function CreateAdminFlashEventView({ allShops, onCancel, onCreate }: {
           <motion.button onClick={submit} disabled={!canSubmit}
             whileTap={{ scale: 0.96 }} whileHover={canSubmit ? { y: -1 } : undefined}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
             <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
               <Send className="size-[14px] text-white" strokeWidth={2.6} />
             </span>
@@ -24451,6 +24441,135 @@ function fmtAdminReviewDate(iso: number): string {
   const d = new Date(iso);
   const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+
+/* ========== Admin AI Assistant analytics (mock) ========== */
+function AdminAIAssistantContent() {
+  // Mock analytics — would normally come from logged AI conversations
+  const kpis = [
+    { label: "บทสนทนา (วันนี้)",     value: "1,284",   sub: "+18% vs เมื่อวาน",  color: "#319754", Icon: Sparkles },
+    { label: "Conversion จาก AI",     value: "12.4%",   sub: "+2.1pp",            color: "#3b82f6", Icon: TrendingUp },
+    { label: "รายได้ผ่าน AI (เดือนนี้)", value: "฿84,250", sub: "+34% MoM",         color: "#f59e0b", Icon: ShoppingCart },
+    { label: "Lead Score สูง",        value: "37",      sub: "ลูกค้าพร้อมซื้อ",   color: "#ef4444", Icon: Users },
+  ];
+  const topIntents = [
+    { name: "ค้นหาสินค้า",     count: 412, pct: 32 },
+    { name: "ขอแนะนำ",        count: 318, pct: 25 },
+    { name: "เปรียบเทียบ",    count: 186, pct: 14 },
+    { name: "ถามคำถามสินค้า",  count: 154, pct: 12 },
+    { name: "สั่งซื้อใน chat",  count: 124, pct:  9 },
+    { name: "ติดตามออเดอร์",   count:  90, pct:  7 },
+  ];
+  const topProducts = [
+    { name: "ขมิ้นชันแคปซูล 60 แคป", asked: 89, sold: 24, revenue: 5280 },
+    { name: "คอลลาเจนเปปไทด์",      asked: 74, sold: 18, revenue: 9540 },
+    { name: "ฟ้าทะลายโจรผง 100 g",  asked: 61, sold: 15, revenue: 2175 },
+    { name: "ชาคาโมมายล์",           asked: 55, sold: 12, revenue: 1440 },
+    { name: "ใบบัวบกแคปซูล",         asked: 47, sold:  9, revenue: 1620 },
+  ];
+  const hotLeads = [
+    { name: "user_3082",  msgs: 14, interest: "ลดน้ำหนัก + ดีท็อกซ์",       score: 92 },
+    { name: "user_5641",  msgs: 11, interest: "ผู้สูงอายุ (บำรุงข้อ-เข่า)", score: 88 },
+    { name: "user_1129",  msgs:  9, interest: "บำรุงผิว + วิตามินซี",        score: 84 },
+    { name: "user_7720",  msgs:  8, interest: "ช่วยนอนหลับ + ลดเครียด",      score: 79 },
+  ];
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className={`${font} text-[22px] flex items-center gap-2`} style={{ fontWeight: 600 }}>
+          <Sparkles className="size-5 text-[#319754]" /> AI Shopping Assistant
+        </h2>
+        <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>วิเคราะห์บทสนทนา ยอดขาย และ leads ที่เกิดจาก AI Bot</p>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        {kpis.map((k) => (
+          <div key={k.label} className="bg-white rounded-2xl border border-gray-100 p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className={`${font} text-[11px] text-gray-500`}>{k.label}</p>
+              <div className="size-7 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${k.color}1a` }}>
+                <k.Icon className="size-3.5" style={{ color: k.color }} strokeWidth={2.2} />
+              </div>
+            </div>
+            <p className={`${font} text-[20px] sm:text-[24px] tabular-nums`} style={{ fontWeight: 700, color: k.color }}>{k.value}</p>
+            <p className={`${font} text-[11px] text-gray-500 mt-1`}>{k.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        {/* Top intents */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <h3 className={`${font} text-[15px] mb-3`} style={{ fontWeight: 600 }}>เจตนาที่ลูกค้าถามบ่อย</h3>
+          <div className="space-y-2.5">
+            {topIntents.map((t) => (
+              <div key={t.name}>
+                <div className="flex items-center justify-between mb-1 text-[12px]">
+                  <span className={`${font} text-gray-700`}>{t.name}</span>
+                  <span className={`${font} text-gray-500 tabular-nums`}>{t.count} ครั้ง · {t.pct}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${t.pct * 3}%`, background: "linear-gradient(90deg, #46c474, #319754)" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Hot leads */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <h3 className={`${font} text-[15px] mb-3 flex items-center gap-1.5`} style={{ fontWeight: 600 }}>
+            🔥 Hot Leads <span className={`${font} text-[11px] text-gray-400`} style={{ fontWeight: 400 }}>(ลูกค้าพร้อมซื้อสูง)</span>
+          </h3>
+          <div className="space-y-2">
+            {hotLeads.map((l) => (
+              <div key={l.name} className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-gray-50">
+                <div className="min-w-0 flex-1">
+                  <p className={`${font} text-[13px] text-[#1a1a1a] truncate`} style={{ fontWeight: 600 }}>{l.name}</p>
+                  <p className={`${font} text-[11px] text-gray-500 truncate`}>{l.msgs} ข้อความ · {l.interest}</p>
+                </div>
+                <div className="shrink-0">
+                  <span className={`${font} inline-block px-2.5 py-1 rounded-full text-[12px] tabular-nums text-white`}
+                    style={{ background: l.score >= 90 ? "linear-gradient(135deg, #ef4444, #b91c1c)" : l.score >= 80 ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #3b82f6, #1d4ed8)", fontWeight: 700 }}>
+                    {l.score}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Top products via AI */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <h3 className={`${font} text-[15px] mb-3`} style={{ fontWeight: 600 }}>สินค้าถูกถามและขายผ่าน AI มากสุด</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12px]">
+            <thead className="text-gray-400">
+              <tr className="border-b border-gray-100">
+                <th className={`${font} text-left pb-2 pr-3`} style={{ fontWeight: 500 }}>สินค้า</th>
+                <th className={`${font} text-right pb-2 pr-3`} style={{ fontWeight: 500 }}>ถูกถาม</th>
+                <th className={`${font} text-right pb-2 pr-3`} style={{ fontWeight: 500 }}>ขาย</th>
+                <th className={`${font} text-right pb-2`} style={{ fontWeight: 500 }}>รายได้</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topProducts.map((p) => (
+                <tr key={p.name} className="border-b border-gray-50 last:border-b-0">
+                  <td className={`${font} py-2 pr-3 text-[#1a1a1a] truncate max-w-[180px]`} style={{ fontWeight: 600 }}>{p.name}</td>
+                  <td className={`${font} py-2 pr-3 text-right tabular-nums text-gray-700`}>{p.asked}</td>
+                  <td className={`${font} py-2 pr-3 text-right tabular-nums text-[#319754]`} style={{ fontWeight: 600 }}>{p.sold}</td>
+                  <td className={`${font} py-2 text-right tabular-nums text-[#1d4ed8]`} style={{ fontWeight: 700 }}>฿{p.revenue.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function AdminReviewsContent() {
@@ -25621,12 +25740,12 @@ function AdminCouponsContent() {
         <motion.button onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้างคูปอง</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>สร้างคูปอง</span>
         </motion.button>
       </div>
 
@@ -25946,11 +26065,11 @@ function CreateAdminCouponView({ allShops, onCancel, onCreate }: {
           <motion.button onClick={submit} disabled={!canSubmit}
             whileTap={canSubmit ? { scale: 0.96 } : undefined} whileHover={canSubmit ? { y: -1 } : undefined}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
             <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
               <Save className="size-[14px] text-white" strokeWidth={2.6} />
             </span>
-            <span style={{ fontWeight: 600 }}>สร้างคูปอง</span>
+            <span className="hidden sm:inline" style={{ fontWeight: 600 }}>สร้างคูปอง</span>
           </motion.button>
         </div>
       </div>
@@ -26317,6 +26436,102 @@ function CreateAdminCouponView({ allShops, onCancel, onCreate }: {
   );
 }
 
+/* ========== MOBILE DRAWER (mirrors customer end-drawer style) ========== */
+function AdminMobileDrawer({ section, active, onSelect, onClose }: {
+  section: AdminSection;
+  active: ItemId;
+  onSelect: (id: ItemId) => void;
+  onClose: () => void;
+}) {
+  const items = sectionMenus[section];
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    // Auto-expand the group containing the active item
+    const init: Record<string, boolean> = {};
+    items.forEach((it) => {
+      if (it.children?.some((c) => c.id === active)) init[it.id] = true;
+    });
+    return init;
+  });
+  const toggle = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="md:hidden fixed inset-0 z-[60] flex">
+      <motion.aside
+        initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+        transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+        className="relative w-[86vw] max-w-[360px] h-full bg-white shadow-[12px_0_40px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden">
+        {/* Gradient header (blue accent for admin) */}
+        <div className="relative overflow-hidden px-5 py-4 flex items-center justify-between"
+          style={{ background: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 55%, #1d4ed8 100%)" }}>
+          <div className="absolute -top-6 -right-6 size-[120px] rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="relative flex items-center gap-2.5">
+            <img src={imgLogo} className="size-[38px] rounded-full bg-white/95 p-1 ring-1 ring-white/30 object-contain" alt="MetaHerb" />
+            <div className="leading-tight">
+              <p className={`${fontBold} text-white text-[15px]`} style={{ fontWeight: 700 }}>METAHERB</p>
+              <p className={`${font} text-white/80 text-[11px]`}>{sectionLabels[section]}</p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="ปิด"
+            className="relative size-[36px] rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-white transition-all">
+            <X className="size-[18px]" strokeWidth={2.4} />
+          </button>
+        </div>
+
+        {/* Scrollable body — same MenuBtn-pill aesthetic as the desktop sidebar */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5">
+          {items.map((item) => {
+            if (!item.children) {
+              return (
+                <MenuBtn key={item.id}
+                  isActive={active === item.id}
+                  icon={item.icon}
+                  label={item.label}
+                  onClick={() => { onSelect(item.id); onClose(); }}
+                  collapsed={false}
+                />
+              );
+            }
+            const groupActive = item.children.some((c) => c.id === active);
+            return (
+              <div key={item.id} className="space-y-2.5">
+                <MenuBtn isActive={groupActive} icon={item.icon} label={item.label}
+                  onClick={() => toggle(item.id)}
+                  hasArrow expanded={expanded[item.id]} collapsed={false}
+                />
+                <AnimatePresence initial={false}>
+                  {expanded[item.id] && (
+                    <motion.div
+                      key="submenu"
+                      initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                      className="overflow-hidden">
+                      <div className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
+                        {item.children.map((child) => (
+                          <MenuBtn key={child.id}
+                            isActive={active === child.id}
+                            icon={child.icon}
+                            label={child.label}
+                            onClick={() => { onSelect(child.id); onClose(); }}
+                            collapsed={false}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </motion.aside>
+      <div onClick={onClose} className="flex-1 bg-black/45 backdrop-blur-[2px]" />
+    </motion.div>
+  );
+}
+
 /* ========== MAIN ========== */
 export function AdminDashboard() {
   const location = useLocation();
@@ -26389,6 +26604,7 @@ export function AdminDashboard() {
     if (activeItem === "products_coupons")    return <AdminCouponsContent />;
     if (activeItem === "orders")              return <AdminOrdersContent />;
     if (activeItem === "reviews")             return <AdminReviewsContent />;
+    if (activeItem === "ai_assistant")        return <AdminAIAssistantContent />;
     if (activeItem === "page_home")     return <PageHomeBuilder />;
     if (activeItem === "page_products") return <PageProductsBuilder />;
     if (activeItem === "page_blog")     return <PageBlogBuilder />;
@@ -26412,10 +26628,8 @@ export function AdminDashboard() {
 
   return (
     <div className="flex h-full overflow-hidden relative">
-      {!sidebarCollapsed && (
-        <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarCollapsed(true)} />
-      )}
-      <div className={`${sidebarCollapsed ? "hidden md:block" : "fixed inset-y-0 left-0 md:static md:inset-auto z-30 md:z-auto"} h-full md:overflow-y-auto shrink-0`}>
+      {/* Desktop: persistent sidebar inline */}
+      <div className="hidden md:block h-full md:overflow-y-auto shrink-0">
         <AdminSidebar
           section={section}
           active={activeItem}
@@ -26424,6 +26638,18 @@ export function AdminDashboard() {
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
       </div>
+
+      {/* Mobile: start drawer — same visual language as the customer end drawer */}
+      <AnimatePresence>
+        {!sidebarCollapsed && (
+          <AdminMobileDrawer
+            section={section}
+            active={activeItem}
+            onSelect={(item) => { setActiveItem(item); }}
+            onClose={() => setSidebarCollapsed(true)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Mobile floating menu button */}
       {sidebarCollapsed && (

@@ -2,15 +2,17 @@ import { Outlet, useNavigate, useLocation } from "react-router";
 import { useAuth } from "../store/AuthContext";
 import { useCart } from "../store/CartContext";
 import type { CartItem } from "../store/CartContext";
+import { useChat } from "../store/ChatContext";
 import { useOrders } from "../store/OrderContext";
 import { useNotifications } from "../store/NotificationContext";
 import type { Notification } from "../store/NotificationContext";
 import { useWishlist } from "../store/WishlistContext";
-import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, Info, BarChart3, DollarSign, Users, Image, Settings, Phone, Wallet, ClipboardCheck, Truck, PackageCheck, Mail, Leaf, ShieldCheck } from "lucide-react";
+import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, MessageCircle, Info, BarChart3, DollarSign, Users, Image, Settings, Phone, Wallet, ClipboardCheck, Truck, PackageCheck, Mail, Leaf, ShieldCheck } from "lucide-react";
 
 const ShieldCheckLite = () => <ShieldCheck className="size-[12px] text-[#46c474]" strokeWidth={2.4} />;
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ChatModal } from "./ChatModal";
+import { AIAssistantBubble, AIAssistantPanel } from "./AIAssistant";
 import imgLogo from "../../assets/logo.png";
 import imgQRCode from "../../assets/QRcordline.png";
 import imgLeafA from "../../assets/herb-leaf-a.png";
@@ -519,6 +521,7 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
 export function Layout() {
   const { user, isAuthenticated } = useAuth();
   const { items: cartItems, itemCount, total: cartTotal } = useCart();
+  const { totalUnread: chatUnread, openChatList } = useChat();
   const { notifications, unreadCount } = useNotifications();
   const { wishlistCount } = useWishlist();
   const { products } = useProducts();
@@ -735,7 +738,7 @@ export function Layout() {
 
         {/* Pill — overlaps the bottom of the green strip */}
         <div ref={pillRef} className="relative w-full">
-          <div className="w-full backdrop-blur-[14px] rounded-[100px] py-1.5 px-2 md:py-[14px] md:px-[16px] min-h-[52px] md:min-h-[76px] flex items-center ring-1 ring-white/60"
+          <div className="w-full backdrop-blur-[14px] rounded-[100px] py-2 px-3 md:py-[14px] md:px-[16px] min-h-[60px] md:min-h-[76px] flex items-center ring-1 ring-white/60"
             style={{
               background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)",
               boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(255,255,255,0.5) inset, 0 2px 6px rgba(0,0,0,0.06), 0 12px 28px -8px rgba(20,63,36,0.18)"
@@ -789,9 +792,9 @@ export function Layout() {
               onClick={() => navigate(isOwner ? "/owner" : isAdmin ? "/admin" : "/")}>
               <img
                 src={siteInfo.logoUrl?.trim() ? siteInfo.logoUrl : imgLogo}
-                className="shrink-0 size-[34px] sm:size-[48px] transition-transform duration-500 group-hover/logo:rotate-[8deg] object-contain"
+                className="shrink-0 size-[40px] sm:size-[48px] transition-transform duration-500 group-hover/logo:rotate-[8deg] object-contain"
                 alt={siteInfo.siteNameEn || "MetaHerb"} />
-              <span className={`${fontBold} text-[15px] sm:text-[24px] whitespace-nowrap leading-none tracking-tight`} style={{ fontWeight: 700 }}>
+              <span className={`${fontBold} text-[17px] sm:text-[24px] whitespace-nowrap leading-none tracking-tight`} style={{ fontWeight: 700 }}>
                 {(() => {
                   const name = (siteInfo.siteNameEn || "METAHERB").toUpperCase();
                   const split = Math.ceil(name.length / 2);
@@ -860,9 +863,9 @@ export function Layout() {
                 whileTap={{ scale: 0.9 }}
                 whileHover={{ scale: 1.08 }}
                 transition={{ type: "spring", stiffness: 400, damping: 18 }}
-                className="md:hidden group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
+                className="md:hidden group/icon size-[40px] rounded-full flex items-center justify-center cursor-pointer relative bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
                 aria-label={t("search_aria")}>
-                <Search className="size-[16px] text-[#1d5b32]" strokeWidth={2} />
+                <Search className="size-[18px] text-[#1d5b32]" strokeWidth={2} />
               </motion.button>
             )}
 
@@ -894,24 +897,24 @@ export function Layout() {
                 )}
               </button>
             </div>
-            {/* Bell — mobile */}
-            <div className="relative sm:hidden">
-              <button onClick={() => { if (isAuthenticated) { setShowNotifications(!showNotifications); setShowProfile(false); } else { navigate("/login"); } }}
-                className={`group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative transition-all duration-200 active:scale-95 ${
-                  showNotifications
-                    ? "bg-[#267a43] shadow-[0_6px_16px_-4px_rgba(49,151,84,0.45)]"
-                    : "bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
-                }`}>
-                <Bell className={`size-[16px] transition-colors ${showNotifications ? "text-white" : "text-[#1d5b32]"}`} strokeWidth={2} />
-                {isAuthenticated && unreadCount > 0 && (
-                  <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white shadow-[0_2px_6px_rgba(239,56,60,0.5)] z-10"
-                    style={{ background: "linear-gradient(135deg, #ff8a8a, #ef4444)", fontWeight: 700 }}>
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-              {showNotifications && isAuthenticated && <NotificationDropdown onClose={() => setShowNotifications(false)} />}
-            </div>
+
+            {/* Chat — desktop (same icon-button style as bell) */}
+            {!isStaffRole && (
+              <div className="hidden sm:block">
+                <button onClick={() => { if (isAuthenticated) openChatList(); else navigate("/login"); }}
+                  aria-label="แชทกับร้านค้า"
+                  className="group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative transition-all duration-200 hover:-translate-y-[1px] active:scale-95 active:translate-y-0 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] hover:bg-[#267a43] hover:shadow-[0_6px_16px_-4px_rgba(49,151,84,0.45)]">
+                  <MessageCircle className="size-[16px] text-[#1d5b32] group-hover/icon:text-white transition-colors" strokeWidth={2} />
+                  {isAuthenticated && chatUnread > 0 && (
+                    <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white shadow-[0_2px_6px_rgba(239,56,60,0.5)] z-10"
+                      style={{ background: "linear-gradient(135deg, #ff8a8a, #ef4444)", fontWeight: 700 }}>
+                      {chatUnread}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+            {/* Bell + Cart on mobile live inside the end drawer now — keeps the appbar light on phones. */}
 
             {/* Cart — desktop (customer only, hover preview rendered under pill) */}
             {!isStaffRole && (
@@ -921,21 +924,6 @@ export function Layout() {
                   onMouseLeave={() => { if (isAuthenticated) closeCart(); }}
                   className="group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] hover:bg-[#267a43] hover:shadow-[0_6px_16px_-4px_rgba(49,151,84,0.45)] hover:-translate-y-[1px] active:scale-95 active:translate-y-0 transition-all duration-200">
                   <ShoppingCart className="size-[16px] text-[#1d5b32] group-hover/icon:text-white transition-colors" strokeWidth={2} />
-                  {isAuthenticated && itemCount > 0 && (
-                    <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white shadow-[0_2px_6px_rgba(49,151,84,0.5)] z-10"
-                      style={{ background: "linear-gradient(135deg, #46c474, #267a43)", fontWeight: 700 }}>
-                      {itemCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-            )}
-            {/* Cart — mobile (customer only) */}
-            {!isStaffRole && (
-              <div className="relative sm:hidden">
-                <button onClick={() => navigate("/cart")}
-                  className="group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] active:scale-95 transition-all duration-200">
-                  <ShoppingCart className="size-[16px] text-[#1d5b32]" strokeWidth={2} />
                   {isAuthenticated && itemCount > 0 && (
                     <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white shadow-[0_2px_6px_rgba(49,151,84,0.5)] z-10"
                       style={{ background: "linear-gradient(135deg, #46c474, #267a43)", fontWeight: 700 }}>
@@ -984,7 +972,7 @@ export function Layout() {
               whileTap={{ scale: 0.9 }}
               whileHover={{ scale: 1.08 }}
               transition={{ type: "spring", stiffness: 400, damping: 18 }}
-              className={`md:hidden size-[32px] rounded-full flex items-center justify-center cursor-pointer relative transition-colors duration-200 ${
+              className={`md:hidden size-[40px] rounded-full flex items-center justify-center cursor-pointer relative transition-colors duration-200 ${
                 mobileMenuOpen
                   ? "bg-[#267a43] text-white shadow-[0_4px_12px_-2px_rgba(49,151,84,0.45)]"
                   : "bg-white text-[#1d5b32] shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
@@ -998,7 +986,7 @@ export function Layout() {
                     exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
                     transition={{ duration: 0.2 }}
                     className="absolute inset-0 flex items-center justify-center">
-                    <X className="size-[16px]" strokeWidth={2.4} />
+                    <X className="size-[18px]" strokeWidth={2.4} />
                   </motion.span>
                 ) : (
                   <motion.span key="menu"
@@ -1007,7 +995,7 @@ export function Layout() {
                     exit={{ rotate: -90, opacity: 0, scale: 0.6 }}
                     transition={{ duration: 0.2 }}
                     className="absolute inset-0 flex items-center justify-center">
-                    <Menu className="size-[16px]" strokeWidth={2.4} />
+                    <Menu className="size-[18px]" strokeWidth={2.4} />
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -1114,88 +1102,171 @@ export function Layout() {
         </div>
       )}
 
-      {/* Mobile menu — slide-down with staggered items */}
+      {/* Mobile menu — end drawer slides in from the right with backdrop */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: "auto" }}
-            exit={{ opacity: 0, y: -8, height: 0 }}
-            transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-            className="md:hidden relative bg-white border-t border-gray-100 shadow-lg overflow-hidden">
-            <motion.div
-              initial="hidden" animate="visible" exit="hidden"
-              variants={{
-                hidden: { transition: { staggerChildren: 0.03, staggerDirection: -1 } },
-                visible: { transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
-              }}
-              className="flex flex-col py-2">
-              {[...userMenuItems, { label: t("menu_about"), path: "/about" }].map((item) => (
-                <motion.button key={item.path} onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
-                  variants={{ hidden: { opacity: 0, x: -16 }, visible: { opacity: 1, x: 0 } }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                  whileTap={{ scale: 0.97 }}
-                  className={`group/mitem px-6 py-3 text-left text-[14px] ${font} cursor-pointer transition-colors flex items-center gap-2 ${
-                    location.pathname === item.path ? "text-[#319754] bg-[#319754]/5" : "text-gray-700 hover:bg-gray-50"
-                  }`}>
-                  <span className={`size-1.5 rounded-full transition-all ${
-                    location.pathname === item.path
-                      ? "bg-[#319754] shadow-[0_0_8px_rgba(49,151,84,0.6)]"
-                      : "bg-transparent group-hover/mitem:bg-[#319754]/40"
-                  }`} />
-                  <span className="group-hover/mitem:translate-x-0.5 transition-transform">{item.label}</span>
-                </motion.button>
-              ))}
-              {/* Language switcher section */}
-              <motion.div
-                variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-                className="h-px bg-gray-100 my-1" />
-              <motion.div
-                variants={{ hidden: { opacity: 0, x: -16 }, visible: { opacity: 1, x: 0 } }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="px-6 pt-2 pb-1">
-                <p className={`${font} text-[11px] text-gray-400 uppercase tracking-[0.15em]`} style={{ fontWeight: 600 }}>Language</p>
-              </motion.div>
-              <motion.div
-                variants={{ hidden: { opacity: 0, y: 4 }, visible: { opacity: 1, y: 0 } }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="px-4 pb-2 flex flex-wrap gap-1.5">
-                {LANG_OPTIONS.map((opt) => {
-                  const isActive = opt.code === lang;
-                  return (
-                    <button key={opt.code} onClick={() => { setLang(opt.code); setMobileMenuOpen(false); }}
-                      className={`${font} flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] cursor-pointer transition-all active:scale-95 ${
-                        isActive
-                          ? "text-white shadow-[0_3px_8px_-2px_rgba(49,151,84,0.4)]"
-                          : "bg-gray-100 text-gray-700 hover:bg-[#319754]/10 hover:text-[#319754]"
-                      }`}
-                      style={isActive
-                        ? { background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }
-                        : { fontWeight: 500 }}>
-                      <span className="text-[14px] leading-none">{opt.flag}</span>
-                      <span>{opt.native}</span>
-                    </button>
-                  );
-                })}
-              </motion.div>
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 z-[60] flex">
+            {/* Backdrop */}
+            <div onClick={() => setMobileMenuOpen(false)}
+              className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
 
-              {/* Login — shown only when not authenticated */}
-              {!isAuthenticated && (
-                <>
+            {/* Drawer panel */}
+            <motion.aside
+              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+              transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+              className="relative ml-auto w-[86vw] max-w-[360px] h-full bg-white shadow-[-12px_0_40px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden">
+              {/* Drawer header — gradient strip + close */}
+              <div className="relative overflow-hidden px-5 py-4 flex items-center justify-between"
+                style={{ background: "linear-gradient(135deg, #46c474 0%, #319754 55%, #1d5b32 100%)" }}>
+                <div className="absolute -top-6 -right-6 size-[120px] rounded-full bg-white/10 blur-2xl pointer-events-none" />
+                <div className="relative flex items-center gap-2.5">
+                  <img src={siteInfo.logoUrl?.trim() ? siteInfo.logoUrl : imgLogo}
+                    className="size-[38px] rounded-full bg-white/95 p-1 ring-1 ring-white/30 object-contain"
+                    alt={siteInfo.siteNameEn || "MetaHerb"} />
+                  <div className="leading-tight">
+                    <p className={`${fontBold} text-white text-[15px]`} style={{ fontWeight: 700 }}>{siteInfo.siteNameEn || "METAHERB"}</p>
+                    <p className={`${font} text-white/80 text-[11px]`}>{siteInfo.tagline || ""}</p>
+                  </div>
+                </div>
+                <button onClick={() => setMobileMenuOpen(false)} aria-label={t("close_aria")}
+                  className="relative size-[36px] rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-white transition-all">
+                  <X className="size-[18px]" strokeWidth={2.4} />
+                </button>
+              </div>
+
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto">
+                {/* Quick actions — bell + cart tiles, replacing the appbar icons on mobile */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut", delay: 0.06 }}
+                  className="px-3 pt-3 grid grid-cols-2 gap-2">
+                  <button onClick={() => {
+                    if (!isAuthenticated) { setMobileMenuOpen(false); navigate("/login"); return; }
+                    setMobileMenuOpen(false);
+                    setTimeout(() => setShowNotifications(true), 280);
+                  }}
+                    className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-2xl bg-[#fafafa] border border-gray-100 cursor-pointer active:scale-[0.97] hover:bg-white hover:border-[#319754]/30 transition-all`}>
+                    <span className="relative size-[36px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0">
+                      <Bell className="size-[18px] text-[#1d5b32]" strokeWidth={2} />
+                      {isAuthenticated && unreadCount > 0 && (
+                        <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white"
+                          style={{ background: "linear-gradient(135deg, #ff8a8a, #ef4444)", fontWeight: 700 }}>
+                          {unreadCount}
+                        </span>
+                      )}
+                    </span>
+                    <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 500 }}>{t("button_notifications") || "การแจ้งเตือน"}</span>
+                  </button>
+                  {!isStaffRole && (
+                    <button onClick={() => { setMobileMenuOpen(false); navigate("/cart"); }}
+                      className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-2xl bg-[#fafafa] border border-gray-100 cursor-pointer active:scale-[0.97] hover:bg-white hover:border-[#319754]/30 transition-all`}>
+                      <span className="relative size-[36px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0">
+                        <ShoppingCart className="size-[18px] text-[#1d5b32]" strokeWidth={2} />
+                        {isAuthenticated && itemCount > 0 && (
+                          <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white"
+                            style={{ background: "linear-gradient(135deg, #46c474, #267a43)", fontWeight: 700 }}>
+                            {itemCount}
+                          </span>
+                        )}
+                      </span>
+                      <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 500 }}>{t("menu_cart") || "รถเข็น"}</span>
+                    </button>
+                  )}
+                  {!isStaffRole && (
+                    <button onClick={() => {
+                      if (!isAuthenticated) { setMobileMenuOpen(false); navigate("/login"); return; }
+                      setMobileMenuOpen(false);
+                      setTimeout(() => openChatList(), 280);
+                    }}
+                      className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-2xl bg-[#fafafa] border border-gray-100 cursor-pointer active:scale-[0.97] hover:bg-white hover:border-[#319754]/30 transition-all col-span-2`}>
+                      <span className="relative size-[36px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0">
+                        <MessageCircle className="size-[18px] text-[#1d5b32]" strokeWidth={2} />
+                        {isAuthenticated && chatUnread > 0 && (
+                          <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white"
+                            style={{ background: "linear-gradient(135deg, #ff8a8a, #ef4444)", fontWeight: 700 }}>
+                            {chatUnread}
+                          </span>
+                        )}
+                      </span>
+                      <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 500 }}>แชทกับร้านค้า</span>
+                    </button>
+                  )}
+                </motion.div>
+
+                <div className="h-px bg-gray-100 mx-5 my-3" />
+
+                <motion.nav
+                  initial="hidden" animate="visible" exit="hidden"
+                  variants={{
+                    hidden: { transition: { staggerChildren: 0.02, staggerDirection: -1 } },
+                    visible: { transition: { staggerChildren: 0.04, delayChildren: 0.12 } },
+                  }}
+                  className="flex flex-col pb-2">
+                  {(isStaffRole ? menuItems : [...userMenuItems, { label: t("menu_about"), path: "/about" }]).map((item) => {
+                    const active = location.pathname === item.path;
+                    return (
+                      <motion.button key={item.path} onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
+                        variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        whileTap={{ scale: 0.97 }}
+                        className={`group/mitem mx-3 my-0.5 px-4 py-3 rounded-2xl text-left text-[15px] ${font} cursor-pointer transition-colors flex items-center gap-3 ${
+                          active ? "bg-[#319754]/10 text-[#1d5b32]" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                        style={{ fontWeight: active ? 600 : 500 }}>
+                        <span className={`size-[8px] rounded-full transition-all ${
+                          active ? "bg-[#319754] shadow-[0_0_8px_rgba(49,151,84,0.6)]" : "bg-gray-300 group-hover/mitem:bg-[#319754]/40"
+                        }`} />
+                        <span className="group-hover/mitem:translate-x-0.5 transition-transform">{item.label}</span>
+                      </motion.button>
+                    );
+                  })}
+
+                  {/* Language section */}
+                  <div className="h-px bg-gray-100 mx-5 my-3" />
                   <motion.div
-                    variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
-                    className="h-px bg-gray-100 my-1" />
+                    variants={{ hidden: { opacity: 0, x: 16 }, visible: { opacity: 1, x: 0 } }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="px-5">
+                    <p className={`${font} text-[11px] text-gray-400 uppercase tracking-[0.15em] mb-2`} style={{ fontWeight: 600 }}>Language</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {LANG_OPTIONS.map((opt) => {
+                        const isActive = opt.code === lang;
+                        return (
+                          <button key={opt.code} onClick={() => { setLang(opt.code); setMobileMenuOpen(false); }}
+                            className={`${font} flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] cursor-pointer transition-all active:scale-95 ${
+                              isActive
+                                ? "text-white shadow-[0_3px_8px_-2px_rgba(49,151,84,0.4)]"
+                                : "bg-gray-100 text-gray-700 hover:bg-[#319754]/10 hover:text-[#319754]"
+                            }`}
+                            style={isActive
+                              ? { background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }
+                              : { fontWeight: 500 }}>
+                            <span className="text-[14px] leading-none">{opt.flag}</span>
+                            <span>{opt.native}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                </motion.nav>
+              </div>
+
+              {/* Sticky bottom — login CTA (when logged out) */}
+              {!isAuthenticated && (
+                <div className="border-t border-gray-100 p-4 bg-white">
                   <motion.button onClick={() => { navigate("/login"); setMobileMenuOpen(false); }}
-                    variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
                     whileTap={{ scale: 0.97 }}
-                    className={`mx-4 my-2 px-4 py-2.5 rounded-full text-white text-[14px] ${font} cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_12px_-2px_rgba(49,151,84,0.4)] hover:shadow-[0_8px_20px_-4px_rgba(49,151,84,0.55)] hover:-translate-y-[1px] active:translate-y-0 transition-all`}
-                    style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 500 }}>
+                    className={`w-full h-[46px] rounded-full text-white text-[14px] ${font} cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_14px_-2px_rgba(49,151,84,0.4)] hover:shadow-[0_8px_20px_-4px_rgba(49,151,84,0.55)] transition-all`}
+                    style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }}>
                     <User className="size-4" strokeWidth={2.2} /> {t("button_login")}
                   </motion.button>
-                </>
+                </div>
               )}
-            </motion.div>
+            </motion.aside>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1216,6 +1287,14 @@ export function Layout() {
 
       {/* Chat Modal - Shopee-style floating chat */}
       {isAuthenticated && <ChatModal />}
+
+      {/* AI Shopping Assistant — customer-facing pages only (not owner/admin dashboards) */}
+      {!isStaffRole && !useStaffShell && (
+        <>
+          <AIAssistantBubble />
+          <AIAssistantPanel />
+        </>
+      )}
 
       {/* Footer (user only) */}
       {!isStaffRole && (

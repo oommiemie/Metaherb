@@ -2053,13 +2053,14 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
           whileTap={{ scale: 0.96 }}
           whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+          aria-label={t("owner_products_add")}
         >
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>{t("owner_products_add")}</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>{t("owner_products_add")}</span>
         </motion.button>
       </div>
 
@@ -2085,8 +2086,103 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
       </div>
 
       {/* Table — matches report style */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
-        <div>
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
+        {/* Mobile: card list. Desktop / tablet keeps the data-dense table below. */}
+        <div className="md:hidden space-y-3">
+          {pageItems.length === 0 && (
+            <p className={`py-10 text-center ${font} text-[13px] text-gray-400`}>{t("owner_products_no_results")}</p>
+          )}
+          {pageItems.map((p) => {
+            const stockMatch = p.stock.match(/^(\d[\d,]*)\s*(.*)$/);
+            const isOut    = p.status === "สินค้าหมด";
+            const isClosed = p.status === "ปิดขาย";
+            const overlayText = isOut ? "หมด" : isClosed ? "ปิด" : null;
+            return (
+              <div key={p.id} onClick={() => setPreviewProduct(p)}
+                className="flex gap-3 p-3 rounded-2xl border border-gray-100 active:bg-gray-50 cursor-pointer">
+                {/* Thumbnail */}
+                <div className="relative size-[72px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shrink-0">
+                  <ImageWithFallback src={p.image} alt={p.name}
+                    className={`w-full h-full object-cover ${overlayText ? "grayscale opacity-60" : ""}`} />
+                  {overlayText && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <span className={`${font} text-white text-[12px]`} style={{ fontWeight: 700, textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{overlayText}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`${font} text-[14px] text-black leading-tight line-clamp-2 flex-1`} style={{ fontWeight: 600 }}>{p.name}</p>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button onClick={(e) => e.stopPropagation()}
+                          className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6}
+                        className="w-[230px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                        <button onClick={(e) => { e.stopPropagation(); toast.info(`แก้ไขสินค้า: ${p.name}`); }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                          <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>แก้ไข</span>
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); toast.info(`จัดการสตอก: ${p.name}`); }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                          <Boxes className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>จัดการสตอกสินค้า</span>
+                        </button>
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={(e) => { e.stopPropagation(); if (confirm(`ลบสินค้า "${p.name}"?`)) { removeProduct(p.id); toast.success(`ลบ: ${p.name}`); } }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
+                          <Trash2 className="size-3.5" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>ลบ</span>
+                        </button>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <p className={`${font} text-[12px] text-gray-500 truncate`}>{p.category}</p>
+
+                  {/* Pills row: price + stock */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className={`${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 600 }}>{p.price}</span>
+                    <span className={`${font} text-[12px] text-gray-600`}>
+                      {stockMatch ? (<><span className="tabular-nums" style={{ fontWeight: 500 }}>{stockMatch[1]}</span> {stockMatch[2]}</>) : p.stock}
+                    </span>
+                  </div>
+
+                  {/* Status + type + flash tags */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]`}
+                      style={{ backgroundColor: `${p.statusColor}1a`, color: p.statusColor, fontWeight: 500 }}>
+                      <Package className="size-2.5" strokeWidth={2.4} /> {p.status}
+                    </span>
+                    <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]`}
+                      style={{ backgroundColor: `${p.typeColor}1a`, color: p.typeColor, fontWeight: 500 }}>
+                      {p.type}
+                    </span>
+                    {p.flash && (
+                      <span className={`${font} inline-flex items-center gap-1 bg-[#e62e05] text-white px-2 py-0.5 rounded-full text-[10px]`} style={{ fontWeight: 500 }}>
+                        <Zap className="size-2.5 fill-white" strokeWidth={0} /> Flash
+                      </span>
+                    )}
+                    {p.recommended && (
+                      <span className={`${font} inline-flex items-center gap-1 bg-[#319754] text-white px-2 py-0.5 rounded-full text-[10px]`} style={{ fontWeight: 500 }}>
+                        ★ แนะนำ
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block">
           <table className="w-full table-fixed">
             <colgroup>
               <col style={{ width: "72px" }} />
@@ -2848,13 +2944,14 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
             whileTap={{ scale: 0.96 }}
             whileHover={{ y: -1 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] shrink-0`}
+            className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] shrink-0`}
             style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+            aria-label="เพิ่มสินค้า Flash Sale"
           >
             <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
               <Plus className="size-[14px]" strokeWidth={2.6} />
             </span>
-            <span style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
+            <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
           </motion.button>
         </div>
 
@@ -2876,8 +2973,106 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
           </div>
         </div>
 
+        {/* Mobile: card list. Desktop / tablet keeps the data-dense table below. */}
+        <div className="md:hidden space-y-3">
+          {pagedStoreProducts.length === 0 && (
+            <p className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่มีสินค้าใน Flash Sale</p>
+          )}
+          {pagedStoreProducts.map((p) => {
+            const normal = parseFloat(String(p.normalPrice).replace(/[^\d.]/g, "")) || 0;
+            const flash  = parseFloat(String(p.flashPrice).replace(/[^\d.]/g, ""))  || 0;
+            const discountPct = normal > 0 && flash > 0 ? Math.round(((normal - flash) / normal) * 100) : 0;
+            const remaining  = Math.max(0, p.quantity - p.sold);
+            const lowStock   = p.quantity > 0 && remaining / p.quantity <= 0.2;
+            const isSoldOut  = remaining === 0;
+            const isScheduled = !!p.startsAt && new Date(p.startsAt).getTime() > Date.now();
+            const revenue    = flash * p.sold;
+            const stLabel    = isScheduled ? "ล่วงหน้า" : isSoldOut ? "สินค้าหมด" : "กำลังขาย";
+            const stColor    = isScheduled ? "#f59e0b" : isSoldOut ? "#dc2626" : "#319754";
+            return (
+              <div key={p.id} className="flex gap-3 p-3 rounded-2xl border border-gray-100">
+                {/* Thumbnail */}
+                <div className="relative size-[72px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shrink-0">
+                  <ImageWithFallback src={p.image} alt={p.name}
+                    className={`w-full h-full object-cover ${isSoldOut ? "grayscale opacity-60" : ""}`} />
+                  {isSoldOut && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <span className={`${font} text-white text-[12px]`} style={{ fontWeight: 700 }}>หมด</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`${font} text-[14px] text-[#1a1a1a] leading-tight line-clamp-2 flex-1`} style={{ fontWeight: 600 }}>{p.name}</p>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 text-gray-700 shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6} className="w-[230px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                        <button onClick={() => toast.info(`แก้ไขส่วนลด: ${p.name}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>แก้ไขส่วนลด / จำนวน</span>
+                        </button>
+                        <button onClick={() => toast.info(`ดูสถิติการขาย: ${p.name}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <TrendingUp className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>ดูสถิติการขาย</span>
+                        </button>
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={() => { if (confirm(`เอา "${p.name}" ออก?`)) toast.success(`เอาออกแล้ว`); }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer text-left text-[13px] text-[#ff3b30]`}>
+                          <Trash2 className="size-3.5" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>เอาออกจาก Flash Sale</span>
+                        </button>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Price row */}
+                  <div className="flex items-baseline gap-2 flex-wrap tabular-nums">
+                    {p.flashPriceDisplay && (
+                      <span className={`${font} text-[14px] text-[#ff3b30]`} style={{ fontWeight: 700 }}>{p.flashPriceDisplay}</span>
+                    )}
+                    {p.originalPriceDisplay && (
+                      <span className={`${font} text-[11px] text-gray-400 line-through`}>{p.originalPriceDisplay}</span>
+                    )}
+                    {discountPct > 0 && (
+                      <span className={`${font} text-[11px] text-[#dc2626]`} style={{ fontWeight: 700 }}>-{discountPct}%</span>
+                    )}
+                  </div>
+
+                  {/* Stock + sold + revenue */}
+                  <div className={`${font} flex items-center gap-3 text-[12px] flex-wrap tabular-nums`}>
+                    <span className="text-gray-600">ขาย <span style={{ fontWeight: 600 }} className="text-[#1a1a1a]">{p.sold.toLocaleString()}</span></span>
+                    <span className={lowStock ? "text-[#dc2626]" : "text-gray-600"}>
+                      เหลือ <span style={{ fontWeight: 600 }}>{remaining.toLocaleString()}</span> / {p.quantity.toLocaleString()}
+                    </span>
+                    <span className="text-[#319754]" style={{ fontWeight: 600 }}>
+                      ฿{revenue.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  {/* Status + period */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]`}
+                      style={{ backgroundColor: `${stColor}1a`, color: stColor, fontWeight: 500 }}>
+                      <Package className="size-2.5" strokeWidth={2.4} /> {stLabel}
+                    </span>
+                    <span className={`${font} text-[10.5px] text-gray-400 truncate`}>{p.start} → {p.end}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         {/* Table — โครงสร้างเดียวกับ FlashEventDetail (table-fixed + tfoot summary) */}
-        <div>
+        <div className="hidden md:block">
           <table className="w-full table-fixed">
             <colgroup>
               <col style={{ width: "26%" }} />{/* สินค้า */}
@@ -3924,13 +4119,14 @@ function FlashEventDetail({ onBack, isNewJoin = false, event }: { onBack: () => 
           whileTap={{ scale: 0.96 }}
           whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+          aria-label="เพิ่มสินค้า Flash Sale"
         >
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
         </motion.button>
       </div>
 
@@ -4940,6 +5136,8 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
               const finalPrice  = hasVariants ? Math.min(...variantRows.map((r) => r.price)) : price;
               const finalStock  = hasVariants ? variantRows.reduce((s, r) => s + r.stock, 0)  : stock;
               const finalWeight = hasVariants ? variantRows[0]?.weight ?? 0                    : weight;
+              if (!(finalPrice > 0)) { toast.error("กรุณาระบุราคาสินค้า"); return; }
+              if (!(finalStock > 0)) { toast.error("กรุณาระบุจำนวนสต๊อก"); return; }
               const options = hasVariants && variantRows.length > 1
                 ? variantRows.map((r) => r.name).filter(Boolean)
                 : [];
@@ -5298,7 +5496,7 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
                   <button onClick={() => setCurrentMonth(m => m > 0 ? m - 1 : 11)} className="bg-[#f4f4f4] rounded-full size-6 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
                     <ChevronLeft className="size-3.5" />
                   </button>
-                  <span className={`${font} text-[24px]`} style={{ fontWeight: 700 }}>{monthNames[currentMonth]} {currentYear + 543}</span>
+                  <span className={`${font} text-[16px] sm:text-[20px] md:text-[24px] whitespace-nowrap`} style={{ fontWeight: 700 }}>{monthNames[currentMonth]} {currentYear + 543}</span>
                   <button onClick={() => setCurrentMonth(m => m < 11 ? m + 1 : 0)} className="bg-[#f4f4f4] rounded-full size-6 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors rotate-180">
                     <ChevronLeft className="size-3.5" />
                   </button>
@@ -5308,7 +5506,7 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
                   <button onClick={() => setCurrentYear(y => y - 1)} className="bg-[#f4f4f4] rounded-full size-6 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
                     <ChevronLeft className="size-3.5" />
                   </button>
-                  <span className={`${font} text-[24px]`} style={{ fontWeight: 700 }}>{currentYear + 543}</span>
+                  <span className={`${font} text-[16px] sm:text-[20px] md:text-[24px] whitespace-nowrap`} style={{ fontWeight: 700 }}>{currentYear + 543}</span>
                   <button onClick={() => setCurrentYear(y => y + 1)} className="bg-[#f4f4f4] rounded-full size-6 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors rotate-180">
                     <ChevronLeft className="size-3.5" />
                   </button>
@@ -7268,7 +7466,7 @@ function ReportSalesTab() {
           <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
             <PopoverTrigger asChild>
               <button
-                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 h-[34px] sm:h-[40px] px-3 sm:px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
                 aria-label="เปลี่ยนวันที่"
               >
                 <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
@@ -7390,7 +7588,7 @@ function ReportSalesTab() {
           <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
-                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                className={`${font} text-[12px] sm:text-[13px] px-3 sm:px-4 py-1 sm:py-1.5 whitespace-nowrap rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
                   <motion.div layoutId="report-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
@@ -7402,9 +7600,10 @@ function ReportSalesTab() {
           {/* Export button */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+              <button className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[34px] sm:h-[40px] px-3 sm:px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}
+                aria-label="ส่งออก">
                 <Download className="size-4" />
-                ส่งออก
+                <span className="hidden sm:inline">ส่งออก</span>
                 <ChevronDown className="size-3.5" />
               </button>
             </PopoverTrigger>
@@ -7439,7 +7638,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgCoin}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7463,7 +7662,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgBox}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7487,7 +7686,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgCost}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7511,7 +7710,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgCoinUp}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7524,16 +7723,16 @@ function ReportSalesTab() {
               ),
             },
           ].map((s: any) => (
-            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            <div key={s.label} className="group rounded-2xl p-3 sm:p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
               style={{ backgroundColor: `${s.accent}0d` }}>
               <div className="relative">
                 <div className="flex items-center justify-between">
                   <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
-                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                  <div className="size-7 sm:size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
                     {s.icon}
                   </div>
                 </div>
-                <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                <p className={`${font} text-[20px] sm:text-[26px] mt-2 sm:mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
                   <AnimatedValue value={s.value} />
                 </p>
                 <div className="flex items-center gap-1.5 mt-2">
@@ -8034,7 +8233,63 @@ function ReportSalesTab() {
               </div>
             </div>
 
-            <div>
+            {/* Mobile: grouped card list */}
+            <div className="md:hidden space-y-4">
+              {pageGroups.length === 0 && (
+                <p className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</p>
+              )}
+              {pageGroups.map((group, gi) => {
+                const groupProfit = group.totalNet - group.totalCost;
+                const groupMargin = group.totalSales > 0 ? (groupProfit / group.totalSales) * 100 : 0;
+                return (
+                  <div key={gi} className="rounded-2xl border border-gray-100 overflow-hidden">
+                    {/* Group header */}
+                    <div className="bg-[#f0faf3]/70 px-3 py-2.5 flex items-center justify-between gap-2 border-b border-gray-100">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <CalendarIcon className="size-3.5 text-[#319754] shrink-0" />
+                        <span className={`${font} text-[13px] text-[#1a1a1a] truncate`} style={{ fontWeight: 600 }}>{group.label}</span>
+                      </div>
+                      <span className={`${font} text-[11px] tabular-nums whitespace-nowrap`} style={{ fontWeight: 600, color: groupProfit >= 0 ? "#15803d" : "#dc2626" }}>
+                        {groupMargin.toFixed(1)}% · ฿{group.totalNet.toLocaleString()}
+                      </span>
+                    </div>
+                    {/* Items */}
+                    <div className="divide-y divide-gray-50">
+                      {group.items.map((p, i) => {
+                        const profit = p.net - p.cost;
+                        const margin = p.sales > 0 ? (profit / p.sales) * 100 : 0;
+                        const profitDown = margin < 45 && profit > 0;
+                        const profitColor = profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af";
+                        return (
+                          <div key={i} className="p-3 flex flex-col gap-1.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className={`${font} text-[13.5px] text-[#1a1a1a] leading-tight line-clamp-2`} style={{ fontWeight: 600 }}>{p.name}</p>
+                                <p className={`${font} text-[10.5px] text-gray-400 tabular-nums`}>SKU: {p.sku} · {p.qty} ชิ้น</p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: profitColor }}>฿{profit.toLocaleString()}</p>
+                                <p className={`${font} text-[10.5px] tabular-nums`} style={{ color: profitColor }}>{p.sales > 0 ? `${margin.toFixed(1)}%` : "-"}</p>
+                              </div>
+                            </div>
+                            <div className={`${font} text-[11px] flex flex-wrap items-center gap-x-3 gap-y-0.5 tabular-nums`}>
+                              <span className="text-[#1a1a1a]" style={{ fontWeight: 600 }}>ยอด ฿{p.sales.toLocaleString()}</span>
+                              <span className="text-[#c2410c]">GP −฿{p.gp.toLocaleString()}</span>
+                              {p.discount > 0 && <span className="text-[#a16207]">ส่วนลด −฿{p.discount.toLocaleString()}</span>}
+                              <span className="text-[#319754]" style={{ fontWeight: 600 }}>สุทธิ ฿{p.net.toLocaleString()}</span>
+                              <span className="text-gray-500">ต้นทุน ฿{p.cost.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block">
               <table className="w-full table-fixed">
                 <colgroup>
                   <col style={{ width: "11%" }} />
@@ -8351,7 +8606,7 @@ function ReportCustomersTab() {
           <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
             <PopoverTrigger asChild>
               <button
-                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 h-[34px] sm:h-[40px] px-3 sm:px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
                 aria-label="เปลี่ยนวันที่"
               >
                 <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
@@ -8462,7 +8717,7 @@ function ReportCustomersTab() {
           <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
-                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                className={`${font} text-[12px] sm:text-[13px] px-3 sm:px-4 py-1 sm:py-1.5 whitespace-nowrap rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
                   <motion.div layoutId="report-cust-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
@@ -8473,9 +8728,10 @@ function ReportCustomersTab() {
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+              <button className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[34px] sm:h-[40px] px-3 sm:px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}
+                aria-label="ส่งออก">
                 <Download className="size-4" />
-                ส่งออก
+                <span className="hidden sm:inline">ส่งออก</span>
                 <ChevronDown className="size-3.5" />
               </button>
             </PopoverTrigger>
@@ -8508,7 +8764,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgNewCustomer}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8530,7 +8786,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgRepeatCustomers}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8552,7 +8808,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgGroupCustomer}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8574,7 +8830,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgMember}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8587,7 +8843,7 @@ function ReportCustomersTab() {
               ),
             },
           ].map((s: any) => (
-            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            <div key={s.label} className="group rounded-2xl p-3 sm:p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
               style={{ backgroundColor: `${s.accent}0d` }}>
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -9161,7 +9417,7 @@ function ReportProductsTab() {
           <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
             <PopoverTrigger asChild>
               <button
-                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 h-[34px] sm:h-[40px] px-3 sm:px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
                 aria-label="เปลี่ยนวันที่"
               >
                 <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
@@ -9258,7 +9514,7 @@ function ReportProductsTab() {
           <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
-                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                className={`${font} text-[12px] sm:text-[13px] px-3 sm:px-4 py-1 sm:py-1.5 whitespace-nowrap rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
                   <motion.div layoutId="report-prod-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
@@ -9269,9 +9525,10 @@ function ReportProductsTab() {
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+              <button className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[34px] sm:h-[40px] px-3 sm:px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}
+                aria-label="ส่งออก">
                 <Download className="size-4" />
-                ส่งออก
+                <span className="hidden sm:inline">ส่งออก</span>
                 <ChevronDown className="size-3.5" />
               </button>
             </PopoverTrigger>
@@ -9302,7 +9559,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgProductsSold}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9324,7 +9581,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgProductsStore}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9346,7 +9603,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgStock}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9368,7 +9625,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgRating}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9381,7 +9638,7 @@ function ReportProductsTab() {
               ),
             },
           ].map((s: any) => (
-            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            <div key={s.label} className="group rounded-2xl p-3 sm:p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
               style={{ backgroundColor: `${s.accent}0d` }}>
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -10114,7 +10371,7 @@ function ReportMarketTab() {
           <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
             <PopoverTrigger asChild>
               <button
-                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 h-[34px] sm:h-[40px] px-3 sm:px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
                 aria-label="เปลี่ยนวันที่"
               >
                 <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
@@ -10211,7 +10468,7 @@ function ReportMarketTab() {
           <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
-                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                className={`${font} text-[12px] sm:text-[13px] px-3 sm:px-4 py-1 sm:py-1.5 whitespace-nowrap rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
                   <motion.div layoutId="report-mkt-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
@@ -10222,9 +10479,10 @@ function ReportMarketTab() {
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+              <button className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[34px] sm:h-[40px] px-3 sm:px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}
+                aria-label="ส่งออก">
                 <Download className="size-4" />
-                ส่งออก
+                <span className="hidden sm:inline">ส่งออก</span>
                 <ChevronDown className="size-3.5" />
               </button>
             </PopoverTrigger>
@@ -10255,7 +10513,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgVisitors}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10277,7 +10535,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgBagInCart}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10299,7 +10557,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgConvert}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10321,7 +10579,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgCoupon}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10334,7 +10592,7 @@ function ReportMarketTab() {
               ),
             },
           ].map((s: any) => (
-            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            <div key={s.label} className="group rounded-2xl p-3 sm:p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
               style={{ backgroundColor: `${s.accent}0d` }}>
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -11162,12 +11420,13 @@ function CouponsTab() {
         <motion.button onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
-          style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+          aria-label={t("owner_coupon_create")}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>{t("owner_coupon_create")}</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>{t("owner_coupon_create")}</span>
         </motion.button>
       </div>
 
@@ -11185,9 +11444,97 @@ function CouponsTab() {
         </div>
       </div>
 
-      {/* Body — table */}
-      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
-        {/* Table */}
+      {/* Body — table on desktop, card list on mobile */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 md:p-5">
+        {/* Mobile: card list */}
+        <div className="md:hidden space-y-3">
+          {pagedFiltered.length === 0 && (
+            <p className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบคูปอง</p>
+          )}
+          {pagedFiltered.map((c) => {
+            const status = computedStatus(c);
+            const stCfg =
+              status === "active"  ? { label: "ใช้งานอยู่", color: "#319754", Icon: Check } :
+              status === "expired" ? { label: "หมดอายุ",    color: "#dc2626", Icon: Clock } :
+                                     { label: "ปิดใช้งาน",  color: "#737373", Icon: Ban   };
+            const dis = fmtCouponDiscount(c);
+            const usedLabel = c.usageLimit && c.usageLimit > 0 ? `${c.used}/${c.usageLimit}` : `${c.used}/∞`;
+            const isFreeship = c.discountType === "freeship";
+            const color = isFreeship ? "#3b82f6" : "#319754";
+            const Icon  = isFreeship ? Truck : Percent;
+            const expiryStr = fmtCouponThaiDateTime(c.endsAt);
+            const conds: string[] = [];
+            if (c.minOrder && c.minOrder > 0) conds.push(`ขั้นต่ำ ฿${c.minOrder.toLocaleString()}`); else conds.push("ไม่มีขั้นต่ำ");
+            if (c.membersOnly) conds.push("สมาชิก");
+            if (c.firstOrderOnly) conds.push("ออเดอร์แรก");
+            return (
+              <div key={c.id} className="flex gap-3 p-3 rounded-2xl border border-gray-100">
+                {/* Icon stub */}
+                <div className="rounded-2xl flex flex-col items-center justify-center w-[64px] py-2 shrink-0" style={{ backgroundColor: color }}>
+                  <Icon className="size-6 text-white" strokeWidth={2.4} />
+                  <span className={`${font} text-white text-[9.5px] mt-1`} style={{ fontWeight: 500 }}>
+                    {isFreeship ? "ส่งฟรี" : "ส่วนลด"}
+                  </span>
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`${font} text-[14px] text-[#1a1a1a] leading-tight line-clamp-2 flex-1`} style={{ fontWeight: 600 }}>{c.name}</p>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 text-gray-700 shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6} className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                        <button onClick={() => toast.info(`แก้ไข: ${c.code}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} /> <span style={{ fontWeight: 500 }}>แก้ไข</span>
+                        </button>
+                        <button onClick={() => {
+                          setCoupons((prev) => prev.map((x) => x.id === c.id ? { ...x, status: x.status === "disabled" ? "active" : "disabled" } : x));
+                          toast.success(c.status === "disabled" ? `เปิดใช้งาน: ${c.code}` : `ปิดใช้งาน: ${c.code}`);
+                        }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Ban className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>{c.status === "disabled" ? "เปิดใช้งาน" : "ปิดใช้งาน"}</span>
+                        </button>
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={() => { if (confirm(`ลบคูปอง "${c.code}"?`)) { setCoupons((prev) => prev.filter((x) => x.id !== c.id)); toast.success(`ลบ: ${c.code}`); } }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer text-left text-[13px] text-[#ff3b30]`}>
+                          <Trash2 className="size-3.5" strokeWidth={2.2} /> <span style={{ fontWeight: 500 }}>ลบ</span>
+                        </button>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Code + discount */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`${font} text-[12px] text-gray-500 tabular-nums`}>{c.code}</span>
+                    <span className={`${font} text-[13px] tabular-nums`} style={{ fontWeight: 700, color: dis.color }}>{dis.label}</span>
+                  </div>
+
+                  {/* Conditions + used + status */}
+                  <p className={`${font} text-[11px] text-gray-500 truncate`}>{conds.join(" · ")}</p>
+                  <p className={`${font} text-[11px] text-gray-400 inline-flex items-center gap-1 truncate`}>
+                    <CalendarIcon className="size-3 shrink-0" strokeWidth={2.2} /> หมดอายุ {expiryStr}
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                    <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]`}
+                      style={{ backgroundColor: `${stCfg.color}1a`, color: stCfg.color, fontWeight: 500 }}>
+                      <stCfg.Icon className="size-2.5" strokeWidth={2.4} /> {stCfg.label}
+                    </span>
+                    <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>ใช้แล้ว {usedLabel}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block">
         <table className="w-full table-fixed">
           <colgroup>
             <col style={{ width: "40%" }} />{/* คูปอง (ticket: icon + ชื่อ + เงื่อนไข + วันหมดอายุ) */}
@@ -11341,6 +11688,7 @@ function CouponsTab() {
             })}
           </tbody>
         </table>
+        </div>
 
         {/* Pagination — เหมือนตารางหน้าอื่น */}
         {filtered.length > 0 && (
@@ -12259,6 +12607,127 @@ function PromotionsTab() {
   );
 }
 
+/* ========== MOBILE DRAWER (mirrors customer end-drawer style) ========== */
+function OwnerMobileDrawer({ active, currentTab, onSelect, onClose }: {
+  active: OwnerTab;
+  currentTab: OwnerTab;
+  onSelect: (t: OwnerTab) => void;
+  onClose: () => void;
+}) {
+  const { t } = useLanguage();
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ products: true, reports: false });
+  const toggle = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
+
+  // Translate parent labels (matches Sidebar.labelMap)
+  const labelMap: Record<string, string> = {
+    overview:          t("owner_sidebar_dashboard"),
+    orders:            t("owner_sidebar_orders"),
+    products:          t("owner_sidebar_products"),
+    flash_sale:        t("owner_sidebar_flash_sale"),
+    promotions:        t("owner_sidebar_promotions"),
+    coupons:           t("owner_sidebar_coupons"),
+    reports:           t("owner_sidebar_reports"),
+    report_sales:      t("owner_sidebar_report_sales"),
+    report_customers:  t("owner_sidebar_report_customers"),
+    report_products:   t("owner_sidebar_report_products"),
+    report_market:     t("owner_sidebar_report_market"),
+    finance:           t("owner_sidebar_finance"),
+    complaints:        t("owner_sidebar_complaints"),
+  };
+  const childLabel = (id: string, fallback: string) =>
+    id === "products" ? t("owner_sidebar_manage_products") : (labelMap[id] ?? fallback);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="md:hidden fixed inset-0 z-[60] flex">
+      <motion.aside
+        initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+        transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+        className="relative w-[86vw] max-w-[360px] h-full bg-white shadow-[12px_0_40px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden">
+        {/* Gradient header */}
+        <div className="relative overflow-hidden px-5 py-4 flex items-center justify-between"
+          style={{ background: "linear-gradient(135deg, #46c474 0%, #319754 55%, #1d5b32 100%)" }}>
+          <div className="absolute -top-6 -right-6 size-[120px] rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="relative flex items-center gap-2.5">
+            <img src={imgLogo} className="size-[38px] rounded-full bg-white/95 p-1 ring-1 ring-white/30 object-contain" alt="MetaHerb" />
+            <div className="leading-tight">
+              <p className={`${fontBold} text-white text-[15px]`} style={{ fontWeight: 700 }}>METAHERB</p>
+              <p className={`${font} text-white/80 text-[11px]`}>{active === "overview" ? t("admin_topbar_overview") : (labelMap[active] ?? t("admin_topbar_overview"))}</p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="ปิด"
+            className="relative size-[36px] rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-white transition-all">
+            <X className="size-[18px]" strokeWidth={2.4} />
+          </button>
+        </div>
+
+        {/* Scrollable body — same MenuBtn-pill aesthetic as the desktop Sidebar */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5">
+          {sidebarItems.map((item) => {
+            const itemLabel = labelMap[item.id] ?? item.label;
+            if (!item.children) {
+              return (
+                <MenuBtn key={item.id}
+                  isActive={active === item.id}
+                  icon={item.icon}
+                  label={itemLabel}
+                  onClick={() => { onSelect(item.id); onClose(); }}
+                  collapsed={false}
+                />
+              );
+            }
+            const groupActive = item.children.some((c) => c.id === active);
+            return (
+              <div key={item.id} className="space-y-2.5">
+                <MenuBtn isActive={groupActive} icon={item.icon} label={itemLabel}
+                  onClick={() => toggle(item.id)}
+                  hasArrow expanded={expanded[item.id]} collapsed={false}
+                />
+                <AnimatePresence initial={false}>
+                  {expanded[item.id] && (
+                    <motion.div
+                      key="submenu"
+                      initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                      className="overflow-hidden">
+                      <div className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
+                        {item.children.map((child) => {
+                          const isChildActive = active === child.id || currentTab === child.id;
+                          const cLabel = childLabel(child.id, child.label);
+                          return (
+                            <MenuBtn key={child.id}
+                              isActive={isChildActive}
+                              icon={childIconMap[child.id] || Package}
+                              label={cLabel}
+                              onClick={() => { onSelect(child.id as OwnerTab); onClose(); }}
+                              collapsed={false}
+                            />
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+
+          {/* Complaints — standalone (matches Sidebar's structure) */}
+          <MenuBtn isActive={active === "complaints" || active === "complaint_detail"}
+            icon={AlertTriangle}
+            label={t("owner_sidebar_complaints")}
+            onClick={() => { onSelect("complaints"); onClose(); }}
+            collapsed={false}
+          />
+        </div>
+      </motion.aside>
+      <div onClick={onClose} className="flex-1 bg-black/45 backdrop-blur-[2px]" />
+    </motion.div>
+  );
+}
+
 /* ========== MAIN ========== */
 export function OwnerDashboard() {
   const { user } = useAuth();
@@ -12308,13 +12777,22 @@ export function OwnerDashboard() {
 
   return (
     <div className="flex h-full overflow-hidden relative">
-      {!sidebarCollapsed && (
-        <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarCollapsed(true)} />
-      )}
-
-      <div className={`${sidebarCollapsed ? "hidden md:block" : "fixed inset-y-0 left-0 md:static md:inset-auto z-30 md:z-auto"} h-full md:overflow-y-auto shrink-0 transition-all duration-300`}>
+      {/* Desktop: persistent sidebar inline */}
+      <div className="hidden md:block h-full md:overflow-y-auto shrink-0">
         <Sidebar active={sidebarActive} onSelect={handleSelect} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
       </div>
+
+      {/* Mobile: start drawer — same visual language as the customer end drawer */}
+      <AnimatePresence>
+        {!sidebarCollapsed && (
+          <OwnerMobileDrawer
+            active={sidebarActive}
+            currentTab={activeTab}
+            onSelect={(t) => { handleSelect(t); }}
+            onClose={() => setSidebarCollapsed(true)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Mobile floating menu button */}
       {sidebarCollapsed && (

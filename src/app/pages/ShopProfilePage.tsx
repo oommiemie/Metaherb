@@ -207,8 +207,9 @@ export function ShopProfilePage() {
 
   return (
     <div className={`${font} min-h-screen bg-gray-50`}>
-      {/* Banner — extends behind appbar (matches AboutPage hero pattern) */}
-      <div className="relative -mt-[64px] md:-mt-[116px] h-[264px] md:h-[396px] overflow-hidden">
+      {/* Banner — extends behind appbar (matches AboutPage hero pattern).
+          Negative margin = real header height (mobile 98 / desktop 124) so banner sits flush with viewport top. */}
+      <div className="relative -mt-[98px] md:-mt-[124px] h-[264px] md:h-[396px] overflow-hidden">
         <ImageWithFallback
           src={shop.banner}
           alt={shop.name}

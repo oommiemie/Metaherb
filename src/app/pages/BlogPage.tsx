@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { ChevronLeft, ChevronRight, ChevronDown, Play, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Eye } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useLanguage } from "../store/LanguageContext";
 import imgArticle1 from "figma:asset/51e11fdedae888e644826410f8d7038f1bbaf2e6.png";
@@ -76,10 +76,7 @@ export function BlogPage() {
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         {/* Articles */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className={`${font} text-[20px]`} style={{ fontWeight: 600 }}>{t("blog_articles")}</h2>
-          <button className={`flex items-center gap-1 text-gray-500 text-[13px] ${font} cursor-pointer`}>{t("common_sort_desc")} <ChevronDown className="size-4" /></button>
-        </div>
+        <h2 className={`${font} text-[20px] mb-4`} style={{ fontWeight: 600 }}>{t("blog_articles")}</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {articles.map((a, i) => (
@@ -138,10 +135,7 @@ export function BlogPage() {
         </div>
 
         {/* Videos */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className={`${font} text-[20px]`} style={{ fontWeight: 600 }}>{t("blog_videos")}</h2>
-          <button className={`flex items-center gap-1 text-gray-500 text-[13px] ${font} cursor-pointer`}>{t("common_sort_desc")} <ChevronDown className="size-4" /></button>
-        </div>
+        <h2 className={`${font} text-[20px] mb-4`} style={{ fontWeight: 600 }}>{t("blog_videos")}</h2>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-[16px]">
           {videos.map((v, i) => (

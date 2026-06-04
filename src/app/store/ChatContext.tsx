@@ -41,6 +41,10 @@ interface ChatContextType {
   closeChat: () => void;
   sendMessage: (shopId: string, text: string) => void;
   totalUnread: number;
+  /** Customer-side: show the shop-list panel (without picking a specific shop). */
+  showChatList: boolean;
+  openChatList: () => void;
+  closeChatList: () => void;
   /* Owner-side */
   customerChatRooms: CustomerChatRoom[];
   activeCustomerChat: string | null;
@@ -202,6 +206,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [chatRooms, setChatRooms] = usePersistentState<ChatRoom[]>("metaherb:chat:user", mockChatRooms);
   const [activeChatShop, setActiveChatShop] = useState<string | null>(null);
+  const [showChatList, setShowChatList] = useState<boolean>(false);
 
   /* Owner-side state */
   const [customerChatRooms, setCustomerChatRooms] = usePersistentState<CustomerChatRoom[]>("metaherb:chat:owner", mockCustomerChatRooms);
@@ -302,9 +307,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const totalUnread = chatRooms.reduce((s, r) => s + r.unread, 0);
   const totalCustomerUnread = customerChatRooms.reduce((s, r) => s + r.unread, 0);
 
+  const openChatList  = () => { setShowChatList(true); setActiveChatShop(null); };
+  const closeChatList = () => setShowChatList(false);
+
   return (
     <ChatContext.Provider value={{
       chatRooms, activeChatShop, openChat, closeChat, sendMessage, totalUnread,
+      showChatList, openChatList, closeChatList,
       customerChatRooms, activeCustomerChat, openCustomerChat, closeCustomerChat, sendCustomerMessage, totalCustomerUnread,
     }}>
       {children}
@@ -322,6 +331,9 @@ export function useChat() {
       closeChat: () => {},
       sendMessage: () => {},
       totalUnread: 0,
+      showChatList: false,
+      openChatList: () => {},
+      closeChatList: () => {},
       customerChatRooms: [],
       activeCustomerChat: null,
       openCustomerChat: () => {},
