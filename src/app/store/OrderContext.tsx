@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { CartItem } from "./CartContext";
+import { useNotificationsOptional } from "./NotificationContext";
+import { usePersistentState } from "./usePersistentState";
 
 export type OrderStatus = "pending_payment" | "pending_verify" | "preparing" | "shipped" | "delivered" | "completed" | "cancelled";
 
@@ -122,18 +124,90 @@ const mockOrders: Order[] = [
   },
 ];
 
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  pending_payment: "รอชำระเงิน",
+  pending_verify:  "รอตรวจสอบการชำระเงิน",
+  preparing:       "กำลังเตรียมสินค้า",
+  shipped:         "จัดส่งแล้ว",
+  delivered:       "ส่งถึงปลายทาง",
+  completed:       "สำเร็จ",
+  cancelled:       "ยกเลิก",
+};
+
 export function OrderProvider({ children }: { children: ReactNode }) {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = usePersistentState<Order[]>("metaherb:orders", mockOrders);
+  // Notifications are best-effort — fall back to no-ops so OrderProvider never
+  // crashes if it happens to mount before NotificationProvider during HMR.
+  const { addNotification, notifyOwner, notifyAdmin } = useNotificationsOptional();
 
   const addOrder = (order: Omit<Order, "id" | "date">) => {
     const id = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(Math.floor(Math.random() * 100000)).padStart(5, "0")}`;
     const newOrder: Order = { ...order, id, date: new Date().toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }) + " - " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " น." };
     setOrders((prev) => [newOrder, ...prev]);
+
+    // Fire notifications targeted to customer / owner / admin
+    addNotification({
+      type: "order", audience: "customer",
+      title: order.status === "pending_payment" ? "สั่งซื้อสำเร็จ — รอชำระเงิน" : "สั่งซื้อสำเร็จ",
+      message: `คำสั่งซื้อ ${id} ยอด ฿${order.total.toLocaleString()} — สถานะ: ${STATUS_LABEL[order.status]}`,
+      time: "เมื่อสักครู่",
+      link: "/orders",
+    });
+    notifyOwner(order.shopName, {
+      type: "order",
+      title: "ออเดอร์ใหม่เข้ามา",
+      message: `${id} — ${order.items.length} รายการ ยอด ฿${order.total.toLocaleString()}`,
+      time: "เมื่อสักครู่",
+      link: "/owner",
+    });
+    if (order.total >= 5000) {
+      notifyAdmin({
+        type: "order",
+        title: "ออเดอร์มูลค่าสูง",
+        message: `${id} ที่ ${order.shopName} ยอด ฿${order.total.toLocaleString()}`,
+        time: "เมื่อสักครู่",
+        link: "/admin",
+      });
+    }
     return id;
   };
 
-  const updateOrderStatus = (id: string, status: OrderStatus) => setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
-  const addReview = (id: string, rating: number, comment: string) => setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, review: { rating, comment } } : o)));
+  const updateOrderStatus = (id: string, status: OrderStatus) => {
+    const existing = orders.find((o) => o.id === id);
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+    if (existing) {
+      addNotification({
+        type: "order", audience: "customer",
+        title: `อัปเดตคำสั่งซื้อ — ${STATUS_LABEL[status]}`,
+        message: `${id} เปลี่ยนสถานะเป็น "${STATUS_LABEL[status]}"`,
+        time: "เมื่อสักครู่",
+        link: "/orders",
+      });
+      if (status === "cancelled") {
+        notifyOwner(existing.shopName, {
+          type: "order",
+          title: "ลูกค้ายกเลิกคำสั่งซื้อ",
+          message: `${id} ถูกยกเลิก ยอด ฿${existing.total.toLocaleString()}`,
+          time: "เมื่อสักครู่",
+          link: "/owner",
+        });
+      }
+    }
+  };
+
+  const addReview = (id: string, rating: number, comment: string) => {
+    const existing = orders.find((o) => o.id === id);
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, review: { rating, comment } } : o)));
+    if (existing) {
+      notifyOwner(existing.shopName, {
+        type: "review",
+        title: `รีวิวใหม่ ${rating} ดาว`,
+        message: `${id}: "${comment.slice(0, 60)}${comment.length > 60 ? "…" : ""}"`,
+        time: "เมื่อสักครู่",
+        link: "/owner",
+      });
+    }
+  };
 
   return <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus, addReview }}>{children}</OrderContext.Provider>;
 }

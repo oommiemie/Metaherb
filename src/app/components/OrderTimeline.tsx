@@ -32,8 +32,8 @@ export function OrderTimeline({ currentStatus, trackingNumber }: { currentStatus
   const currentIndex = statusOrder.indexOf(currentStatus);
 
   return (
-    <div className="py-4">
-      <div className="flex items-center justify-between relative px-2">
+    <div className="py-4 overflow-x-auto -mx-2 scrollbar-hide">
+      <div className="flex items-center justify-between relative px-2 min-w-[480px]">
         {/* Connection line */}
         <div className="absolute top-5 left-8 right-8 h-[2px] bg-gray-200" />
         <div
@@ -46,7 +46,7 @@ export function OrderTimeline({ currentStatus, trackingNumber }: { currentStatus
           const isCurrent = i === currentIndex;
           const Icon = step.icon;
           return (
-            <div key={step.status} className="flex flex-col items-center relative z-10 w-16">
+            <div key={step.status} className="flex flex-col items-center relative z-10 w-16 shrink-0">
               <div
                 className={`size-10 rounded-full flex items-center justify-center transition-colors ${
                   isCompleted

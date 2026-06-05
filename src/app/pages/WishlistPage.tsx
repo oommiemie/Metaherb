@@ -3,7 +3,7 @@ import { useWishlist } from "../store/WishlistContext";
 import { useCart } from "../store/CartContext";
 import { useAuth } from "../store/AuthContext";
 import { useLanguage } from "../store/LanguageContext";
-import { products } from "../data/products";
+import { useProducts } from "../store/ProductsContext";
 import { Heart, ShoppingCart, Star, Trash2 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ export function WishlistPage() {
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
   const { t } = useLanguage();
+  const { products } = useProducts();
 
   const wishlistProducts = products.filter((p) => wishlist.has(p.id));
 
@@ -43,9 +44,9 @@ export function WishlistPage() {
 
   return (
     <div>
-      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
-        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>
-          <Heart className="size-6 inline mr-2 fill-[#319754]" />{t("wishlist_title")}
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center px-4">
+        <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>
+          <Heart className="size-5 sm:size-6 inline mr-2 fill-[#319754]" />{t("wishlist_title")}
         </h1>
       </div>
 

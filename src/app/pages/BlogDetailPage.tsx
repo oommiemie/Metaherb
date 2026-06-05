@@ -58,7 +58,7 @@ export function BlogDetailPage() {
         <article className="bg-white rounded-[16px] p-[16px] flex flex-col gap-[16px] w-full">
           {/* Title + date */}
           <div className="flex flex-col gap-[10px]">
-            <h1 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{article.title}</h1>
+            <h1 className={`${font} text-[18px] sm:text-[20px] lg:text-[24px] text-black`} style={{ fontWeight: 500 }}>{article.title}</h1>
             <div className="flex items-center gap-[10px]">
               <Calendar className="size-3 text-[#737373]" strokeWidth={2.2} />
               <span className={`${font} text-[12px] text-[#737373]`}>{article.date}</span>
@@ -68,7 +68,7 @@ export function BlogDetailPage() {
           <div className="h-px w-full bg-[#D4D4D8]" />
 
           {/* Body */}
-          <div className={`${font} text-[16px] text-black leading-relaxed flex flex-col gap-[10px]`}>
+          <div className={`${font} text-[14px] sm:text-[16px] text-black leading-relaxed flex flex-col gap-[10px]`}>
             {article.content.split("\n").map((line, i) => {
               const trimmed = line.trim();
               if (!trimmed) return <div key={i} className="h-[6px]" />;

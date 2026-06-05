@@ -6,7 +6,7 @@ import { Trash2, Minus, Plus, ChevronLeft, Store, MessageCircle, ShieldCheck, Fi
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useChat } from "../store/ChatContext";
 import { toast } from "sonner";
-import { products } from "../data/products";
+import { useProducts } from "../store/ProductsContext";
 import { MATERIALS } from "../data/herbalMaterials";
 
 const isMarketItem = (productId: string) => MATERIALS.some((m) => m.id === productId);
@@ -28,6 +28,7 @@ export function CartPage() {
   const { items, removeItem, updateQuantity, total } = useCart();
   const { openChat } = useChat();
   const { t } = useLanguage();
+  const { products } = useProducts();
   const [selected, setSelected] = useState<Set<string>>(new Set(items.filter((i) => i.inStock).map(rowKey)));
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -73,8 +74,8 @@ export function CartPage() {
 
   return (
     <div>
-      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
-        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("cart_title")}</h1>
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center px-4">
+        <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("cart_title")}</h1>
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
@@ -108,8 +109,8 @@ export function CartPage() {
               {Object.entries(groupedItems).map(([shopName, shopItems]) => (
                 <div key={shopName} className="bg-white rounded-xl border border-gray-200 mb-3 overflow-hidden">
                   {/* Shop header */}
-                  <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100 gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <input type="checkbox"
                         checked={shopItems.every((i) => !i.inStock || selected.has(rowKey(i)))}
                         onChange={() => {
@@ -118,14 +119,14 @@ export function CartPage() {
                           shopItems.forEach((i) => { if (i.inStock) { allSelected ? next.delete(rowKey(i)) : next.add(rowKey(i)); } });
                           setSelected(next);
                         }}
-                        className="accent-[#319754] cursor-pointer size-4" />
-                      <img src={shopLogos[shopName] || imgShop} alt={shopName} className="size-5 rounded-full object-cover" />
-                      <span className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{shopName}</span>
-                      <span className="bg-[#319754] text-white text-[9px] px-1.5 py-0.5 rounded">{t("cart_shop_recommend")}</span>
+                        className="accent-[#319754] cursor-pointer size-4 shrink-0" />
+                      <img src={shopLogos[shopName] || imgShop} alt={shopName} className="size-5 rounded-full object-cover shrink-0" />
+                      <span className={`${font} text-[13px] sm:text-[14px] truncate`} style={{ fontWeight: 500 }}>{shopName}</span>
+                      <span className="bg-[#319754] text-white text-[9px] px-1.5 py-0.5 rounded shrink-0 hidden sm:inline">{t("cart_shop_recommend")}</span>
                     </div>
                     <button onClick={() => openChat("metaherb")}
-                      className={`flex items-center gap-1 text-[12px] text-[#319754] ${font} cursor-pointer hover:underline`}>
-                      <MessageCircle className="size-3.5" /> {t("cart_chat_shop")}
+                      className={`flex items-center gap-1 text-[12px] text-[#319754] ${font} cursor-pointer hover:underline shrink-0`}>
+                      <MessageCircle className="size-3.5" /> <span className="hidden sm:inline">{t("cart_chat_shop")}</span>
                     </button>
                   </div>
 
@@ -182,7 +183,7 @@ export function CartPage() {
 
             {/* Summary */}
             <div className="lg:w-[340px]">
-              <div className="bg-white rounded-xl p-6 border border-gray-200 sticky top-[140px]">
+              <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 lg:sticky lg:top-[140px]">
                 {/* Coupon code */}
                 
                 {appliedCoupon && (

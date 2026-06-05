@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { shops as initialShops, type Shop, type ShopReview } from "../data/shops";
-import { useNotifications } from "./NotificationContext";
+import { useNotificationsOptional } from "./NotificationContext";
+import { usePersistentState } from "./usePersistentState";
 
 interface ShopContextType {
   shops: Shop[];
@@ -18,9 +19,9 @@ interface ShopContextType {
 const ShopContext = createContext<ShopContextType | null>(null);
 
 export function ShopProvider({ children }: { children: ReactNode }) {
-  const [shopList, setShopList] = useState<Shop[]>(initialShops);
-  const [followedShops, setFollowedShops] = useState<string[]>([]);
-  const notif = useNotifications();
+  const [shopList, setShopList] = usePersistentState<Shop[]>("metaherb:shops", initialShops);
+  const [followedShops, setFollowedShops] = usePersistentState<string[]>("metaherb:followedShops", []);
+  const notif = useNotificationsOptional();
 
   const followShop = (shopId: string) => {
     if (followedShops.includes(shopId)) return;
@@ -56,6 +57,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       reported: false,
       hidden: false,
     };
+    const shop = shopList.find((s) => s.id === shopId);
     setShopList((prev) =>
       prev.map((s) => {
         if (s.id !== shopId) return s;
@@ -64,6 +66,16 @@ export function ShopProvider({ children }: { children: ReactNode }) {
         return { ...s, reviews: newReviews, rating: Math.round(avgRating * 10) / 10, totalReviews: s.totalReviews + 1 };
       })
     );
+    // Fire owner notification about the new shop review
+    if (shop) {
+      notif.notifyOwner(shop.name, {
+        type: "review",
+        title: `รีวิวร้านใหม่ ${newReview.rating} ดาว`,
+        message: `${newReview.user}: "${(newReview.comment || "").slice(0, 60)}${(newReview.comment || "").length > 60 ? "…" : ""}"`,
+        time: "เมื่อสักครู่",
+        link: "/owner",
+      });
+    }
   };
 
   const toggleHideReview = (shopId: string, reviewId: string) => {

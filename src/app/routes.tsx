@@ -40,29 +40,44 @@ import { ChatProvider } from "./store/ChatContext";
 import { ShopProvider } from "./store/ShopContext";
 import { RecentlyViewedProvider } from "./store/RecentlyViewedContext";
 import { LanguageProvider } from "./store/LanguageContext";
+import { ProductsProvider } from "./store/ProductsContext";
+import { SiteInfoProvider } from "./store/SiteInfoContext";
+import { BannersProvider } from "./store/BannersContext";
+import { CategoriesProvider } from "./store/CategoriesContext";
+import { AIAssistantProvider } from "./store/AIAssistantContext";
 import { Toaster } from "sonner";
 
 function Providers() {
   return (
     <LanguageProvider>
+      <SiteInfoProvider>
       <AuthProvider>
-        <CartProvider>
-          <OrderProvider>
-            <WishlistProvider>
+        <BannersProvider>
+        <CategoriesProvider>
+        <ProductsProvider>
+          <WishlistProvider>
+            <CartProvider>
               <NotificationProvider>
-                <ShopProvider>
-                  <ChatProvider>
-                    <RecentlyViewedProvider>
-                      <Toaster position="top-center" richColors />
-                      <Layout />
-                    </RecentlyViewedProvider>
-                  </ChatProvider>
-                </ShopProvider>
+                <OrderProvider>
+                  <ShopProvider>
+                    <ChatProvider>
+                      <RecentlyViewedProvider>
+                        <AIAssistantProvider>
+                          <Toaster position="top-center" richColors />
+                          <Layout />
+                        </AIAssistantProvider>
+                      </RecentlyViewedProvider>
+                    </ChatProvider>
+                  </ShopProvider>
+                </OrderProvider>
               </NotificationProvider>
-            </WishlistProvider>
-          </OrderProvider>
-        </CartProvider>
+            </CartProvider>
+          </WishlistProvider>
+        </ProductsProvider>
+        </CategoriesProvider>
+        </BannersProvider>
       </AuthProvider>
+      </SiteInfoProvider>
     </LanguageProvider>
   );
 }

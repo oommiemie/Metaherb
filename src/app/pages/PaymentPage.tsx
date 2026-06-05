@@ -37,15 +37,24 @@ export function PaymentPage() {
   const grandTotal = total - discount + vat + shipping;
 
   const handleConfirm = () => {
+    // Derive shop from cart items (first item's shop wins) so owner notifications
+    // route to the right shop. Falls back to METAHERB Store for legacy carts.
+    const shopName = items[0]?.shopName ?? "METAHERB Store";
     const orderId = addOrder({
       items,
       total: grandTotal,
-      status: "pending_payment",
+      status: selectedPayment === "cod" ? "preparing" : "pending_payment",
       shippingAddress: "เลขที่ 2 ชั้นที่ 2 ซอยสุขสวัสดิ์33 แขวงราษฎร์บูรณะ, เขตราษฎร์บูรณะ กรุงเทพมหานคร 10140",
       paymentMethod: paymentMethods.find((p) => p.id === selectedPayment)?.label || "",
-      shopName: "METAHERB Store",
+      shopName,
     });
     clearCart();
+    // COD: skip verify-payment slip step → go straight home with confirmation
+    if (selectedPayment === "cod") {
+      toast.success(t("vp_checkout_complete"), { description: t("vp_checkout_complete_desc") });
+      setTimeout(() => navigate("/"), 600);
+      return;
+    }
     navigate(`/verify-payment/${orderId}`);
   };
 
@@ -60,25 +69,25 @@ export function PaymentPage() {
 
   return (
     <div>
-      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center">
-        <h1 className={`${font} text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("pay_title")}</h1>
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center px-4">
+        <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("pay_title")}</h1>
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6 flex flex-col lg:flex-row gap-6">
         <div className="flex-1 space-y-6">
           {/* Address */}
-          <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <h3 className={`${font} text-[16px]`} style={{ fontWeight: 600 }}>
                 <MapPin className="size-5 inline mr-2 text-[#319754]" />{t("pay_address_title")}
               </h3>
               <span className={`${font} text-[13px] text-[#319754] cursor-pointer`}>{t("pay_change")}</span>
             </div>
-            <div className="backdrop-blur-[8px] bg-[rgba(242,242,247,0.5)] flex flex-col gap-[10px] items-start p-[16px] rounded-[16px] w-full">
-              <div className="flex items-start justify-between w-full">
-                <div className="flex flex-1 gap-[10px] items-center">
-                  <p className={`${font} text-[16px] text-black whitespace-nowrap`} style={{ fontWeight: 500 }}>{user?.username}</p>
-                  <span className={`bg-[#08f] text-white text-[12px] ${font} px-[16px] py-[4px] rounded-full shrink-0`} style={{ fontWeight: 500 }}>{t("pay_default_address")}</span>
+            <div className="backdrop-blur-[8px] bg-[rgba(242,242,247,0.5)] flex flex-col gap-[10px] items-start p-3 sm:p-[16px] rounded-[16px] w-full">
+              <div className="flex items-start justify-between w-full gap-2">
+                <div className="flex flex-1 gap-2 sm:gap-[10px] items-center min-w-0 flex-wrap">
+                  <p className={`${font} text-[14px] sm:text-[16px] text-black truncate`} style={{ fontWeight: 500 }}>{user?.username}</p>
+                  <span className={`bg-[#08f] text-white text-[11px] sm:text-[12px] ${font} px-3 sm:px-[16px] py-[2px] sm:py-[4px] rounded-full shrink-0`} style={{ fontWeight: 500 }}>{t("pay_default_address")}</span>
                 </div>
                 <div className="bg-[rgba(120,120,128,0.12)] flex items-center justify-center rounded-full size-[28px] shrink-0 cursor-pointer">
                   <MoreHorizontal className="size-4 text-[#999]" />
@@ -94,7 +103,7 @@ export function PaymentPage() {
           </div>
 
           {/* Shipping */}
-          <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
             <h3 className={`${font} text-[16px] mb-3`} style={{ fontWeight: 600 }}>
               <Truck className="size-5 inline mr-2 text-[#319754]" />{t("pay_shipping_title")}
             </h3>
@@ -111,7 +120,7 @@ export function PaymentPage() {
           </div>
 
           {/* Payment */}
-          <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
             <h3 className={`${font} text-[16px] mb-3`} style={{ fontWeight: 600 }}>
               <CreditCard className="size-5 inline mr-2 text-[#319754]" />{t("pay_method_title")}
             </h3>
@@ -134,7 +143,7 @@ export function PaymentPage() {
 
         {/* Order summary */}
         <div className="lg:w-[400px]">
-          <div className="bg-white rounded-[16px] p-4 sticky top-[140px] flex flex-col gap-4">
+          <div className="bg-white rounded-[16px] p-4 lg:sticky lg:top-[140px] flex flex-col gap-4">
             <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("pay_summary")}</p>
             <div className="h-px w-full bg-[#D4D4D8]" />
 

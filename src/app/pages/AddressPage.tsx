@@ -271,9 +271,9 @@ function AddressModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-2 overflow-y-auto" onClick={onClose}>
       <div
-        className="bg-white rounded-[16px] w-[90%] max-w-[500px] p-4 relative shadow-[0px_0px_8px_0px_rgba(0,0,0,0.25)]"
+        className="bg-white rounded-[16px] w-full max-w-[500px] p-4 relative shadow-[0px_0px_8px_0px_rgba(0,0,0,0.25)] my-auto max-h-[95vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Title row */}
@@ -294,7 +294,7 @@ function AddressModal({
 
         <div className="space-y-4">
           {/* First name + last name */}
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-[5px]">
                 <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("address_first_name")}</span>
@@ -485,19 +485,19 @@ export function AddressPage() {
     <div className="bg-[#fafafa] min-h-screen">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex gap-4 items-center">
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+          <div className="flex gap-2 sm:gap-4 items-center min-w-0">
             <button
               onClick={() => navigate(-1)}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-[12px] ${font} cursor-pointer hover:bg-[#f0f0f0]`}
+              className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-white text-[12px] ${font} cursor-pointer hover:bg-[#f0f0f0]`}
             >
               <ChevronLeft className="size-3" /> {t("common_back")}
             </button>
-            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("address_title")}</p>
+            <p className={`${font} text-[16px] sm:text-[20px] text-black truncate`} style={{ fontWeight: 500 }}>{t("address_title")}</p>
           </div>
           <button
             onClick={handleAdd}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full bg-[#319754] text-white text-[13px] ${font} cursor-pointer hover:bg-[#267a43] transition-colors`}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full bg-[#319754] text-white text-[12px] sm:text-[13px] ${font} cursor-pointer hover:bg-[#267a43] transition-colors shrink-0`}
           >
             <Plus className="size-4" /> {t("address_add_new")}
           </button>

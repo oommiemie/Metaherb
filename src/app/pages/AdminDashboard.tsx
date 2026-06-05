@@ -1,5 +1,12 @@
 import React, { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
+import { useLanguage } from "../store/LanguageContext";
+import { useProducts } from "../store/ProductsContext";
+import { readImageFile } from "../data/imageUpload";
+import { useSiteInfo, DEFAULT_SITE_INFO } from "../store/SiteInfoContext";
+import { useBanners } from "../store/BannersContext";
+import { useCategories, type Category as CtxCategory } from "../store/CategoriesContext";
+import { useAuth, type DisplayRole, type RegistryStatus } from "../store/AuthContext";
 import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
   Shield, DollarSign, Megaphone, UserCog, BarChart2, ShoppingBag,
@@ -55,11 +62,11 @@ import imgCost from "../../assets/cost.png";
 import imgCoinUp from "../../assets/cion-up.png";
 import imgBestStore from "../../assets/best-store.png";
 import imgPlatformFees from "../../assets/Platform-fees.png";
-import imgNewCustomer from "../../assets/new-customer.png";
-import imgRepeatCustomers from "../../assets/repeat-customers.png";
-import imgGroupCustomer from "../../assets/gourp-customer.png";
-import imgMember from "../../assets/member.png";
-import imgProductsSold from "../../assets/products-sold.png";
+import imgNewCustomer from "../../assets/new-customer2.png";
+import imgRepeatCustomers from "../../assets/repeat-customers2.png";
+import imgGroupCustomer from "../../assets/new-customer 13.png";
+import imgMember from "../../assets/LTV.png";
+import imgProductsSold from "../../assets/All-stores-system.png";
 import imgProductsStore from "../../assets/products-store.png";
 import imgStock from "../../assets/stock.png";
 import imgRating from "../../assets/rating.png";
@@ -141,6 +148,7 @@ const sectionMenus: Record<AdminSection, AdminItem[]> = {
     ]},
     { id: "reviews",    label: "จัดการรีวิว",     icon: Star },
     { id: "orders",     label: "คำสั่งซื้อ",       icon: ShoppingCart },
+    { id: "ai_assistant", label: "AI Assistant",   icon: Sparkles },
   ],
   content: [
     { id: "content_banner", label: "Banner",   icon: ImageIcon },
@@ -170,8 +178,9 @@ const sectionMenus: Record<AdminSection, AdminItem[]> = {
     { id: "settings_shipping",      label: "การจัดส่ง",     icon: Truck },
     { id: "settings_notifications", label: "การแจ้งเตือน",   icon: Bell },
     { id: "settings_users", label: "ผู้ใช้งาน", icon: UserCog, children: [
-      { id: "users_list", label: "ผู้ใช้",          icon: Users },
-      { id: "shops_list", label: "ทะเบียนร้านค้า", icon: Store },
+      { id: "users_list",        label: "ผู้ใช้",          icon: Users },
+      { id: "shops_list",        label: "ทะเบียนร้านค้า", icon: Store },
+      { id: "users_permissions", label: "กำหนดสิทธิ",     icon: ShieldCheck },
     ]},
   ],
 };
@@ -233,6 +242,43 @@ function MenuBtn({ isActive, icon: Icon, label, onClick, hasArrow, expanded, col
 function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
   section: AdminSection; active: ItemId; onSelect: (id: ItemId) => void; collapsed: boolean; onToggle: () => void;
 }) {
+  const { t } = useLanguage();
+  // Map admin sidebar item ids to translation keys
+  const adminLabelMap: Record<string, string> = {
+    dashboard: t("admin_sidebar_dashboard"),
+    report: t("admin_sidebar_reports"),
+    report_sales: t("owner_sidebar_report_sales"),
+    report_customers: t("owner_sidebar_report_customers"),
+    report_products: t("owner_sidebar_report_products"),
+    report_marketing: t("owner_sidebar_report_market"),
+    complaints: t("admin_sidebar_complaints"),
+    products: t("admin_sidebar_products"),
+    products_manage: t("owner_sidebar_manage_products"),
+    products_categories: t("admin_sidebar_categories"),
+    products_promotions: t("admin_sidebar_promotions"),
+    products_flash: t("admin_sidebar_flash_sale"),
+    products_coupons: t("admin_sidebar_coupons"),
+    reviews: t("admin_sidebar_reviews"),
+    orders: t("admin_sidebar_orders"),
+    content_banner: t("admin_sidebar_banners"),
+    content_blog: t("admin_sidebar_blog"),
+    page_home: t("admin_sidebar_homepage"),
+    page_about: t("admin_sidebar_about"),
+    settings_shipping: t("settings_shipping"),
+    settings_notifications: t("admin_sidebar_notifications"),
+    settings_users: t("admin_sidebar_users"),
+    users_list: t("admin_sidebar_users"),
+    shops_list: t("admin_sidebar_shops"),
+    users_permissions: t("admin_perm_sidebar"),
+  };
+  const labelOf = (id: string, fallback: string) => adminLabelMap[id] ?? fallback;
+
+  const sectionLabelsI18n: Record<AdminSection, string> = {
+    overview: t("admin_topbar_overview"),
+    content: t("admin_topbar_content"),
+    pages: t("admin_topbar_pages"),
+    settings: t("admin_topbar_settings"),
+  };
   const items = sectionMenus[section];
   // Auto-expand parent that contains active child on mount/change
   const initialExpanded = useMemo(() => {
@@ -275,7 +321,7 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
                 transition={{ duration: 0.2 }}
                 className="flex items-center gap-2">
                 <Shield className="size-4" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.4} />
-                <p className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>{sectionLabels[section]}</p>
+                <p className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>{sectionLabelsI18n[section]}</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -298,13 +344,14 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
             animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } } }}
             className={`flex-1 pb-4 space-y-2.5 overflow-y-auto ${collapsed ? "px-2" : "px-4"}`}>
-            {items.map((item) =>
-              !item.children ? (
+            {items.map((item) => {
+              const itemL = labelOf(item.id, item.label);
+              return !item.children ? (
                 <motion.div key={item.id}
                   variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
                   transition={{ duration: 0.25 }}>
-                  {withTooltip(item.label,
-                    <MenuBtn isActive={active === item.id} icon={item.icon} label={item.label} onClick={() => onSelect(item.id)} collapsed={collapsed} />
+                  {withTooltip(itemL,
+                    <MenuBtn isActive={active === item.id} icon={item.icon} label={itemL} onClick={() => onSelect(item.id)} collapsed={collapsed} />
                   )}
                 </motion.div>
               ) : (
@@ -312,10 +359,10 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
                   variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }}
                   transition={{ duration: 0.25 }}
                   className="space-y-2.5">
-                  {withTooltip(item.label,
+                  {withTooltip(itemL,
                     <MenuBtn
                       isActive={item.children.some((c) => c.id === active)}
-                      icon={item.icon} label={item.label}
+                      icon={item.icon} label={itemL}
                       onClick={() => toggle(item.id)}
                       collapsed={collapsed} hasArrow={!collapsed} expanded={expandedMenus[item.id]}
                     />
@@ -335,21 +382,24 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
                             animate="show"
                             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.03 } } }}
                             className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
-                            {item.children.map((child) => (
-                              <motion.div key={child.id}
-                                variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }}
-                                transition={{ duration: 0.2 }}>
-                                <MenuBtn isActive={active === child.id} icon={child.icon || Package} label={child.label} onClick={() => onSelect(child.id)} collapsed={collapsed} />
-                              </motion.div>
-                            ))}
+                            {item.children.map((child) => {
+                              const cL = labelOf(child.id, child.label);
+                              return (
+                                <motion.div key={child.id}
+                                  variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }}
+                                  transition={{ duration: 0.2 }}>
+                                  <MenuBtn isActive={active === child.id} icon={child.icon || Package} label={cL} onClick={() => onSelect(child.id)} collapsed={collapsed} />
+                                </motion.div>
+                              );
+                            })}
                           </motion.div>
                         </motion.div>
                       )}
                     </AnimatePresence>
                   )}
                 </motion.div>
-              )
-            )}
+              );
+            })}
           </motion.nav>
         </TooltipPrimitive.Provider>
       </div>
@@ -359,23 +409,24 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
 
 /* ========== DASHBOARD CONTENT ========== */
 function DashboardContent() {
+  const { t } = useLanguage();
   const now = new Date();
   const hour = now.getHours();
   const greeting = hour < 12 ? "สวัสดีตอนเช้า" : hour < 17 ? "สวัสดีตอนบ่าย" : "สวัสดีตอนเย็น";
   const dayLabel = now.toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" }) + " " + (now.getFullYear() + 543);
 
   const stats = [
-    { label: "รายได้รวมเดือนนี้",    value: "฿3,160,000", subLabel: "+18% เทียบเดือนที่แล้ว", accent: "#10b981", Icon: DollarSign,    img: imgCoin       },
-    { label: "คำสั่งซื้อเดือนนี้",     value: "8,850",       subLabel: "+24 จากสัปดาห์ที่แล้ว",   accent: "#0ea5e9", Icon: ShoppingCart, img: imgBox         },
-    { label: "ลูกค้าทั้งหมด",           value: "18,420",      subLabel: "+56 ลูกค้าใหม่",          accent: "#6366f1", Icon: Users,         img: imgGroupCustomer },
-    { label: "ร้านค้าทั้งหมด",          value: "32",          subLabel: "+3 รออนุมัติ",             accent: "#f59e0b", Icon: Store,         img: imgBestStore   },
+    { label: t("admin_overview_total_revenue"), value: "฿3,160,000", subLabel: "+18%",  accent: "#10b981", Icon: DollarSign,    img: imgCoin       },
+    { label: t("admin_overview_total_orders"),  value: "8,850",       subLabel: "+24",    accent: "#0ea5e9", Icon: ShoppingCart, img: imgBox         },
+    { label: t("admin_overview_total_users"),   value: "18,420",      subLabel: "+56",    accent: "#6366f1", Icon: Users,         img: imgGroupCustomer },
+    { label: t("admin_overview_total_shops"),   value: "32",          subLabel: "+3",     accent: "#f59e0b", Icon: Store,         img: imgBestStore   },
   ];
 
   const quickActions = [
-    { label: "รายงานยอดขาย",      Icon: TrendingUp,    to: "report_sales",     color: "#319754" },
-    { label: "คำสั่งซื้อ",            Icon: ShoppingCart,  to: "orders",           color: "#3b82f6" },
-    { label: "ร้องเรียน",              Icon: AlertCircle,   to: "complaints_list",  color: "#ef4444" },
-    { label: "Flash Sale",            Icon: Zap,           to: "products_flash",   color: "#e62e05" },
+    { label: t("owner_sidebar_report_sales"),  Icon: TrendingUp,    to: "report_sales",     color: "#319754" },
+    { label: t("admin_sidebar_orders"),         Icon: ShoppingCart,  to: "orders",           color: "#3b82f6" },
+    { label: t("admin_sidebar_complaints"),     Icon: AlertCircle,   to: "complaints_list",  color: "#ef4444" },
+    { label: "Flash Sale",                       Icon: Zap,           to: "products_flash",   color: "#e62e05" },
   ];
 
   const pendingActions: { label: string; count: number; sub: string; color: string; urgent?: boolean; Icon: any }[] = [
@@ -809,6 +860,7 @@ function AnimatedValue({ value, duration = 1000 }: { value: string; duration?: n
 }
 
 function AdminSalesReportContent() {
+  const { t } = useLanguage();
   type Period = "daily" | "weekly" | "monthly" | "yearly";
   type ChartKind = "line" | "bar" | "pie";
 
@@ -1113,7 +1165,7 @@ function AdminSalesReportContent() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานผลยอดขาย</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_report_sales_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวมยอดขายของทั้งระบบ Metaherb · กรองตามร้านค้าได้</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -2255,6 +2307,7 @@ function AdminSalesReportContent() {
 }
 
 function AdminCustomersReportContent() {
+  const { t } = useLanguage();
   type Period = "daily" | "weekly" | "monthly" | "yearly";
   type ChartKind = "line" | "bar" | "pie";
 
@@ -2551,7 +2604,7 @@ function AdminCustomersReportContent() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานข้อมูลลูกค้า</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_report_customers_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวมลูกค้าทั้งระบบ Metaherb · แบ่งกลุ่มและจัดอันดับร้านที่ดึงลูกค้า</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -3225,6 +3278,7 @@ function AdminCustomersReportContent() {
 }
 
 function AdminProductsReportContent() {
+  const { t } = useLanguage();
   type Period = "daily" | "weekly" | "monthly" | "yearly";
   type ChartKind = "line" | "bar" | "pie";
 
@@ -3493,7 +3547,7 @@ function AdminProductsReportContent() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานข้อมูลสินค้า</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_report_products_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวมสินค้าทั้งระบบ Metaherb · หมวดหมู่ขายดี · ร้านขายเก่ง</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -4178,6 +4232,7 @@ function AdminProductsReportContent() {
 }
 
 function AdminMarketingReportContent() {
+  const { t } = useLanguage();
   type Period = "daily" | "weekly" | "monthly" | "yearly";
   type ChartKind = "line" | "bar" | "pie";
 
@@ -4422,7 +4477,7 @@ function AdminMarketingReportContent() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายงานผลการตลาด</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_report_market_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ภาพรวม traffic · channels · campaign ROI ทั้งระบบ Metaherb</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -5241,29 +5296,45 @@ function FilterTabPills({ tabs, active, onChange, pillId, singleRow }: {
 
   return (
     <>
-      {/* Desktop (lg+): tabs row */}
-      <div className={`hidden lg:flex items-center gap-2 flex-1 min-w-0 ${singleRow ? "flex-nowrap" : "flex-wrap"}`}>
+      {/* Desktop (lg+): tabs row — frosted glass pill container with gradient active state */}
+      <div className={`hidden lg:flex items-center gap-1 flex-1 min-w-0 ${singleRow ? "flex-nowrap" : "flex-wrap"}`}>
         {tabs.map((tab) => {
           const isAct = active === tab.id;
           return (
             <motion.button key={tab.id} onClick={() => onChange(tab.id)}
-              whileTap={{ scale: 0.94 }} whileHover={!isAct ? { scale: 1.04 } : undefined}
+              whileTap={{ scale: 0.96 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
+              className={`group/tab relative flex items-center gap-2 h-[38px] pl-1.5 pr-3.5 rounded-full cursor-pointer shrink-0 transition-all duration-200 ${
+                isAct ? "" : "text-[#1d5b32] hover:text-[#287745] hover:-translate-y-[1px]"
+              }`}>
+              {!isAct && (
+                <span className="absolute inset-0 rounded-full bg-[#319754]/0 group-hover/tab:bg-[#319754]/8 transition-colors duration-200" />
+              )}
               {isAct && (
                 <motion.span layoutId={pillId}
-                  className="absolute inset-0 bg-[#319754] rounded-full"
+                  className="absolute inset-0 rounded-full shadow-[0_4px_14px_-2px_rgba(49,151,84,0.55),inset_0_1px_0_rgba(255,255,255,0.25)]"
+                  style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 50%, #267a43 100%)" }}
                   transition={{ type: "spring", stiffness: 380, damping: 32 }} />
               )}
-              <motion.span layout className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
-                style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
-                transition={{ duration: 0.2 }}>
-                <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
+              <motion.span layout className="relative flex items-center justify-center size-[28px] rounded-full shrink-0 transition-colors duration-200"
+                style={{
+                  backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "rgba(49,151,84,0.12)",
+                  boxShadow: isAct ? "inset 0 1px 0 rgba(255,255,255,0.3)" : "none",
+                }}>
+                <tab.Icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.4} />
               </motion.span>
-              <span className={`${font} relative text-[13px] whitespace-nowrap transition-colors duration-200`}
-                style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>{tab.label}</span>
-              <span className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors duration-200`}
-                style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>{tab.count}</span>
+              <span className={`${font} relative text-[13px] leading-none whitespace-nowrap transition-colors duration-200`}
+                style={{ color: isAct ? "#fff" : undefined, fontWeight: isAct ? 600 : 500 }}>{tab.label}</span>
+              {tab.count > 0 && (
+                <span className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[20px] h-[20px] rounded-full inline-flex items-center justify-center transition-all duration-200 ring-[1.5px]`}
+                  style={{
+                    background: isAct ? "rgba(255,255,255,0.22)" : "linear-gradient(135deg, #ff8a8a, #ef4444)",
+                    color: "#fff",
+                    fontWeight: 700,
+                    boxShadow: isAct ? "none" : "0 2px 6px rgba(239,56,60,0.5)",
+                    ["--tw-ring-color" as any]: isAct ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.95)",
+                  }}>{tab.count}</span>
+              )}
             </motion.button>
           );
         })}
@@ -5311,15 +5382,18 @@ function FormSection({ icon: Icon, title, desc, action, iconColor, children }: {
 }) {
   const c = iconColor || ADMIN_PRIMARY;
   return (
-    <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-4">
-      <div className="pb-3 border-b border-[#e8e8e8] flex items-center justify-between gap-3">
+    <div className="bg-white rounded-[20px] border border-gray-100 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.06)] hover:shadow-[0_8px_24px_-8px_rgba(16,24,40,0.1)] transition-shadow duration-300 p-5 sm:p-6 flex flex-col gap-4">
+      <div className="pb-4 border-b border-gray-100 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="size-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${c}1a` }}>
-            <Icon className="size-4" style={{ color: c }} strokeWidth={2.2} />
+          <span className="w-[3px] h-[28px] rounded-full shrink-0"
+            style={{ background: `linear-gradient(to bottom, ${c} 0%, ${c}cc 100%)`, boxShadow: `0 0 8px ${c}66` }} />
+          <div className="size-[36px] rounded-xl flex items-center justify-center shrink-0 border"
+            style={{ background: `linear-gradient(135deg, ${c}26 0%, ${c}14 100%)`, borderColor: `${c}40` }}>
+            <Icon className="size-[16px]" style={{ color: c }} strokeWidth={2.4} />
           </div>
           <div className="min-w-0">
-            <p className={`${font} text-[14px] text-black leading-tight truncate`} style={{ fontWeight: 600 }}>{title}</p>
-            {desc && <p className={`${font} text-[11px] text-[#8e8e93] mt-0.5 truncate`}>{desc}</p>}
+            <p className={`${font} text-[15.5px] text-black leading-tight truncate`} style={{ fontWeight: 600 }}>{title}</p>
+            {desc && <p className={`${font} text-[12px] text-gray-500 mt-0.5 truncate`}>{desc}</p>}
           </div>
         </div>
         {action && <div className="shrink-0">{action}</div>}
@@ -5387,25 +5461,17 @@ function LayoutSlotPicker({ position, aspectClass, selected, draftImage, hasAnyI
     if (!hasImage) setIsDragging(false);
   }, [hasImage]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
-      toast.error("รองรับเฉพาะ JPEG / PNG / WebP / GIF");
+    const result = await readImageFile(file, { maxWidth: 1600, quality: 0.85 });
+    if (!result.ok) {
+      toast.error(result.error);
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("ไฟล์ใหญ่เกิน 5MB");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      onSelectImage(reader.result as string);
-      toast.success(`เพิ่มภาพใน ${positionLabels[position]} แล้ว`);
-    };
-    reader.onerror = () => toast.error("อ่านไฟล์ไม่สำเร็จ");
-    reader.readAsDataURL(file);
+    onSelectImage(result.dataUrl);
+    toast.success(`เพิ่มภาพใน ${positionLabels[position]} แล้ว`);
   };
 
   const openPicker = () => fileInputRef.current?.click();
@@ -5831,7 +5897,10 @@ function BannerEditView({ initial, allBanners, onSave, onCancel }: {
 }
 
 function BannerContent() {
-  const [banners, setBanners] = useState<Banner[]>(initialBanners);
+  const { t } = useLanguage();
+  // Live banners via context — admin add/edit/delete/toggle reflects on customer HomePage immediately.
+  const { banners, saveBanner: ctxSave, updateBanner: ctxUpdate, removeBanner: ctxRemove } = useBanners();
+  void initialBanners; // seed already absorbed by BannersProvider
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | BannerStatus>("all");
   const [positionFilter, setPositionFilter] = useState<"all" | BannerPosition>("all");
@@ -5846,7 +5915,9 @@ function BannerContent() {
   const closeEdit = () => { setView("list"); setEditingBanner(null); };
 
   const saveBanner = (b: Banner) => {
-    setBanners((prev) => editingBanner ? prev.map((x) => x.id === b.id ? b : x) : [...prev, b]);
+    // ctxSave is upsert — same call handles both add and edit.
+    ctxSave(b);
+    toast.success(editingBanner ? `บันทึก "${b.name}" แล้ว` : `เพิ่ม "${b.name}" แล้ว`);
     closeEdit();
   };
 
@@ -5890,9 +5961,9 @@ function BannerContent() {
   };
 
   const toggleBannerStatus = (id: string) => {
-    setBanners((prev) => prev.map((b) =>
-      b.id === id ? { ...b, status: b.status === "active" ? "draft" : "active" } : b
-    ));
+    const b = banners.find((x) => x.id === id);
+    if (!b) return;
+    ctxUpdate(id, { status: b.status === "active" ? "draft" : "active" });
   };
 
   return (
@@ -5900,21 +5971,21 @@ function BannerContent() {
       {/* Page header — title + subtitle + add button (row เดียวกัน, ธีมหลัก) */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>Banner</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการ Banner ที่แสดงบนหน้าเว็บไซต์</p>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_banners_title")}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("admin_banners_title")}</p>
         </div>
         <motion.button
           onClick={startAdd}
           whileTap={{ scale: 0.96 }}
           whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}
         >
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่ม Banner</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่ม Banner</span>
         </motion.button>
       </div>
 
@@ -6115,7 +6186,7 @@ function BannerContent() {
                             </button>
                           )}
                           <div className="h-px bg-gray-100 my-1" />
-                          <button onClick={() => { if (confirm(`ลบ "${b.name}"?`)) { setBanners((prev) => prev.filter((x) => x.id !== b.id)); toast.success(`ลบ: ${b.name}`); } }}
+                          <button onClick={() => { if (confirm(`ลบ "${b.name}"?`)) { ctxRemove(b.id); toast.success(`ลบ: ${b.name}`); } }}
                             className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
                             <Trash2 className="size-3.5" strokeWidth={2.2} />
                             <span style={{ fontWeight: 500 }}>ลบ</span>
@@ -6212,6 +6283,7 @@ const initialArticles: Article[] = [
 ];
 
 function BlogContent() {
+  const { t } = useLanguage();
   const [articles, setArticles] = useState<Article[]>(initialArticles);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ArticleStatus>("all");
@@ -6267,20 +6339,20 @@ function BlogContent() {
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>บทความ</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการบทความและสาระความรู้บนหน้าเว็บไซต์</p>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_blog_title")}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("admin_blog_title")}</p>
         </div>
         <motion.button
           onClick={startAdd}
           whileTap={{ scale: 0.96 }}
           whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มบทความ</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>{t("admin_blog_add")}</span>
         </motion.button>
       </div>
 
@@ -7712,6 +7784,7 @@ const initialVideos: VideoItem[] = [
 ];
 
 function VideoContent() {
+  const { t } = useLanguage();
   const [videos, setVideos] = useState<VideoItem[]>(initialVideos);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | VideoStatus>("all");
@@ -7765,19 +7838,19 @@ function VideoContent() {
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>วิดีโอ</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_sidebar_blog")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการวิดีโอที่แสดงในหน้าสาระความรู้</p>
         </div>
         <motion.button
           onClick={startAdd}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มวิดีโอ</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่มวิดีโอ</span>
         </motion.button>
       </div>
 
@@ -8559,6 +8632,7 @@ const initialPopups: WelcomePopup[] = [
 ];
 
 function PopupContent() {
+  const { t } = useLanguage();
   const [popups, setPopups] = useState<WelcomePopup[]>(initialPopups);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | PopupStatus>("all");
@@ -8616,12 +8690,12 @@ function PopupContent() {
         <motion.button onClick={startAdd}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่ม Popup</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่ม Popup</span>
         </motion.button>
       </div>
 
@@ -9612,7 +9686,7 @@ function LegalFileEditor({ doc, file, onSave, onBack }: {
             <motion.button onClick={() => setMode("edit")}
               whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}>
+              className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}>
               <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center">
                 <Pencil className="size-[14px]" strokeWidth={2.6} />
               </span>
@@ -9628,7 +9702,7 @@ function LegalFileEditor({ doc, file, onSave, onBack }: {
               </motion.button>
               <motion.button onClick={handleSave} disabled={!isDirty}
                 whileTap={isDirty ? { scale: 0.96 } : undefined} whileHover={isDirty ? { y: -1 } : undefined}
-                className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] ${isDirty ? "cursor-pointer hover:bg-[#267a43]" : "opacity-50 cursor-not-allowed"}`}>
+                className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] ${isDirty ? "cursor-pointer hover:bg-[#267a43]" : "opacity-50 cursor-not-allowed"}`}>
                 <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center">
                   <Save className="size-[14px]" strokeWidth={2.6} />
                 </span>
@@ -10334,11 +10408,11 @@ function LegalContent({ docId }: { docId: LegalDocId }) {
         <motion.button onClick={handleStartCreate}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}>
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้างเอกสารใหม่</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>สร้างเอกสารใหม่</span>
         </motion.button>
       </div>
 
@@ -11689,6 +11763,7 @@ function ComplaintDetailContent({ complaint, onBack, onUpdate }: {
 }
 
 function ComplaintListContent() {
+  const { t } = useLanguage();
   const [complaints, setComplaints] = useState<AdminComplaint[]>(initialAdminComplaints);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AdminComplaintStatus>("all");
@@ -11736,18 +11811,18 @@ function ComplaintListContent() {
       {/* Header — pattern เดียวกับ default + ปุ่มขวา (export) ให้สูงเท่าหน้าอื่น */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>รายการการร้องเรียน</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_complaints_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>รายละเอียดคำร้องเรียนทุกร้านค้า พร้อมการจัดสรรผู้ดูแลและบันทึกภายใน</p>
         </div>
         <motion.button
           onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
+          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
           <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
             <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>ส่งออกรายการ</span>
+          <span style={{ fontWeight: 600 }}>{t("owner_report_export")}</span>
         </motion.button>
       </div>
 
@@ -12065,6 +12140,7 @@ const initialAppeals: ComplaintAppeal[] = [
 ];
 
 function ComplaintAppealsContent() {
+  const { t } = useLanguage();
   const [appeals, setAppeals] = useState<ComplaintAppeal[]>(initialAppeals);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AppealStatus>("all");
@@ -12112,18 +12188,18 @@ function ComplaintAppealsContent() {
       {/* Header — pattern เดียวกับ default + ปุ่มขวา (export) */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>ข้ออุทธรณ์</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_complaints_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>เคสที่ลูกค้าขอโต้แย้งผลการตัดสินของผู้ดูแล (เคสที่ถูกปฏิเสธ)</p>
         </div>
         <motion.button
           onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
+          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
           <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
             <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>ส่งออกรายการ</span>
+          <span style={{ fontWeight: 600 }}>{t("owner_report_export")}</span>
         </motion.button>
       </div>
 
@@ -12768,6 +12844,7 @@ const itemLabels: Record<string, { title: string; subtitle: string }> = {
   // users
   users_list: { title: "ผู้ใช้",         subtitle: "รายการผู้ใช้งานทั้งระบบ" },
   shops_list: { title: "ทะเบียนร้านค้า", subtitle: "ร้านค้าที่ลงทะเบียนในระบบ" },
+  users_permissions: { title: "การกำหนดสิทธิ", subtitle: "กำหนดสิทธิ์การเข้าถึงสำหรับแต่ละบทบาท" },
 };
 
 // Map item id → icon for placeholder content
@@ -12780,7 +12857,7 @@ const itemIconMap: Record<string, any> = {
   content_terms: ScrollText, content_privacy: Lock,
   site_info_general: Settings, site_info_contact: Phone, site_info_address: MapPin, site_info_social: Globe,
   settings_shipping: Truck, settings_notifications: Bell,
-  users_list: Users, shops_list: Store,
+  users_list: Users, shops_list: Store, users_permissions: ShieldCheck,
 };
 
 /* ========== Products Manage ========== */
@@ -12842,6 +12919,11 @@ type AdminProductModalKind = "history" | "warn" | "category" | null;
 interface AuditEntry { id: string; action: string; by: string; when: string; reason?: string }
 
 function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplaints?: () => void }) {
+  const { t } = useLanguage();
+  // Live products + categories from context — shadows the module-level
+  // imports so add/delete/rename in the admin reflects everywhere.
+  const { products: siteProducts, removeProduct, updateProduct } = useProducts();
+  const { categories: liveCategories } = useCategories();
   const [search, setSearch] = useState("");
   type FilterTab = "all" | "pinned" | "low" | "out" | "issues";
   const [filter, setFilter] = useState<FilterTab>("all");
@@ -12859,12 +12941,16 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
   const [modalKind, setModalKind] = useState<AdminProductModalKind>(null);
   const [modalProductId, setModalProductId] = useState<string | null>(null);
 
-  const shopNames = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), []);
+  const shopNames = useMemo(() => Array.from(new Set(siteProducts.map((p) => p.shopName))), [siteProducts]);
   const allCategories = useMemo(() => {
-    const set = new Set<string>(productCategories);
+    // Union: admin-managed categories (live) + any category found on existing products.
+    // The static productCategories import is the historical seed — kept as fallback only.
+    const set = new Set<string>();
+    liveCategories.forEach((c) => set.add(c.name));
+    productCategories.forEach((c) => set.add(c));
     siteProducts.forEach((p) => set.add(p.category));
     return Array.from(set);
-  }, []);
+  }, [siteProducts, liveCategories]);
 
   const getStatus = (p: typeof siteProducts[number]): ProductStatus => {
     if (suspended.has(p.id)) return "suspended";
@@ -12976,6 +13062,7 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
     if (kind === "unsuspend")    setSuspended((prev) => { const n = new Set(prev); ids.forEach((id) => n.delete(id)); return n; });
     if (kind === "pin")          setPinned((prev) => new Set([...prev, ...ids]));
     if (kind === "unpin")        setPinned((prev) => { const n = new Set(prev); ids.forEach((id) => n.delete(id)); return n; });
+    if (kind === "delete")       ids.forEach((id) => removeProduct(id));
     const labelMap = { recommend: "ตั้งเป็นสินค้าแนะนำ", unrecommend: "ยกเลิกสินค้าแนะนำ", suspend: "ระงับ", unsuspend: "ปลดระงับ", pin: "ปักหมุด", unpin: "ปลดปักหมุด", delete: "ลบ" } as const;
     ids.forEach((id) => addAudit(id, `${labelMap[kind]} (bulk)`));
     toast.success(`${labelMap[kind]} ${ids.length} รายการแล้ว`);
@@ -13001,6 +13088,7 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
     if (!p) return;
     const old = productCategory(p);
     setCategoryOverrides((prev) => ({ ...prev, [productId]: newCategory }));
+    updateProduct(productId, { category: newCategory });
     addAudit(productId, "เปลี่ยนหมวดหมู่", `${old} → ${newCategory}`);
     toast.success(`เปลี่ยนหมวดหมู่ "${p.name}" แล้ว`, { description: `${old} → ${newCategory}` });
   };
@@ -13017,18 +13105,18 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการสินค้า</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ดูสินค้าทั้งหมดในระบบ ควบคุมมาตรฐาน และจัดทำสินค้าแนะนำของเว็บไซต์</p>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_sidebar_manage_products")}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("owner_products_subtitle")}</p>
         </div>
         <motion.button
           onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
+          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
           <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
             <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>ส่งออกรายการ</span>
+          <span style={{ fontWeight: 600 }}>{t("owner_report_export")}</span>
         </motion.button>
       </div>
 
@@ -13440,7 +13528,7 @@ function ProductsManageContent({ onNavigateToComplaints }: { onNavigateToComplai
                             <div className="h-px bg-gray-100 my-1" />
                             {/* ลบสินค้า */}
                             <button
-                              onClick={() => { if (confirm(`ลบสินค้า "${p.name}" ออกจากระบบ?`)) { addAudit(p.id, "ลบสินค้า"); toast.success(`ลบ: ${p.name}`); } }}
+                              onClick={() => { if (confirm(`ลบสินค้า "${p.name}" ออกจากระบบ?`)) { addAudit(p.id, "ลบสินค้า"); removeProduct(p.id); toast.success(`ลบ: ${p.name}`); } }}
                               className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
                               <Trash2 className="size-3.5" strokeWidth={2.2} />
                               <span style={{ fontWeight: 500 }}>ลบสินค้า</span>
@@ -13792,7 +13880,20 @@ function seedCategories(): CategoryRow[] {
 }
 
 function ProductsCategoriesContent() {
-  const [categories, setCategories] = useState<CategoryRow[]>(() => seedCategories());
+  const { t } = useLanguage();
+  // Wire to live CategoriesContext so admin add/edit/delete/toggle/reorder
+  // reflect on HomePage's icon row + ProductsPage's filter immediately.
+  const {
+    categories: ctxCategories,
+    addCategory: ctxAdd,
+    updateCategory: ctxUpdate,
+    removeCategory: ctxRemove,
+    reorder: ctxReorder,
+    toggleActive: ctxToggleActive,
+  } = useCategories();
+  // CategoryRow and CtxCategory have the same fields — treat them as the same shape.
+  const categories = ctxCategories as unknown as CategoryRow[];
+  void seedCategories; // seed lives in CategoriesContext now
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<CategoryRow | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -13808,16 +13909,10 @@ function ProductsCategoriesContent() {
 
   const reorder = (sourceId: string, targetId: string) => {
     if (sourceId === targetId) return;
-    setCategories((prev) => {
-      const srcIdx = prev.findIndex((c) => c.id === sourceId);
-      const tgtIdx = prev.findIndex((c) => c.id === targetId);
-      if (srcIdx < 0 || tgtIdx < 0) return prev;
-      const next = prev.slice();
-      const [moved] = next.splice(srcIdx, 1);
-      next.splice(tgtIdx, 0, moved);
-      toast.success(`ย้ายตำแหน่ง "${moved.name}" แล้ว`);
-      return next;
-    });
+    const moved = categories.find((c) => c.id === sourceId);
+    if (!moved) return;
+    ctxReorder(sourceId, targetId);
+    toast.success(`ย้ายตำแหน่ง "${moved.name}" แล้ว`);
   };
 
   const counts = useMemo(() => {
@@ -13845,11 +13940,10 @@ function ProductsCategoriesContent() {
   });
 
   const toggleActive = (id: string) => {
-    setCategories((prev) => prev.map((c) => c.id === id ? (() => {
-      const next = { ...c, active: !c.active };
-      toast.success(`${next.active ? "เปิดแสดง" : "ซ่อน"}หมวด "${c.name}" แล้ว`);
-      return next;
-    })() : c));
+    const cat = categories.find((c) => c.id === id);
+    if (!cat) return;
+    ctxToggleActive(id);
+    toast.success(`${!cat.active ? "เปิดแสดง" : "ซ่อน"}หมวด "${cat.name}" แล้ว`);
   };
 
   const deleteCategory = (id: string) => {
@@ -13861,38 +13955,31 @@ function ProductsCategoriesContent() {
       return;
     }
     if (!confirm(`ลบหมวด "${cat.name}"?`)) return;
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+    ctxRemove(id);
     toast.success(`ลบหมวด "${cat.name}" แล้ว`);
   };
 
   const move = (id: string, dir: "up" | "down") => {
-    setCategories((prev) => {
-      const idx = prev.findIndex((c) => c.id === id);
-      if (idx < 0) return prev;
-      const target = dir === "up" ? idx - 1 : idx + 1;
-      if (target < 0 || target >= prev.length) return prev;
-      const next = prev.slice();
-      [next[idx], next[target]] = [next[target], next[idx]];
-      return next;
-    });
+    const idx = categories.findIndex((c) => c.id === id);
+    if (idx < 0) return;
+    const target = dir === "up" ? idx - 1 : idx + 1;
+    if (target < 0 || target >= categories.length) return;
+    ctxReorder(id, categories[target].id);
   };
 
   const openAdd = () => { setEditing(null); setShowForm(true); };
   const openEdit = (cat: CategoryRow) => { setEditing(cat); setShowForm(true); };
   const saveForm = (form: CategoryRow) => {
-    setCategories((prev) => {
-      const exists = prev.find((c) => c.id === form.id);
-      if (exists) {
-        toast.success(`บันทึกหมวด "${form.name}" แล้ว`);
-        return prev.map((c) => c.id === form.id ? form : c);
-      }
-      if (prev.some((c) => c.name === form.name)) {
-        toast.error("ชื่อหมวดหมู่ซ้ำในระบบ");
-        return prev;
-      }
+    const exists = categories.find((c) => c.id === form.id);
+    if (exists) {
+      ctxUpdate(form.id, form as unknown as Partial<CtxCategory>);
+      toast.success(`บันทึกหมวด "${form.name}" แล้ว`);
+    } else if (categories.some((c) => c.name === form.name)) {
+      toast.error("ชื่อหมวดหมู่ซ้ำในระบบ");
+    } else {
+      ctxAdd(form as unknown as CtxCategory);
       toast.success(`เพิ่มหมวด "${form.name}" แล้ว`);
-      return [...prev, form];
-    });
+    }
     setShowForm(false);
     setEditing(null);
   };
@@ -13902,18 +13989,18 @@ function ProductsCategoriesContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>หมวดหมู่สินค้า</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_categories_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดหมวดสินค้าและกำหนดสีไอคอนที่ใช้บนเว็บไซต์</p>
         </div>
         <motion.button
           onClick={openAdd}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
           <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
             <Plus className="size-[14px] text-white" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มหมวดหมู่</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่มหมวดหมู่</span>
         </motion.button>
       </div>
 
@@ -17243,21 +17330,21 @@ const DEFAULT_ABOUT_CONFIGS: AboutConfigs = {
 /* Editing helpers */
 function TextField({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className={`${font} text-[11px] text-gray-500`}>{label}</label>
+    <div className="flex flex-col gap-1.5">
+      <label className={`${font} text-[12px] text-gray-600`} style={{ fontWeight: 500 }}>{label}</label>
       <input type="text" value={value} placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className={`${font} h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+        className={`${font} h-[40px] px-3.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-[3px] focus:ring-[#319754]/12 bg-gray-50/50 focus:bg-white placeholder:text-gray-400 transition-all`} />
     </div>
   );
 }
 function TextareaField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className={`${font} text-[11px] text-gray-500`}>{label}</label>
-      <textarea value={value} rows={2}
+    <div className="flex flex-col gap-1.5">
+      <label className={`${font} text-[12px] text-gray-600`} style={{ fontWeight: 500 }}>{label}</label>
+      <textarea value={value} rows={3}
         onChange={(e) => onChange(e.target.value)}
-        className={`${font} px-2.5 py-1.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white resize-none transition-all`} />
+        className={`${font} px-3.5 py-2.5 rounded-xl border border-gray-200 text-[13px] leading-relaxed focus:outline-none focus:border-[#319754] focus:ring-[3px] focus:ring-[#319754]/12 bg-gray-50/50 focus:bg-white placeholder:text-gray-400 resize-none transition-all`} />
     </div>
   );
 }
@@ -17828,7 +17915,7 @@ function AboutSectionSettings({ id, configs, setConfigs }: {
                       upd("about_trust", { tags: next });
                     }}
                     placeholder="เช่น ✓ อย. ไทย"
-                    className={`${font} flex-1 h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`}
+                    className={`${font} flex-1 h-[40px] px-3.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-[3px] focus:ring-[#319754]/12 bg-gray-50/50 focus:bg-white transition-all`}
                   />
                   <button
                     onClick={() => upd("about_trust", { tags: c.tags.filter((_, idx) => idx !== i) })}
@@ -19206,14 +19293,16 @@ function SettingsCard({ icon: Icon, title, desc, children }: {
   icon: any; title: string; desc?: string; children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 sm:p-5">
-      <div className="pb-3 mb-4 border-b border-[#e8e8e8] flex items-center gap-2">
-        <div className="size-7 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${ADMIN_PRIMARY}1a` }}>
-          <Icon className="size-3.5" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.4} />
+    <div className="bg-white rounded-[20px] border border-gray-100 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.06)] hover:shadow-[0_8px_24px_-8px_rgba(16,24,40,0.1)] transition-shadow duration-300 p-5 sm:p-6">
+      <div className="pb-4 mb-5 border-b border-gray-100 flex items-center gap-3">
+        {/* Green accent bar (matches site design system) */}
+        <span className="w-[3px] h-[28px] rounded-full bg-gradient-to-b from-[#46c474] to-[#319754] shadow-[0_0_8px_rgba(70,196,116,0.4)]" />
+        <div className="size-[36px] rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-[#46c474]/15 to-[#319754]/10 border border-[#46c474]/25">
+          <Icon className="size-[16px]" style={{ color: ADMIN_PRIMARY }} strokeWidth={2.4} />
         </div>
-        <div className="min-w-0">
-          <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 500 }}>{title}</p>
-          {desc && <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>{desc}</p>}
+        <div className="min-w-0 flex-1">
+          <p className={`${font} text-[15.5px] text-black leading-tight`} style={{ fontWeight: 600 }}>{title}</p>
+          {desc && <p className={`${font} text-[12px] text-gray-500 mt-0.5`}>{desc}</p>}
         </div>
       </div>
       {children}
@@ -19248,8 +19337,31 @@ const DEFAULT_SITE_GENERAL: SiteGeneralConfig = {
 };
 
 function SiteInfoGeneralPage() {
-  const [cfg, setCfg] = useState<SiteGeneralConfig>(DEFAULT_SITE_GENERAL);
-  const isDirty = JSON.stringify(cfg) !== JSON.stringify(DEFAULT_SITE_GENERAL);
+  // Wire to live SiteInfoContext so admin changes flow into Layout / Footer / HomePage.
+  const { info: ctxInfo, update: ctxUpdate, reset: ctxReset } = useSiteInfo();
+  const [cfg, setCfg] = useState<SiteGeneralConfig>({
+    siteNameTh: ctxInfo.siteNameTh,
+    siteNameEn: ctxInfo.siteNameEn,
+    tagline: ctxInfo.tagline,
+    description: ctxInfo.description,
+    logoUrl: ctxInfo.logoUrl,
+    faviconUrl: ctxInfo.faviconUrl,
+    metaTitle: ctxInfo.metaTitle,
+    metaDescription: ctxInfo.metaDescription,
+    metaKeywords: ctxInfo.metaKeywords,
+    ogImage: ctxInfo.ogImage,
+    defaultLang: ctxInfo.defaultLang,
+    timezone: ctxInfo.timezone,
+    currency: ctxInfo.currency,
+  });
+  const isDirty = JSON.stringify(cfg) !== JSON.stringify({
+    siteNameTh: ctxInfo.siteNameTh, siteNameEn: ctxInfo.siteNameEn,
+    tagline: ctxInfo.tagline, description: ctxInfo.description,
+    logoUrl: ctxInfo.logoUrl, faviconUrl: ctxInfo.faviconUrl,
+    metaTitle: ctxInfo.metaTitle, metaDescription: ctxInfo.metaDescription,
+    metaKeywords: ctxInfo.metaKeywords, ogImage: ctxInfo.ogImage,
+    defaultLang: ctxInfo.defaultLang, timezone: ctxInfo.timezone, currency: ctxInfo.currency,
+  });
   const upd = <K extends keyof SiteGeneralConfig>(key: K, v: SiteGeneralConfig[K]) =>
     setCfg(prev => ({ ...prev, [key]: v }));
 
@@ -19310,7 +19422,7 @@ function SiteInfoGeneralPage() {
           <div className="flex flex-col gap-1">
             <label className={`${font} text-[11px] text-gray-500`}>ภาษาเริ่มต้น</label>
             <select value={cfg.defaultLang} onChange={(e) => upd("defaultLang", e.target.value as "th" | "en")}
-              className={`${font} h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all cursor-pointer`}>
+              className={`${font} h-[40px] px-3.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-[3px] focus:ring-[#319754]/12 bg-gray-50/50 focus:bg-white transition-all cursor-pointer`}>
               <option value="th">ไทย</option>
               <option value="en">English</option>
             </select>
@@ -19319,14 +19431,22 @@ function SiteInfoGeneralPage() {
           <div className="flex flex-col gap-1">
             <label className={`${font} text-[11px] text-gray-500`}>สกุลเงิน</label>
             <select value={cfg.currency} onChange={(e) => upd("currency", e.target.value as any)}
-              className={`${font} h-8 px-2.5 rounded-md border border-gray-200 text-[12px] focus:outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all cursor-pointer`}>
+              className={`${font} h-[40px] px-3.5 rounded-xl border border-gray-200 text-[13px] focus:outline-none focus:border-[#319754] focus:ring-[3px] focus:ring-[#319754]/12 bg-gray-50/50 focus:bg-white transition-all cursor-pointer`}>
               <option value="THB">บาท (THB)</option>
               <option value="USD">USD</option>
               <option value="EUR">EUR</option>
             </select>
           </div>
         </div>
-        <SaveBar isDirty={isDirty} onReset={() => setCfg(DEFAULT_SITE_GENERAL)} onSave={() => toast.success("บันทึกข้อมูลเว็บไซต์เรียบร้อย")} />
+        <SaveBar isDirty={isDirty}
+          onReset={() => {
+            setCfg(DEFAULT_SITE_GENERAL);
+            ctxReset();
+          }}
+          onSave={() => {
+            ctxUpdate(cfg);
+            toast.success("บันทึกข้อมูลเว็บไซต์เรียบร้อย — มีผลทั่วทั้งเว็บแล้ว");
+          }} />
       </SettingsCard>
     </div>
   );
@@ -20153,19 +20273,7 @@ interface UserRecord {
   status: "active" | "banned" | "pending";
 }
 
-const MOCK_USERS: UserRecord[] = [
-  { id: "u-1",  username: "admin0001",    email: "test0001@gmail.com",        name: "Admin TestKUB",         role: "admin",    status: "active" },
-  { id: "u-2",  username: "customertest", email: "customer@test.com",         name: "customer test",          role: "customer", status: "active" },
-  { id: "u-3",  username: "metaherb",     email: "metaherb.herb@gmail.com",   name: "metaherb store",         role: "owner",    status: "active" },
-  { id: "u-4",  username: "registest",    email: "registertest@test.com",     name: "ทดสอบ ลงทะเบียน",        role: "customer", status: "active" },
-  { id: "u-5",  username: "bmsdevging",   email: "ging.buppa@gmail.com",      name: "บุปผา ทดสอบ",            role: "customer", status: "active" },
-  { id: "u-6",  username: "BMStester",    email: "d0879876440@gmail.com",     name: "ชาลิสา ทดสอบ12",         role: "admin",    status: "active" },
-  { id: "u-7",  username: "0pom33pom0",   email: "pom33120pom@gmail.com",     name: "พอม พอม",                role: "customer", status: "active" },
-  { id: "u-8",  username: "AomTantarat",  email: "tanyarat.160344@gmail.com", name: "อัญญารัตน์ คำบุญเรือง", role: "customer", status: "active" },
-  { id: "u-9",  username: "pakjira5245",  email: "namepjk2002@gmail.com",     name: "ภัคจิรา ชัยฮะ",          role: "customer", status: "active" },
-  { id: "u-10", username: "Adthapon.u",   email: "adthapon.u@gmail.com",      name: "อรรถพล อุทัยเรือง",     role: "customer", status: "active" },
-  { id: "u-11", username: "torlarp99",    email: "torlarp999@hotmail.co.th",  name: "ต่อลาภ นาคทอง",          role: "customer", status: "active" },
-];
+// Seeded users live in AuthContext now — admin and register share the same list.
 
 const ROLE_META: Record<UserRecord["role"], { label: string; color: string; bg: string }> = {
   customer: { label: "ลูกค้า",          color: "#6b7280", bg: "#f3f4f6" },
@@ -20242,7 +20350,8 @@ function UserAvatar({ user, size = 36 }: { user: UserRecord; size?: number }) {
 }
 
 function UsersListPage() {
-  const [users, setUsers] = useState<UserRecord[]>(MOCK_USERS);
+  const { t } = useLanguage();
+  const { users, updateUserRole: ctxUpdateRole, removeUser: ctxRemoveUser } = useAuth();
   const [filter, setFilter] = useState<UserRecord["role"] | "all">("all");
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -20251,7 +20360,7 @@ function UsersListPage() {
     const u = users.find(x => x.id === id);
     if (!u) return;
     if (u.role === newRole) return;
-    // ป้องกันไม่ให้ลดบทบาท admin คนสุดท้าย
+    // Prevent removing the last admin in the system
     if (u.role === "admin" && newRole !== "admin") {
       const adminCount = users.filter(x => x.role === "admin").length;
       if (adminCount <= 1) {
@@ -20259,7 +20368,7 @@ function UsersListPage() {
         return;
       }
     }
-    setUsers(prev => prev.map(x => x.id === id ? { ...x, role: newRole } : x));
+    ctxUpdateRole(id, newRole as DisplayRole);
     toast.success(`เปลี่ยน ${u.name} เป็น ${ROLE_META[newRole].label}`);
   };
 
@@ -20282,175 +20391,212 @@ function UsersListPage() {
   const deleteUser = (id: string) => {
     const u = users.find(x => x.id === id);
     if (!u) return;
-    setUsers(prev => prev.filter(x => x.id !== id));
+    ctxRemoveUser(id);
     toast.success(`ลบ ${u.username} เรียบร้อย`);
   };
 
+  const tabs: { id: UserRecord["role"] | "all"; label: string; count: number; Icon: any }[] = [
+    { id: "all",      label: t("admin_users_tab_all")      || "ทั้งหมด", count: stats.total,    Icon: Users },
+    { id: "customer", label: t("admin_users_tab_customer") || "ลูกค้า",  count: stats.customer, Icon: Users },
+    { id: "owner",    label: t("admin_users_tab_owner")    || "ร้านค้า", count: stats.owner,    Icon: Store },
+    { id: "admin",    label: t("admin_users_tab_admin")    || "แอดมิน",  count: stats.admin,    Icon: Shield },
+  ];
+
+  const pct = (n: number) => stats.total === 0 ? 0 : Math.round((n / stats.total) * 100);
+  const kpiCards = [
+    { label: t("admin_overview_total_users") || "ผู้ใช้ทั้งหมด", value: stats.total.toLocaleString(), subLabel: `${tabs.length - 1} บทบาทในระบบ`, accent: "#319754", Icon: Users },
+    { label: t("admin_users_tab_customer")    || "ลูกค้า",        value: stats.customer.toLocaleString(), subLabel: `${pct(stats.customer)}% ของผู้ใช้`, accent: "#6b7280", Icon: Users },
+    { label: t("admin_users_tab_owner")       || "ร้านค้า",       value: stats.owner.toLocaleString(),    subLabel: `${pct(stats.owner)}% ของผู้ใช้`,    accent: "#9747ff", Icon: Store },
+    { label: t("admin_users_tab_admin")       || "แอดมิน",        value: stats.admin.toLocaleString(),    subLabel: `${pct(stats.admin)}% ของผู้ใช้`,    accent: "#3b82f6", Icon: Shield },
+  ];
+
   return (
-    <div className="flex flex-col gap-5 pb-2">
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard icon={Users}   label="ผู้ใช้ทั้งหมด"      value={stats.total}    color="#319754" />
-        <KpiCard icon={Users}   label="ลูกค้า"               value={stats.customer} color="#6b7280" />
-        <KpiCard icon={Store}   label="ร้านค้า"               value={stats.owner}    color="#319754" />
-        <KpiCard icon={Shield}  label="ผู้ดูแลระบบ"          value={stats.admin}    color="#3b82f6" />
+    <div>
+      {/* KPI cards — same pattern as AdminOrdersContent */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        {kpiCards.map((s) => (
+          <div key={s.label}
+            className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            style={{ backgroundColor: `${s.accent}0d` }}>
+            <div className="relative">
+              <div className="flex items-center justify-between">
+                <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                  <s.Icon className="size-4" style={{ color: s.accent }} strokeWidth={2.4} />
+                </div>
+              </div>
+              <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                <AnimatedValue value={s.value} />
+              </p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                  style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                  {s.subLabel}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Filter + Search */}
-      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 sm:p-5">
-        <div className="flex items-center gap-3 flex-wrap mb-4">
-          <FilterTabs value={filter} onChange={setFilter}
-            options={[
-              { id: "all" as const,      label: "ทั้งหมด",        count: stats.total },
-              { id: "customer" as const, label: "ลูกค้า",          count: stats.customer },
-              { id: "owner" as const,    label: "ร้านค้า",         count: stats.owner },
-              { id: "admin" as const,    label: "ผู้ดูแลระบบ",    count: stats.admin },
-            ]} />
-          <SearchInput value={search} onChange={setSearch} placeholder="ค้นหา ชื่อผู้ใช้ / อีเมล / ชื่อ-นามสกุล" />
+      {/* Filter pills + search — green theme */}
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-3 flex items-center gap-2">
+        <FilterTabPills tabs={tabs} active={filter} onChange={setFilter} pillId="adminUsersFilterPill" />
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[280px] lg:ml-auto">
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("admin_users_search_ph") || "ค้นหาผู้ใช้ ชื่อ อีเมล"}
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+          <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
+          </button>
         </div>
+      </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto -mx-4 sm:-mx-5">
-          <table className="w-full min-w-[900px]">
-            <thead>
-              <tr className={`${font} text-[11px] text-gray-500 uppercase tracking-wide bg-gray-50 border-y border-gray-100`} style={{ fontWeight: 600 }}>
-                <th className="px-4 py-3 text-left w-12">ID</th>
-                <th className="px-4 py-3 text-left">ชื่อผู้ใช้</th>
-                <th className="px-4 py-3 text-left">อีเมล</th>
-                <th className="px-4 py-3 text-left">ชื่อ-นามสกุล</th>
-                <th className="px-4 py-3 text-left">บทบาท</th>
-                <th className="px-4 py-3 text-left">สถานะ</th>
-                <th className="px-4 py-3 text-right">จัดการ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2 text-gray-400">
-                      <Users className="size-8" strokeWidth={1.5} />
-                      <p className={`${font} text-[13px]`}>ไม่พบผู้ใช้ที่ตรงกับเงื่อนไข</p>
+      {/* Users table */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "5%" }} />
+            <col style={{ width: "20%" }} />
+            <col style={{ width: "22%" }} />
+            <col style={{ width: "20%" }} />
+            <col style={{ width: "14%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "6%" }} />
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ID</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_users_col_user") || "ผู้ใช้"}</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{t("settings_email") || "อีเมล"}</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>ชื่อ-นามสกุล</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_users_col_role") || "บทบาท"}</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_users_col_status") || "สถานะ"}</th>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr><td colSpan={7} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>{t("admin_users_no_users") || "ไม่พบผู้ใช้"}</td></tr>
+            )}
+            {filtered.map((u, idx) => {
+              const role = ROLE_META[u.role];
+              const status = STATUS_META[u.status];
+              const isEditing = editingId === u.id;
+              return (
+                <tr key={u.id}
+                  className={`group/row border-b border-gray-50 last:border-b-0 transition-colors ${
+                    isEditing ? "bg-[#fffbeb]" : "hover:bg-gray-50/50"
+                  }`}
+                  style={isEditing ? { boxShadow: "inset 3px 0 0 #f59e0b" } : {}}>
+                  {/* ID */}
+                  <td className="py-3 pr-3 align-middle">
+                    <span className={`${font} text-[12px] text-gray-400 tabular-nums`}>{idx + 1}</span>
+                  </td>
+                  {/* User */}
+                  <td className="py-3 pr-3 align-middle">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <UserAvatar user={u} size={32} />
+                      <div className="flex flex-col min-w-0">
+                        <span className={`${font} text-[12px] text-black truncate`} style={{ fontWeight: 600 }} title={u.username}>{u.username}</span>
+                        {isEditing && (
+                          <span className={`${font} inline-flex items-center gap-1 text-[10px] text-[#b45309] mt-0.5`} style={{ fontWeight: 500 }}>
+                            <Pencil className="size-2.5" strokeWidth={2.4} />
+                            กำลังแก้ไข
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
-                </tr>
-              )}
-              {filtered.map((u, idx) => {
-                const role = ROLE_META[u.role];
-                const status = STATUS_META[u.status];
-                const isEditing = editingId === u.id;
-                return (
-                  <tr key={u.id}
-                    className={`border-b border-gray-100 transition-colors ${
-                      isEditing ? "bg-[#fffbeb]" : "hover:bg-gray-50/60"
-                    }`}
-                    style={isEditing ? { boxShadow: "inset 3px 0 0 #f59e0b" } : {}}>
-                    <td className="px-4 py-3">
-                      <span className={`${font} text-[13px] text-gray-500 tabular-nums`}>{idx + 1}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <UserAvatar user={u} size={32} />
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{u.username}</span>
-                          {isEditing && (
-                            <span className={`${font} inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-[#f59e0b]/15 text-[#b45309] shrink-0`} style={{ fontWeight: 600 }}>
-                              <Pencil className="size-2.5" strokeWidth={2.4} />
-                              กำลังแก้ไข
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <a href={`mailto:${u.email}`} className={`${font} text-[12px] text-[#3b82f6] hover:underline truncate block`}>{u.email}</a>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`${font} text-[13px] text-black truncate`}>{u.name}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {isEditing ? (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button title="คลิกเพื่อเปลี่ยนบทบาท"
-                              className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ring-2 ring-[#f59e0b]/40`}
-                              style={{ backgroundColor: role.bg, color: role.color, fontWeight: 600 }}>
-                              {role.label}
-                              <ChevronDown className="size-3" strokeWidth={2.4} />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent align="start" sideOffset={6} className="w-56 p-1.5">
-                            <p className={`${font} text-[10px] text-gray-400 uppercase tracking-wide px-2 pt-1 pb-2`} style={{ fontWeight: 600 }}>
-                              เปลี่ยนบทบาท
-                            </p>
-                            {(["customer", "owner", "admin"] as const).map((r) => {
-                              const meta = ROLE_META[r];
-                              const active = u.role === r;
-                              return (
-                                <button key={r} onClick={() => updateUserRole(u.id, r)}
-                                  className={`${font} w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md cursor-pointer transition-colors text-left ${
-                                    active ? "bg-gray-50" : "hover:bg-gray-50"
-                                  }`}>
-                                  <div className="flex items-center gap-2">
-                                    <span className="size-2 rounded-full" style={{ backgroundColor: meta.color }} />
-                                    <span className="text-[13px] text-black" style={{ fontWeight: active ? 600 : 500 }}>{meta.label}</span>
-                                  </div>
-                                  {active && <Check className="size-4 text-[#319754]" strokeWidth={2.5} />}
-                                </button>
-                              );
-                            })}
-                          </PopoverContent>
-                        </Popover>
-                      ) : (
-                        <span className={`${font} inline-flex items-center text-[11px] px-2.5 py-1 rounded-full`}
-                          style={{ backgroundColor: role.bg, color: role.color, fontWeight: 600 }}>
-                          {role.label}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full`}
-                        style={{ backgroundColor: status.bg, color: status.color, fontWeight: 600 }}>
-                        <Check className="size-2.5" strokeWidth={3} />
-                        {status.label}
+                  {/* Email */}
+                  <td className="py-3 pr-3 align-middle">
+                    <a href={`mailto:${u.email}`} className={`${font} text-[12px] text-[#3b82f6] hover:underline truncate block`} title={u.email}>{u.email}</a>
+                  </td>
+                  {/* Name */}
+                  <td className="py-3 pr-3 align-middle">
+                    <span className={`${font} text-[12px] text-gray-700 truncate block`} style={{ fontWeight: 500 }} title={u.name}>{u.name}</span>
+                  </td>
+                  {/* Role */}
+                  <td className="py-3 pr-3 align-middle">
+                    {isEditing ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button title="คลิกเพื่อเปลี่ยนบทบาท"
+                            className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full cursor-pointer hover:opacity-80 transition-opacity ring-2 ring-[#f59e0b]/40`}
+                            style={{ backgroundColor: role.bg, color: role.color, fontWeight: 600 }}>
+                            {role.label}
+                            <ChevronDown className="size-3" strokeWidth={2.4} />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" sideOffset={6} className="w-56 p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                          <p className={`${font} text-[10px] text-gray-400 uppercase tracking-wide px-2 pt-1 pb-2`} style={{ fontWeight: 600 }}>
+                            เปลี่ยนบทบาท
+                          </p>
+                          {(["customer", "owner", "admin"] as const).map((r) => {
+                            const meta = ROLE_META[r];
+                            const active = u.role === r;
+                            return (
+                              <button key={r} onClick={() => updateUserRole(u.id, r)}
+                                className={`${font} w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl cursor-pointer transition-colors text-left ${active ? "bg-gray-50" : "hover:bg-gray-50"}`}>
+                                <div className="flex items-center gap-2">
+                                  <span className="size-2 rounded-full" style={{ backgroundColor: meta.color }} />
+                                  <span className="text-[13px] text-black" style={{ fontWeight: active ? 600 : 500 }}>{meta.label}</span>
+                                </div>
+                                {active && <Check className="size-4 text-[#319754]" strokeWidth={2.5} />}
+                              </button>
+                            );
+                          })}
+                        </PopoverContent>
+                      </Popover>
+                    ) : (
+                      <span className={`${font} inline-flex items-center text-[11px] px-2.5 py-1 rounded-full`}
+                        style={{ backgroundColor: role.bg, color: role.color, fontWeight: 600 }}>
+                        {role.label}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="inline-flex items-center gap-1.5">
-                        {isEditing ? (
-                          <button onClick={() => setEditingId(null)}
-                            className={`${font} inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-[#319754] hover:bg-[#287745] text-white text-[11px] cursor-pointer transition-colors`}
-                            style={{ fontWeight: 500 }}>
-                            <Check className="size-3" strokeWidth={2.4} />
-                            เสร็จสิ้น
-                          </button>
-                        ) : (
-                          <button onClick={() => setEditingId(u.id)}
-                            className={`${font} inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] cursor-pointer transition-colors`}
-                            style={{ fontWeight: 500 }}>
-                            <Pencil className="size-3" strokeWidth={2.4} />
-                            แก้ไข
-                          </button>
-                        )}
+                    )}
+                  </td>
+                  {/* Status */}
+                  <td className="py-3 pr-3 align-middle">
+                    <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full`}
+                      style={{ backgroundColor: status.bg, color: status.color, fontWeight: 600 }}>
+                      <Check className="size-2.5" strokeWidth={3} />
+                      {status.label}
+                    </span>
+                  </td>
+                  {/* Actions */}
+                  <td className="py-3 text-center align-middle">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6} className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                        <button onClick={() => setEditingId(isEditing ? null : u.id)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          {isEditing
+                            ? <><Check className="size-3.5 text-[#319754]" strokeWidth={2.4} /><span style={{ fontWeight: 500 }}>เสร็จสิ้น</span></>
+                            : <><Pencil className="size-3.5 text-[#319754]" strokeWidth={2.2} /><span style={{ fontWeight: 500 }}>{t("admin_users_edit") || "แก้ไข"}</span></>}
+                        </button>
                         <button onClick={() => toast.success(`รีเซตรหัสผ่าน ${u.username} เรียบร้อย`)}
-                          className={`${font} inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-[#f59e0b]/15 hover:bg-[#f59e0b]/25 text-[#b45309] text-[11px] cursor-pointer transition-colors`}
-                          style={{ fontWeight: 500 }}>
-                          <RotateCcw className="size-3" strokeWidth={2.4} />
-                          รีเซต
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <RotateCcw className="size-3.5 text-[#f59e0b]" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>{t("admin_users_reset_pwd") || "รีเซ็ตรหัสผ่าน"}</span>
                         </button>
+                        <div className="h-px bg-gray-100 my-1" />
                         <button onClick={() => { deleteUser(u.id); if (isEditing) setEditingId(null); }}
-                          className={`${font} inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-[#ff3b30]/15 hover:bg-[#ff3b30]/25 text-[#dc2626] text-[11px] cursor-pointer transition-colors`}
-                          style={{ fontWeight: 500 }}>
-                          <Trash2 className="size-3" strokeWidth={2.4} />
-                          ลบ
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/10 cursor-pointer text-left text-[13px] text-[#dc2626]`}>
+                          <Trash2 className="size-3.5" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>{t("admin_users_delete") || "ลบ"}</span>
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
         <p className={`${font} text-[11px] text-gray-400 mt-3`}>
           แสดง <span style={{ fontWeight: 600 }} className="text-[#319754]">{filtered.length}</span> จาก {users.length} ผู้ใช้
@@ -20507,6 +20653,7 @@ function ShopLogo({ shop, size = 44 }: { shop: ShopRecord; size?: number }) {
 }
 
 function ShopsListPage() {
+  const { t } = useLanguage();
   const [filter, setFilter] = useState<ShopRecord["status"] | "all">("all");
   const [search, setSearch] = useState("");
 
@@ -20527,143 +20674,918 @@ function ShopsListPage() {
   });
 
   const formatCurrency = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : `${n}`;
+  const totalRevenue = MOCK_SHOPS.reduce((sum, s) => sum + s.revenue, 0);
+
+  const tabs: { id: ShopRecord["status"] | "all"; label: string; count: number; Icon: any }[] = [
+    { id: "all",       label: t("admin_shops_tab_all")       || "ทั้งหมด",    count: stats.total,     Icon: Store },
+    { id: "active",    label: t("admin_shops_tab_active")    || "เปิดร้าน",   count: stats.active,    Icon: Check },
+    { id: "pending",   label: t("admin_shops_tab_pending")   || "รออนุมัติ", count: stats.pending,   Icon: Clock },
+    { id: "suspended", label: t("admin_shops_tab_suspended") || "ระงับ",      count: stats.suspended, Icon: AlertCircle },
+  ];
+
+  const kpiCards = [
+    { label: t("admin_overview_total_shops") || "ร้านค้าทั้งหมด", value: stats.total.toLocaleString(),     subLabel: `รวม ฿${formatCurrency(totalRevenue)}`,    accent: "#319754", Icon: Store },
+    { label: t("admin_shops_tab_active")     || "เปิดร้าน",        value: stats.active.toLocaleString(),    subLabel: `${stats.total === 0 ? 0 : Math.round(stats.active / stats.total * 100)}% ของทั้งหมด`, accent: "#9747ff", Icon: Check },
+    { label: t("admin_shops_tab_pending")    || "รออนุมัติ",       value: stats.pending.toLocaleString(),   subLabel: "ต้องตรวจสอบ",                              accent: "#f59e0b", Icon: Clock },
+    { label: t("admin_shops_tab_suspended")  || "ถูกระงับ",        value: stats.suspended.toLocaleString(), subLabel: "ต้องติดตาม",                                accent: "#ff3b30", Icon: AlertCircle },
+  ];
 
   return (
-    <div className="flex flex-col gap-5 pb-2">
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard icon={Store}        label="ร้านค้าทั้งหมด"   value={stats.total}     color="#319754" />
-        <KpiCard icon={Check}        label="ใช้งาน"             value={stats.active}    color="#319754" />
-        <KpiCard icon={Clock}        label="รออนุมัติ"          value={stats.pending}   color="#f59e0b" />
-        <KpiCard icon={AlertCircle}  label="ระงับ"               value={stats.suspended} color="#ff3b30" />
+    <div>
+      {/* KPI cards — same pattern as AdminOrdersContent */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        {kpiCards.map((s) => (
+          <div key={s.label}
+            className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            style={{ backgroundColor: `${s.accent}0d` }}>
+            <div className="relative">
+              <div className="flex items-center justify-between">
+                <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                  <s.Icon className="size-4" style={{ color: s.accent }} strokeWidth={2.4} />
+                </div>
+              </div>
+              <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                <AnimatedValue value={s.value} />
+              </p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                  style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                  {s.subLabel}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Filter + Search */}
-      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 sm:p-5">
-        <div className="flex items-center gap-3 flex-wrap mb-4">
-          <FilterTabs value={filter} onChange={setFilter}
-            options={[
-              { id: "all" as const,       label: "ทั้งหมด",     count: stats.total },
-              { id: "active" as const,    label: "ใช้งาน",       count: stats.active },
-              { id: "pending" as const,   label: "รออนุมัติ",    count: stats.pending },
-              { id: "suspended" as const, label: "ระงับ",         count: stats.suspended },
-            ]} />
-          <SearchInput value={search} onChange={setSearch} placeholder="ค้นหา ชื่อร้าน / เจ้าของ / หมวดหมู่" />
+      {/* Filter pills + search — green theme */}
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-3 flex items-center gap-2">
+        <FilterTabPills tabs={tabs} active={filter} onChange={setFilter} pillId="adminShopsFilterPill" />
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[280px] lg:ml-auto">
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("admin_shops_search_ph") || "ค้นหาร้านค้า"}
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+          <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
+          </button>
         </div>
+      </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto -mx-4 sm:-mx-5">
-          <table className="w-full min-w-[900px]">
-            <thead>
-              <tr className={`${font} text-[11px] text-gray-500 uppercase tracking-wide bg-gray-50 border-y border-gray-100`} style={{ fontWeight: 600 }}>
-                <th className="px-4 py-3 text-left">ร้านค้า</th>
-                <th className="px-4 py-3 text-left">หมวดหมู่</th>
-                <th className="px-4 py-3 text-left">สถานะ</th>
-                <th className="px-4 py-3 text-right">สินค้า</th>
-                <th className="px-4 py-3 text-right">ออเดอร์</th>
-                <th className="px-4 py-3 text-right">รายได้</th>
-                <th className="px-4 py-3 text-left">เรตติ้ง</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2 text-gray-400">
-                      <Store className="size-8" strokeWidth={1.5} />
-                      <p className={`${font} text-[13px]`}>ไม่พบร้านค้าที่ตรงกับเงื่อนไข</p>
+      {/* Shops table */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "26%" }} />
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "10%" }} />
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "6%" }} />
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_shop") || "ร้านค้า"}</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{t("owner_products_category") || "หมวดหมู่"}</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_status") || "สถานะ"}</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_products") || "จำนวนสินค้า"}</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_orders") || "ออเดอร์"}</th>
+              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_revenue") || "รายได้"}</th>
+              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_rating") || "คะแนน"}</th>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && (
+              <tr><td colSpan={8} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>{t("admin_shops_no_shops") || "ไม่พบร้านค้า"}</td></tr>
+            )}
+            {filtered.map((s) => {
+              const status = SHOP_STATUS_META[s.status];
+              return (
+                <tr key={s.id} className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                  {/* Shop */}
+                  <td className="py-3 pr-3 align-top">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <ShopLogo shop={s} size={40} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className={`${font} text-[12px] text-black truncate`} style={{ fontWeight: 600 }} title={s.name}>{s.name}</p>
+                          {s.verified && (
+                            <BadgeCheck className="size-3.5 text-[#319754] shrink-0" strokeWidth={2.4} fill="#319754" stroke="#fff" />
+                          )}
+                        </div>
+                        <p className={`${font} text-[10px] text-gray-500 truncate`} title={s.owner}>โดย {s.owner}</p>
+                        <p className={`${font} text-[10px] text-gray-400 inline-flex items-center gap-1 mt-0.5`}>
+                          <CalendarIcon className="size-2.5" strokeWidth={2.4} />
+                          {s.registeredAt}
+                        </p>
+                      </div>
                     </div>
                   </td>
-                </tr>
-              )}
-              {filtered.map((s) => {
-                const status = SHOP_STATUS_META[s.status];
-                return (
-                  <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50/60 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <ShopLogo shop={s} />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{s.name}</p>
-                            {s.verified && (
-                              <BadgeCheck className="size-4 text-[#319754] shrink-0" strokeWidth={2.4} fill="#319754" stroke="#fff" />
-                            )}
-                          </div>
-                          <p className={`${font} text-[11px] text-gray-500 truncate`}>โดย {s.owner}</p>
-                          <p className={`${font} text-[11px] text-gray-400`}>สมัคร: {s.registeredAt}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`${font} inline-flex items-center text-[11px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-700`} style={{ fontWeight: 500 }}>
-                        {s.category}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full`}
-                        style={{ backgroundColor: status.bg, color: status.color, fontWeight: 600 }}>
-                        <span className="size-1.5 rounded-full" style={{ backgroundColor: status.color }} />
-                        {status.label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <p className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{s.productCount}</p>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <p className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{s.orderCount.toLocaleString()}</p>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <p className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>฿{formatCurrency(s.revenue)}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      {s.rating > 0 ? (
-                        <div className="inline-flex items-center gap-1">
-                          <Star className="size-3.5 text-[#f59e0b]" fill="#f59e0b" strokeWidth={0} />
-                          <span className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{s.rating.toFixed(1)}</span>
-                        </div>
-                      ) : (
-                        <span className={`${font} text-[12px] text-gray-400`}>—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                  {/* Category */}
+                  <td className="py-3 pr-3 align-middle">
+                    <span className={`${font} inline-flex items-center text-[11px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-700`} style={{ fontWeight: 500 }}>
+                      {s.category}
+                    </span>
+                  </td>
+                  {/* Status */}
+                  <td className="py-3 pr-3 align-middle">
+                    <span className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full`}
+                      style={{ backgroundColor: status.bg, color: status.color, fontWeight: 600 }}>
+                      <span className="size-1.5 rounded-full" style={{ backgroundColor: status.color }} />
+                      {status.label}
+                    </span>
+                  </td>
+                  {/* Products */}
+                  <td className="py-3 pr-3 text-right align-middle">
+                    <p className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{s.productCount}</p>
+                  </td>
+                  {/* Orders */}
+                  <td className="py-3 pr-3 text-right align-middle">
+                    <p className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{s.orderCount.toLocaleString()}</p>
+                  </td>
+                  {/* Revenue */}
+                  <td className="py-3 pr-3 text-right align-middle">
+                    <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: "#319754" }}>฿{formatCurrency(s.revenue)}</p>
+                  </td>
+                  {/* Rating */}
+                  <td className="py-3 pr-3 align-middle">
+                    {s.rating > 0 ? (
                       <div className="inline-flex items-center gap-1">
-                        <button title="ดูร้าน" onClick={() => toast.info(`ดูร้าน ${s.name}`)}
-                          className="size-8 rounded-lg hover:bg-gray-100 flex items-center justify-center cursor-pointer transition-colors">
-                          <Eye className="size-4 text-gray-500" strokeWidth={2.2} />
+                        <Star className="size-3.5 text-[#f59e0b]" fill="#f59e0b" strokeWidth={0} />
+                        <span className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{s.rating.toFixed(1)}</span>
+                      </div>
+                    ) : (
+                      <span className={`${font} text-[12px] text-gray-400`}>—</span>
+                    )}
+                  </td>
+                  {/* Actions */}
+                  <td className="py-3 text-center align-middle">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6} className="w-[220px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                        <button onClick={() => toast.info(`ดูร้าน ${s.name}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Eye className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>{t("admin_shops_view") || "ดูร้านค้า"}</span>
                         </button>
                         {s.status === "pending" && (
-                          <button title="อนุมัติร้านค้า" onClick={() => toast.success(`อนุมัติ ${s.name} แล้ว`)}
-                            className="size-8 rounded-lg hover:bg-[#319754]/10 flex items-center justify-center cursor-pointer transition-colors">
-                            <Check className="size-4 text-[#319754]" strokeWidth={2.4} />
-                          </button>
+                          <>
+                            <button onClick={() => toast.success(`อนุมัติ ${s.name} แล้ว`)}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#319754]/10 cursor-pointer text-left text-[13px] text-[#287745]`}>
+                              <Check className="size-3.5" strokeWidth={2.4} />
+                              <span style={{ fontWeight: 500 }}>{t("admin_shops_approve") || "อนุมัติร้านค้า"}</span>
+                            </button>
+                            <button onClick={() => toast.error(`ปฏิเสธ ${s.name}`)}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/10 cursor-pointer text-left text-[13px] text-[#dc2626]`}>
+                              <X className="size-3.5" strokeWidth={2.4} />
+                              <span style={{ fontWeight: 500 }}>{t("admin_shops_reject") || "ปฏิเสธ"}</span>
+                            </button>
+                          </>
                         )}
                         {s.status === "active" && (
-                          <button title="ระงับร้านค้า" onClick={() => toast.success(`ระงับ ${s.name} แล้ว`)}
-                            className="size-8 rounded-lg hover:bg-[#ff3b30]/10 flex items-center justify-center cursor-pointer transition-colors">
-                            <X className="size-4 text-[#ff3b30]" strokeWidth={2.4} />
+                          <button onClick={() => toast.success(`ระงับ ${s.name} แล้ว`)}
+                            className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/10 cursor-pointer text-left text-[13px] text-[#dc2626]`}>
+                            <Ban className="size-3.5" strokeWidth={2.4} />
+                            <span style={{ fontWeight: 500 }}>{t("admin_shops_suspend") || "ระงับร้านค้า"}</span>
                           </button>
                         )}
                         {s.status === "suspended" && (
-                          <button title="คืนสถานะใช้งาน" onClick={() => toast.success(`ปลดระงับ ${s.name} แล้ว`)}
-                            className="size-8 rounded-lg hover:bg-[#319754]/10 flex items-center justify-center cursor-pointer transition-colors">
-                            <Check className="size-4 text-[#319754]" strokeWidth={2.4} />
+                          <button onClick={() => toast.success(`ปลดระงับ ${s.name} แล้ว`)}
+                            className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#319754]/10 cursor-pointer text-left text-[13px] text-[#287745]`}>
+                            <RotateCcw className="size-3.5" strokeWidth={2.4} />
+                            <span style={{ fontWeight: 500 }}>{t("admin_shops_reactivate") || "เปิดร้านอีกครั้ง"}</span>
                           </button>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
         <p className={`${font} text-[11px] text-gray-400 mt-3`}>
           แสดง <span style={{ fontWeight: 600 }} className="text-[#319754]">{filtered.length}</span> จาก {MOCK_SHOPS.length} ร้านค้า
         </p>
       </div>
+    </div>
+  );
+}
+
+/* ============================================================
+ * PERMISSIONS PAGE — group list + combined editor view
+ * ========================================================== */
+
+// System-wide permission catalog. Every group picks from this list.
+interface SystemPermission {
+  id: string;
+  label: string;
+  desc: string;
+  category: string;
+}
+
+const ALL_PERMISSIONS: SystemPermission[] = [
+  // ===== Dashboard & รายงาน =====
+  { id: "dashboard_view",       label: "ดูแดชบอร์ดภาพรวม",        desc: "เข้าดูหน้าแรกของแอดมิน กราฟ KPI สรุป",       category: "Dashboard & รายงาน" },
+  { id: "reports_sales",        label: "ดูรายงานยอดขาย",          desc: "รายงานยอดขายข้ามร้านและช่วงเวลา",            category: "Dashboard & รายงาน" },
+  { id: "reports_customers",    label: "ดูรายงานลูกค้า",          desc: "พฤติกรรมลูกค้า ลูกค้าใหม่ ลูกค้าเก่า",        category: "Dashboard & รายงาน" },
+  { id: "reports_products",     label: "ดูรายงานสินค้า",          desc: "สินค้าขายดี สต็อก แนวโน้มราย SKU",            category: "Dashboard & รายงาน" },
+  { id: "reports_marketing",    label: "ดูรายงานการตลาด",         desc: "ประสิทธิภาพแคมเปญและคูปอง",                 category: "Dashboard & รายงาน" },
+  { id: "reports_export",       label: "ส่งออกรายงาน",            desc: "ดาวน์โหลด CSV / Excel ของรายงาน",            category: "Dashboard & รายงาน" },
+
+  // ===== ผู้ใช้งาน =====
+  { id: "users_view",           label: "ดูข้อมูลผู้ใช้",          desc: "เข้าดูรายการผู้ใช้และโปรไฟล์",               category: "ผู้ใช้งาน" },
+  { id: "users_create",         label: "เพิ่มผู้ใช้ใหม่",          desc: "สร้างบัญชีผู้ใช้ในระบบ",                     category: "ผู้ใช้งาน" },
+  { id: "users_edit",           label: "แก้ไขข้อมูลผู้ใช้",        desc: "แก้ไขชื่อ อีเมล เบอร์โทร ที่อยู่",            category: "ผู้ใช้งาน" },
+  { id: "users_change_role",    label: "เปลี่ยนบทบาทผู้ใช้",       desc: "ปรับ role ลูกค้า / ร้าน / แอดมิน",            category: "ผู้ใช้งาน" },
+  { id: "users_ban",            label: "ระงับ / ปลดระงับบัญชี",    desc: "ระงับการใช้งานหรือคืนสถานะให้ผู้ใช้",         category: "ผู้ใช้งาน" },
+  { id: "users_reset_password", label: "รีเซ็ตรหัสผ่านผู้ใช้",     desc: "ส่งลิงก์รีเซ็ตหรือบังคับเปลี่ยนรหัสผ่าน",     category: "ผู้ใช้งาน" },
+  { id: "users_delete",         label: "ลบผู้ใช้",                desc: "ลบบัญชีออกจากระบบอย่างถาวร",                  category: "ผู้ใช้งาน" },
+
+  // ===== ร้านค้า =====
+  { id: "shops_view",           label: "ดูร้านค้าทั้งหมด",         desc: "เข้าดูทะเบียนและรายละเอียดร้าน",              category: "ร้านค้า" },
+  { id: "shops_approve",        label: "อนุมัติ / ปฏิเสธร้านค้า",  desc: "อนุมัติร้านใหม่หรือปฏิเสธการสมัคร",            category: "ร้านค้า" },
+  { id: "shops_edit",           label: "แก้ไขข้อมูลร้านค้า",       desc: "ปรับชื่อร้าน ที่อยู่ ข้อมูลติดต่อ",            category: "ร้านค้า" },
+  { id: "shops_suspend",        label: "ระงับร้านค้า",             desc: "ระงับการขายของร้านชั่วคราว",                  category: "ร้านค้า" },
+  { id: "shops_delete",         label: "ลบร้านค้า",                desc: "ลบทะเบียนร้านออกจากระบบ",                     category: "ร้านค้า" },
+  { id: "shops_view_revenue",   label: "ดูรายได้ของร้านค้า",       desc: "เข้าถึงข้อมูลรายได้และยอดขายของร้าน",          category: "ร้านค้า" },
+
+  // ===== คำสั่งซื้อ =====
+  { id: "orders_view_all",      label: "ดูออเดอร์ทั้งหมด",         desc: "เข้าดูออเดอร์ข้ามทุกร้าน",                    category: "คำสั่งซื้อ" },
+  { id: "orders_view_own",      label: "ดูออเดอร์ของร้านตัวเอง",   desc: "เข้าดูเฉพาะออเดอร์ของร้านที่ตัวเองดูแล",      category: "คำสั่งซื้อ" },
+  { id: "orders_update_status", label: "อัปเดตสถานะออเดอร์",       desc: "เปลี่ยนสถานะ เตรียมส่ง / กำลังส่ง / สำเร็จ",  category: "คำสั่งซื้อ" },
+  { id: "orders_cancel",        label: "ยกเลิกคำสั่งซื้อ",         desc: "ยกเลิกออเดอร์ก่อนหรือหลังการจัดส่ง",          category: "คำสั่งซื้อ" },
+  { id: "orders_refund",        label: "อนุมัติคืนเงิน",           desc: "พิจารณาและอนุมัติคำขอคืนเงิน",                category: "คำสั่งซื้อ" },
+  { id: "orders_export",        label: "ส่งออกข้อมูลออเดอร์",       desc: "ดาวน์โหลด CSV / Excel ของออเดอร์",            category: "คำสั่งซื้อ" },
+
+  // ===== สินค้า =====
+  { id: "products_view",        label: "ดูรายการสินค้า",          desc: "เข้าดูสินค้าทั้งหมด รวมถึงสต็อก",               category: "สินค้า" },
+  { id: "products_create",      label: "เพิ่มสินค้า",             desc: "สร้างสินค้าใหม่ในระบบ",                       category: "สินค้า" },
+  { id: "products_edit",        label: "แก้ไขสินค้า",             desc: "ปรับชื่อ ราคา รายละเอียด ภาพ",                category: "สินค้า" },
+  { id: "products_publish",     label: "เผยแพร่ / ซ่อนสินค้า",     desc: "ตั้งสถานะวางขายหรือซ่อนสินค้า",                category: "สินค้า" },
+  { id: "products_delete",      label: "ลบสินค้า",                 desc: "ลบสินค้าออกจากระบบ",                          category: "สินค้า" },
+  { id: "products_stock",       label: "จัดการสต็อกสินค้า",        desc: "ปรับจำนวนคงเหลือ เติมสต็อก",                  category: "สินค้า" },
+  { id: "categories_manage",    label: "จัดการหมวดหมู่",           desc: "เพิ่ม / แก้ไข / ลบ หมวดหมู่สินค้า",            category: "สินค้า" },
+  { id: "tags_manage",          label: "จัดการแท็กสินค้า",         desc: "เพิ่มและจัดการแท็กของสินค้า",                  category: "สินค้า" },
+
+  // ===== โปรโมชั่น & คูปอง =====
+  { id: "promotions_view",      label: "ดูโปรโมชั่น",              desc: "เข้าดูรายการโปรโมชั่นทั้งหมด",                category: "โปรโมชั่น & คูปอง" },
+  { id: "promotions_create",    label: "สร้างโปรโมชั่น",           desc: "สร้างแคมเปญส่วนลด",                           category: "โปรโมชั่น & คูปอง" },
+  { id: "promotions_edit",      label: "แก้ไข / ลบโปรโมชั่น",      desc: "ปรับเงื่อนไขหรือยกเลิกแคมเปญ",                category: "โปรโมชั่น & คูปอง" },
+  { id: "flash_sale_manage",    label: "จัดการ Flash Sale",         desc: "ตั้งเวลาและรายการสินค้า Flash Sale",          category: "โปรโมชั่น & คูปอง" },
+  { id: "coupons_view",         label: "ดูคูปอง",                  desc: "เข้าดูรายการคูปองทั้งหมด",                   category: "โปรโมชั่น & คูปอง" },
+  { id: "coupons_create",       label: "สร้างคูปอง",               desc: "สร้างคูปองส่วนลดใหม่",                        category: "โปรโมชั่น & คูปอง" },
+  { id: "coupons_edit",         label: "แก้ไข / ลบคูปอง",          desc: "ปรับเงื่อนไขหรือลบคูปอง",                     category: "โปรโมชั่น & คูปอง" },
+
+  // ===== การร้องเรียน =====
+  { id: "complaints_view",      label: "ดูเรื่องร้องเรียน",        desc: "เข้าดูเคสที่ถูกแจ้ง",                         category: "การร้องเรียน" },
+  { id: "complaints_assign",    label: "มอบหมายเคสร้องเรียน",       desc: "มอบหมายเคสให้พนักงานคนอื่น",                  category: "การร้องเรียน" },
+  { id: "complaints_resolve",   label: "ตัดสินเรื่องร้องเรียน",    desc: "อนุมัติ / ปฏิเสธคำร้อง",                      category: "การร้องเรียน" },
+  { id: "complaints_close",     label: "ปิดเคสร้องเรียน",          desc: "ทำเครื่องหมายเคสว่าจบเรื่อง",                 category: "การร้องเรียน" },
+  { id: "complaints_appeals",   label: "พิจารณาการอุทธรณ์",         desc: "ตรวจสอบเคสที่ถูกอุทธรณ์",                     category: "การร้องเรียน" },
+
+  // ===== รีวิว =====
+  { id: "reviews_view",         label: "ดูรีวิวสินค้า",            desc: "เข้าดูรีวิวจากลูกค้า",                        category: "รีวิว" },
+  { id: "reviews_reply",        label: "ตอบกลับรีวิว",             desc: "ตอบกลับรีวิวของลูกค้า",                       category: "รีวิว" },
+  { id: "reviews_hide",         label: "ซ่อนรีวิว",                desc: "ซ่อนรีวิวที่ไม่เหมาะสมจากหน้าเว็บ",            category: "รีวิว" },
+  { id: "reviews_delete",       label: "ลบรีวิว",                  desc: "ลบรีวิวออกจากระบบอย่างถาวร",                  category: "รีวิว" },
+
+  // ===== เนื้อหาเว็บไซต์ =====
+  { id: "content_banner",       label: "จัดการ Banner",            desc: "เพิ่ม / แก้ไข / ลบ Banner หน้าเว็บ",          category: "เนื้อหาเว็บไซต์" },
+  { id: "content_blog_view",    label: "ดูบทความ",                 desc: "เข้าดูบทความและสาระความรู้",                  category: "เนื้อหาเว็บไซต์" },
+  { id: "content_blog_create",  label: "เขียนบทความใหม่",          desc: "สร้างบทความ / สาระความรู้",                   category: "เนื้อหาเว็บไซต์" },
+  { id: "content_blog_edit",    label: "แก้ไขบทความ",              desc: "ปรับเนื้อหา ภาพปก ของบทความ",                 category: "เนื้อหาเว็บไซต์" },
+  { id: "content_blog_delete",  label: "ลบบทความ",                 desc: "ลบบทความออกจากเว็บไซต์",                      category: "เนื้อหาเว็บไซต์" },
+  { id: "content_blog_publish", label: "เผยแพร่บทความ",            desc: "ตั้งสถานะเผยแพร่ของบทความ",                   category: "เนื้อหาเว็บไซต์" },
+  { id: "content_video",        label: "จัดการวิดีโอ",             desc: "เพิ่ม / แก้ไข / ลบวิดีโอ",                    category: "เนื้อหาเว็บไซต์" },
+  { id: "content_popup",        label: "จัดการ Popup",             desc: "ปรับ popup ต้อนรับและ campaign",              category: "เนื้อหาเว็บไซต์" },
+  { id: "content_legal",        label: "แก้ไขเอกสารทางกฎหมาย",     desc: "Terms of Service และ Privacy Policy",         category: "เนื้อหาเว็บไซต์" },
+
+  // ===== หน้าเว็บ (Page Builder) =====
+  { id: "pages_home",           label: "จัดการหน้าหลัก",           desc: "ปรับโครงสร้างและคอนเทนต์หน้า Landing",        category: "หน้าเว็บ (Page Builder)" },
+  { id: "pages_products",       label: "จัดการหน้าผลิตภัณฑ์",       desc: "ปรับการจัดเรียงและการแสดงผลของหน้าสินค้า",   category: "หน้าเว็บ (Page Builder)" },
+  { id: "pages_blog",           label: "จัดการหน้าบทความ",          desc: "ปรับการแสดงผลของหน้ารวมบทความ",               category: "หน้าเว็บ (Page Builder)" },
+  { id: "pages_about",          label: "จัดการหน้าเกี่ยวกับเรา",    desc: "ปรับเนื้อหาหน้า About",                       category: "หน้าเว็บ (Page Builder)" },
+  { id: "pages_appbar",         label: "จัดการ Appbar",            desc: "ปรับเมนู navigation ด้านบน",                  category: "หน้าเว็บ (Page Builder)" },
+  { id: "pages_footer",         label: "จัดการ Footer",            desc: "ปรับลิงก์และข้อมูลในส่วน Footer",              category: "หน้าเว็บ (Page Builder)" },
+
+  // ===== การจัดส่ง =====
+  { id: "shipping_view",        label: "ดูการตั้งค่าการจัดส่ง",     desc: "เข้าดูการตั้งค่าระบบขนส่ง",                   category: "การจัดส่ง" },
+  { id: "shipping_carriers",    label: "จัดการขนส่ง",              desc: "เพิ่ม / ลบ ผู้ให้บริการขนส่ง",                category: "การจัดส่ง" },
+  { id: "shipping_rates",       label: "ตั้งค่าค่าจัดส่ง",          desc: "ปรับอัตราค่าส่งและน้ำหนัก",                   category: "การจัดส่ง" },
+  { id: "shipping_zones",       label: "จัดการโซนจัดส่ง",          desc: "กำหนดพื้นที่ห่างไกลและค่าส่งพิเศษ",            category: "การจัดส่ง" },
+  { id: "shipping_cod",         label: "ตั้งค่า COD",              desc: "เปิด/ปิดและตั้งค่าธรรมเนียมเก็บปลายทาง",       category: "การจัดส่ง" },
+
+  // ===== การเงิน & การชำระเงิน =====
+  { id: "payments_view",        label: "ดูข้อมูลการชำระเงิน",       desc: "เข้าดูข้อมูลการชำระเงินของออเดอร์",            category: "การเงิน & การชำระเงิน" },
+  { id: "payments_verify_slip", label: "ตรวจสลิปการโอน",            desc: "ยืนยันสลิปการชำระเงินจากลูกค้า",              category: "การเงิน & การชำระเงิน" },
+  { id: "payments_refund",      label: "ดำเนินการคืนเงิน",          desc: "คืนเงินให้ลูกค้าผ่านระบบ",                    category: "การเงิน & การชำระเงิน" },
+  { id: "withdrawal_view",      label: "ดูคำขอถอนเงิน",            desc: "ดูรายการที่ร้านขอถอนเงิน",                    category: "การเงิน & การชำระเงิน" },
+  { id: "withdrawal_approve",   label: "อนุมัติการถอนเงิน",         desc: "อนุมัติคำขอถอนเงินของร้านค้า",                category: "การเงิน & การชำระเงิน" },
+  { id: "platform_fees",        label: "จัดการค่าธรรมเนียมแพลตฟอร์ม", desc: "ตั้งค่า commission และ platform fee",     category: "การเงิน & การชำระเงิน" },
+
+  // ===== การสื่อสาร =====
+  { id: "chat_view",            label: "ดูการสนทนา",               desc: "เข้าดูแชทระหว่างลูกค้ากับร้าน",                category: "การสื่อสาร" },
+  { id: "chat_reply",           label: "ตอบกลับแชท",               desc: "พิมพ์ข้อความตอบกลับลูกค้า / ร้านค้า",         category: "การสื่อสาร" },
+  { id: "video_call",           label: "เริ่มสายวิดีโอ",           desc: "เปิด video call กับลูกค้าหรือร้านค้า",        category: "การสื่อสาร" },
+
+  // ===== การแจ้งเตือน =====
+  { id: "notifications_view",     label: "ดูการแจ้งเตือน",          desc: "เข้าดูรายการแจ้งเตือนของระบบ",                category: "การแจ้งเตือน" },
+  { id: "notifications_config",   label: "ตั้งค่าการแจ้งเตือน",     desc: "เปิด/ปิด event และช่องทางแจ้งเตือน",          category: "การแจ้งเตือน" },
+  { id: "notifications_broadcast",label: "ส่งประกาศ / Broadcast",   desc: "ส่งข้อความถึงผู้ใช้จำนวนมาก",                  category: "การแจ้งเตือน" },
+
+  // ===== การตั้งค่าระบบ =====
+  { id: "settings_site_general", label: "ข้อมูลเว็บไซต์",          desc: "ชื่อเว็บ คำโปรย คำอธิบาย",                    category: "การตั้งค่าระบบ" },
+  { id: "settings_contact",      label: "ข้อมูลติดต่อ",            desc: "เบอร์โทร อีเมล แชต เวลาเปิด",                 category: "การตั้งค่าระบบ" },
+  { id: "settings_address",      label: "ที่อยู่บริษัท",            desc: "นิติบุคคล ที่อยู่ และแผนที่",                  category: "การตั้งค่าระบบ" },
+  { id: "settings_social",       label: "Social Media",            desc: "ลิงก์โซเชียลและช่องทางออนไลน์",                category: "การตั้งค่าระบบ" },
+  { id: "settings_seo",          label: "SEO และ Meta",            desc: "ตั้งค่า SEO เริ่มต้นและ Meta tags",            category: "การตั้งค่าระบบ" },
+  { id: "settings_logo",         label: "โลโก้และ Favicon",         desc: "ปรับโลโก้และไอคอนเว็บไซต์",                   category: "การตั้งค่าระบบ" },
+
+  // ===== การกำหนดสิทธิ =====
+  { id: "permissions_view",     label: "ดูการกำหนดสิทธิ",          desc: "เข้าดูกลุ่มสิทธิและสิทธิทั้งหมดในระบบ",        category: "การกำหนดสิทธิ" },
+  { id: "permissions_manage",   label: "จัดการกลุ่มสิทธิ",          desc: "สร้าง / แก้ไข / ลบกลุ่มสิทธิ",                category: "การกำหนดสิทธิ" },
+  { id: "permissions_assign",   label: "มอบหมายสิทธิให้ผู้ใช้",     desc: "เลือกกลุ่มสิทธิให้กับผู้ใช้แต่ละคน",           category: "การกำหนดสิทธิ" },
+];
+
+interface PermGroup {
+  id: string;
+  label: string;
+  desc: string;
+  icon: any;
+  iconColor: string;
+  permissions: string[]; // IDs from ALL_PERMISSIONS that are enabled in this group
+  enabled: boolean;
+}
+
+// Icon palette user can pick from when creating/editing a group
+const PERM_ICON_OPTIONS: { id: string; icon: any }[] = [
+  { id: "ShieldCheck", icon: ShieldCheck }, { id: "UserCog", icon: UserCog }, { id: "Users", icon: Users },
+  { id: "Store", icon: Store }, { id: "ShoppingCart", icon: ShoppingCart }, { id: "Package", icon: Package },
+  { id: "Settings", icon: Settings }, { id: "Bell", icon: Bell }, { id: "FileText", icon: FileText },
+  { id: "Star", icon: Star }, { id: "AlertCircle", icon: AlertCircle }, { id: "Lock", icon: Lock },
+  { id: "ImageIcon", icon: ImageIcon }, { id: "Globe", icon: Globe }, { id: "Truck", icon: Truck },
+  { id: "Megaphone", icon: Megaphone },
+];
+
+const PERM_COLOR_OPTIONS = [
+  "#319754", "#3b82f6", "#9747ff", "#f59e0b", "#ff3b30", "#ec4899", "#06b6d4", "#737373",
+];
+
+const INITIAL_PERM_GROUPS: PermGroup[] = [
+  {
+    id: "users", label: "ผู้ใช้ & ร้านค้า", desc: "การจัดการบัญชีผู้ใช้และทะเบียนร้านค้า",
+    icon: UserCog, iconColor: "#3b82f6", enabled: true,
+    permissions: [
+      "users_view", "users_edit", "users_ban", "users_reset_password",
+      "shops_view", "shops_approve", "shops_edit", "shops_suspend",
+    ],
+  },
+  {
+    id: "sales", label: "การขาย & คำสั่งซื้อ", desc: "ดูแลออเดอร์ โปรโมชั่น และคูปอง",
+    icon: ShoppingCart, iconColor: "#9747ff", enabled: true,
+    permissions: [
+      "orders_view_all", "orders_update_status", "orders_cancel", "orders_refund", "orders_export",
+      "promotions_view", "promotions_create", "promotions_edit", "flash_sale_manage",
+      "coupons_view", "coupons_create", "coupons_edit",
+    ],
+  },
+  {
+    id: "catalog", label: "สินค้าและคลังสินค้า", desc: "จัดการสินค้า หมวดหมู่ และสต็อก",
+    icon: Package, iconColor: "#f59e0b", enabled: true,
+    permissions: [
+      "products_view", "products_create", "products_edit", "products_publish", "products_stock",
+      "categories_manage", "tags_manage",
+    ],
+  },
+  {
+    id: "content", label: "เนื้อหาและหน้าเว็บ", desc: "จัดการคอนเทนต์ บทความ และหน้าเว็บไซต์",
+    icon: FileText, iconColor: "#06b6d4", enabled: true,
+    permissions: [
+      "content_banner", "content_blog_view", "content_blog_create", "content_blog_edit", "content_blog_publish",
+      "content_video", "content_popup",
+      "pages_home", "pages_about", "pages_appbar", "pages_footer",
+    ],
+  },
+  {
+    id: "ops", label: "การดูแลลูกค้า", desc: "ร้องเรียน รีวิว และการสื่อสารกับลูกค้า",
+    icon: AlertCircle, iconColor: "#ff3b30", enabled: true,
+    permissions: [
+      "complaints_view", "complaints_assign", "complaints_resolve", "complaints_close", "complaints_appeals",
+      "reviews_view", "reviews_reply", "reviews_hide",
+      "chat_view", "chat_reply",
+    ],
+  },
+  {
+    id: "finance", label: "การเงินและการชำระเงิน", desc: "ตรวจสลิป คืนเงิน และอนุมัติการถอน",
+    icon: DollarSign, iconColor: "#287745", enabled: true,
+    permissions: [
+      "payments_view", "payments_verify_slip", "payments_refund",
+      "withdrawal_view", "withdrawal_approve",
+    ],
+  },
+  {
+    id: "insights", label: "รายงานและแดชบอร์ด", desc: "ดูข้อมูลเชิงลึกและรายงานของระบบ",
+    icon: BarChart3, iconColor: "#0088ff", enabled: true,
+    permissions: [
+      "dashboard_view", "reports_sales", "reports_customers", "reports_products", "reports_marketing", "reports_export",
+    ],
+  },
+  {
+    id: "system", label: "การตั้งค่าระบบ", desc: "ปรับค่าระบบหลัก การจัดส่ง การแจ้งเตือน และสิทธิ",
+    icon: Settings, iconColor: "#319754", enabled: true,
+    permissions: [
+      "settings_site_general", "settings_contact", "settings_address", "settings_social", "settings_seo", "settings_logo",
+      "shipping_view", "shipping_carriers", "shipping_rates", "shipping_zones", "shipping_cod",
+      "notifications_view", "notifications_config", "notifications_broadcast",
+      "permissions_view", "permissions_manage", "permissions_assign",
+    ],
+  },
+];
+
+function PermToggle({ checked, onChange, color, disabled }: { checked: boolean; onChange: () => void; color: string; disabled?: boolean }) {
+  return (
+    <button
+      onClick={disabled ? undefined : onChange}
+      disabled={disabled}
+      className={`relative inline-flex h-[22px] w-[40px] rounded-full transition-all ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+      style={{ backgroundColor: checked ? color : "#e5e7eb" }}
+      aria-pressed={checked}
+    >
+      <motion.span
+        layout
+        transition={{ type: "spring", stiffness: 500, damping: 32 }}
+        className={`absolute top-[2px] size-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.2)]`}
+        style={{ left: checked ? 20 : 2 }}
+      />
+    </button>
+  );
+}
+
+function PermissionsPage() {
+  const { t } = useLanguage();
+  const [groups, setGroups] = useState<PermGroup[]>(INITIAL_PERM_GROUPS);
+
+  // Editor draft state — changes only commit on Save
+  const [draft, setDraft] = useState<PermGroup | null>(null);
+  const [draftMode, setDraftMode] = useState<"add" | "edit" | null>(null);
+  const [permSearch, setPermSearch] = useState("");
+
+  const [confirm, setConfirm] = useState<{ kind: "group"; id: string; label: string } | null>(null);
+
+  /* ----- group CRUD on the committed list ----- */
+  const openAdd = () => {
+    setDraft({
+      id: `grp_${Date.now()}`,
+      label: "", desc: "",
+      icon: ShieldCheck, iconColor: PERM_COLOR_OPTIONS[0],
+      permissions: [], enabled: true,
+    });
+    setDraftMode("add");
+    setPermSearch("");
+  };
+
+  const openEditor = (id: string) => {
+    const g = groups.find((x) => x.id === id);
+    if (!g) return;
+    setDraft({ ...g, permissions: [...g.permissions] });
+    setDraftMode("edit");
+    setPermSearch("");
+  };
+
+  const cancelDraft = () => { setDraft(null); setDraftMode(null); };
+
+  const saveDraft = () => {
+    if (!draft) return;
+    if (!draft.label.trim()) {
+      toast.error(t("admin_perm_err_name") || "กรุณาระบุชื่อกลุ่มสิทธิ");
+      return;
+    }
+    if (draftMode === "add") {
+      setGroups((prev) => [...prev, draft]);
+      toast.success(t("admin_perm_group_created") || "เพิ่มกลุ่มสิทธิใหม่เรียบร้อย");
+    } else {
+      setGroups((prev) => prev.map((g) => g.id === draft.id ? draft : g));
+      toast.success(t("admin_perm_group_saved") || "บันทึกกลุ่มสิทธิเรียบร้อย");
+    }
+    cancelDraft();
+  };
+
+  const toggleGroupEnabled = (id: string) => {
+    const g = groups.find((x) => x.id === id);
+    if (!g) return;
+    setGroups((prev) => prev.map((x) => x.id === id ? { ...x, enabled: !x.enabled } : x));
+    toast.success(g.enabled
+      ? `${t("admin_perm_group_disabled") || "ปิดการใช้งานกลุ่ม"} "${g.label || "—"}"`
+      : `${t("admin_perm_group_enabled") || "เปิดการใช้งานกลุ่ม"} "${g.label || "—"}"`);
+  };
+
+  const deleteGroup = (id: string) => {
+    const g = groups.find((x) => x.id === id);
+    if (!g) return;
+    setGroups((prev) => prev.filter((x) => x.id !== id));
+    if (draft?.id === id) cancelDraft();
+    toast.success(`${t("admin_perm_group_deleted") || "ลบกลุ่ม"} "${g.label}"`);
+  };
+
+  /* ----- draft mutators ----- */
+  const updateDraft = (patch: Partial<PermGroup>) => {
+    setDraft((d) => d ? { ...d, ...patch } : d);
+  };
+
+  const toggleDraftEnabled = () => {
+    setDraft((d) => d ? { ...d, enabled: !d.enabled } : d);
+  };
+
+  const togglePermInDraft = (permId: string) => {
+    setDraft((d) => {
+      if (!d) return d;
+      const has = d.permissions.includes(permId);
+      return { ...d, permissions: has ? d.permissions.filter((p) => p !== permId) : [...d.permissions, permId] };
+    });
+  };
+
+  /* ============== EDITOR VIEW ============== */
+  if (draft) {
+    const g = draft;
+    const GIcon = g.icon;
+    const filteredAll = permSearch.trim()
+      ? ALL_PERMISSIONS.filter((p) => {
+          const q = permSearch.toLowerCase();
+          return p.label.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
+        })
+      : ALL_PERMISSIONS;
+    // Group filtered permissions by category for display
+    const groupedByCategory = filteredAll.reduce<Record<string, SystemPermission[]>>((acc, p) => {
+      (acc[p.category] ||= []).push(p);
+      return acc;
+    }, {});
+    const enabledCount = g.permissions.length;
+    const isAdd = draftMode === "add";
+    const canSave = g.label.trim().length > 0;
+
+    return (
+      <div>
+        {/* Back button — design system pattern (matches BannerForm/BlogForm) */}
+        <div className="mb-5">
+          <button onClick={cancelDraft}
+            className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+            {t("admin_perm_back") || "กลับ"}
+          </button>
+        </div>
+
+        {/* Header — same h2 + subtitle pattern as the rest of admin */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div>
+            <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>
+              {isAdd ? (t("admin_perm_add_group") || "เพิ่มกลุ่มสิทธิใหม่") : (t("admin_perm_edit_group") || "แก้ไขกลุ่มสิทธิ")}
+            </h2>
+            <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>
+              {isAdd ? (t("admin_perm_group_form_desc") || "ตั้งชื่อ คำอธิบาย ไอคอน และสี") : `${t("admin_perm_editing") || "กำลังแก้ไข"} ${g.label || "—"}`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={cancelDraft}
+              className={`${font} inline-flex items-center gap-1.5 text-[13px] text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-5 h-[36px] rounded-full cursor-pointer transition-colors`}
+              style={{ fontWeight: 500 }}>
+              {t("admin_perm_cancel") || "ยกเลิก"}
+            </button>
+            <motion.button whileTap={{ scale: 0.96 }} whileHover={canSave ? { scale: 1.03 } : undefined}
+              disabled={!canSave}
+              onClick={saveDraft}
+              className={`${font} inline-flex items-center gap-2 text-[13px] text-white px-5 h-[36px] rounded-full transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)] ${canSave ? "cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+              style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 500 }}>
+              <Check className="size-4" strokeWidth={2.4} />
+              {t("admin_perm_save") || "บันทึก"}
+            </motion.button>
+          </div>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* ===== LEFT: Group info ===== */}
+          <div className="lg:w-[360px] bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 sm:p-5 flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
+            <div className="flex items-center gap-2">
+              <Folder className="size-4 text-[#319754]" strokeWidth={2.4} />
+              <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>
+                {t("admin_perm_group_info") || "ข้อมูลกลุ่มสิทธิ"}
+              </p>
+            </div>
+
+            {/* Preview */}
+            <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
+              <div className="size-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${g.iconColor}1a` }}>
+                <GIcon className="size-5" style={{ color: g.iconColor }} strokeWidth={2.2} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>
+                  {g.label || (t("admin_perm_group_name_ph") || "ชื่อกลุ่มสิทธิ")}
+                </p>
+                <p className={`${font} text-[11px] text-gray-500 truncate`}>
+                  {g.desc || (t("admin_perm_group_desc_ph") || "คำอธิบาย")}
+                </p>
+              </div>
+            </div>
+
+            {/* Name */}
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[12px] text-gray-500`}>{t("admin_perm_group_name") || "ชื่อกลุ่มสิทธิ"} <span className="text-[#ff3b30]">*</span></label>
+              <input type="text" value={g.label} onChange={(e) => updateDraft({ label: e.target.value })}
+                placeholder={t("admin_perm_group_name_ph") || "เช่น การเงิน, รายงาน"}
+                className={`${font} h-10 px-3 rounded-xl border border-gray-200 text-[13px] outline-none focus:ring-2 focus:ring-[#319754]/30 focus:border-[#319754]`} />
+            </div>
+
+            {/* Desc */}
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[12px] text-gray-500`}>{t("admin_perm_group_desc") || "คำอธิบาย"}</label>
+              <textarea value={g.desc} onChange={(e) => updateDraft({ desc: e.target.value })} rows={2}
+                placeholder={t("admin_perm_group_desc_ph") || "อธิบายว่ากลุ่มนี้เกี่ยวข้องกับอะไร"}
+                className={`${font} px-3 py-2 rounded-xl border border-gray-200 text-[13px] outline-none focus:ring-2 focus:ring-[#319754]/30 focus:border-[#319754] resize-none`} />
+            </div>
+
+            {/* Icon picker */}
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[12px] text-gray-500`}>{t("admin_perm_group_icon") || "ไอคอน"}</label>
+              <div className="grid grid-cols-8 gap-1.5">
+                {PERM_ICON_OPTIONS.map((o) => {
+                  const OI = o.icon;
+                  const active = g.icon === o.icon;
+                  return (
+                    <button key={o.id} onClick={() => updateDraft({ icon: o.icon })}
+                      className={`size-9 rounded-lg flex items-center justify-center cursor-pointer transition-all ${active ? "" : "bg-gray-50 hover:bg-gray-100"}`}
+                      style={active ? { backgroundColor: `${g.iconColor}1a`, boxShadow: `0 0 0 2px ${g.iconColor}` } : {}}>
+                      <OI className="size-4" style={{ color: active ? g.iconColor : "#6b7280" }} strokeWidth={2.2} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Color picker */}
+            <div className="flex flex-col gap-1.5">
+              <label className={`${font} text-[12px] text-gray-500`}>{t("admin_perm_group_color") || "สี"}</label>
+              <div className="flex gap-2 flex-wrap">
+                {PERM_COLOR_OPTIONS.map((c) => (
+                  <button key={c} onClick={() => updateDraft({ iconColor: c })}
+                    className={`size-7 rounded-full cursor-pointer transition-all ${g.iconColor === c ? "ring-2 ring-offset-2" : ""}`}
+                    style={{ backgroundColor: c, "--tw-ring-color": c } as any} />
+                ))}
+              </div>
+            </div>
+
+            <div className="h-px bg-gray-100" />
+
+            {/* Enable / disable */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                {g.enabled
+                  ? <Eye className="size-4 text-[#319754]" strokeWidth={2.4} />
+                  : <EyeOff className="size-4 text-gray-400" strokeWidth={2.4} />}
+                <div>
+                  <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 600 }}>
+                    {t("admin_perm_group_status") || "สถานะการใช้งานกลุ่ม"}
+                  </p>
+                  <p className={`${font} text-[11px] text-gray-500`}>
+                    {g.enabled ? (t("admin_perm_enabled") || "เปิดใช้งาน") : (t("admin_perm_disabled") || "ปิดใช้งาน")}
+                  </p>
+                </div>
+              </div>
+              <PermToggle checked={g.enabled} onChange={toggleDraftEnabled} color="#319754" />
+            </div>
+          </div>
+
+          {/* ===== RIGHT: System permission list with toggles ===== */}
+          <div className="flex-1 bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col">
+            {/* Header */}
+            <div className="p-4 sm:p-5 flex flex-wrap items-center gap-3 border-b border-gray-100">
+              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                <ShieldCheck className="size-4 text-[#319754]" strokeWidth={2.4} />
+                <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 600 }}>
+                  {t("admin_perm_list_in_group") || "รายการสิทธิ"}
+                </p>
+                <span className={`${font} inline-flex items-center text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600`} style={{ fontWeight: 600 }}>
+                  {enabledCount}/{ALL_PERMISSIONS.length}
+                </span>
+              </div>
+              {/* Search */}
+              <div className="relative w-full sm:w-[300px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" strokeWidth={2.2} />
+                <input type="text" value={permSearch} onChange={(e) => setPermSearch(e.target.value)}
+                  placeholder={t("admin_perm_search_perm_ph") || "ค้นหารายการสิทธิ"}
+                  className={`${font} w-full h-9 pl-10 pr-3 rounded-full border border-gray-200 text-[13px] outline-none focus:ring-2 focus:ring-[#319754]/30 focus:border-[#319754] transition-all bg-white`} />
+              </div>
+            </div>
+
+            {/* List grouped by category */}
+            {filteredAll.length === 0 ? (
+              <div className="px-4 py-12 text-center flex flex-col items-center gap-2 text-gray-400">
+                <Search className="size-6" strokeWidth={1.5} />
+                <p className={`${font} text-[13px]`}>{t("admin_perm_no_results") || "ไม่พบรายการสิทธิที่ตรงกับการค้นหา"}</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {Object.entries(groupedByCategory).map(([category, perms]) => (
+                  <div key={category}>
+                    <div className="px-4 sm:px-5 py-2 bg-gray-50/60">
+                      <p className={`${font} text-[11px] text-gray-500 uppercase tracking-wide`} style={{ fontWeight: 600 }}>{category}</p>
+                    </div>
+                    <ul className="divide-y divide-gray-50">
+                      {perms.map((p) => {
+                        const checked = g.permissions.includes(p.id);
+                        return (
+                          <li key={p.id}
+                            className="px-4 sm:px-5 py-3 flex items-center gap-3 hover:bg-gray-50/40 transition-colors cursor-pointer"
+                            onClick={() => togglePermInDraft(p.id)}>
+                            <div className="flex-1 min-w-0">
+                              <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{p.label}</p>
+                              {p.desc && <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>{p.desc}</p>}
+                            </div>
+                            <PermToggle checked={checked} onChange={() => togglePermInDraft(p.id)} color="#319754" />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Dialog open={confirm !== null} onOpenChange={(v) => !v && setConfirm(null)}>
+          <DialogContent className="max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle className={`${font}`} style={{ fontWeight: 600 }}>
+                {t("admin_perm_confirm_del_group") || "ลบกลุ่มสิทธิ?"}
+              </DialogTitle>
+              <DialogDescription className={`${font} text-[12px]`}>
+                {t("admin_perm_confirm_desc") || "การลบจะมีผลทันทีและไม่สามารถย้อนกลับได้"} — <span style={{ fontWeight: 600 }}>{confirm?.label}</span>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <button onClick={() => setConfirm(null)}
+                className={`${font} h-10 px-4 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-[13px] cursor-pointer`}
+                style={{ fontWeight: 500 }}>
+                {t("admin_perm_cancel") || "ยกเลิก"}
+              </button>
+              <button onClick={() => {
+                if (!confirm) return;
+                deleteGroup(confirm.id);
+                setConfirm(null);
+              }}
+                className={`${font} h-10 px-5 rounded-full bg-[#ff3b30] hover:bg-[#dc2626] text-white text-[13px] cursor-pointer`}
+                style={{ fontWeight: 600 }}>
+                {t("admin_perm_confirm_delete") || "ยืนยันการลบ"}
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  /* ============== LIST VIEW ============== */
+  return (
+    <div>
+      {/* Header — same pattern as other admin pages */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_perm_title") || "การกำหนดสิทธิ"}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("admin_perm_subtitle") || "กำหนดสิทธิ์การเข้าถึงสำหรับแต่ละบทบาท"}</p>
+        </div>
+        <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
+          onClick={openAdd}
+          className={`${font} inline-flex items-center gap-2 text-[13px] text-white px-5 h-[36px] rounded-full transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)] cursor-pointer`}
+          style={{ backgroundColor: ADMIN_PRIMARY, fontWeight: 500 }}>
+          <Plus className="size-4" strokeWidth={2.4} />
+          {t("admin_perm_add_group") || "เพิ่มกลุ่มสิทธิ"}
+        </motion.button>
+      </div>
+
+      {/* Group cards */}
+      {groups.length === 0 ? (
+        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-10 flex flex-col items-center gap-3 text-gray-400">
+          <Folder className="size-8" strokeWidth={1.5} />
+          <p className={`${font} text-[13px]`}>{t("admin_perm_no_groups") || "ยังไม่มีกลุ่มสิทธิ"}</p>
+          <button onClick={openAdd}
+            className={`${font} inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[12px] cursor-pointer`}
+            style={{ fontWeight: 600 }}>
+            <Plus className="size-3.5" strokeWidth={2.4} />
+            {t("admin_perm_add_first_group") || "สร้างกลุ่มแรก"}
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {groups.map((g) => {
+            const GIcon = g.icon;
+            const disabled = !g.enabled;
+            return (
+              <motion.div key={g.id}
+                whileHover={{ y: -2 }}
+                transition={{ type: "spring", stiffness: 320, damping: 24 }}
+                className={`bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-shadow overflow-hidden flex flex-col ${disabled ? "opacity-60" : ""}`}>
+                <div className="p-4 sm:p-5 flex items-start gap-3">
+                  <button onClick={() => openEditor(g.id)}
+                    className="size-11 rounded-xl flex items-center justify-center shrink-0 cursor-pointer hover:scale-105 transition-transform"
+                    style={{ backgroundColor: `${g.iconColor}1a` }}>
+                    <GIcon className="size-5" style={{ color: g.iconColor }} strokeWidth={2.2} />
+                  </button>
+                  <button onClick={() => openEditor(g.id)}
+                    className="min-w-0 flex-1 text-left cursor-pointer">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>{g.label || "—"}</p>
+                      {disabled && (
+                        <span className={`${font} inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-gray-200 text-gray-600`} style={{ fontWeight: 600 }}>
+                          <EyeOff className="size-2.5" strokeWidth={2.4} />
+                          {t("admin_perm_disabled") || "ปิดใช้งาน"}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`${font} text-[12px] text-gray-500 mt-0.5 line-clamp-2`}>{g.desc || "—"}</p>
+                    <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded-full bg-gray-100 text-gray-700 mt-2`} style={{ fontWeight: 500 }}>
+                      <ShieldCheck className="size-3" strokeWidth={2.4} />
+                      {g.permissions.length}/{ALL_PERMISSIONS.length} {t("admin_perm_count_unit") || "สิทธิ"}
+                    </span>
+                  </button>
+
+                  {/* More button → popover */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button title={t("admin_perm_more") || "เพิ่มเติม"}
+                        onClick={(e) => e.stopPropagation()}
+                        className="size-8 rounded-lg hover:bg-gray-100 flex items-center justify-center cursor-pointer shrink-0">
+                        <MoreHorizontal className="size-4 text-gray-500" strokeWidth={2.4} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" sideOffset={6} className="w-56 p-1.5">
+                      <div className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-md">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {g.enabled
+                            ? <Eye className="size-3.5 text-[#319754]" strokeWidth={2.4} />
+                            : <EyeOff className="size-3.5 text-gray-400" strokeWidth={2.4} />}
+                          <span className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>
+                            {g.enabled ? (t("admin_perm_enabled") || "เปิดใช้งาน") : (t("admin_perm_disabled") || "ปิดใช้งาน")}
+                          </span>
+                        </div>
+                        <PermToggle checked={g.enabled} onChange={() => toggleGroupEnabled(g.id)} color="#319754" />
+                      </div>
+                      <div className="h-px bg-gray-100 my-1" />
+                      <button onClick={() => openEditor(g.id)}
+                        className={`${font} w-full flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-gray-50 cursor-pointer text-left`}>
+                        <Pencil className="size-3.5 text-gray-500" strokeWidth={2.4} />
+                        <span className="text-[13px] text-black" style={{ fontWeight: 500 }}>{t("admin_perm_edit_group") || "แก้ไขกลุ่ม"}</span>
+                      </button>
+                      <button onClick={() => setConfirm({ kind: "group", id: g.id, label: g.label })}
+                        className={`${font} w-full flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-[#ff3b30]/10 cursor-pointer text-left`}>
+                        <Trash2 className="size-3.5 text-[#ff3b30]" strokeWidth={2.4} />
+                        <span className="text-[13px] text-[#dc2626]" style={{ fontWeight: 500 }}>{t("admin_perm_delete_group") || "ลบกลุ่ม"}</span>
+                      </button>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={confirm !== null} onOpenChange={(v) => !v && setConfirm(null)}>
+        <DialogContent className="max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className={`${font}`} style={{ fontWeight: 600 }}>
+              {t("admin_perm_confirm_del_group") || "ลบกลุ่มสิทธิ?"}
+            </DialogTitle>
+            <DialogDescription className={`${font} text-[12px]`}>
+              {t("admin_perm_confirm_desc") || "การลบจะมีผลทันทีและไม่สามารถย้อนกลับได้"} — <span style={{ fontWeight: 600 }}>{confirm?.label}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button onClick={() => setConfirm(null)}
+              className={`${font} h-10 px-4 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-[13px] cursor-pointer`}
+              style={{ fontWeight: 500 }}>
+              {t("admin_perm_cancel") || "ยกเลิก"}
+            </button>
+            <button onClick={() => {
+              if (!confirm) return;
+              if (confirm.kind === "group") deleteGroup(confirm.id);
+              setConfirm(null);
+            }}
+              className={`${font} h-10 px-5 rounded-full bg-[#ff3b30] hover:bg-[#dc2626] text-white text-[13px] cursor-pointer`}
+              style={{ fontWeight: 600 }}>
+              {t("admin_perm_confirm_delete") || "ยืนยันการลบ"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -21214,6 +22136,7 @@ const adminInviteStatusMeta: Record<ShopInviteStatus, { label: string; color: st
 };
 
 function AdminPromotionsContent() {
+  const { t } = useLanguage();
   const [promotions, setPromotions] = useState<AdminPromotion[]>(initialAdminPromotions);
   const [search, setSearch] = useState("");
   type PromoFilter = "all" | AdminPromoStatus;
@@ -21304,18 +22227,18 @@ function AdminPromotionsContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการโปรโมชั่น</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_promo_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>สร้างโปรโมชั่นแคมเปญของระบบและเชิญร้านค้าเข้าร่วม</p>
         </div>
         <motion.button
           onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
           <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px] text-white" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</span>
         </motion.button>
       </div>
 
@@ -21690,7 +22613,7 @@ function CreateAdminPromotionView({ allShops, onCancel, onCreate }: {
           <motion.button onClick={submit} disabled={!canSubmit}
             whileTap={{ scale: 0.96 }} whileHover={canSubmit ? { y: -1 } : undefined}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
             <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
               <Send className="size-[14px] text-white" strokeWidth={2.6} />
             </span>
@@ -22548,6 +23471,7 @@ function AdminFlashEventCard({
 }
 
 function AdminFlashSaleEventsContent() {
+  const { t } = useLanguage();
   const [events, setEvents] = useState<AdminFlashEvent[]>(() => seedFlashEvents());
   const [search, setSearch] = useState("");
   type FlashFilter = "all" | AdminFlashStatus;
@@ -22638,11 +23562,11 @@ function AdminFlashSaleEventsContent() {
         <motion.button onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+          className={`group flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
           <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px] text-white" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้าง Flash Sale</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>สร้าง Flash Sale</span>
         </motion.button>
       </div>
 
@@ -22877,7 +23801,7 @@ function CreateAdminFlashEventView({ allShops, onCancel, onCreate }: {
           <motion.button onClick={submit} disabled={!canSubmit}
             whileTap={{ scale: 0.96 }} whileHover={canSubmit ? { y: -1 } : undefined}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
             <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
               <Send className="size-[14px] text-white" strokeWidth={2.6} />
             </span>
@@ -23521,7 +24445,137 @@ function fmtAdminReviewDate(iso: number): string {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
 }
 
+/* ========== Admin AI Assistant analytics (mock) ========== */
+function AdminAIAssistantContent() {
+  // Mock analytics — would normally come from logged AI conversations
+  const kpis = [
+    { label: "บทสนทนา (วันนี้)",     value: "1,284",   sub: "+18% vs เมื่อวาน",  color: "#319754", Icon: Sparkles },
+    { label: "Conversion จาก AI",     value: "12.4%",   sub: "+2.1pp",            color: "#3b82f6", Icon: TrendingUp },
+    { label: "รายได้ผ่าน AI (เดือนนี้)", value: "฿84,250", sub: "+34% MoM",         color: "#f59e0b", Icon: ShoppingCart },
+    { label: "Lead Score สูง",        value: "37",      sub: "ลูกค้าพร้อมซื้อ",   color: "#ef4444", Icon: Users },
+  ];
+  const topIntents = [
+    { name: "ค้นหาสินค้า",     count: 412, pct: 32 },
+    { name: "ขอแนะนำ",        count: 318, pct: 25 },
+    { name: "เปรียบเทียบ",    count: 186, pct: 14 },
+    { name: "ถามคำถามสินค้า",  count: 154, pct: 12 },
+    { name: "สั่งซื้อใน chat",  count: 124, pct:  9 },
+    { name: "ติดตามออเดอร์",   count:  90, pct:  7 },
+  ];
+  const topProducts = [
+    { name: "ขมิ้นชันแคปซูล 60 แคป", asked: 89, sold: 24, revenue: 5280 },
+    { name: "คอลลาเจนเปปไทด์",      asked: 74, sold: 18, revenue: 9540 },
+    { name: "ฟ้าทะลายโจรผง 100 g",  asked: 61, sold: 15, revenue: 2175 },
+    { name: "ชาคาโมมายล์",           asked: 55, sold: 12, revenue: 1440 },
+    { name: "ใบบัวบกแคปซูล",         asked: 47, sold:  9, revenue: 1620 },
+  ];
+  const hotLeads = [
+    { name: "user_3082",  msgs: 14, interest: "ลดน้ำหนัก + ดีท็อกซ์",       score: 92 },
+    { name: "user_5641",  msgs: 11, interest: "ผู้สูงอายุ (บำรุงข้อ-เข่า)", score: 88 },
+    { name: "user_1129",  msgs:  9, interest: "บำรุงผิว + วิตามินซี",        score: 84 },
+    { name: "user_7720",  msgs:  8, interest: "ช่วยนอนหลับ + ลดเครียด",      score: 79 },
+  ];
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className={`${font} text-[22px] flex items-center gap-2`} style={{ fontWeight: 600 }}>
+          <Sparkles className="size-5 text-[#319754]" /> AI Shopping Assistant
+        </h2>
+        <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>วิเคราะห์บทสนทนา ยอดขาย และ leads ที่เกิดจาก AI Bot</p>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        {kpis.map((k) => (
+          <div key={k.label} className="bg-white rounded-2xl border border-gray-100 p-3 sm:p-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className={`${font} text-[11px] text-gray-500`}>{k.label}</p>
+              <div className="size-7 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${k.color}1a` }}>
+                <k.Icon className="size-3.5" style={{ color: k.color }} strokeWidth={2.2} />
+              </div>
+            </div>
+            <p className={`${font} text-[20px] sm:text-[24px] tabular-nums`} style={{ fontWeight: 700, color: k.color }}>{k.value}</p>
+            <p className={`${font} text-[11px] text-gray-500 mt-1`}>{k.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        {/* Top intents */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <h3 className={`${font} text-[15px] mb-3`} style={{ fontWeight: 600 }}>เจตนาที่ลูกค้าถามบ่อย</h3>
+          <div className="space-y-2.5">
+            {topIntents.map((t) => (
+              <div key={t.name}>
+                <div className="flex items-center justify-between mb-1 text-[12px]">
+                  <span className={`${font} text-gray-700`}>{t.name}</span>
+                  <span className={`${font} text-gray-500 tabular-nums`}>{t.count} ครั้ง · {t.pct}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${t.pct * 3}%`, background: "linear-gradient(90deg, #46c474, #319754)" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Hot leads */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4">
+          <h3 className={`${font} text-[15px] mb-3 flex items-center gap-1.5`} style={{ fontWeight: 600 }}>
+            🔥 Hot Leads <span className={`${font} text-[11px] text-gray-400`} style={{ fontWeight: 400 }}>(ลูกค้าพร้อมซื้อสูง)</span>
+          </h3>
+          <div className="space-y-2">
+            {hotLeads.map((l) => (
+              <div key={l.name} className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-gray-50">
+                <div className="min-w-0 flex-1">
+                  <p className={`${font} text-[13px] text-[#1a1a1a] truncate`} style={{ fontWeight: 600 }}>{l.name}</p>
+                  <p className={`${font} text-[11px] text-gray-500 truncate`}>{l.msgs} ข้อความ · {l.interest}</p>
+                </div>
+                <div className="shrink-0">
+                  <span className={`${font} inline-block px-2.5 py-1 rounded-full text-[12px] tabular-nums text-white`}
+                    style={{ background: l.score >= 90 ? "linear-gradient(135deg, #ef4444, #b91c1c)" : l.score >= 80 ? "linear-gradient(135deg, #f59e0b, #d97706)" : "linear-gradient(135deg, #3b82f6, #1d4ed8)", fontWeight: 700 }}>
+                    {l.score}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Top products via AI */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4">
+        <h3 className={`${font} text-[15px] mb-3`} style={{ fontWeight: 600 }}>สินค้าถูกถามและขายผ่าน AI มากสุด</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12px]">
+            <thead className="text-gray-400">
+              <tr className="border-b border-gray-100">
+                <th className={`${font} text-left pb-2 pr-3`} style={{ fontWeight: 500 }}>สินค้า</th>
+                <th className={`${font} text-right pb-2 pr-3`} style={{ fontWeight: 500 }}>ถูกถาม</th>
+                <th className={`${font} text-right pb-2 pr-3`} style={{ fontWeight: 500 }}>ขาย</th>
+                <th className={`${font} text-right pb-2`} style={{ fontWeight: 500 }}>รายได้</th>
+              </tr>
+            </thead>
+            <tbody>
+              {topProducts.map((p) => (
+                <tr key={p.name} className="border-b border-gray-50 last:border-b-0">
+                  <td className={`${font} py-2 pr-3 text-[#1a1a1a] truncate max-w-[180px]`} style={{ fontWeight: 600 }}>{p.name}</td>
+                  <td className={`${font} py-2 pr-3 text-right tabular-nums text-gray-700`}>{p.asked}</td>
+                  <td className={`${font} py-2 pr-3 text-right tabular-nums text-[#319754]`} style={{ fontWeight: 600 }}>{p.sold}</td>
+                  <td className={`${font} py-2 text-right tabular-nums text-[#1d4ed8]`} style={{ fontWeight: 700 }}>฿{p.revenue.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AdminReviewsContent() {
+  const { t } = useLanguage();
   const [reviews, setReviews] = useState<AdminReview[]>(() => seedAdminReviews());
   const [ratingFilter, setRatingFilter] = useState<"all" | 5 | 4 | 3 | 2 | 1>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | AdminReviewStatus>("all");
@@ -23647,7 +24701,7 @@ function AdminReviewsContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการรีวิว</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_reviews_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ตรวจสอบและจัดการรีวิวสินค้าทั้งระบบ · {reviews.length.toLocaleString()} รายการ</p>
         </div>
         <button onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
@@ -24185,6 +25239,7 @@ function AdminOrderDetailView({ order, onBack }: { order: AdminOrder; onBack: ()
 }
 
 function AdminOrdersContent() {
+  const { t } = useLanguage();
   const [orders] = useState<AdminOrder[]>(() => seedAdminOrders());
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | AdminOrderStatus>("all");
@@ -24299,7 +25354,7 @@ function AdminOrdersContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>คำสั่งซื้อทั้งระบบ</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_orders_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>ออเดอร์ทุกร้านใน Metaherb · {orders.length.toLocaleString()} รายการ</p>
         </div>
         <div className="flex items-center gap-2">
@@ -24613,6 +25668,7 @@ function AdminOrdersContent() {
 }
 
 function AdminCouponsContent() {
+  const { t } = useLanguage();
   const [coupons, setCoupons] = useState<AdminCoupon[]>(mockAdminCoupons);
   const [filter, setFilter] = useState<"all" | AdminCouponStatus>("all");
   const [issuerFilter, setIssuerFilter] = useState<"all" | AdminCouponIssuer>("all");
@@ -24680,18 +25736,18 @@ function AdminCouponsContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>คูปอง</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_coupon_title")}</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>คูปองส่วนลดทั้งระบบและคูปองที่ร้านค้าเปิดเอง</p>
         </div>
         <motion.button onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้างคูปอง</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>สร้างคูปอง</span>
         </motion.button>
       </div>
 
@@ -25011,11 +26067,11 @@ function CreateAdminCouponView({ allShops, onCancel, onCreate }: {
           <motion.button onClick={submit} disabled={!canSubmit}
             whileTap={canSubmit ? { scale: 0.96 } : undefined} whileHover={canSubmit ? { y: -1 } : undefined}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`${font} group flex items-center gap-2 pl-1.5 pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
+            className={`${font} group flex items-center gap-2 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] text-white cursor-pointer transition-colors ${canSubmit ? "bg-[#319754] hover:bg-[#287745] shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "bg-gray-300 cursor-not-allowed"}`}>
             <span className="size-[26px] bg-white/15 rounded-full flex items-center justify-center">
               <Save className="size-[14px] text-white" strokeWidth={2.6} />
             </span>
-            <span style={{ fontWeight: 600 }}>สร้างคูปอง</span>
+            <span className="hidden sm:inline" style={{ fontWeight: 600 }}>สร้างคูปอง</span>
           </motion.button>
         </div>
       </div>
@@ -25382,13 +26438,137 @@ function CreateAdminCouponView({ allShops, onCancel, onCreate }: {
   );
 }
 
+/* ========== MOBILE DRAWER (mirrors customer end-drawer style) ========== */
+function AdminMobileDrawer({ section, active, onSelect, onClose }: {
+  section: AdminSection;
+  active: ItemId;
+  onSelect: (id: ItemId) => void;
+  onClose: () => void;
+}) {
+  const items = sectionMenus[section];
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
+    // Auto-expand the group containing the active item
+    const init: Record<string, boolean> = {};
+    items.forEach((it) => {
+      if (it.children?.some((c) => c.id === active)) init[it.id] = true;
+    });
+    return init;
+  });
+  const toggle = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="md:hidden fixed inset-0 z-[60] flex">
+      <motion.aside
+        initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+        transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+        className="relative w-[86vw] max-w-[360px] h-full bg-white shadow-[12px_0_40px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden">
+        {/* Gradient header (blue accent for admin) */}
+        <div className="relative overflow-hidden px-5 py-4 flex items-center justify-between"
+          style={{ background: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 55%, #1d4ed8 100%)" }}>
+          <div className="absolute -top-6 -right-6 size-[120px] rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="relative flex items-center gap-2.5">
+            <img src={imgLogo} className="size-[38px] rounded-full bg-white/95 p-1 ring-1 ring-white/30 object-contain" alt="MetaHerb" />
+            <div className="leading-tight">
+              <p className={`${fontBold} text-white text-[15px]`} style={{ fontWeight: 700 }}>METAHERB</p>
+              <p className={`${font} text-white/80 text-[11px]`}>{sectionLabels[section]}</p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="ปิด"
+            className="relative size-[36px] rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-white transition-all">
+            <X className="size-[18px]" strokeWidth={2.4} />
+          </button>
+        </div>
+
+        {/* Scrollable body — same MenuBtn-pill aesthetic as the desktop sidebar */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5">
+          {items.map((item) => {
+            if (!item.children) {
+              return (
+                <MenuBtn key={item.id}
+                  isActive={active === item.id}
+                  icon={item.icon}
+                  label={item.label}
+                  onClick={() => { onSelect(item.id); onClose(); }}
+                  collapsed={false}
+                />
+              );
+            }
+            const groupActive = item.children.some((c) => c.id === active);
+            return (
+              <div key={item.id} className="space-y-2.5">
+                <MenuBtn isActive={groupActive} icon={item.icon} label={item.label}
+                  onClick={() => toggle(item.id)}
+                  hasArrow expanded={expanded[item.id]} collapsed={false}
+                />
+                <AnimatePresence initial={false}>
+                  {expanded[item.id] && (
+                    <motion.div
+                      key="submenu"
+                      initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                      className="overflow-hidden">
+                      <div className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
+                        {item.children.map((child) => (
+                          <MenuBtn key={child.id}
+                            isActive={active === child.id}
+                            icon={child.icon}
+                            label={child.label}
+                            onClick={() => { onSelect(child.id); onClose(); }}
+                            collapsed={false}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </motion.aside>
+      <div onClick={onClose} className="flex-1 bg-black/45 backdrop-blur-[2px]" />
+    </motion.div>
+  );
+}
+
 /* ========== MAIN ========== */
 export function AdminDashboard() {
   const location = useLocation();
+  const { t } = useLanguage();
   const section = pathToSection(location.pathname);
   const [activeItem, setActiveItem] = useState<ItemId>(defaultItem[section]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   const mainRef = React.useRef<HTMLElement>(null);
+
+  // Translation overrides for select item titles/subtitles
+  const i18nItem: Record<string, { title: string; subtitle: string }> = {
+    dashboard:           { title: t("admin_sidebar_dashboard"),       subtitle: t("admin_overview_subtitle") },
+    report_sales:        { title: t("owner_report_sales_title"),      subtitle: "" },
+    report_customers:    { title: t("owner_report_customers_title"),  subtitle: "" },
+    report_products:     { title: t("owner_report_products_title"),   subtitle: "" },
+    report_marketing:    { title: t("owner_report_market_title"),     subtitle: "" },
+    complaints_stats:    { title: t("admin_sidebar_complaints"),      subtitle: "" },
+    complaints_list:     { title: t("admin_complaints_title"),        subtitle: t("admin_complaints_subtitle") },
+    products_manage:     { title: t("owner_sidebar_manage_products"), subtitle: "" },
+    products_categories: { title: t("admin_categories_title"),         subtitle: "" },
+    products_promotions: { title: t("owner_promo_title"),              subtitle: "" },
+    products_coupons:    { title: t("owner_coupon_title"),             subtitle: "" },
+    reviews:             { title: t("admin_reviews_title"),            subtitle: t("admin_reviews_subtitle") },
+    orders:              { title: t("admin_orders_title"),             subtitle: t("admin_orders_subtitle") },
+    content_banner:      { title: t("admin_banners_title"),            subtitle: "" },
+    content_blog:        { title: t("admin_blog_title"),               subtitle: "" },
+    page_home:           { title: t("admin_pages_homepage_title"),     subtitle: t("admin_pages_homepage_sub") },
+    page_about:          { title: t("admin_pages_about_title"),        subtitle: "" },
+    site_info_general:   { title: t("admin_settings_title"),           subtitle: t("admin_settings_subtitle") },
+    settings_shipping:   { title: t("settings_shipping"),              subtitle: "" },
+    settings_notifications:{ title: t("admin_sidebar_notifications"),  subtitle: "" },
+    users_list:          { title: t("admin_users_title"),              subtitle: t("admin_users_subtitle") },
+    shops_list:          { title: t("admin_shops_title"),              subtitle: t("admin_shops_subtitle") },
+    users_permissions:   { title: t("admin_perm_title") || "การกำหนดสิทธิ", subtitle: t("admin_perm_subtitle") || "กำหนดสิทธิ์การเข้าถึงสำหรับแต่ละบทบาท" },
+  };
 
   // Reset active item when section changes
   React.useEffect(() => {
@@ -25402,7 +26582,7 @@ export function AdminDashboard() {
     mainRef.current?.scrollTo({ top: 0, behavior: "auto" });
   }, [activeItem, location.pathname]);
 
-  const meta = itemLabels[activeItem] ?? { title: activeItem, subtitle: "" };
+  const meta = i18nItem[activeItem] ?? itemLabels[activeItem] ?? { title: activeItem, subtitle: "" };
 
   const renderContent = () => {
     if (activeItem === "dashboard") return <DashboardContent />;
@@ -25426,6 +26606,7 @@ export function AdminDashboard() {
     if (activeItem === "products_coupons")    return <AdminCouponsContent />;
     if (activeItem === "orders")              return <AdminOrdersContent />;
     if (activeItem === "reviews")             return <AdminReviewsContent />;
+    if (activeItem === "ai_assistant")        return <AdminAIAssistantContent />;
     if (activeItem === "page_home")     return <PageHomeBuilder />;
     if (activeItem === "page_products") return <PageProductsBuilder />;
     if (activeItem === "page_blog")     return <PageBlogBuilder />;
@@ -25439,6 +26620,7 @@ export function AdminDashboard() {
     if (activeItem === "settings_notifications") return <SettingsNotificationsPage />;
     if (activeItem === "users_list") return <UsersListPage />;
     if (activeItem === "shops_list") return <ShopsListPage />;
+    if (activeItem === "users_permissions") return <PermissionsPage />;
     const Icon = itemIconMap[activeItem] || FileText;
     return <PlaceholderContent icon={Icon} title={meta.title} desc={meta.subtitle} />;
   };
@@ -25448,19 +26630,43 @@ export function AdminDashboard() {
 
   return (
     <div className="flex h-full overflow-hidden relative">
-      <div className="h-full md:overflow-y-auto shrink-0">
+      {/* Desktop: persistent sidebar inline */}
+      <div className="hidden md:block h-full md:overflow-y-auto shrink-0">
         <AdminSidebar
           section={section}
           active={activeItem}
-          onSelect={setActiveItem}
+          onSelect={(item) => { setActiveItem(item); if (typeof window !== "undefined" && window.innerWidth < 768) setSidebarCollapsed(true); }}
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         />
       </div>
 
+      {/* Mobile: start drawer — same visual language as the customer end drawer */}
+      <AnimatePresence>
+        {!sidebarCollapsed && (
+          <AdminMobileDrawer
+            section={section}
+            active={activeItem}
+            onSelect={(item) => { setActiveItem(item); }}
+            onClose={() => setSidebarCollapsed(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile floating menu button */}
+      {sidebarCollapsed && (
+        <button
+          onClick={() => setSidebarCollapsed(false)}
+          className="md:hidden fixed bottom-4 left-4 z-40 size-12 rounded-full bg-[#3b82f6] text-white shadow-lg flex items-center justify-center hover:bg-[#2563eb] active:scale-95 transition-all"
+          aria-label="Open menu"
+        >
+          <Menu className="size-5" />
+        </button>
+      )}
+
       <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">
         {/* BannerContent + BlogContent + VideoContent + PopupContent + LegalContent + ComplaintListContent render their own headers — skip default */}
-        {activeItem !== "dashboard" && activeItem !== "content_banner" && activeItem !== "content_blog" && activeItem !== "content_video" && activeItem !== "content_index" && activeItem !== "content_terms" && activeItem !== "content_privacy" && activeItem !== "complaints_list" && activeItem !== "complaints_appeals" && activeItem !== "products_manage" && activeItem !== "products_categories" && activeItem !== "products_promotions" && activeItem !== "products_flash" && activeItem !== "products_coupons" && activeItem !== "report_sales" && activeItem !== "report_customers" && activeItem !== "report_products" && activeItem !== "report_marketing" && activeItem !== "orders" && activeItem !== "reviews" && activeItem !== "page_home" && activeItem !== "page_products" && activeItem !== "page_blog" && activeItem !== "page_about" && (
+        {activeItem !== "dashboard" && activeItem !== "content_banner" && activeItem !== "content_blog" && activeItem !== "content_video" && activeItem !== "content_index" && activeItem !== "content_terms" && activeItem !== "content_privacy" && activeItem !== "complaints_list" && activeItem !== "complaints_appeals" && activeItem !== "products_manage" && activeItem !== "products_categories" && activeItem !== "products_promotions" && activeItem !== "products_flash" && activeItem !== "products_coupons" && activeItem !== "report_sales" && activeItem !== "report_customers" && activeItem !== "report_products" && activeItem !== "report_marketing" && activeItem !== "orders" && activeItem !== "reviews" && activeItem !== "page_home" && activeItem !== "page_products" && activeItem !== "page_blog" && activeItem !== "page_about" && activeItem !== "users_permissions" && (
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div>
               <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{meta.title}</h2>

@@ -1,6 +1,10 @@
-import React, { useState, Fragment, useEffect } from "react";
+import React, { useState, Fragment, useEffect, useMemo } from "react";
 import { useAuth } from "../store/AuthContext";
 import { useOrders } from "../store/OrderContext";
+import { useLanguage } from "../store/LanguageContext";
+import { useProducts } from "../store/ProductsContext";
+import { useCategories } from "../store/CategoriesContext";
+import { readImageFile } from "../data/imageUpload";
 import { useNavigate } from "react-router";
 import {
   BarChart3, Package, ShoppingCart, Zap, Megaphone, Ticket,
@@ -9,7 +13,7 @@ import {
   AlertTriangle, Phone, Mail, ChevronRight, Filter,
   FileText, TrendingUp, Users, ShoppingBag, BarChart2, Download, FileSpreadsheet,
   ClipboardList, ScanSearch, Truck, PackageCheck, PackageX, EyeOff, Send,
-  Lock, Banknote, ArrowDownToLine, Info, Save, Beaker
+  Lock, Banknote, ArrowDownToLine, Info, Save, Beaker, Menu
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from "recharts";
@@ -593,7 +597,30 @@ function MenuBtn({ isActive, icon: Icon, label, onClick, hasArrow, expanded, col
 function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; onSelect: (t: OwnerTab) => void; collapsed: boolean; onToggle: () => void }) {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ products: true, settings: false });
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const toggle = (id: string) => setExpandedMenus((p) => ({ ...p, [id]: !p[id] }));
+
+  // Translate sidebar labels based on tab id
+  const labelMap: Record<string, string> = {
+    overview: t("owner_sidebar_dashboard"),
+    orders: t("owner_sidebar_orders"),
+    products: t("owner_sidebar_products"),
+    flash_sale: t("owner_sidebar_flash_sale"),
+    promotions: t("owner_sidebar_promotions"),
+    coupons: t("owner_sidebar_coupons"),
+    reports: t("owner_sidebar_reports"),
+    report_sales: t("owner_sidebar_report_sales"),
+    report_customers: t("owner_sidebar_report_customers"),
+    report_products: t("owner_sidebar_report_products"),
+    report_market: t("owner_sidebar_report_market"),
+    finance: t("owner_sidebar_finance"),
+    complaints: t("owner_sidebar_complaints"),
+  };
+  // For parent items like "products", child id "products" overlaps — special-case the manage products label
+  const childLabel = (id: string, fallback: string) => {
+    if (id === "products") return t("owner_sidebar_manage_products");
+    return labelMap[id] ?? fallback;
+  };
 
   const withTooltip = (label: string, node: React.ReactNode) => collapsed ? (
     <TooltipPrimitive.Root>
@@ -622,7 +649,7 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.2 }}
-                className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>ภาพรวม</motion.p>
+                className={`${font} text-[16px] text-[#0a0a0a]`} style={{ fontWeight: 500 }}>{t("admin_topbar_overview")}</motion.p>
             )}
           </AnimatePresence>
           <motion.button
@@ -643,11 +670,12 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
           animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04, delayChildren: 0.05 } } }}
           className={`flex-1 pb-4 space-y-2.5 overflow-y-auto ${collapsed ? "px-2" : "px-4"}`}>
-          {sidebarItems.map((item) =>
-            !item.children ? (
+          {sidebarItems.map((item) => {
+            const itemLabel = labelMap[item.id] ?? item.label;
+            return !item.children ? (
               <motion.div key={item.id} variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.25 }}>
-                {withTooltip(item.label,
-                  <MenuBtn isActive={active === item.id} icon={item.icon} label={item.label} onClick={() => onSelect(item.id)} collapsed={collapsed} />
+                {withTooltip(itemLabel,
+                  <MenuBtn isActive={active === item.id} icon={item.icon} label={itemLabel} onClick={() => onSelect(item.id)} collapsed={collapsed} />
                 )}
               </motion.div>
             ) : (
@@ -656,24 +684,25 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
                   <HoverCard openDelay={80} closeDelay={120}>
                     <HoverCardTrigger asChild>
                       <div>
-                        <MenuBtn icon={item.icon} label={item.label} hasArrow={false} collapsed={collapsed}
+                        <MenuBtn icon={item.icon} label={itemLabel} hasArrow={false} collapsed={collapsed}
                           onClick={() => { /* noop in collapsed: hover-only */ }} />
                       </div>
                     </HoverCardTrigger>
                     <HoverCardContent side="right" align="start" sideOffset={12}
                       className="w-auto min-w-[200px] p-2.5 rounded-[16px] border-gray-100 bg-white shadow-[0px_8px_24px_rgba(0,0,0,0.12)]">
-                      <p className={`${font} text-[11px] text-gray-400 px-2 pt-1 pb-2`} style={{ fontWeight: 500 }}>{item.label}</p>
+                      <p className={`${font} text-[11px] text-gray-400 px-2 pt-1 pb-2`} style={{ fontWeight: 500 }}>{itemLabel}</p>
                       <div className="space-y-1.5">
                         {item.children.map((child) => {
                           const isActive = active === child.id;
                           const Icon = childIconMap[child.id] || Package;
+                          const cLabel = childLabel(child.id, child.label);
                           return (
                             <button key={child.id + child.label} onClick={() => onSelect(child.id)}
                               className={`w-full flex items-center gap-2.5 pl-2 pr-3 py-2 rounded-[200px] cursor-pointer transition-colors ${isActive ? "bg-[#319754]/10" : "hover:bg-gray-50"}`}>
                               <div className={`size-[24px] rounded-full flex items-center justify-center shrink-0 transition-colors ${isActive ? "bg-[#319754]" : "bg-[#f5f5f5]"}`}>
                                 <Icon className={`size-3 ${isActive ? "text-white" : "text-black/85"}`} />
                               </div>
-                              <span className={`${font} text-[13px] whitespace-nowrap ${isActive ? "text-[#319754]" : "text-black"}`} style={{ fontWeight: isActive ? 500 : 400 }}>{child.label}</span>
+                              <span className={`${font} text-[13px] whitespace-nowrap ${isActive ? "text-[#319754]" : "text-black"}`} style={{ fontWeight: isActive ? 500 : 400 }}>{cLabel}</span>
                             </button>
                           );
                         })}
@@ -682,7 +711,7 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
                   </HoverCard>
                 ) : (
                   <>
-                    <MenuBtn icon={item.icon} label={item.label} onClick={() => toggle(item.id)} hasArrow expanded={expandedMenus[item.id]} collapsed={collapsed} />
+                    <MenuBtn icon={item.icon} label={itemLabel} onClick={() => toggle(item.id)} hasArrow expanded={expandedMenus[item.id]} collapsed={collapsed} />
                     <AnimatePresence initial={false}>
                       {expandedMenus[item.id] && (
                         <motion.div
@@ -697,11 +726,14 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
                             animate="show"
                             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.03 } } }}
                             className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
-                            {item.children.map((child) => (
-                              <motion.div key={child.id + child.label} variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.2 }}>
-                                <MenuBtn isActive={active === child.id} icon={childIconMap[child.id] || Package} label={child.label} onClick={() => onSelect(child.id)} collapsed={collapsed} />
-                              </motion.div>
-                            ))}
+                            {item.children.map((child) => {
+                              const cLabel = childLabel(child.id, child.label);
+                              return (
+                                <motion.div key={child.id + child.label} variants={{ hidden: { opacity: 0, x: -8 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.2 }}>
+                                  <MenuBtn isActive={active === child.id} icon={childIconMap[child.id] || Package} label={cLabel} onClick={() => onSelect(child.id)} collapsed={collapsed} />
+                                </motion.div>
+                              );
+                            })}
                           </motion.div>
                         </motion.div>
                       )}
@@ -709,13 +741,13 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
                   </>
                 )}
               </motion.div>
-            )
-          )}
+            );
+          })}
 
           {/* Complaints */}
           <motion.div variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.25 }}>
-            {withTooltip("การร้องเรียน",
-              <MenuBtn isActive={active === "complaints" || active === "complaint_detail"} icon={AlertTriangle} label="การร้องเรียน" onClick={() => onSelect("complaints")} collapsed={collapsed} />
+            {withTooltip(t("owner_sidebar_complaints"),
+              <MenuBtn isActive={active === "complaints" || active === "complaint_detail"} icon={AlertTriangle} label={t("owner_sidebar_complaints")} onClick={() => onSelect("complaints")} collapsed={collapsed} />
             )}
           </motion.div>
         </motion.nav>
@@ -742,6 +774,7 @@ function CancelOrderModal({ open, order, onClose, onConfirm }: {
   onClose: () => void;
   onConfirm: (reason: string, note: string) => void;
 }) {
+  const { t } = useLanguage();
   const [selectedReason, setSelectedReason] = useState<string>("");
   const [note, setNote] = useState("");
 
@@ -769,7 +802,7 @@ function CancelOrderModal({ open, order, onClose, onConfirm }: {
                   <AlertCircle className="size-5 text-[#ff3b30]" strokeWidth={2.4} />
                 </div>
                 <div className="flex-1">
-                  <h3 className={`${font} text-[16px]`} style={{ fontWeight: 700 }}>ยกเลิกคำสั่งซื้อ</h3>
+                  <h3 className={`${font} text-[16px]`} style={{ fontWeight: 700 }}>{t("owner_orders_cancel_title")}</h3>
                   <p className={`${font} text-[12px] text-gray-500 mt-0.5`}>{order.id}</p>
                 </div>
                 <button onClick={onClose} className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer shrink-0">
@@ -778,7 +811,7 @@ function CancelOrderModal({ open, order, onClose, onConfirm }: {
               </div>
             </div>
             <div className="p-5">
-              <p className={`${font} text-[13px] text-black mb-3`} style={{ fontWeight: 500 }}>เลือกเหตุผลการยกเลิก <span className="text-[#ff3b30]">*</span></p>
+              <p className={`${font} text-[13px] text-black mb-3`} style={{ fontWeight: 500 }}>{t("owner_orders_cancel_reason_ph")} <span className="text-[#ff3b30]">*</span></p>
               <div className="flex flex-col gap-2 mb-4">
                 {CANCEL_REASONS.map((reason) => {
                   const isSelected = selectedReason === reason;
@@ -815,14 +848,14 @@ function CancelOrderModal({ open, order, onClose, onConfirm }: {
               <div className="flex gap-2">
                 <button onClick={onClose}
                   className={`${font} flex-1 h-11 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer text-[14px] transition-colors`}>
-                  ปิด
+                  {t("common_close")}
                 </button>
                 <button
                   onClick={() => canSubmit && onConfirm(selectedReason, note.trim())}
                   disabled={!canSubmit}
                   className={`${font} flex-1 h-11 rounded-full bg-[#ff3b30] hover:bg-[#dc2626] disabled:bg-gray-300 disabled:cursor-not-allowed text-white cursor-pointer text-[14px] shadow-[0_2px_8px_rgba(255,59,48,0.25)] transition-colors`}
                   style={{ fontWeight: 600 }}>
-                  ยืนยันยกเลิก
+                  {t("owner_orders_cancel_submit")}
                 </button>
               </div>
             </div>
@@ -842,21 +875,23 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
   onConfirmShip: (id: string) => void;
   onRequestCancel: (id: string) => void;
 }) {
+  const { t } = useLanguage();
   const cfg = statusConfig[order.status];
+  const statusLabel = t(`owner_orders_status_${order.status}` as any);
 
   // Status-specific action button row
   const actions = (() => {
     const cancelBtn = (
       <button onClick={(e) => { e.stopPropagation(); onRequestCancel(order.id); }}
         className={`${font} border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors`}>
-        ยกเลิก
+        {t("common_cancel")}
       </button>
     );
     const contactBtn = (
       <button onClick={(e) => { e.stopPropagation(); onContact(order.id); }}
         className={`${font} border border-gray-300 text-gray-700 hover:bg-gray-50 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
         <MessageCircle className="size-3.5" />
-        ติดต่อลูกค้า
+        {t("owner_orders_contact")}
       </button>
     );
     switch (order.status) {
@@ -867,9 +902,9 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
           <>
             {contactBtn}
             {cancelBtn}
-            <button onClick={(e) => { e.stopPropagation(); onUpdate(order.id, { status: "ready_ship" }); toast.success("เปลี่ยนสถานะเป็นพร้อมจัดส่ง"); }}
+            <button onClick={(e) => { e.stopPropagation(); onUpdate(order.id, { status: "ready_ship" }); toast.success(t("owner_orders_status_ready_ship")); }}
               className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
-              พร้อมจัดส่ง
+              {t("owner_orders_status_ready_ship")}
               <ArrowRightCircle className="size-4" />
             </button>
           </>
@@ -881,7 +916,7 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
             <button onClick={(e) => { e.stopPropagation(); onConfirmShip(order.id); }}
               className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
               <Truck className="size-4" />
-              ยืนยันการจัดส่ง
+              {t("owner_orders_confirm_ship")}
             </button>
           </>
         );
@@ -905,7 +940,7 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
           <button onClick={(e) => { e.stopPropagation(); onBlock(order.id); }}
             className={`${font} border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
             <Ban className="size-3.5" />
-            บล็อกลูกค้า
+            {t("owner_orders_block")}
           </button>
         );
     }
@@ -921,7 +956,7 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
             <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{order.id}</span>
             <span className={`${font} text-[12px] text-white px-4 py-1 rounded-full whitespace-nowrap`}
               style={{ backgroundColor: cfg.pillBg, fontWeight: 500 }}>
-              {cfg.label}
+              {statusLabel}
             </span>
           </div>
           <div className="flex items-center gap-2.5">
@@ -1103,6 +1138,7 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
   onUpdate: (id: string, patch: Partial<Order>) => void;
   onOpenDetail: (id: string) => void;
 }) {
+  const { t } = useLanguage();
   const [activeFilter, setActiveFilter] = useState<OrderFilterTab>(initialFilter);
   const [searchQuery, setSearchQuery] = useState("");
   const [shipModalOrderId, setShipModalOrderId] = useState<string | null>(null);
@@ -1121,26 +1157,26 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
   const handleConfirmCancel = (reason: string, note: string) => {
     if (!cancelModalOrderId) return;
     onUpdate(cancelModalOrderId, { status: "cancelled", cancelReason: reason, cancelNote: note || undefined, cancelledBy: "shop", cancellationStatus: "approved" });
-    toast.success(`ยกเลิกคำสั่งซื้อแล้ว — เหตุผล: ${reason}`);
+    toast.success(t("owner_toast_order_cancelled"));
     setCancelModalOrderId(null);
   };
 
   const submitShip = () => {
     if (!shipModalOrderId || !shipTrackingInput.trim()) return;
     onUpdate(shipModalOrderId, { status: "shipping", trackingNumber: shipTrackingInput.trim() });
-    toast.success("อัปเดตสถานะการจัดส่งเรียบร้อย — ลูกค้าจะติดตามพัสดุได้");
+    toast.success(t("owner_toast_order_shipped"));
     setShipModalOrderId(null);
   };
 
   const handleContact = (id: string) => {
     const o = orders.find((x) => x.id === id);
-    if (o) toast.info(`เปิดแชทกับ ${o.customer} (${o.phone})`);
+    if (o) toast.info(`${t("owner_orders_contact")}: ${o.customer} (${o.phone})`);
   };
 
   const handleBlock = (id: string) => {
     const o = orders.find((x) => x.id === id);
-    if (o && confirm(`บล็อกลูกค้า ${o.customer}? ลูกค้าจะไม่สามารถสั่งซื้อจากร้านได้อีก`)) {
-      toast.success(`บล็อก ${o.customer} เรียบร้อย`);
+    if (o && confirm(`${t("owner_orders_block")}: ${o.customer}?`)) {
+      toast.success(`${t("owner_orders_block")}: ${o.customer}`);
     }
   };
 
@@ -1150,11 +1186,20 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
   // Counts derived from current orders state so tabs stay in sync after status updates
   const liveCounts = (status: OrderFilterTab) =>
     status === "all" ? orders.length : orders.filter((o) => o.status === status).length;
-  const liveTabs = orderTabs.map((t) => ({ ...t, count: liveCounts(t.id) }));
+  const tabLabelMap: Record<OrderFilterTab, string> = {
+    all: t("owner_orders_tab_all"),
+    pending_payment: t("owner_orders_tab_pending_payment"),
+    pending_verify: t("owner_orders_tab_pending_verify"),
+    ready_ship: t("owner_orders_tab_ready_ship"),
+    shipping: t("owner_orders_tab_shipping"),
+    shipped: t("owner_orders_tab_shipped"),
+    cancelled: t("owner_orders_tab_cancelled"),
+  };
+  const liveTabs = orderTabs.map((tb) => ({ ...tb, label: tabLabelMap[tb.id], count: liveCounts(tb.id) }));
 
   return (
     <div>
-      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>จัดการคำสั่งซื้อ</h2>
+      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>{t("owner_orders_title")}</h2>
 
       {/* Filter tabs + search (in one pill) */}
       <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
@@ -1163,14 +1208,14 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
             all: ClipboardList, pending_payment: Wallet, pending_verify: ScanSearch,
             ready_ship: Package, shipping: Truck, shipped: PackageCheck, cancelled: PackageX,
           };
-          const tabsWithIcon = liveTabs.map((t) => ({ ...t, Icon: orderIcons[t.id] }));
+          const tabsWithIcon = liveTabs.map((tb) => ({ ...tb, Icon: orderIcons[tb.id] }));
           return <FilterTabPills tabs={tabsWithIcon} active={activeFilter} onChange={setActiveFilter} pillId="orderTabActivePill" />;
         })()}
         {/* Search (inside same pill) */}
         <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
-            placeholder="ค้นหาเลขคำสั่งซื้อ, ชื่อลูกค้า...."
+            placeholder={t("owner_orders_search_ph")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -1195,7 +1240,7 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
           return (
             <div className="bg-white rounded-xl border border-gray-100 py-16 flex flex-col items-center justify-center gap-2">
               <ClipboardList className="size-10 text-gray-300" strokeWidth={1.5} />
-              <p className={`${font} text-[14px] text-gray-400`}>ไม่มีคำสั่งซื้อในสถานะนี้</p>
+              <p className={`${font} text-[14px] text-gray-400`}>{t("owner_orders_no_orders")}</p>
             </div>
           );
         }
@@ -1227,40 +1272,40 @@ function OrdersTab({ initialFilter = "all", orders, onUpdate, onOpenDetail }: {
               className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl"
               onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className={`${font} text-[18px]`} style={{ fontWeight: 700 }}>ยืนยันการจัดส่ง</h3>
+                <h3 className={`${font} text-[18px]`} style={{ fontWeight: 700 }}>{t("owner_orders_confirm_ship")}</h3>
                 <button onClick={() => setShipModalOrderId(null)} className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer">
                   <X className="size-4" />
                 </button>
               </div>
               <div className="bg-gray-50 rounded-xl p-3 mb-4">
-                <p className={`${font} text-[12px] text-gray-500`}>คำสั่งซื้อ</p>
+                <p className={`${font} text-[12px] text-gray-500`}>{t("owner_orders_order_no")}</p>
                 <p className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>{shipOrder.id}</p>
-                <p className={`${font} text-[12px] text-gray-500 mt-2`}>ผู้รับ</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>{t("owner_orders_customer")}</p>
                 <p className={`${font} text-[14px]`}>{shipOrder.customer} · {shipOrder.phone}</p>
-                <p className={`${font} text-[12px] text-gray-500 mt-2`}>วิธีจัดส่ง</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>{t("common_shipping")}</p>
                 <p className={`${font} text-[14px]`}>{shipOrder.shippingMethod}</p>
-                <p className={`${font} text-[12px] text-gray-500 mt-2`}>ที่อยู่</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>{t("address_title")}</p>
                 <p className={`${font} text-[13px]`}>{shipOrder.address}</p>
               </div>
-              <label className={`${font} text-[13px] text-black block mb-2`} style={{ fontWeight: 500 }}>หมายเลขพัสดุ <span className="text-[#ff3b30]">*</span></label>
+              <label className={`${font} text-[13px] text-black block mb-2`} style={{ fontWeight: 500 }}>{t("orders_tracking_no")} <span className="text-[#ff3b30]">*</span></label>
               <input
                 value={shipTrackingInput}
                 onChange={(e) => setShipTrackingInput(e.target.value)}
-                placeholder="เช่น TH1234567890"
+                placeholder="TH1234567890"
                 className={`${font} bg-[#fafafa] h-11 w-full rounded-full px-4 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow mb-4`}
               />
               <p className={`${font} text-[11px] text-gray-500 mb-5`}>
-                ลูกค้าจะได้รับแจ้งเตือนเพื่อติดตามพัสดุ และสถานะออเดอร์จะเปลี่ยนเป็น "กำลังจัดส่ง"
+                {t("owner_orders_status_shipping")}
               </p>
               <div className="flex gap-2">
                 <button onClick={() => setShipModalOrderId(null)}
                   className={`${font} flex-1 h-11 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer text-[14px] transition-colors`}>
-                  ยกเลิก
+                  {t("common_cancel")}
                 </button>
                 <button onClick={submitShip} disabled={!shipTrackingInput.trim()}
                   className={`${font} flex-1 h-11 rounded-full bg-[#319754] hover:bg-[#287745] disabled:bg-gray-300 disabled:cursor-not-allowed text-white cursor-pointer text-[14px] shadow-[0_2px_8px_rgba(49,151,84,0.25)] transition-colors`}
                   style={{ fontWeight: 600 }}>
-                  ยืนยันการจัดส่ง
+                  {t("owner_orders_confirm_ship")}
                 </button>
               </div>
             </motion.div>
@@ -1922,33 +1967,76 @@ function OrderDetailTab({ order, onBack, onUpdate }: {
 
 /* ========== PRODUCTS TAB ========== */
 function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
+  const { t } = useLanguage();
+  const { user } = useAuth();
+  const { products: ctxProducts, removeProduct } = useProducts();
   const [productFilter, setProductFilter] = useState("all");
   const [previewProduct, setPreviewProduct] = useState<typeof mockProducts[0] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
+  // Merge in real products from context (filtered to this owner's shop) so
+  // additions/deletions made through CRUD show up here in dashboard format.
+  const shopName = user?.shopName ?? "METAHERB Store";
+  const shopProducts = useMemo(() => {
+    const ownProducts = ctxProducts.filter((p) => p.shopName === shopName);
+    return ownProducts.map((p) => {
+      const isMulti = (p.options?.length ?? 0) > 1;
+      const stockNum = typeof p.stock === "number" ? p.stock : parseInt(String(p.stock) || "0", 10) || 0;
+      const status = stockNum === 0 ? "สินค้าหมด" : "เปิดขาย";
+      const statusColor = stockNum === 0 ? "#dc2626" : "#319754";
+      return {
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        type: isMulti ? "หลายตัวเลือก" : "ราคาเดียว",
+        typeColor: isMulti ? "#007aff" : "#ff9500",
+        price: `฿ ${p.price.toFixed(2)}`,
+        stock: `${stockNum} ชิ้น`,
+        status,
+        statusColor,
+        flash: !!p.isFlashSale,
+        recommended: !!p.isRecommended,
+        image: p.image || "",
+      } as typeof mockProducts[0];
+    });
+  }, [ctxProducts, shopName]);
+
+  // Combine context products + the original mockProducts demo set (deduped by id)
+  const allProducts = useMemo(() => {
+    const seen = new Set<string>();
+    const out: typeof mockProducts = [];
+    [...shopProducts, ...mockProducts].forEach((p) => {
+      if (seen.has(p.id)) return;
+      seen.add(p.id);
+      out.push(p);
+    });
+    return out;
+  }, [shopProducts]);
+
   // Counts derived from data so tabs always match current inventory
   const counts = {
-    all: mockProducts.length,
-    active: mockProducts.filter((p) => p.status === "เปิดขาย").length,
-    inactive: mockProducts.filter((p) => p.status === "ปิดขาย").length,
-    out: mockProducts.filter((p) => p.status === "สินค้าหมด").length,
+    all: allProducts.length,
+    active: allProducts.filter((p) => p.status === "เปิดขาย").length,
+    inactive: allProducts.filter((p) => p.status === "ปิดขาย").length,
+    out: allProducts.filter((p) => p.status === "สินค้าหมด").length,
   };
 
   const productFilterTabs = [
-    { id: "all",      label: "สินค้าทั้งหมด", count: counts.all },
-    { id: "active",   label: "สินค้าเปิดขาย", count: counts.active },
-    { id: "inactive", label: "สินค้าปิดขาย", count: counts.inactive },
-    { id: "out",      label: "สินค้าหมด",     count: counts.out },
+    { id: "all",      label: t("owner_products_tab_all"),      count: counts.all },
+    { id: "active",   label: t("owner_products_tab_active"),   count: counts.active },
+    { id: "inactive", label: t("owner_products_tab_inactive"), count: counts.inactive },
+    { id: "out",      label: t("owner_products_tab_outofstock"), count: counts.out },
   ];
 
-  const filteredProducts = mockProducts.filter((p) => {
+  const filteredProducts = allProducts.filter((p) => {
     if (productFilter === "all") return true;
     if (productFilter === "active") return p.status === "เปิดขาย";
     if (productFilter === "inactive") return p.status === "ปิดขาย";
     if (productFilter === "out") return p.status === "สินค้าหมด";
     return true;
   });
+
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / perPage));
@@ -1959,19 +2047,20 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>จัดการสินค้า</h2>
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_products_title")}</h2>
         <motion.button
           onClick={onAddProduct}
           whileTap={{ scale: 0.96 }}
           whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+          aria-label={t("owner_products_add")}
         >
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มสินค้า</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>{t("owner_products_add")}</span>
         </motion.button>
       </div>
 
@@ -1981,14 +2070,14 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
           const productIcons: Record<string, any> = {
             all: Package, active: PackageCheck, inactive: EyeOff, out: AlertTriangle,
           };
-          const tabsWithIcon = productFilterTabs.map((t) => ({ ...t, Icon: productIcons[t.id] }));
+          const tabsWithIcon = productFilterTabs.map((tb) => ({ ...tb, Icon: productIcons[tb.id] }));
           return <FilterTabPills tabs={tabsWithIcon} active={productFilter} onChange={(id) => { setProductFilter(id); setCurrentPage(1); }} pillId="productTabActivePill" />;
         })()}
         {/* Search (inside same pill) */}
         <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
-            placeholder="ค้นหาสินค้าของคุณ...."
+            placeholder={t("owner_products_search_ph")}
           />
           <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
             <Search className="size-4 text-white" />
@@ -1997,8 +2086,103 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
       </div>
 
       {/* Table — matches report style */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
-        <div>
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
+        {/* Mobile: card list. Desktop / tablet keeps the data-dense table below. */}
+        <div className="md:hidden space-y-3">
+          {pageItems.length === 0 && (
+            <p className={`py-10 text-center ${font} text-[13px] text-gray-400`}>{t("owner_products_no_results")}</p>
+          )}
+          {pageItems.map((p) => {
+            const stockMatch = p.stock.match(/^(\d[\d,]*)\s*(.*)$/);
+            const isOut    = p.status === "สินค้าหมด";
+            const isClosed = p.status === "ปิดขาย";
+            const overlayText = isOut ? "หมด" : isClosed ? "ปิด" : null;
+            return (
+              <div key={p.id} onClick={() => setPreviewProduct(p)}
+                className="flex gap-3 p-3 rounded-2xl border border-gray-100 active:bg-gray-50 cursor-pointer">
+                {/* Thumbnail */}
+                <div className="relative size-[72px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shrink-0">
+                  <ImageWithFallback src={p.image} alt={p.name}
+                    className={`w-full h-full object-cover ${overlayText ? "grayscale opacity-60" : ""}`} />
+                  {overlayText && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <span className={`${font} text-white text-[12px]`} style={{ fontWeight: 700, textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{overlayText}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`${font} text-[14px] text-black leading-tight line-clamp-2 flex-1`} style={{ fontWeight: 600 }}>{p.name}</p>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button onClick={(e) => e.stopPropagation()}
+                          className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6}
+                        className="w-[230px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                        <button onClick={(e) => { e.stopPropagation(); toast.info(`แก้ไขสินค้า: ${p.name}`); }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                          <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>แก้ไข</span>
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); toast.info(`จัดการสตอก: ${p.name}`); }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors text-left text-[13px] text-black`}>
+                          <Boxes className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>จัดการสตอกสินค้า</span>
+                        </button>
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={(e) => { e.stopPropagation(); if (confirm(`ลบสินค้า "${p.name}"?`)) { removeProduct(p.id); toast.success(`ลบ: ${p.name}`); } }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
+                          <Trash2 className="size-3.5" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>ลบ</span>
+                        </button>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <p className={`${font} text-[12px] text-gray-500 truncate`}>{p.category}</p>
+
+                  {/* Pills row: price + stock */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className={`${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 600 }}>{p.price}</span>
+                    <span className={`${font} text-[12px] text-gray-600`}>
+                      {stockMatch ? (<><span className="tabular-nums" style={{ fontWeight: 500 }}>{stockMatch[1]}</span> {stockMatch[2]}</>) : p.stock}
+                    </span>
+                  </div>
+
+                  {/* Status + type + flash tags */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]`}
+                      style={{ backgroundColor: `${p.statusColor}1a`, color: p.statusColor, fontWeight: 500 }}>
+                      <Package className="size-2.5" strokeWidth={2.4} /> {p.status}
+                    </span>
+                    <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]`}
+                      style={{ backgroundColor: `${p.typeColor}1a`, color: p.typeColor, fontWeight: 500 }}>
+                      {p.type}
+                    </span>
+                    {p.flash && (
+                      <span className={`${font} inline-flex items-center gap-1 bg-[#e62e05] text-white px-2 py-0.5 rounded-full text-[10px]`} style={{ fontWeight: 500 }}>
+                        <Zap className="size-2.5 fill-white" strokeWidth={0} /> Flash
+                      </span>
+                    )}
+                    {p.recommended && (
+                      <span className={`${font} inline-flex items-center gap-1 bg-[#319754] text-white px-2 py-0.5 rounded-full text-[10px]`} style={{ fontWeight: 500 }}>
+                        ★ แนะนำ
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block">
           <table className="w-full table-fixed">
             <colgroup>
               <col style={{ width: "72px" }} />
@@ -2012,20 +2196,20 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
             </colgroup>
             <thead>
               <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
-                <th className="text-left pb-3 pr-0 pl-0" style={{ fontWeight: 500 }}>รูปภาพ</th>
-                <th className="text-left pb-3 pr-4 pl-2" style={{ fontWeight: 500 }}>สินค้า</th>
-                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>หมวดหมู่</th>
-                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ประเภท</th>
-                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>ราคา</th>
-                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>คงเหลือ</th>
-                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>สถานะ</th>
-                <th className="text-center pb-3" style={{ fontWeight: 500 }}>จัดการ</th>
+                <th className="text-left pb-3 pr-0 pl-0" style={{ fontWeight: 500 }}>{t("owner_products_name")}</th>
+                <th className="text-left pb-3 pr-4 pl-2" style={{ fontWeight: 500 }}>{t("owner_products_name")}</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>{t("owner_products_category")}</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>{t("owner_finance_type")}</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>{t("owner_products_price")}</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>{t("owner_products_stock")}</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>{t("owner_orders_status")}</th>
+                <th className="text-center pb-3" style={{ fontWeight: 500 }}>{t("owner_products_actions")}</th>
               </tr>
             </thead>
             <tbody>
               {pageItems.length === 0 && (
                 <tr>
-                  <td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบสินค้าในหมวดนี้</td>
+                  <td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>{t("owner_products_no_results")}</td>
                 </tr>
               )}
               {pageItems.map((p) => {
@@ -2166,7 +2350,7 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
                             <div className="h-px bg-gray-100 my-1" />
                             {/* ลบ */}
                             <button
-                              onClick={() => { if (confirm(`ลบสินค้า "${p.name}"?`)) toast.success(`ลบ: ${p.name}`); }}
+                              onClick={() => { if (confirm(`ลบสินค้า "${p.name}"?`)) { removeProduct(p.id); toast.success(`ลบ: ${p.name}`); } }}
                               className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer transition-colors text-left text-[13px] text-[#ff3b30]`}>
                               <Trash2 className="size-3.5" strokeWidth={2.2} />
                               <span style={{ fontWeight: 500 }}>ลบ</span>
@@ -2607,6 +2791,7 @@ function FlashEventCard({
 
 /* ========== FLASH SALE TAB ========== */
 function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?: { isNewJoin?: boolean }) => void }) {
+  const { t } = useLanguage();
   const [flashFilter, setFlashFilter] = useState("all");
   const [flashSearch, setFlashSearch] = useState("");
   const [flashStorePage, setFlashStorePage] = useState(1);
@@ -2632,10 +2817,10 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
   const storeCountSoldOut   = storeProducts.filter((p) => p.quantity - p.sold <= 0).length;
   const storeCountScheduled = storeProducts.filter(_isScheduled).length;
   const flashFilterTabs = [
-    { id: "all",       label: "ทั้งหมด",          count: storeProducts.length,     Icon: ClipboardList   },
-    { id: "active",    label: "กำลังขาย",          count: storeCountActive,         Icon: Zap             },
-    { id: "soldout",   label: "สินค้าหมด",         count: storeCountSoldOut,        Icon: AlertTriangle   },
-    { id: "scheduled", label: "กำหนดไว้ล่วงหน้า", count: storeCountScheduled,      Icon: Clock           },
+    { id: "all",       label: t("owner_flash_tab_all"),     count: storeProducts.length,     Icon: ClipboardList   },
+    { id: "active",    label: t("owner_flash_tab_ongoing"),  count: storeCountActive,         Icon: Zap             },
+    { id: "soldout",   label: t("owner_products_tab_outofstock"), count: storeCountSoldOut, Icon: AlertTriangle   },
+    { id: "scheduled", label: t("owner_flash_tab_upcoming"), count: storeCountScheduled,      Icon: Clock           },
   ];
 
   // กรองตาม tab + keyword
@@ -2669,10 +2854,10 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
               <Zap className="size-5 text-[#e62e05]" strokeWidth={2.2} fill="#e62e05" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>Flash Sale Event</h3>
+              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>Flash Sale</h3>
               <div className="flex items-center gap-1.5 mt-1">
                 <AlertCircle className="size-3.5 text-gray-400" />
-                <span className={`${font} text-[12px] text-[#8e8e93]`}>เข้าร่วม Flash Sale กับทาง METAHERB เพื่อรับข้อเสนอสุดพิเศษ</span>
+                <span className={`${font} text-[12px] text-[#8e8e93]`}>{t("owner_flash_subtitle")}</span>
               </div>
             </div>
           </div>
@@ -2759,13 +2944,14 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
             whileTap={{ scale: 0.96 }}
             whileHover={{ y: -1 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] shrink-0`}
+            className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] shrink-0`}
             style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+            aria-label="เพิ่มสินค้า Flash Sale"
           >
             <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
               <Plus className="size-[14px]" strokeWidth={2.6} />
             </span>
-            <span style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
+            <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
           </motion.button>
         </div>
 
@@ -2787,8 +2973,106 @@ function FlashSaleTab({ onViewEvent }: { onViewEvent: (event: FlashEvent, opts?:
           </div>
         </div>
 
+        {/* Mobile: card list. Desktop / tablet keeps the data-dense table below. */}
+        <div className="md:hidden space-y-3">
+          {pagedStoreProducts.length === 0 && (
+            <p className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่มีสินค้าใน Flash Sale</p>
+          )}
+          {pagedStoreProducts.map((p) => {
+            const normal = parseFloat(String(p.normalPrice).replace(/[^\d.]/g, "")) || 0;
+            const flash  = parseFloat(String(p.flashPrice).replace(/[^\d.]/g, ""))  || 0;
+            const discountPct = normal > 0 && flash > 0 ? Math.round(((normal - flash) / normal) * 100) : 0;
+            const remaining  = Math.max(0, p.quantity - p.sold);
+            const lowStock   = p.quantity > 0 && remaining / p.quantity <= 0.2;
+            const isSoldOut  = remaining === 0;
+            const isScheduled = !!p.startsAt && new Date(p.startsAt).getTime() > Date.now();
+            const revenue    = flash * p.sold;
+            const stLabel    = isScheduled ? "ล่วงหน้า" : isSoldOut ? "สินค้าหมด" : "กำลังขาย";
+            const stColor    = isScheduled ? "#f59e0b" : isSoldOut ? "#dc2626" : "#319754";
+            return (
+              <div key={p.id} className="flex gap-3 p-3 rounded-2xl border border-gray-100">
+                {/* Thumbnail */}
+                <div className="relative size-[72px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shrink-0">
+                  <ImageWithFallback src={p.image} alt={p.name}
+                    className={`w-full h-full object-cover ${isSoldOut ? "grayscale opacity-60" : ""}`} />
+                  {isSoldOut && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <span className={`${font} text-white text-[12px]`} style={{ fontWeight: 700 }}>หมด</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`${font} text-[14px] text-[#1a1a1a] leading-tight line-clamp-2 flex-1`} style={{ fontWeight: 600 }}>{p.name}</p>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 text-gray-700 shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6} className="w-[230px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                        <button onClick={() => toast.info(`แก้ไขส่วนลด: ${p.name}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>แก้ไขส่วนลด / จำนวน</span>
+                        </button>
+                        <button onClick={() => toast.info(`ดูสถิติการขาย: ${p.name}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <TrendingUp className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>ดูสถิติการขาย</span>
+                        </button>
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={() => { if (confirm(`เอา "${p.name}" ออก?`)) toast.success(`เอาออกแล้ว`); }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer text-left text-[13px] text-[#ff3b30]`}>
+                          <Trash2 className="size-3.5" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>เอาออกจาก Flash Sale</span>
+                        </button>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Price row */}
+                  <div className="flex items-baseline gap-2 flex-wrap tabular-nums">
+                    {p.flashPriceDisplay && (
+                      <span className={`${font} text-[14px] text-[#ff3b30]`} style={{ fontWeight: 700 }}>{p.flashPriceDisplay}</span>
+                    )}
+                    {p.originalPriceDisplay && (
+                      <span className={`${font} text-[11px] text-gray-400 line-through`}>{p.originalPriceDisplay}</span>
+                    )}
+                    {discountPct > 0 && (
+                      <span className={`${font} text-[11px] text-[#dc2626]`} style={{ fontWeight: 700 }}>-{discountPct}%</span>
+                    )}
+                  </div>
+
+                  {/* Stock + sold + revenue */}
+                  <div className={`${font} flex items-center gap-3 text-[12px] flex-wrap tabular-nums`}>
+                    <span className="text-gray-600">ขาย <span style={{ fontWeight: 600 }} className="text-[#1a1a1a]">{p.sold.toLocaleString()}</span></span>
+                    <span className={lowStock ? "text-[#dc2626]" : "text-gray-600"}>
+                      เหลือ <span style={{ fontWeight: 600 }}>{remaining.toLocaleString()}</span> / {p.quantity.toLocaleString()}
+                    </span>
+                    <span className="text-[#319754]" style={{ fontWeight: 600 }}>
+                      ฿{revenue.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  {/* Status + period */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]`}
+                      style={{ backgroundColor: `${stColor}1a`, color: stColor, fontWeight: 500 }}>
+                      <Package className="size-2.5" strokeWidth={2.4} /> {stLabel}
+                    </span>
+                    <span className={`${font} text-[10.5px] text-gray-400 truncate`}>{p.start} → {p.end}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         {/* Table — โครงสร้างเดียวกับ FlashEventDetail (table-fixed + tfoot summary) */}
-        <div>
+        <div className="hidden md:block">
           <table className="w-full table-fixed">
             <colgroup>
               <col style={{ width: "26%" }} />{/* สินค้า */}
@@ -3835,13 +4119,14 @@ function FlashEventDetail({ onBack, isNewJoin = false, event }: { onBack: () => 
           whileTap={{ scale: 0.96 }}
           whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
           style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+          aria-label="เพิ่มสินค้า Flash Sale"
         >
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>เพิ่มสินค้า Flash Sale</span>
         </motion.button>
       </div>
 
@@ -4187,6 +4472,9 @@ function NumberStepper({ value, onChange, min = 0, step = 1 }: { value: number; 
 }
 
 function AddProductTab({ onBack }: { onBack: () => void }) {
+  const { user } = useAuth();
+  const { addProduct } = useProducts();
+  const { activeCategories } = useCategories();
   const [activeStep, setActiveStep] = useState(0);
   const [maxVisitedStep, setMaxVisitedStep] = useState(0); // furthest step the user has visited (clicked or scrolled past)
   const [hasVariants, setHasVariants] = useState(false);
@@ -4200,7 +4488,57 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
   const [category, setCategory] = useState("");
   const [sku, setSku] = useState("");
   const [salesChannel, setSalesChannel] = useState<"retail" | "market" | "both">("retail");
-  const [productImages] = useState<string[]>([]); // demo only — not actually uploaded
+  // 3 cover-image slots; null = empty, string = data URL. Use array of 3 so
+  // each upload tile owns a specific slot (cover / image-2 / image-3).
+  const [productImages, setProductImages] = useState<(string | null)[]>([null, null, null]);
+  const productImageInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingSlot, setUploadingSlot] = useState<number | null>(null);
+
+  const triggerProductImageUpload = (slot: number) => {
+    setUploadingSlot(slot);
+    productImageInputRef.current?.click();
+  };
+
+  const handleProductImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const slot = uploadingSlot;
+    setUploadingSlot(null);
+    if (!file || slot === null) return;
+    const result = await readImageFile(file, { maxWidth: 1200, quality: 0.85 });
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    setProductImages((prev) => prev.map((v, i) => (i === slot ? result.dataUrl : v)));
+    toast.success("เพิ่มรูปสินค้าแล้ว");
+  };
+
+  const removeProductImage = (slot: number) => {
+    setProductImages((prev) => prev.map((v, i) => (i === slot ? null : v)));
+  };
+
+  // Variant image upload — shares the same file input via a different slot key
+  const variantImageInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingVariantId, setUploadingVariantId] = useState<string | null>(null);
+  const triggerVariantUpload = (id: string) => {
+    setUploadingVariantId(id);
+    variantImageInputRef.current?.click();
+  };
+  const handleVariantImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const id = uploadingVariantId;
+    setUploadingVariantId(null);
+    if (!file || !id) return;
+    const result = await readImageFile(file, { maxWidth: 800, quality: 0.85 });
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    updateRow(id, { image: result.dataUrl });
+    toast.success("เพิ่มรูปตัวเลือกแล้ว");
+  };
   type VariantRow = { id: string; image: string | null; name: string; price: number; stock: number; weight: number };
   const [variantRows, setVariantRows] = useState<VariantRow[]>([
     { id: "v1", image: null, name: "", price: 0, stock: 0, weight: 0 },
@@ -4214,7 +4552,8 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
 
   // Validation per section
   const infoValid = productName.trim().length > 0 && category.length > 0 && sku.trim().length > 0;
-  const imagesValid = productImages.length > 0;
+  const uploadedImages = productImages.filter((x): x is string => !!x);
+  const imagesValid = uploadedImages.length > 0;
   const variantsValid = hasVariants
     ? variantRows.every((r) => r.name.trim().length > 0 && r.price > 0 && r.stock > 0 && r.weight > 0)
     : price > 0 && stock > 0 && weight > 0;
@@ -4303,29 +4642,57 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
               { label: "รูปปกสินค้า", sub: "รูปหลัก", primary: true },
               { label: "รูป 2", sub: "เพิ่มเติม", primary: false },
               { label: "รูป 3", sub: "เพิ่มเติม", primary: false },
-            ].map((item) => (
-              <motion.button key={item.label} type="button"
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.97 }}
-                className={`group/upload relative bg-gradient-to-br from-gray-50 to-gray-100/60 border-2 border-dashed rounded-2xl size-[150px] flex flex-col items-center justify-center gap-2 cursor-pointer transition-all shrink-0 overflow-hidden ${
-                  item.primary
-                    ? "border-[#319754]/40 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
-                    : "border-gray-300 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
-                }`}>
-                {item.primary && (
-                  <span className={`${font} absolute top-2 right-2 text-[9px] bg-[#319754] text-white px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>
-                    หลัก
-                  </span>
-                )}
-                <div className="size-10 rounded-full bg-white border border-gray-200 flex items-center justify-center transition-transform group-hover/upload:scale-110 group-hover/upload:rotate-90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
-                  <Plus className="size-4 text-gray-500 group-hover/upload:text-[#319754] transition-colors" strokeWidth={2.4} />
-                </div>
-                <div className="text-center px-2">
-                  <p className={`${font} text-[12px] text-black`} style={{ fontWeight: 500 }}>{item.label}</p>
-                  <p className={`${font} text-[10px] text-gray-400 mt-0.5`}>{item.sub}</p>
-                </div>
-              </motion.button>
-            ))}
+            ].map((item, slot) => {
+              const uploaded = productImages[slot];
+              return (
+                <motion.button key={item.label} type="button"
+                  onClick={() => triggerProductImageUpload(slot)}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  className={`group/upload relative bg-gradient-to-br from-gray-50 to-gray-100/60 border-2 border-dashed rounded-2xl size-[150px] flex flex-col items-center justify-center gap-2 cursor-pointer transition-all shrink-0 overflow-hidden ${
+                    uploaded
+                      ? "border-[#319754] from-white to-white"
+                      : item.primary
+                        ? "border-[#319754]/40 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
+                        : "border-gray-300 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
+                  }`}>
+                  {uploaded ? (
+                    <>
+                      <img src={uploaded} alt={item.label} className="absolute inset-0 w-full h-full object-cover" />
+                      {item.primary && (
+                        <span className={`${font} absolute top-2 right-2 text-[9px] bg-[#319754] text-white px-2 py-0.5 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.2)]`} style={{ fontWeight: 600 }}>
+                          หลัก
+                        </span>
+                      )}
+                      <span
+                        onClick={(e) => { e.stopPropagation(); removeProductImage(slot); }}
+                        role="button"
+                        className="absolute top-2 left-2 size-6 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer transition-colors"
+                        aria-label="ลบรูป">
+                        <X className="size-3.5" strokeWidth={2.4} />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      {item.primary && (
+                        <span className={`${font} absolute top-2 right-2 text-[9px] bg-[#319754] text-white px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>
+                          หลัก
+                        </span>
+                      )}
+                      <div className="size-10 rounded-full bg-white border border-gray-200 flex items-center justify-center transition-transform group-hover/upload:scale-110 group-hover/upload:rotate-90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
+                        <Plus className="size-4 text-gray-500 group-hover/upload:text-[#319754] transition-colors" strokeWidth={2.4} />
+                      </div>
+                      <div className="text-center px-2">
+                        <p className={`${font} text-[12px] text-black`} style={{ fontWeight: 500 }}>{item.label}</p>
+                        <p className={`${font} text-[10px] text-gray-400 mt-0.5`}>{item.sub}</p>
+                      </div>
+                    </>
+                  )}
+                </motion.button>
+              );
+            })}
+            <input ref={productImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleProductImageFile} />
+            <input ref={variantImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleVariantImageFile} />
           </div>
         </section>
 
@@ -4401,10 +4768,13 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
                 <select value={category} onChange={(e) => setCategory(e.target.value)}
                   className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-6 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
                   <option value="">เลือกหมวดหมู่</option>
-                  <option value="herb_capsule">สมุนไพรแคปซูล</option>
-                  <option value="herbal_tea">ชาสมุนไพร</option>
-                  <option value="herb_powder">ผงสมุนไพร</option>
-                  <option value="herbal_oil">น้ำมันสมุนไพร</option>
+                  {/* Pulls live admin categories so the value saved on the product
+                      matches the customer-side filter (was hard-coded slugs
+                      before — products saved as "herb_capsule" never matched
+                      any of the canonical Thai category names). */}
+                  {activeCategories.map((c) => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
                 </select>
                 <ChevronDown className="size-4 text-gray-400 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
               </div>
@@ -4524,13 +4894,33 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
                 <div key={row.id} className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center gap-4 relative group/row">
                   {/* Image upload — 200x200, styled like รูปภาพสินค้า */}
                   <motion.button type="button"
+                    onClick={() => triggerVariantUpload(row.id)}
                     whileHover={{ y: -2 }}
                     whileTap={{ scale: 0.97 }}
-                    className="group/upload relative bg-gradient-to-br from-gray-50 to-gray-100/60 border-2 border-dashed border-gray-300 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10 rounded-2xl size-[200px] shrink-0 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden">
-                    <div className="size-12 rounded-full bg-white border border-gray-200 flex items-center justify-center transition-transform group-hover/upload:scale-110 group-hover/upload:rotate-90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
-                      <Plus className="size-5 text-gray-500 group-hover/upload:text-[#319754] transition-colors" strokeWidth={2.4} />
-                    </div>
-                    <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เพิ่มรูป</span>
+                    className={`group/upload relative bg-gradient-to-br from-gray-50 to-gray-100/60 border-2 border-dashed rounded-2xl size-[200px] shrink-0 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden ${
+                      row.image
+                        ? "border-[#319754] from-white to-white"
+                        : "border-gray-300 hover:border-[#319754] hover:from-[#319754]/5 hover:to-[#319754]/10"
+                    }`}>
+                    {row.image ? (
+                      <>
+                        <img src={row.image} alt="variant" className="absolute inset-0 w-full h-full object-cover" />
+                        <span
+                          onClick={(e) => { e.stopPropagation(); updateRow(row.id, { image: null }); }}
+                          role="button"
+                          className="absolute top-2 left-2 size-7 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer transition-colors"
+                          aria-label="ลบรูป">
+                          <X className="size-4" strokeWidth={2.4} />
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="size-12 rounded-full bg-white border border-gray-200 flex items-center justify-center transition-transform group-hover/upload:scale-110 group-hover/upload:rotate-90 shadow-[0_2px_6px_rgba(0,0,0,0.06)]">
+                          <Plus className="size-5 text-gray-500 group-hover/upload:text-[#319754] transition-colors" strokeWidth={2.4} />
+                        </div>
+                        <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>เพิ่มรูป</span>
+                      </>
+                    )}
                   </motion.button>
 
                   {/* Right side fields */}
@@ -4790,7 +5180,38 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
           {/* Action buttons */}
           <div className="h-px bg-gray-100 my-4" />
           <div className="flex flex-col gap-2">
-            <button onClick={() => toast.success("เพิ่มสินค้าเรียบร้อย")}
+            <button onClick={() => {
+              if (!productName.trim()) { toast.error("กรุณาระบุชื่อสินค้า"); return; }
+              if (!category.trim())    { toast.error("กรุณาเลือกหมวดหมู่"); return; }
+              const finalPrice  = hasVariants ? Math.min(...variantRows.map((r) => r.price)) : price;
+              const finalStock  = hasVariants ? variantRows.reduce((s, r) => s + r.stock, 0)  : stock;
+              const finalWeight = hasVariants ? variantRows[0]?.weight ?? 0                    : weight;
+              if (!(finalPrice > 0)) { toast.error("กรุณาระบุราคาสินค้า"); return; }
+              if (!(finalStock > 0)) { toast.error("กรุณาระบุจำนวนสต๊อก"); return; }
+              const options = hasVariants && variantRows.length > 1
+                ? variantRows.map((r) => r.name).filter(Boolean)
+                : [];
+              addProduct({
+                name: productName.trim(),
+                price: finalPrice,
+                rating: 0,
+                sold: "0",
+                image: uploadedImages[0] ?? "",
+                category: category.trim(),
+                description: "",
+                weight: `${finalWeight} g`,
+                type: hasVariants ? "หลายตัวเลือก" : "ราคาเดียว",
+                sku: sku.trim(),
+                format: "",
+                shopName: user?.shopName ?? "METAHERB Store",
+                options,
+                stock: finalStock,
+                reviews: [],
+                isRecommended: recommended,
+              });
+              toast.success(openForSale ? "เพิ่มสินค้าและเผยแพร่เรียบร้อย" : "บันทึกสินค้าเป็นแบบร่างเรียบร้อย");
+              onBack();
+            }}
               className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-10 w-full rounded-full text-[14px] cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
               style={{ fontWeight: 500 }}>
               เพิ่มสินค้า
@@ -4808,6 +5229,7 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
 
 /* ========== OVERVIEW ========== */
 function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab) => void }) {
+  const { t } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(16);
   const [currentMonth, setCurrentMonth] = useState(0);
   const [currentYear, setCurrentYear] = useState(2026);
@@ -5023,15 +5445,15 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
         <div className="flex-1 flex flex-col items-start justify-between p-4 relative min-w-0 z-10">
           <p className={`${font} text-[14px] text-white whitespace-nowrap`} style={{ fontWeight: 700 }}>กระเป๋าตังค์</p>
           <div className="flex flex-col gap-[10px] items-start">
-            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>ยอดพร้อมถอน</p>
+            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>{t("owner_finance_balance")}</p>
             <p className={`${font} text-[24px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
               <AnimatedValue value="฿2,775.21" />
             </p>
-            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>+12.5% เทียบเดือนก่อน</p>
+            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>+12.5%</p>
             <button className={`${font} bg-white hover:bg-gray-50 text-[#287745] h-10 w-[110px] rounded-full text-[13px] inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)]`}
               style={{ fontWeight: 600 }}>
               <Wallet className="size-3.5" />
-              ถอนเงิน
+              {t("owner_finance_withdraw")}
             </button>
           </div>
         </div>
@@ -5041,17 +5463,17 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
           {/* ยอด Escrow */}
           <div className="bg-white/15 backdrop-blur-[10px] rounded-2xl flex-1 flex flex-col gap-2 items-start p-4 overflow-hidden">
             <div className={`flex items-center gap-1.5`}>
-              <p className={`${font} text-[10px] text-white whitespace-nowrap`}>ยอด Escrow</p>
+              <p className={`${font} text-[10px] text-white whitespace-nowrap`}>{t("owner_finance_pending")}</p>
               <span className="inline-flex items-center justify-center size-2.5 rounded-full border border-white/50 text-[7px] text-white/80">i</span>
             </div>
             <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
               <AnimatedValue value="฿1,370.6" />
             </p>
-            <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>8 ออเดอร์รอ</p>
+            <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>8 {t("owner_overview_orders")}</p>
           </div>
           {/* รายได้สะสม */}
           <div className="bg-white/15 backdrop-blur-[10px] rounded-2xl flex-1 flex flex-col gap-2 items-start p-4 overflow-hidden">
-            <p className={`${font} text-[10px] text-white whitespace-nowrap`}>รายได้สะสม</p>
+            <p className={`${font} text-[10px] text-white whitespace-nowrap`}>{t("owner_finance_total_income")}</p>
             <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
               <AnimatedValue value="฿2,775.21" />
             </p>
@@ -5064,24 +5486,24 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
       <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-[0px_1px_4px_rgba(0,0,0,0.04)] flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <h3 className={`${font} text-[14px] text-[#101828]`} style={{ fontWeight: 700 }}>ติดตามคำสั่งซื้อ</h3>
-            <span className={`${font} text-[11px] text-gray-400`}>ทั้งหมด</span>
+            <h3 className={`${font} text-[14px] text-[#101828]`} style={{ fontWeight: 700 }}>{t("owner_overview_recent_orders")}</h3>
+            <span className={`${font} text-[11px] text-gray-400`}>{t("owner_orders_tab_all")}</span>
           </div>
           <button onClick={() => onViewOrders?.()}
             className={`${font} text-[11px] inline-flex items-center gap-0.5 text-[#319754] hover:text-[#287745] cursor-pointer transition-colors`}
             style={{ fontWeight: 600 }}>
-            ดูทั้งหมด
+            {t("common_view_all")}
             <ChevronRight className="size-3" />
           </button>
         </div>
         <div className="grid grid-cols-3 gap-2 flex-1">
           {[
-            { id: "pending_payment" as OrderFilterTab, label: "รอชำระเงิน", count: countByStatus("pending_payment"), accent: "#ff3b30", Icon: Wallet },
-            { id: "pending_verify" as OrderFilterTab, label: "รอตรวจสอบ", count: countByStatus("pending_verify"), accent: "#f59e0b", Icon: ScanSearch },
-            { id: "ready_ship" as OrderFilterTab, label: "พร้อมจัดส่ง", count: countByStatus("ready_ship"), accent: "#3b82f6", Icon: PackageCheck },
-            { id: "shipping" as OrderFilterTab, label: "กำลังจัดส่ง", count: countByStatus("shipping"), accent: "#319754", Icon: Truck },
-            { id: "shipped" as OrderFilterTab, label: "ส่งสำเร็จ", count: countByStatus("shipped"), accent: "#10b981", Icon: Check },
-            { id: "cancelled" as OrderFilterTab, label: "ยกเลิก", count: countByStatus("cancelled"), accent: "#6b7280", Icon: PackageX },
+            { id: "pending_payment" as OrderFilterTab, label: t("owner_orders_status_pending_payment"), count: countByStatus("pending_payment"), accent: "#ff3b30", Icon: Wallet },
+            { id: "pending_verify" as OrderFilterTab, label: t("owner_orders_status_pending_verify"), count: countByStatus("pending_verify"), accent: "#f59e0b", Icon: ScanSearch },
+            { id: "ready_ship" as OrderFilterTab, label: t("owner_orders_status_ready_ship"), count: countByStatus("ready_ship"), accent: "#3b82f6", Icon: PackageCheck },
+            { id: "shipping" as OrderFilterTab, label: t("owner_orders_status_shipping"), count: countByStatus("shipping"), accent: "#319754", Icon: Truck },
+            { id: "shipped" as OrderFilterTab, label: t("owner_orders_status_shipped"), count: countByStatus("shipped"), accent: "#10b981", Icon: Check },
+            { id: "cancelled" as OrderFilterTab, label: t("owner_orders_status_cancelled"), count: countByStatus("cancelled"), accent: "#6b7280", Icon: PackageX },
           ].map((s) => (
             <button key={s.id} onClick={() => onViewOrders?.(s.id)}
               className="group bg-[#fafbfc] hover:bg-[#e8f7ed] border border-transparent hover:border-[#319754] rounded-2xl p-4 text-left transition-all cursor-pointer flex flex-col gap-2">
@@ -5124,7 +5546,7 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
                   <button onClick={() => setCurrentMonth(m => m > 0 ? m - 1 : 11)} className="bg-[#f4f4f4] rounded-full size-6 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
                     <ChevronLeft className="size-3.5" />
                   </button>
-                  <span className={`${font} text-[24px]`} style={{ fontWeight: 700 }}>{monthNames[currentMonth]} {currentYear + 543}</span>
+                  <span className={`${font} text-[16px] sm:text-[20px] md:text-[24px] whitespace-nowrap`} style={{ fontWeight: 700 }}>{monthNames[currentMonth]} {currentYear + 543}</span>
                   <button onClick={() => setCurrentMonth(m => m < 11 ? m + 1 : 0)} className="bg-[#f4f4f4] rounded-full size-6 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors rotate-180">
                     <ChevronLeft className="size-3.5" />
                   </button>
@@ -5134,7 +5556,7 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
                   <button onClick={() => setCurrentYear(y => y - 1)} className="bg-[#f4f4f4] rounded-full size-6 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
                     <ChevronLeft className="size-3.5" />
                   </button>
-                  <span className={`${font} text-[24px]`} style={{ fontWeight: 700 }}>{currentYear + 543}</span>
+                  <span className={`${font} text-[16px] sm:text-[20px] md:text-[24px] whitespace-nowrap`} style={{ fontWeight: 700 }}>{currentYear + 543}</span>
                   <button onClick={() => setCurrentYear(y => y + 1)} className="bg-[#f4f4f4] rounded-full size-6 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors rotate-180">
                     <ChevronLeft className="size-3.5" />
                   </button>
@@ -5530,6 +5952,7 @@ const financeTransactions = [
 ];
 
 function FinanceTab({ onBankSettings }: { onBankSettings: () => void }) {
+  const { t } = useLanguage();
   const [activeView, setActiveView] = useState<"all" | "withdraw">("all");
   const [selectedMonth, setSelectedMonth] = useState("มี.ค. 2569");
   const [page, setPage] = useState(1);
@@ -5566,22 +5989,22 @@ function FinanceTab({ onBankSettings }: { onBankSettings: () => void }) {
       {/* Header — title + actions (ตรงธีมหลัก: ProductsTab) */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>กระเป๋าเงิน</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการรายได้และการถอนเงินของร้านค้า</p>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_finance_title")}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("owner_finance_subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={onBankSettings}
             className={`${font} inline-flex items-center gap-2 text-[13px] text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-4 h-[36px] rounded-full cursor-pointer transition-colors`}
             style={{ fontWeight: 500 }}>
             <Settings className="size-4" strokeWidth={2.2} />
-            ตั้งค่าการเงิน
+            {t("owner_finance_bank_settings")}
           </button>
           <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
-            onClick={() => toast.success("เปิดหน้าถอนเงิน")}
+            onClick={() => toast.success(t("owner_finance_withdraw"))}
             className={`${font} inline-flex items-center gap-2 text-[13px] text-white bg-[#319754] hover:bg-[#287745] px-5 h-[36px] rounded-full cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
             style={{ fontWeight: 500 }}>
             <ArrowDownToLine className="size-4" strokeWidth={2.4} />
-            ถอนเงิน
+            {t("owner_finance_withdraw")}
           </motion.button>
         </div>
       </div>
@@ -5779,6 +6202,7 @@ function BankBadge({ bank, size = 40 }: { bank: typeof bankOptions[0]; size?: nu
 }
 
 function BankSettingsTab({ onBack }: { onBack: () => void }) {
+  const { t } = useLanguage();
   const [editing, setEditing] = useState(false);
   const [bankData, setBankData] = useState({ bank: "KTB", account: "000-000-0000", name: "บริษัท เมต้าเฮิร์บ จำกัด" });
   const [draft, setDraft] = useState(bankData);
@@ -5787,7 +6211,7 @@ function BankSettingsTab({ onBack }: { onBack: () => void }) {
   const handleSave = () => {
     setBankData(draft);
     setEditing(false);
-    toast.success("บันทึกข้อมูลบัญชีธนาคารแล้ว");
+    toast.success(t("owner_toast_saved"));
   };
 
   const selectedBank = bankOptions.find(b => b.value === bankData.bank) || bankOptions[0];
@@ -5800,15 +6224,15 @@ function BankSettingsTab({ onBack }: { onBack: () => void }) {
           className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
           style={{ fontWeight: 500 }}>
           <ChevronLeft className="size-3.5" strokeWidth={2.5} />
-          กลับ
+          {t("common_back")}
         </button>
       </div>
 
       {/* Header — title + subtitle (ตรงธีม FinanceTab/ProductsTab) */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>ตั้งค่าการเงิน</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>จัดการบัญชีธนาคารสำหรับรับเงินจากการขาย</p>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_bank_title")}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("owner_bank_security_note")}</p>
         </div>
         {/* Action buttons */}
         {!editing ? (
@@ -5817,21 +6241,21 @@ function BankSettingsTab({ onBack }: { onBack: () => void }) {
             className={`${font} inline-flex items-center gap-2 text-[13px] text-[#319754] bg-white border border-[#319754] hover:bg-[#319754]/10 px-5 h-[36px] rounded-full cursor-pointer transition-colors`}
             style={{ fontWeight: 500 }}>
             <Pencil className="size-3.5" strokeWidth={2.4} />
-            แก้ไข
+            {t("common_edit")}
           </motion.button>
         ) : (
           <div className="flex items-center gap-2">
             <button onClick={() => setEditing(false)}
               className={`${font} inline-flex items-center gap-2 text-[13px] text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-5 h-[36px] rounded-full cursor-pointer transition-colors`}
               style={{ fontWeight: 500 }}>
-              ยกเลิก
+              {t("common_cancel")}
             </button>
             <motion.button whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}
               onClick={handleSave}
               className={`${font} inline-flex items-center gap-2 text-[13px] text-white bg-[#319754] hover:bg-[#287745] px-5 h-[36px] rounded-full cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
               style={{ fontWeight: 500 }}>
               <Check className="size-4" strokeWidth={2.4} />
-              บันทึก
+              {t("owner_bank_save")}
             </motion.button>
           </div>
         )}
@@ -6185,6 +6609,7 @@ const mockComplaints: Complaint[] = [
 
 /* ========== COMPLAINTS TAB (List) ========== */
 function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void }) {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ComplaintStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState<ComplaintType | "all">("all");
@@ -6192,20 +6617,20 @@ function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void })
   const [perPage, setPerPage] = useState(10);
 
   const statusTabs: { id: ComplaintStatus | "all"; label: string; count: number; Icon: any }[] = [
-    { id: "all",            label: "ทั้งหมด",            count: mockComplaints.length, Icon: ClipboardList },
-    { id: "pending",        label: "รอดำเนินการ",        count: mockComplaints.filter((c) => c.status === "pending").length, Icon: Clock },
-    { id: "acknowledged",   label: "ยืนยันรับแจ้งปัญหา", count: mockComplaints.filter((c) => c.status === "acknowledged").length, Icon: Check },
-    { id: "refund_full",    label: "คืนเงินเต็มจำนวน",   count: mockComplaints.filter((c) => c.status === "refund_full").length, Icon: RotateCcw },
-    { id: "refund_partial", label: "คืนเงินบางส่วน",      count: mockComplaints.filter((c) => c.status === "refund_partial").length, Icon: PackageCheck },
-    { id: "rejected",       label: "ปฏิเสธ",             count: mockComplaints.filter((c) => c.status === "rejected").length, Icon: Ban },
+    { id: "all",            label: t("owner_complaint_tab_all"),    count: mockComplaints.length, Icon: ClipboardList },
+    { id: "pending",        label: t("owner_complaint_tab_new"),     count: mockComplaints.filter((c) => c.status === "pending").length, Icon: Clock },
+    { id: "acknowledged",   label: t("owner_complaint_tab_progress"),count: mockComplaints.filter((c) => c.status === "acknowledged").length, Icon: Check },
+    { id: "refund_full",    label: t("owner_complaint_refund"),      count: mockComplaints.filter((c) => c.status === "refund_full").length, Icon: RotateCcw },
+    { id: "refund_partial", label: t("owner_complaint_refund"),      count: mockComplaints.filter((c) => c.status === "refund_partial").length, Icon: PackageCheck },
+    { id: "rejected",       label: t("owner_complaint_status_rejected"), count: mockComplaints.filter((c) => c.status === "rejected").length, Icon: Ban },
   ];
 
   const typeTabs: { id: ComplaintType | "all"; label: string }[] = [
-    { id: "all",        label: "ทุกประเภท" },
-    { id: "damaged",    label: "สินค้าเสียหาย" },
-    { id: "wrong_item", label: "สินค้าไม่ตรงตามสั่ง" },
-    { id: "return",     label: "ต้องการคืนสินค้า" },
-    { id: "refund",     label: "ต้องการขอเงินคืน" },
+    { id: "all",        label: t("owner_complaint_tab_all") },
+    { id: "damaged",    label: t("owner_complaint_type_damaged") },
+    { id: "wrong_item", label: t("owner_complaint_type_wrong") },
+    { id: "return",     label: t("owner_complaint_type_missing") },
+    { id: "refund",     label: t("owner_complaint_refund") },
   ];
 
   const filtered = mockComplaints.filter((c) => {
@@ -6225,7 +6650,7 @@ function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void })
     <div>
       {/* Header — title only (เหมือน ProductsTab) */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>การร้องเรียน</h2>
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_complaint_title")}</h2>
       </div>
 
       {/* Status filter tabs + search (in one pill) — เหมือน ProductsTab */}
@@ -6285,7 +6710,7 @@ function ComplaintsTab({ onViewDetail }: { onViewDetail: (id: string) => void })
         {/* Search (inside same pill, aligned right) */}
         <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] w-[260px] shrink-0">
           <input value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-            placeholder="ค้นหาเลขร้องเรียน, ชื่อลูกค้า..."
+            placeholder={t("owner_complaint_search_ph")}
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
           <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
             <Search className="size-4 text-white" />
@@ -7091,7 +7516,7 @@ function ReportSalesTab() {
           <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
             <PopoverTrigger asChild>
               <button
-                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 h-[34px] sm:h-[40px] px-3 sm:px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
                 aria-label="เปลี่ยนวันที่"
               >
                 <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
@@ -7213,7 +7638,7 @@ function ReportSalesTab() {
           <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
-                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                className={`${font} text-[12px] sm:text-[13px] px-3 sm:px-4 py-1 sm:py-1.5 whitespace-nowrap rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
                   <motion.div layoutId="report-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
@@ -7225,9 +7650,10 @@ function ReportSalesTab() {
           {/* Export button */}
           <Popover>
             <PopoverTrigger asChild>
-              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+              <button className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[34px] sm:h-[40px] px-3 sm:px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}
+                aria-label="ส่งออก">
                 <Download className="size-4" />
-                ส่งออก
+                <span className="hidden sm:inline">ส่งออก</span>
                 <ChevronDown className="size-3.5" />
               </button>
             </PopoverTrigger>
@@ -7262,7 +7688,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgCoin}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7286,7 +7712,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgBox}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7310,7 +7736,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgCost}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7334,7 +7760,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgCoinUp}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7347,16 +7773,16 @@ function ReportSalesTab() {
               ),
             },
           ].map((s: any) => (
-            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            <div key={s.label} className="group rounded-2xl p-3 sm:p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
               style={{ backgroundColor: `${s.accent}0d` }}>
               <div className="relative">
                 <div className="flex items-center justify-between">
                   <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
-                  <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                  <div className="size-7 sm:size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
                     {s.icon}
                   </div>
                 </div>
-                <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                <p className={`${font} text-[20px] sm:text-[26px] mt-2 sm:mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
                   <AnimatedValue value={s.value} />
                 </p>
                 <div className="flex items-center gap-1.5 mt-2">
@@ -7857,7 +8283,63 @@ function ReportSalesTab() {
               </div>
             </div>
 
-            <div>
+            {/* Mobile: grouped card list */}
+            <div className="md:hidden space-y-4">
+              {pageGroups.length === 0 && (
+                <p className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</p>
+              )}
+              {pageGroups.map((group, gi) => {
+                const groupProfit = group.totalNet - group.totalCost;
+                const groupMargin = group.totalSales > 0 ? (groupProfit / group.totalSales) * 100 : 0;
+                return (
+                  <div key={gi} className="rounded-2xl border border-gray-100 overflow-hidden">
+                    {/* Group header */}
+                    <div className="bg-[#f0faf3]/70 px-3 py-2.5 flex items-center justify-between gap-2 border-b border-gray-100">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <CalendarIcon className="size-3.5 text-[#319754] shrink-0" />
+                        <span className={`${font} text-[13px] text-[#1a1a1a] truncate`} style={{ fontWeight: 600 }}>{group.label}</span>
+                      </div>
+                      <span className={`${font} text-[11px] tabular-nums whitespace-nowrap`} style={{ fontWeight: 600, color: groupProfit >= 0 ? "#15803d" : "#dc2626" }}>
+                        {groupMargin.toFixed(1)}% · ฿{group.totalNet.toLocaleString()}
+                      </span>
+                    </div>
+                    {/* Items */}
+                    <div className="divide-y divide-gray-50">
+                      {group.items.map((p, i) => {
+                        const profit = p.net - p.cost;
+                        const margin = p.sales > 0 ? (profit / p.sales) * 100 : 0;
+                        const profitDown = margin < 45 && profit > 0;
+                        const profitColor = profit > 0 ? (profitDown ? "#dc2626" : "#15803d") : "#9ca3af";
+                        return (
+                          <div key={i} className="p-3 flex flex-col gap-1.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className={`${font} text-[13.5px] text-[#1a1a1a] leading-tight line-clamp-2`} style={{ fontWeight: 600 }}>{p.name}</p>
+                                <p className={`${font} text-[10.5px] text-gray-400 tabular-nums`}>SKU: {p.sku} · {p.qty} ชิ้น</p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: profitColor }}>฿{profit.toLocaleString()}</p>
+                                <p className={`${font} text-[10.5px] tabular-nums`} style={{ color: profitColor }}>{p.sales > 0 ? `${margin.toFixed(1)}%` : "-"}</p>
+                              </div>
+                            </div>
+                            <div className={`${font} text-[11px] flex flex-wrap items-center gap-x-3 gap-y-0.5 tabular-nums`}>
+                              <span className="text-[#1a1a1a]" style={{ fontWeight: 600 }}>ยอด ฿{p.sales.toLocaleString()}</span>
+                              <span className="text-[#c2410c]">GP −฿{p.gp.toLocaleString()}</span>
+                              {p.discount > 0 && <span className="text-[#a16207]">ส่วนลด −฿{p.discount.toLocaleString()}</span>}
+                              <span className="text-[#319754]" style={{ fontWeight: 600 }}>สุทธิ ฿{p.net.toLocaleString()}</span>
+                              <span className="text-gray-500">ต้นทุน ฿{p.cost.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block">
               <table className="w-full table-fixed">
                 <colgroup>
                   <col style={{ width: "11%" }} />
@@ -8174,7 +8656,7 @@ function ReportCustomersTab() {
           <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
             <PopoverTrigger asChild>
               <button
-                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 h-[34px] sm:h-[40px] px-3 sm:px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
                 aria-label="เปลี่ยนวันที่"
               >
                 <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
@@ -8285,7 +8767,7 @@ function ReportCustomersTab() {
           <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
-                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                className={`${font} text-[12px] sm:text-[13px] px-3 sm:px-4 py-1 sm:py-1.5 whitespace-nowrap rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
                   <motion.div layoutId="report-cust-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
@@ -8296,9 +8778,10 @@ function ReportCustomersTab() {
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+              <button className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[34px] sm:h-[40px] px-3 sm:px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}
+                aria-label="ส่งออก">
                 <Download className="size-4" />
-                ส่งออก
+                <span className="hidden sm:inline">ส่งออก</span>
                 <ChevronDown className="size-3.5" />
               </button>
             </PopoverTrigger>
@@ -8331,7 +8814,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgNewCustomer}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8353,7 +8836,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgRepeatCustomers}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8375,7 +8858,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgGroupCustomer}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8397,7 +8880,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgMember}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8410,7 +8893,7 @@ function ReportCustomersTab() {
               ),
             },
           ].map((s: any) => (
-            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            <div key={s.label} className="group rounded-2xl p-3 sm:p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
               style={{ backgroundColor: `${s.accent}0d` }}>
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -8984,7 +9467,7 @@ function ReportProductsTab() {
           <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
             <PopoverTrigger asChild>
               <button
-                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 h-[34px] sm:h-[40px] px-3 sm:px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
                 aria-label="เปลี่ยนวันที่"
               >
                 <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
@@ -9081,7 +9564,7 @@ function ReportProductsTab() {
           <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
-                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                className={`${font} text-[12px] sm:text-[13px] px-3 sm:px-4 py-1 sm:py-1.5 whitespace-nowrap rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
                   <motion.div layoutId="report-prod-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
@@ -9092,9 +9575,10 @@ function ReportProductsTab() {
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+              <button className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[34px] sm:h-[40px] px-3 sm:px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}
+                aria-label="ส่งออก">
                 <Download className="size-4" />
-                ส่งออก
+                <span className="hidden sm:inline">ส่งออก</span>
                 <ChevronDown className="size-3.5" />
               </button>
             </PopoverTrigger>
@@ -9125,7 +9609,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgProductsSold}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9147,7 +9631,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgProductsStore}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9169,7 +9653,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgStock}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9191,7 +9675,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgRating}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9204,7 +9688,7 @@ function ReportProductsTab() {
               ),
             },
           ].map((s: any) => (
-            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            <div key={s.label} className="group rounded-2xl p-3 sm:p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
               style={{ backgroundColor: `${s.accent}0d` }}>
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -9937,7 +10421,7 @@ function ReportMarketTab() {
           <Popover open={datasetCalOpen} onOpenChange={setDatasetCalOpen}>
             <PopoverTrigger asChild>
               <button
-                className={`${font} text-[13px] inline-flex items-center gap-2 h-[40px] px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
+                className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 h-[34px] sm:h-[40px] px-3 sm:px-4 rounded-full cursor-pointer bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_12px_rgba(49,151,84,0.18)] hover:text-[#319754] transition-shadow group`}
                 aria-label="เปลี่ยนวันที่"
               >
                 <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" />
@@ -10034,7 +10518,7 @@ function ReportMarketTab() {
           <div className="inline-flex items-center bg-white rounded-full p-1 overflow-x-auto max-w-full shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             {periodTabs.map((t) => (
               <button key={t.id} onClick={() => setPeriod(t.id)}
-                className={`${font} text-[13px] px-4 py-1.5 rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
+                className={`${font} text-[12px] sm:text-[13px] px-3 sm:px-4 py-1 sm:py-1.5 whitespace-nowrap rounded-full cursor-pointer relative transition-colors ${period === t.id ? "text-white" : "text-gray-600 hover:text-black"}`}>
                 {period === t.id && (
                   <motion.div layoutId="report-mkt-period-bg-top" className="absolute inset-0 bg-[#319754] rounded-full"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }} />
@@ -10045,9 +10529,10 @@ function ReportMarketTab() {
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <button className={`${font} text-[13px] inline-flex items-center gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[40px] px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}>
+              <button className={`${font} text-[12px] sm:text-[13px] inline-flex items-center gap-1.5 sm:gap-2 bg-[#319754] hover:bg-[#287745] text-white h-[34px] sm:h-[40px] px-3 sm:px-5 rounded-full cursor-pointer shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)] transition-shadow`}
+                aria-label="ส่งออก">
                 <Download className="size-4" />
-                ส่งออก
+                <span className="hidden sm:inline">ส่งออก</span>
                 <ChevronDown className="size-3.5" />
               </button>
             </PopoverTrigger>
@@ -10078,7 +10563,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgVisitors}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10100,7 +10585,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgBagInCart}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10122,7 +10607,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgConvert}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10144,7 +10629,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgCoupon}
                   alt=""
-                  className="absolute -bottom-6 -right-2 size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10157,7 +10642,7 @@ function ReportMarketTab() {
               ),
             },
           ].map((s: any) => (
-            <div key={s.label} className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            <div key={s.label} className="group rounded-2xl p-3 sm:p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
               style={{ backgroundColor: `${s.accent}0d` }}>
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -10938,6 +11423,7 @@ function CreateCouponModal({ open, onClose, onCreate }: {
 }
 
 function CouponsTab() {
+  const { t } = useLanguage();
   const [coupons, setCoupons] = useState<Coupon[]>(mockCoupons);
   const [filter, setFilter] = useState<"all" | CouponStatus>("all");
   const [search, setSearch] = useState("");
@@ -10958,10 +11444,10 @@ function CouponsTab() {
   const cnDisabled = coupons.filter((c) => computedStatus(c) === "disabled").length;
 
   const tabs: { id: "all" | CouponStatus; label: string; count: number; Icon: any }[] = [
-    { id: "all",      label: "คูปองทั้งหมด", count: cnAll,      Icon: Ticket         },
-    { id: "active",   label: "ใช้งานอยู่",    count: cnActive,   Icon: Check          },
-    { id: "expired",  label: "หมดอายุ",       count: cnExpired,  Icon: Clock          },
-    { id: "disabled", label: "ปิดใช้งาน",     count: cnDisabled, Icon: Ban            },
+    { id: "all",      label: t("owner_coupon_title"),    count: cnAll,      Icon: Ticket         },
+    { id: "active",   label: t("owner_coupon_active"),   count: cnActive,   Icon: Check          },
+    { id: "expired",  label: t("owner_coupon_expired"),  count: cnExpired,  Icon: Clock          },
+    { id: "disabled", label: t("owner_products_tab_inactive"), count: cnDisabled, Icon: Ban    },
   ];
 
   const filtered = coupons.filter((c) => {
@@ -10980,16 +11466,17 @@ function CouponsTab() {
     <div>
       {/* Header — title + add button (เหมือน ProductsTab) */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>คูปองร้านค้า</h2>
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_coupon_title")}</h2>
         <motion.button onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
-          style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          style={{ transition: "background-color 200ms, box-shadow 200ms" }}
+          aria-label={t("owner_coupon_create")}>
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้างคูปอง</span>
+          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>{t("owner_coupon_create")}</span>
         </motion.button>
       </div>
 
@@ -10999,7 +11486,7 @@ function CouponsTab() {
         {/* Search */}
         <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input value={search} onChange={(e) => { setSearch(e.target.value); setCouponPage(1); }}
-            placeholder="ค้นหาคูปอง...."
+            placeholder={t("owner_coupon_search_ph")}
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
           <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
             <Search className="size-4 text-white" />
@@ -11007,9 +11494,97 @@ function CouponsTab() {
         </div>
       </div>
 
-      {/* Body — table */}
-      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
-        {/* Table */}
+      {/* Body — table on desktop, card list on mobile */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-4 md:p-5">
+        {/* Mobile: card list */}
+        <div className="md:hidden space-y-3">
+          {pagedFiltered.length === 0 && (
+            <p className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบคูปอง</p>
+          )}
+          {pagedFiltered.map((c) => {
+            const status = computedStatus(c);
+            const stCfg =
+              status === "active"  ? { label: "ใช้งานอยู่", color: "#319754", Icon: Check } :
+              status === "expired" ? { label: "หมดอายุ",    color: "#dc2626", Icon: Clock } :
+                                     { label: "ปิดใช้งาน",  color: "#737373", Icon: Ban   };
+            const dis = fmtCouponDiscount(c);
+            const usedLabel = c.usageLimit && c.usageLimit > 0 ? `${c.used}/${c.usageLimit}` : `${c.used}/∞`;
+            const isFreeship = c.discountType === "freeship";
+            const color = isFreeship ? "#3b82f6" : "#319754";
+            const Icon  = isFreeship ? Truck : Percent;
+            const expiryStr = fmtCouponThaiDateTime(c.endsAt);
+            const conds: string[] = [];
+            if (c.minOrder && c.minOrder > 0) conds.push(`ขั้นต่ำ ฿${c.minOrder.toLocaleString()}`); else conds.push("ไม่มีขั้นต่ำ");
+            if (c.membersOnly) conds.push("สมาชิก");
+            if (c.firstOrderOnly) conds.push("ออเดอร์แรก");
+            return (
+              <div key={c.id} className="flex gap-3 p-3 rounded-2xl border border-gray-100">
+                {/* Icon stub */}
+                <div className="rounded-2xl flex flex-col items-center justify-center w-[64px] py-2 shrink-0" style={{ backgroundColor: color }}>
+                  <Icon className="size-6 text-white" strokeWidth={2.4} />
+                  <span className={`${font} text-white text-[9.5px] mt-1`} style={{ fontWeight: 500 }}>
+                    {isFreeship ? "ส่งฟรี" : "ส่วนลด"}
+                  </span>
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`${font} text-[14px] text-[#1a1a1a] leading-tight line-clamp-2 flex-1`} style={{ fontWeight: 600 }}>{c.name}</p>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 text-gray-700 shrink-0 data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                          <MoreHorizontal className="size-4" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" sideOffset={6} className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                        <button onClick={() => toast.info(`แก้ไข: ${c.code}`)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Pencil className="size-3.5 text-gray-500" strokeWidth={2.2} /> <span style={{ fontWeight: 500 }}>แก้ไข</span>
+                        </button>
+                        <button onClick={() => {
+                          setCoupons((prev) => prev.map((x) => x.id === c.id ? { ...x, status: x.status === "disabled" ? "active" : "disabled" } : x));
+                          toast.success(c.status === "disabled" ? `เปิดใช้งาน: ${c.code}` : `ปิดใช้งาน: ${c.code}`);
+                        }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Ban className="size-3.5 text-gray-500" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>{c.status === "disabled" ? "เปิดใช้งาน" : "ปิดใช้งาน"}</span>
+                        </button>
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={() => { if (confirm(`ลบคูปอง "${c.code}"?`)) { setCoupons((prev) => prev.filter((x) => x.id !== c.id)); toast.success(`ลบ: ${c.code}`); } }}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/5 cursor-pointer text-left text-[13px] text-[#ff3b30]`}>
+                          <Trash2 className="size-3.5" strokeWidth={2.2} /> <span style={{ fontWeight: 500 }}>ลบ</span>
+                        </button>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Code + discount */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`${font} text-[12px] text-gray-500 tabular-nums`}>{c.code}</span>
+                    <span className={`${font} text-[13px] tabular-nums`} style={{ fontWeight: 700, color: dis.color }}>{dis.label}</span>
+                  </div>
+
+                  {/* Conditions + used + status */}
+                  <p className={`${font} text-[11px] text-gray-500 truncate`}>{conds.join(" · ")}</p>
+                  <p className={`${font} text-[11px] text-gray-400 inline-flex items-center gap-1 truncate`}>
+                    <CalendarIcon className="size-3 shrink-0" strokeWidth={2.2} /> หมดอายุ {expiryStr}
+                  </p>
+                  <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                    <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px]`}
+                      style={{ backgroundColor: `${stCfg.color}1a`, color: stCfg.color, fontWeight: 500 }}>
+                      <stCfg.Icon className="size-2.5" strokeWidth={2.4} /> {stCfg.label}
+                    </span>
+                    <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>ใช้แล้ว {usedLabel}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block">
         <table className="w-full table-fixed">
           <colgroup>
             <col style={{ width: "40%" }} />{/* คูปอง (ticket: icon + ชื่อ + เงื่อนไข + วันหมดอายุ) */}
@@ -11163,6 +11738,7 @@ function CouponsTab() {
             })}
           </tbody>
         </table>
+        </div>
 
         {/* Pagination — เหมือนตารางหน้าอื่น */}
         {filtered.length > 0 && (
@@ -11839,6 +12415,7 @@ function CreatePromotionView({ onClose, onCreate }: {
 }
 
 function PromotionsTab() {
+  const { t } = useLanguage();
   const [promotions, setPromotions] = useState<Promotion[]>(mockPromotions);
   const [filter, setFilter] = useState<"all" | PromoStatus>("all");
   const [search, setSearch] = useState("");
@@ -11850,7 +12427,7 @@ function PromotionsTab() {
     return (
       <CreatePromotionView
         onClose={() => setShowCreate(false)}
-        onCreate={(p) => { setPromotions((prev) => [p, ...prev]); setShowCreate(false); toast.success(`สร้างโปรโมชั่น "${p.name}" แล้ว`); }}
+        onCreate={(p) => { setPromotions((prev) => [p, ...prev]); setShowCreate(false); toast.success(t("owner_toast_promo_created")); }}
       />
     );
   }
@@ -11868,10 +12445,10 @@ function PromotionsTab() {
   const cEnded = promotions.filter((p) => computedStatus(p) === "ended").length;
 
   const tabs: { id: "all" | PromoStatus; label: string; count: number; Icon: any }[] = [
-    { id: "all",       label: "ทั้งหมด",           count: cAll,       Icon: ClipboardList },
-    { id: "active",    label: "กำลังดำเนินการ",     count: cActive,    Icon: Zap           },
-    { id: "scheduled", label: "กำหนดไว้",          count: cScheduled, Icon: Clock         },
-    { id: "ended",     label: "สิ้นสุดแล้ว",         count: cEnded,     Icon: Ban           },
+    { id: "all",       label: t("owner_promo_tab_all"),       count: cAll,       Icon: ClipboardList },
+    { id: "active",    label: t("owner_promo_tab_active"),    count: cActive,    Icon: Zap           },
+    { id: "scheduled", label: t("owner_promo_tab_scheduled"), count: cScheduled, Icon: Clock         },
+    { id: "ended",     label: t("owner_promo_tab_expired"),   count: cEnded,     Icon: Ban           },
   ];
 
   const filtered = promotions.filter((p) => {
@@ -11890,7 +12467,7 @@ function PromotionsTab() {
     <div>
       {/* Header — title + add button (เหมือน ProductsTab) */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>โปรโมชั่น</h2>
+        <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_promo_title")}</h2>
         <motion.button onClick={() => setShowCreate(true)}
           whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -11899,7 +12476,7 @@ function PromotionsTab() {
           <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span style={{ fontWeight: 600 }}>สร้างโปรโมชั่น</span>
+          <span style={{ fontWeight: 600 }}>{t("owner_promo_create")}</span>
         </motion.button>
       </div>
 
@@ -11909,7 +12486,7 @@ function PromotionsTab() {
         {/* Search */}
         <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
           <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="ค้นหาโปรโมชั่น...."
+            placeholder={t("owner_promo_search_ph")}
             className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
           <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
             <Search className="size-4 text-white" />
@@ -12080,11 +12657,132 @@ function PromotionsTab() {
   );
 }
 
+/* ========== MOBILE DRAWER (mirrors customer end-drawer style) ========== */
+function OwnerMobileDrawer({ active, currentTab, onSelect, onClose }: {
+  active: OwnerTab;
+  currentTab: OwnerTab;
+  onSelect: (t: OwnerTab) => void;
+  onClose: () => void;
+}) {
+  const { t } = useLanguage();
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ products: true, reports: false });
+  const toggle = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
+
+  // Translate parent labels (matches Sidebar.labelMap)
+  const labelMap: Record<string, string> = {
+    overview:          t("owner_sidebar_dashboard"),
+    orders:            t("owner_sidebar_orders"),
+    products:          t("owner_sidebar_products"),
+    flash_sale:        t("owner_sidebar_flash_sale"),
+    promotions:        t("owner_sidebar_promotions"),
+    coupons:           t("owner_sidebar_coupons"),
+    reports:           t("owner_sidebar_reports"),
+    report_sales:      t("owner_sidebar_report_sales"),
+    report_customers:  t("owner_sidebar_report_customers"),
+    report_products:   t("owner_sidebar_report_products"),
+    report_market:     t("owner_sidebar_report_market"),
+    finance:           t("owner_sidebar_finance"),
+    complaints:        t("owner_sidebar_complaints"),
+  };
+  const childLabel = (id: string, fallback: string) =>
+    id === "products" ? t("owner_sidebar_manage_products") : (labelMap[id] ?? fallback);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="md:hidden fixed inset-0 z-[60] flex">
+      <motion.aside
+        initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+        transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+        className="relative w-[86vw] max-w-[360px] h-full bg-white shadow-[12px_0_40px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden">
+        {/* Gradient header */}
+        <div className="relative overflow-hidden px-5 py-4 flex items-center justify-between"
+          style={{ background: "linear-gradient(135deg, #46c474 0%, #319754 55%, #1d5b32 100%)" }}>
+          <div className="absolute -top-6 -right-6 size-[120px] rounded-full bg-white/10 blur-2xl pointer-events-none" />
+          <div className="relative flex items-center gap-2.5">
+            <img src={imgLogo} className="size-[38px] rounded-full bg-white/95 p-1 ring-1 ring-white/30 object-contain" alt="MetaHerb" />
+            <div className="leading-tight">
+              <p className={`${fontBold} text-white text-[15px]`} style={{ fontWeight: 700 }}>METAHERB</p>
+              <p className={`${font} text-white/80 text-[11px]`}>{active === "overview" ? t("admin_topbar_overview") : (labelMap[active] ?? t("admin_topbar_overview"))}</p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="ปิด"
+            className="relative size-[36px] rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-white transition-all">
+            <X className="size-[18px]" strokeWidth={2.4} />
+          </button>
+        </div>
+
+        {/* Scrollable body — same MenuBtn-pill aesthetic as the desktop Sidebar */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5">
+          {sidebarItems.map((item) => {
+            const itemLabel = labelMap[item.id] ?? item.label;
+            if (!item.children) {
+              return (
+                <MenuBtn key={item.id}
+                  isActive={active === item.id}
+                  icon={item.icon}
+                  label={itemLabel}
+                  onClick={() => { onSelect(item.id); onClose(); }}
+                  collapsed={false}
+                />
+              );
+            }
+            const groupActive = item.children.some((c) => c.id === active);
+            return (
+              <div key={item.id} className="space-y-2.5">
+                <MenuBtn isActive={groupActive} icon={item.icon} label={itemLabel}
+                  onClick={() => toggle(item.id)}
+                  hasArrow expanded={expanded[item.id]} collapsed={false}
+                />
+                <AnimatePresence initial={false}>
+                  {expanded[item.id] && (
+                    <motion.div
+                      key="submenu"
+                      initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                      className="overflow-hidden">
+                      <div className="rounded-[16px] border border-[#f5f5f5] p-2.5 space-y-2.5">
+                        {item.children.map((child) => {
+                          const isChildActive = active === child.id || currentTab === child.id;
+                          const cLabel = childLabel(child.id, child.label);
+                          return (
+                            <MenuBtn key={child.id}
+                              isActive={isChildActive}
+                              icon={childIconMap[child.id] || Package}
+                              label={cLabel}
+                              onClick={() => { onSelect(child.id as OwnerTab); onClose(); }}
+                              collapsed={false}
+                            />
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+
+          {/* Complaints — standalone (matches Sidebar's structure) */}
+          <MenuBtn isActive={active === "complaints" || active === "complaint_detail"}
+            icon={AlertTriangle}
+            label={t("owner_sidebar_complaints")}
+            onClick={() => { onSelect("complaints"); onClose(); }}
+            collapsed={false}
+          />
+        </div>
+      </motion.aside>
+      <div onClick={onClose} className="flex-1 bg-black/45 backdrop-blur-[2px]" />
+    </motion.div>
+  );
+}
+
 /* ========== MAIN ========== */
 export function OwnerDashboard() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<OwnerTab>("overview");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   const [selectedComplaintId, setSelectedComplaintId] = useState("CPL-001");
   const [flashEventIsNewJoin, setFlashEventIsNewJoin] = useState(false);
   const [selectedFlashEvent, setSelectedFlashEvent] = useState<FlashEvent | null>(null);
@@ -12129,13 +12827,33 @@ export function OwnerDashboard() {
 
   return (
     <div className="flex h-full overflow-hidden relative">
-      {!sidebarCollapsed && (
-        <div className="fixed inset-0 bg-black/30 z-20 md:hidden" onClick={() => setSidebarCollapsed(true)} />
-      )}
-
-      <div className={`${sidebarCollapsed ? "hidden md:block" : "fixed inset-y-0 left-0 md:static md:inset-auto z-30 md:z-auto"} h-full md:overflow-y-auto shrink-0 transition-all duration-300`}>
+      {/* Desktop: persistent sidebar inline */}
+      <div className="hidden md:block h-full md:overflow-y-auto shrink-0">
         <Sidebar active={sidebarActive} onSelect={handleSelect} collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
       </div>
+
+      {/* Mobile: start drawer — same visual language as the customer end drawer */}
+      <AnimatePresence>
+        {!sidebarCollapsed && (
+          <OwnerMobileDrawer
+            active={sidebarActive}
+            currentTab={activeTab}
+            onSelect={(t) => { handleSelect(t); }}
+            onClose={() => setSidebarCollapsed(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile floating menu button */}
+      {sidebarCollapsed && (
+        <button
+          onClick={() => setSidebarCollapsed(false)}
+          className="md:hidden fixed bottom-4 left-4 z-40 size-12 rounded-full bg-[#319754] text-white shadow-lg flex items-center justify-center hover:bg-[#267a43] active:scale-95 transition-all"
+          aria-label="Open menu"
+        >
+          <Menu className="size-5" />
+        </button>
+      )}
 
       {/* Content — only this area scrolls, sidebar stays fixed */}
       <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">

@@ -99,17 +99,17 @@ export function LoginPage() {
           </div>
 
           {/* Social buttons — horizontal row of 3 */}
-          <div className="flex gap-4 items-start w-full">
+          <div className="flex gap-2 sm:gap-4 items-stretch w-full">
             {[
               { img: imgGoogle, label: "Google" },
               { img: imgFacebook, label: "Facebook" },
               { img: imgLine, label: "Line" },
             ].map((s) => (
               <button key={s.label}
-                className={`flex-1 border border-[#d4d4d4] flex gap-2 items-center justify-center h-10 px-4 sm:px-6 rounded-full ${font} text-[12px] text-[#525252] cursor-pointer hover:bg-gray-50 transition-colors`}
+                className={`flex-1 min-w-0 border border-[#d4d4d4] flex gap-1.5 sm:gap-2 items-center justify-center h-10 px-2 sm:px-6 rounded-full ${font} text-[11px] sm:text-[12px] text-[#525252] cursor-pointer hover:bg-gray-50 transition-colors`}
                 style={{ fontWeight: 500 }}>
-                <img src={s.img} className="size-5" alt="" />
-                <span>{s.label}</span>
+                <img src={s.img} className="size-4 sm:size-5 shrink-0" alt="" />
+                <span className="truncate">{s.label}</span>
               </button>
             ))}
           </div>

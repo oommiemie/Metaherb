@@ -2,16 +2,23 @@ import { Outlet, useNavigate, useLocation } from "react-router";
 import { useAuth } from "../store/AuthContext";
 import { useCart } from "../store/CartContext";
 import type { CartItem } from "../store/CartContext";
+import { useChat } from "../store/ChatContext";
 import { useOrders } from "../store/OrderContext";
 import { useNotifications } from "../store/NotificationContext";
 import type { Notification } from "../store/NotificationContext";
 import { useWishlist } from "../store/WishlistContext";
-import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, Info, BarChart3, DollarSign, Users, Image, Settings, Phone, Wallet, ClipboardCheck, Truck, PackageCheck, Mail, Leaf, ShieldCheck } from "lucide-react";
+import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, MessageCircle, Info, BarChart3, DollarSign, Users, Image, Settings, Phone, Wallet, ClipboardCheck, Truck, PackageCheck, Mail, Leaf, ShieldCheck } from "lucide-react";
 
 const ShieldCheckLite = () => <ShieldCheck className="size-[12px] text-[#46c474]" strokeWidth={2.4} />;
 import { NotificationDropdown } from "./NotificationDropdown";
 import { ChatModal } from "./ChatModal";
+import { AIAssistantBubble, AIAssistantPanel } from "./AIAssistant";
 import imgLogo from "../../assets/logo.png";
+import imgQRCode from "../../assets/QRcordline.png";
+import imgLeafA from "../../assets/herb-leaf-a.png";
+import imgLeafB from "../../assets/herb-leaf-b.png";
+import imgLeafC from "../../assets/herb-leaf-c.png";
+import imgLeafD from "../../assets/herb-leaf-d.png";
 import imgBell from "figma:asset/bc0647483cfb5a707f778cc18a602a7932c0287f.png";
 import imgCart from "figma:asset/e7332f142579e51e8632e5d3048cd86f0f80158a.png";
 import imgAvatar from "figma:asset/02fc4d2560c804d8d3f2f8e525b1926bf3ef0ac2.png";
@@ -21,14 +28,44 @@ import imgOrderVerify from "figma:asset/bc3856a249e9261822188ed229ddd0e2ad6d0b2d
 import imgOrderShip from "figma:asset/6fe3df791a7ffa4eb26dc3d280886d11308e2b73.png";
 import imgOrderDone from "figma:asset/affa7b2c27f58769e6b6bc5c0bac9bbeee21a3ef.png";
 import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
-import { products } from "../data/products";
+import { useProducts } from "../store/ProductsContext";
+import { useSiteInfo } from "../store/SiteInfoContext";
 import { useLanguage, LANG_OPTIONS } from "../store/LanguageContext";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
 const APP_VERSION = "1.0.0";
+
+/* ===== Botanical leaf SVG — realistic herb leaf with veins (footer watermark) ===== */
+function BotanicalLeaf({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 100 140" className={className} style={style} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+      {/* Stem */}
+      <path d="M50 138 C50 120, 50 100, 50 80" strokeWidth="1.2" />
+      {/* Leaf body — pointed oval (lanceolate) */}
+      <path d="M50 4 C28 22, 12 50, 14 80 C16 100, 30 118, 50 124 C70 118, 84 100, 86 80 C88 50, 72 22, 50 4 Z" strokeWidth="1.3" />
+      {/* Central vein (midrib) */}
+      <path d="M50 8 L50 122" strokeWidth="1" />
+      {/* Side veins — left side (curving down-out from midrib) */}
+      <path d="M50 20 Q35 28, 20 38" strokeWidth="0.7" />
+      <path d="M50 36 Q32 46, 16 56" strokeWidth="0.7" />
+      <path d="M50 54 Q30 64, 15 76" strokeWidth="0.7" />
+      <path d="M50 72 Q32 82, 20 92" strokeWidth="0.7" />
+      <path d="M50 90 Q35 98, 26 106" strokeWidth="0.7" />
+      <path d="M50 106 Q40 112, 34 118" strokeWidth="0.7" />
+      {/* Side veins — right side */}
+      <path d="M50 20 Q65 28, 80 38" strokeWidth="0.7" />
+      <path d="M50 36 Q68 46, 84 56" strokeWidth="0.7" />
+      <path d="M50 54 Q70 64, 85 76" strokeWidth="0.7" />
+      <path d="M50 72 Q68 82, 80 92" strokeWidth="0.7" />
+      <path d="M50 90 Q65 98, 74 106" strokeWidth="0.7" />
+      <path d="M50 106 Q60 112, 66 118" strokeWidth="0.7" />
+    </svg>
+  );
+}
 
 const avatarByRole: Record<string, string> = {
   user: "https://images.unsplash.com/photo-1718307701476-bf46ac964396?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0aGFpJTIwd29tYW4lMjBwb3J0cmFpdCUyMGZyaWVuZGx5fGVufDF8fHx8MTc3Mzg4ODExMnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
@@ -39,6 +76,7 @@ const avatarByRole: Record<string, string> = {
 /* ========== SEARCH with suggestions ========== */
 function SearchBar({ className = "" }: { className?: string }) {
   const navigate = useNavigate();
+  const { products } = useProducts();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [searchHistory] = useState(["ชาออร์แกนิก", "น้ำผึ้ง", "สมุนไพร", "กาแฟดริป"]);
@@ -484,8 +522,32 @@ export function Layout() {
   const { user, isAuthenticated } = useAuth();
   const { items: cartItems, total: cartTotal } = useCart();
   const cartLineCount = cartItems.length;
+  const { totalUnread: chatUnread, openChatList } = useChat();
   const { notifications, unreadCount } = useNotifications();
   const { wishlistCount } = useWishlist();
+  const { products } = useProducts();
+  const { info: siteInfo } = useSiteInfo();
+
+  // Surface localStorage failures (mostly quota — e.g. user uploaded a banner
+  // image that pushes the store past ~5MB). Without this they'd silently
+  // disappear on reload.
+  useEffect(() => {
+    const onStorageError = (e: any) => {
+      const kind = e?.detail?.kind;
+      const key = e?.detail?.key as string | undefined;
+      if (kind === "quota") {
+        toast.error("พื้นที่จัดเก็บเต็ม — การเปลี่ยนแปลงนี้จะหายไปเมื่อรีโหลด", {
+          description: key ? `key: ${key} · ลองลบรูปเก่าหรือลดขนาดรูปก่อนอัปโหลดใหม่` : undefined,
+        });
+      } else if (kind === "unknown") {
+        toast.error("บันทึกลง storage ไม่สำเร็จ", {
+          description: key ? `key: ${key}` : undefined,
+        });
+      }
+    };
+    window.addEventListener("metaherb:storage-error", onStorageError);
+    return () => window.removeEventListener("metaherb:storage-error", onStorageError);
+  }, []);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -566,6 +628,9 @@ export function Layout() {
   const isOwner = isAuthenticated && user?.role === "owner";
   const isAdmin = isAuthenticated && user?.role === "admin";
   const isStaffRole = isOwner || isAdmin;
+  // The staff shell (locked h-screen + internal scrolling) only applies inside the dashboards themselves.
+  // On customer-facing pages (e.g. /shop/:id, /about, /products) the page needs normal page-level scrolling.
+  const useStaffShell = isStaffRole && (location.pathname.startsWith("/owner") || location.pathname.startsWith("/admin"));
 
   const userMenuItems = [
     { label: t("menu_home"),     path: "/" },
@@ -595,14 +660,18 @@ export function Layout() {
     setMobileSearchOpen(false);
   }, [location.pathname]);
 
-  // Auto-redirect owner/admin to their dashboard on login
+  // Auto-redirect owner/admin to their dashboard ONLY when they land on the
+  // root or on a checkout path that doesn't make sense for them. Catalogue
+  // pages (/products, /product/:id, /blog, /shop/*) stay viewable so they
+  // can preview what customers see — owner can't verify a product they just
+  // added if the storefront keeps bouncing them back to the dashboard.
   useEffect(() => {
     if (!isAuthenticated) return;
-    const shoppingPaths = ["/", "/products", "/market", "/cart", "/payment", "/orders", "/wishlist", "/coupons", "/my-coupons", "/blog"];
-    const isOnShoppingPage = shoppingPaths.some((p) => location.pathname === p) || location.pathname.startsWith("/product/") || location.pathname.startsWith("/verify-payment/") || location.pathname.startsWith("/blog/");
-    if (isOwner && isOnShoppingPage) {
+    const dashboardOnlyPaths = ["/", "/cart", "/payment", "/orders", "/wishlist", "/coupons", "/my-coupons"];
+    const isOnDashboardOnly = dashboardOnlyPaths.some((p) => location.pathname === p) || location.pathname.startsWith("/verify-payment/");
+    if (isOwner && isOnDashboardOnly) {
       navigate("/owner", { replace: true });
-    } else if (isAdmin && isOnShoppingPage) {
+    } else if (isAdmin && isOnDashboardOnly) {
       navigate("/admin", { replace: true });
     }
   }, [isAuthenticated, user?.role, location.pathname]);
@@ -621,14 +690,19 @@ export function Layout() {
    *     </wrapper>
    *   </header>
    */
+  // Pages whose own hero banner extends behind the appbar — drop the green strip so the banner shows through.
+  const hasHeroBanner = location.pathname === "/about" || location.pathname.startsWith("/shop/");
+
   const NonStaffHeader = (
     <header className="sticky top-0 z-50">
-      {/* Green strip — 80px tall, behind the pill (subtle gradient + inner highlight) */}
-      <div className="absolute inset-x-0 top-0 h-[80px] backdrop-blur-[8px] shadow-[inset_0_-1px_0_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.12)]"
-        style={{ background: "linear-gradient(180deg, #3aa55e 0%, #319754 55%, #287745 100%)" }} />
+      {/* Green strip — 80px tall, behind the pill. Hidden on hero pages so their banner can extend behind the appbar. */}
+      {!hasHeroBanner && (
+        <div className="absolute inset-x-0 top-0 h-[64px] md:h-[80px] backdrop-blur-[8px] shadow-[inset_0_-1px_0_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.12)]"
+          style={{ background: "linear-gradient(180deg, #3aa55e 0%, #319754 55%, #287745 100%)" }} />
+      )}
 
-      {/* Content wrapper — pt-[20px] then flex-col gap-[6px] items-end */}
-      <div className="relative w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 pt-[20px] flex flex-col gap-[6px] items-end">
+      {/* Content wrapper — pt set so pill half-overlaps the green strip on both mobile + desktop */}
+      <div className="relative w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-12 pt-[38px] md:pt-[20px] flex flex-col gap-[6px] items-end">
         {/* Lang row — sits inside the green strip */}
         <div className="hidden md:flex w-full items-center justify-end px-[24px]">
           <div ref={langRef} className="relative">
@@ -666,7 +740,7 @@ export function Layout() {
 
         {/* Pill — overlaps the bottom of the green strip */}
         <div ref={pillRef} className="relative w-full">
-          <div className="w-full backdrop-blur-[14px] rounded-[100px] py-2 px-3 md:py-[14px] md:px-[16px] min-h-[64px] md:min-h-[76px] flex items-center ring-1 ring-white/60"
+          <div className="w-full backdrop-blur-[14px] rounded-[100px] py-2 px-3 md:py-[14px] md:px-[16px] min-h-[60px] md:min-h-[76px] flex items-center ring-1 ring-white/60"
             style={{
               background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)",
               boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(255,255,255,0.5) inset, 0 2px 6px rgba(0,0,0,0.06), 0 12px 28px -8px rgba(20,63,36,0.18)"
@@ -714,19 +788,25 @@ export function Layout() {
               exit={{ opacity: 0, scale: 0.97, y: 6 }}
               transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
               className="w-full h-full flex items-center justify-between">
-          {/* Mobile menu */}
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-1.5 cursor-pointer">
-            {mobileMenuOpen ? <X className="size-6 text-gray-600" /> : <Menu className="size-6 text-gray-600" />}
-          </button>
-
           {/* Logo group — gap-[10px] (+ role badge for staff) */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="group/logo flex items-center gap-2 sm:gap-[10px] cursor-pointer transition-transform duration-300 hover:scale-[1.03]"
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 min-w-0">
+            <div className="group/logo flex items-center gap-1.5 sm:gap-[10px] cursor-pointer transition-transform duration-300 hover:scale-[1.03]"
               onClick={() => navigate(isOwner ? "/owner" : isAdmin ? "/admin" : "/")}>
-              <img src={imgLogo} className="shrink-0 size-[40px] sm:size-[48px] transition-transform duration-500 group-hover/logo:rotate-[8deg]" alt="MetaHerb" />
-              <span className={`${fontBold} text-[18px] sm:text-[24px] whitespace-nowrap leading-none tracking-tight`} style={{ fontWeight: 700 }}>
-                <span className="text-[#ed1c24]">META</span>
-                <span className="text-[#f7931d]">HERB</span>
+              <img
+                src={siteInfo.logoUrl?.trim() ? siteInfo.logoUrl : imgLogo}
+                className="shrink-0 size-[40px] sm:size-[48px] transition-transform duration-500 group-hover/logo:rotate-[8deg] object-contain"
+                alt={siteInfo.siteNameEn || "MetaHerb"} />
+              <span className={`${fontBold} text-[17px] sm:text-[24px] whitespace-nowrap leading-none tracking-tight`} style={{ fontWeight: 700 }}>
+                {(() => {
+                  const name = (siteInfo.siteNameEn || "METAHERB").toUpperCase();
+                  const split = Math.ceil(name.length / 2);
+                  return (
+                    <>
+                      <span className="text-[#ed1c24]">{name.slice(0, split)}</span>
+                      <span className="text-[#f7931d]">{name.slice(split)}</span>
+                    </>
+                  );
+                })()}
               </span>
             </div>
             {/* Role badge — only for staff */}
@@ -778,12 +858,17 @@ export function Layout() {
           </nav>
 
           {/* Right group — gap-[16px] */}
-          <div className="flex items-center gap-2 sm:gap-[16px] justify-end shrink-0">
-            {/* Mobile search toggle (customer only) */}
+          <div className="flex items-center gap-1.5 sm:gap-[16px] justify-end shrink-0">
+            {/* Mobile search — opens the SAME pill-morph search as desktop */}
             {!isStaffRole && (
-              <button onClick={() => setMobileSearchOpen(!mobileSearchOpen)} className="md:hidden p-1 cursor-pointer">
-                <Search className="size-5 text-gray-600" />
-              </button>
+              <motion.button onClick={() => setPillSearchOpen(true)}
+                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.08 }}
+                transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                className="md:hidden group/icon size-[40px] rounded-full flex items-center justify-center cursor-pointer relative bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
+                aria-label={t("search_aria")}>
+                <Search className="size-[18px] text-[#1d5b32]" strokeWidth={2} />
+              </motion.button>
             )}
 
             {/* Desktop search — morphs the pill into a search bar (customer only) */}
@@ -814,24 +899,24 @@ export function Layout() {
                 )}
               </button>
             </div>
-            {/* Bell — mobile */}
-            <div className="relative sm:hidden">
-              <button onClick={() => { if (isAuthenticated) { setShowNotifications(!showNotifications); setShowProfile(false); } else { navigate("/login"); } }}
-                className={`group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative transition-all duration-200 active:scale-95 ${
-                  showNotifications
-                    ? "bg-[#267a43] shadow-[0_6px_16px_-4px_rgba(49,151,84,0.45)]"
-                    : "bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
-                }`}>
-                <Bell className={`size-[16px] transition-colors ${showNotifications ? "text-white" : "text-[#1d5b32]"}`} strokeWidth={2} />
-                {isAuthenticated && unreadCount > 0 && (
-                  <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white shadow-[0_2px_6px_rgba(239,56,60,0.5)] z-10"
-                    style={{ background: "linear-gradient(135deg, #ff8a8a, #ef4444)", fontWeight: 700 }}>
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-              {showNotifications && isAuthenticated && <NotificationDropdown onClose={() => setShowNotifications(false)} />}
-            </div>
+
+            {/* Chat — desktop (same icon-button style as bell) */}
+            {!isStaffRole && (
+              <div className="hidden sm:block">
+                <button onClick={() => { if (isAuthenticated) openChatList(); else navigate("/login"); }}
+                  aria-label="แชทกับร้านค้า"
+                  className="group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative transition-all duration-200 hover:-translate-y-[1px] active:scale-95 active:translate-y-0 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] hover:bg-[#267a43] hover:shadow-[0_6px_16px_-4px_rgba(49,151,84,0.45)]">
+                  <MessageCircle className="size-[16px] text-[#1d5b32] group-hover/icon:text-white transition-colors" strokeWidth={2} />
+                  {isAuthenticated && chatUnread > 0 && (
+                    <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white shadow-[0_2px_6px_rgba(239,56,60,0.5)] z-10"
+                      style={{ background: "linear-gradient(135deg, #ff8a8a, #ef4444)", fontWeight: 700 }}>
+                      {chatUnread}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
+            {/* Bell + Cart on mobile live inside the end drawer now — keeps the appbar light on phones. */}
 
             {/* Cart — desktop (customer only, hover preview rendered under pill) */}
             {!isStaffRole && (
@@ -841,21 +926,6 @@ export function Layout() {
                   onMouseLeave={() => { if (isAuthenticated) closeCart(); }}
                   className="group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] hover:bg-[#267a43] hover:shadow-[0_6px_16px_-4px_rgba(49,151,84,0.45)] hover:-translate-y-[1px] active:scale-95 active:translate-y-0 transition-all duration-200">
                   <ShoppingCart className="size-[16px] text-[#1d5b32] group-hover/icon:text-white transition-colors" strokeWidth={2} />
-                  {isAuthenticated && cartLineCount > 0 && (
-                    <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white shadow-[0_2px_6px_rgba(49,151,84,0.5)] z-10"
-                      style={{ background: "linear-gradient(135deg, #46c474, #267a43)", fontWeight: 700 }}>
-                      {cartLineCount}
-                    </span>
-                  )}
-                </button>
-              </div>
-            )}
-            {/* Cart — mobile (customer only) */}
-            {!isStaffRole && (
-              <div className="relative sm:hidden">
-                <button onClick={() => navigate("/cart")}
-                  className="group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] active:scale-95 transition-all duration-200">
-                  <ShoppingCart className="size-[16px] text-[#1d5b32]" strokeWidth={2} />
                   {isAuthenticated && cartLineCount > 0 && (
                     <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white shadow-[0_2px_6px_rgba(49,151,84,0.5)] z-10"
                       style={{ background: "linear-gradient(135deg, #46c474, #267a43)", fontWeight: 700 }}>
@@ -893,11 +963,45 @@ export function Layout() {
               </div>
             ) : (
               <button onClick={() => navigate("/login")}
-                className={`border border-[#319754] text-[#1d5b32] h-[40px] sm:h-[48px] px-4 sm:w-[120px] rounded-[100px] text-[13px] sm:text-[14px] ${font} cursor-pointer hover:bg-[#319754]/5 flex items-center justify-center`}
+                className={`hidden md:flex border border-[#319754] text-[#1d5b32] h-[36px] px-4 rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#319754] hover:text-white hover:border-[#287745] hover:shadow-[0_2px_8px_-2px_rgba(49,151,84,0.45)] items-center justify-center transition-colors`}
                 style={{ fontWeight: 500 }}>
-                <span className="leading-none">{t("button_login")}</span>
+                <span className="leading-none whitespace-nowrap">{t("button_login")}</span>
               </button>
             )}
+
+            {/* Mobile menu — at the end (right side) of the pill, with morph animation */}
+            <motion.button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              whileTap={{ scale: 0.9 }}
+              whileHover={{ scale: 1.08 }}
+              transition={{ type: "spring", stiffness: 400, damping: 18 }}
+              className={`md:hidden size-[40px] rounded-full flex items-center justify-center cursor-pointer relative transition-colors duration-200 ${
+                mobileMenuOpen
+                  ? "bg-[#267a43] text-white shadow-[0_4px_12px_-2px_rgba(49,151,84,0.45)]"
+                  : "bg-white text-[#1d5b32] shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
+              }`}
+              aria-label="Menu">
+              <AnimatePresence mode="wait" initial={false}>
+                {mobileMenuOpen ? (
+                  <motion.span key="x"
+                    initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+                    animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                    exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute inset-0 flex items-center justify-center">
+                    <X className="size-[18px]" strokeWidth={2.4} />
+                  </motion.span>
+                ) : (
+                  <motion.span key="menu"
+                    initial={{ rotate: 90, opacity: 0, scale: 0.6 }}
+                    animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                    exit={{ rotate: -90, opacity: 0, scale: 0.6 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute inset-0 flex items-center justify-center">
+                    <Menu className="size-[18px]" strokeWidth={2.4} />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
           </div>
             </motion.div>
           )}
@@ -1000,37 +1104,185 @@ export function Layout() {
         </div>
       )}
 
-      {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden relative bg-white border-t border-gray-100 shadow-lg">
-          <div className="flex flex-col py-2">
-            {[...userMenuItems, { label: t("menu_about"), path: "/about" }].map((item) => (
-              <button key={item.path} onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
-                className={`px-6 py-3 text-left text-[14px] ${font} cursor-pointer ${
-                  location.pathname === item.path ? "text-[#319754] bg-[#319754]/5" : "text-gray-700 hover:bg-gray-50"
-                }`}>
-                {item.label}
-              </button>
-            ))}
-            <button onClick={() => navigate("/wishlist")}
-              className={`px-6 py-3 text-left text-[14px] ${font} cursor-pointer text-gray-700 hover:bg-gray-50 flex items-center gap-2`}>
-              <Heart className="size-4" /> สินค้าที่ชอบ
-              {wishlistCount > 0 && <span className="bg-[#ff383c] text-white text-[10px] px-1.5 rounded-full">{wishlistCount}</span>}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Mobile menu — end drawer slides in from the right with backdrop */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 z-[60] flex">
+            {/* Backdrop */}
+            <div onClick={() => setMobileMenuOpen(false)}
+              className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
+
+            {/* Drawer panel */}
+            <motion.aside
+              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+              transition={{ duration: 0.32, ease: [0.32, 0.72, 0, 1] }}
+              className="relative ml-auto w-[86vw] max-w-[360px] h-full bg-white shadow-[-12px_0_40px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden">
+              {/* Drawer header — gradient strip + close */}
+              <div className="relative overflow-hidden px-5 py-4 flex items-center justify-between"
+                style={{ background: "linear-gradient(135deg, #46c474 0%, #319754 55%, #1d5b32 100%)" }}>
+                <div className="absolute -top-6 -right-6 size-[120px] rounded-full bg-white/10 blur-2xl pointer-events-none" />
+                <div className="relative flex items-center gap-2.5">
+                  <img src={siteInfo.logoUrl?.trim() ? siteInfo.logoUrl : imgLogo}
+                    className="size-[38px] rounded-full bg-white/95 p-1 ring-1 ring-white/30 object-contain"
+                    alt={siteInfo.siteNameEn || "MetaHerb"} />
+                  <div className="leading-tight">
+                    <p className={`${fontBold} text-white text-[15px]`} style={{ fontWeight: 700 }}>{siteInfo.siteNameEn || "METAHERB"}</p>
+                    <p className={`${font} text-white/80 text-[11px]`}>{siteInfo.tagline || ""}</p>
+                  </div>
+                </div>
+                <button onClick={() => setMobileMenuOpen(false)} aria-label={t("close_aria")}
+                  className="relative size-[36px] rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-white transition-all">
+                  <X className="size-[18px]" strokeWidth={2.4} />
+                </button>
+              </div>
+
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto">
+                {/* Quick actions — bell + cart tiles, replacing the appbar icons on mobile */}
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeOut", delay: 0.06 }}
+                  className="px-3 pt-3 grid grid-cols-2 gap-2">
+                  <button onClick={() => {
+                    if (!isAuthenticated) { setMobileMenuOpen(false); navigate("/login"); return; }
+                    setMobileMenuOpen(false);
+                    setTimeout(() => setShowNotifications(true), 280);
+                  }}
+                    className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-2xl bg-[#fafafa] border border-gray-100 cursor-pointer active:scale-[0.97] hover:bg-white hover:border-[#319754]/30 transition-all`}>
+                    <span className="relative size-[36px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0">
+                      <Bell className="size-[18px] text-[#1d5b32]" strokeWidth={2} />
+                      {isAuthenticated && unreadCount > 0 && (
+                        <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white"
+                          style={{ background: "linear-gradient(135deg, #ff8a8a, #ef4444)", fontWeight: 700 }}>
+                          {unreadCount}
+                        </span>
+                      )}
+                    </span>
+                    <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 500 }}>{t("button_notifications") || "การแจ้งเตือน"}</span>
+                  </button>
+                  {!isStaffRole && (
+                    <button onClick={() => { setMobileMenuOpen(false); navigate("/cart"); }}
+                      className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-2xl bg-[#fafafa] border border-gray-100 cursor-pointer active:scale-[0.97] hover:bg-white hover:border-[#319754]/30 transition-all`}>
+                      <span className="relative size-[36px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0">
+                        <ShoppingCart className="size-[18px] text-[#1d5b32]" strokeWidth={2} />
+                        {isAuthenticated && cartLineCount > 0 && (
+                          <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white"
+                            style={{ background: "linear-gradient(135deg, #46c474, #267a43)", fontWeight: 700 }}>
+                            {cartLineCount}
+                          </span>
+                        )}
+                      </span>
+                      <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 500 }}>{t("menu_cart") || "รถเข็น"}</span>
+                    </button>
+                  )}
+                  {!isStaffRole && (
+                    <button onClick={() => {
+                      if (!isAuthenticated) { setMobileMenuOpen(false); navigate("/login"); return; }
+                      setMobileMenuOpen(false);
+                      setTimeout(() => openChatList(), 280);
+                    }}
+                      className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-2xl bg-[#fafafa] border border-gray-100 cursor-pointer active:scale-[0.97] hover:bg-white hover:border-[#319754]/30 transition-all col-span-2`}>
+                      <span className="relative size-[36px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0">
+                        <MessageCircle className="size-[18px] text-[#1d5b32]" strokeWidth={2} />
+                        {isAuthenticated && chatUnread > 0 && (
+                          <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white"
+                            style={{ background: "linear-gradient(135deg, #ff8a8a, #ef4444)", fontWeight: 700 }}>
+                            {chatUnread}
+                          </span>
+                        )}
+                      </span>
+                      <span className={`${font} text-[13px] text-gray-800`} style={{ fontWeight: 500 }}>แชทกับร้านค้า</span>
+                    </button>
+                  )}
+                </motion.div>
+
+                <div className="h-px bg-gray-100 mx-5 my-3" />
+
+                <motion.nav
+                  initial="hidden" animate="visible" exit="hidden"
+                  variants={{
+                    hidden: { transition: { staggerChildren: 0.02, staggerDirection: -1 } },
+                    visible: { transition: { staggerChildren: 0.04, delayChildren: 0.12 } },
+                  }}
+                  className="flex flex-col pb-2">
+                  {(isStaffRole ? menuItems : [...userMenuItems, { label: t("menu_about"), path: "/about" }]).map((item) => {
+                    const active = location.pathname === item.path;
+                    return (
+                      <motion.button key={item.path} onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
+                        variants={{ hidden: { opacity: 0, x: 20 }, visible: { opacity: 1, x: 0 } }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        whileTap={{ scale: 0.97 }}
+                        className={`group/mitem mx-3 my-0.5 px-4 py-3 rounded-2xl text-left text-[15px] ${font} cursor-pointer transition-colors flex items-center gap-3 ${
+                          active ? "bg-[#319754]/10 text-[#1d5b32]" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                        style={{ fontWeight: active ? 600 : 500 }}>
+                        <span className={`size-[8px] rounded-full transition-all ${
+                          active ? "bg-[#319754] shadow-[0_0_8px_rgba(49,151,84,0.6)]" : "bg-gray-300 group-hover/mitem:bg-[#319754]/40"
+                        }`} />
+                        <span className="group-hover/mitem:translate-x-0.5 transition-transform">{item.label}</span>
+                      </motion.button>
+                    );
+                  })}
+
+                  {/* Language section */}
+                  <div className="h-px bg-gray-100 mx-5 my-3" />
+                  <motion.div
+                    variants={{ hidden: { opacity: 0, x: 16 }, visible: { opacity: 1, x: 0 } }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="px-5">
+                    <p className={`${font} text-[11px] text-gray-400 uppercase tracking-[0.15em] mb-2`} style={{ fontWeight: 600 }}>Language</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {LANG_OPTIONS.map((opt) => {
+                        const isActive = opt.code === lang;
+                        return (
+                          <button key={opt.code} onClick={() => { setLang(opt.code); setMobileMenuOpen(false); }}
+                            className={`${font} flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] cursor-pointer transition-all active:scale-95 ${
+                              isActive
+                                ? "text-white shadow-[0_3px_8px_-2px_rgba(49,151,84,0.4)]"
+                                : "bg-gray-100 text-gray-700 hover:bg-[#319754]/10 hover:text-[#319754]"
+                            }`}
+                            style={isActive
+                              ? { background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }
+                              : { fontWeight: 500 }}>
+                            <span className="text-[14px] leading-none">{opt.flag}</span>
+                            <span>{opt.native}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                </motion.nav>
+              </div>
+
+              {/* Sticky bottom — login CTA (when logged out) */}
+              {!isAuthenticated && (
+                <div className="border-t border-gray-100 p-4 bg-white">
+                  <motion.button onClick={() => { navigate("/login"); setMobileMenuOpen(false); }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`w-full h-[46px] rounded-full text-white text-[14px] ${font} cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_14px_-2px_rgba(49,151,84,0.4)] hover:shadow-[0_8px_20px_-4px_rgba(49,151,84,0.55)] transition-all`}
+                    style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }}>
+                    <User className="size-4" strokeWidth={2.2} /> {t("button_login")}
+                  </motion.button>
+                </div>
+              )}
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 
 
   return (
-    <div className={`flex flex-col w-full ${isStaffRole ? "h-screen overflow-hidden" : "min-h-screen"}`} style={{ backgroundColor: "#fafafa" }}>
+    <div className={`flex flex-col w-full ${useStaffShell ? "h-screen overflow-hidden" : "min-h-screen"}`} style={{ backgroundColor: "#fafafa" }}>
       {NonStaffHeader}
 
       {/* Content */}
-      <main className={`flex-1 ${isStaffRole ? "overflow-hidden min-h-0" : ""}`} style={{ backgroundColor: "#fafafa" }}>
-        <div className={isStaffRole ? "h-full" : ""}>
+      <main className={`flex-1 ${useStaffShell ? "overflow-hidden min-h-0" : ""}`} style={{ backgroundColor: "#fafafa" }}>
+        <div className={useStaffShell ? "h-full" : ""}>
           <Outlet />
         </div>
       </main>
@@ -1038,231 +1290,170 @@ export function Layout() {
       {/* Chat Modal - Shopee-style floating chat */}
       {isAuthenticated && <ChatModal />}
 
+      {/* AI Shopping Assistant — customer-facing pages only (not owner/admin dashboards) */}
+      {!isStaffRole && !useStaffShell && (
+        <>
+          <AIAssistantBubble />
+          <AIAssistantPanel />
+        </>
+      )}
+
       {/* Footer (user only) */}
       {!isStaffRole && (
-      <footer className="relative">
-        {/* Main dark footer with decorative pattern */}
-        <div className="relative overflow-hidden text-white pt-0 pb-0"
-          style={{ background: "linear-gradient(180deg, #1d5b32 0%, #143f24 60%, #0d2a17 100%)" }}>
-          {/* Decorative blobs */}
-          <div className="absolute top-20 -right-32 size-[420px] rounded-full bg-[#319754]/20 blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 -left-40 size-[500px] rounded-full bg-[#46c474]/10 blur-3xl pointer-events-none" />
-          {/* Subtle dot pattern */}
-          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-            style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+      <footer className="relative overflow-hidden text-white"
+        style={{ background: "linear-gradient(180deg, #143f24 0%, #0d2a17 70%, #07180e 100%)" }}>
+        {/* Top accent gradient line */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#46c474]/60 to-transparent" />
+        {/* Decorative blurred orbs */}
+        <div className="absolute top-10 left-1/4 size-[420px] rounded-full bg-[#319754]/18 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 size-[520px] rounded-full bg-[#46c474]/8 blur-3xl pointer-events-none" />
+        <img src={imgLeafD} alt="" aria-hidden className="absolute -top-8 right-[6%] size-[220px] opacity-[0.07] rotate-[18deg] pointer-events-none select-none" />
+        <img src={imgLeafA} alt="" aria-hidden className="absolute bottom-24 left-[4%] size-[180px] opacity-[0.06] -rotate-[35deg] pointer-events-none select-none" />
+        {/* Subtle dot pattern */}
+        <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
+          style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
-          {/* Main columns */}
-          <div className="relative max-w-[1440px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-5 lg:gap-6 px-4 sm:px-6 lg:px-12 py-10 sm:py-12">
-            {/* Brand column — full-width card with decorative accent */}
-            <div className="lg:col-span-4 relative flex flex-col gap-5 rounded-3xl overflow-hidden p-6 transition-all duration-300 hover:-translate-y-[2px]"
-              style={{
-                background: "linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 60%, rgba(70,196,116,0.06) 100%)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.1) inset, 0 12px 32px -12px rgba(0,0,0,0.4)",
-                borderTop: "1px solid rgba(255,255,255,0.12)",
-                borderLeft: "1px solid rgba(255,255,255,0.08)",
-                borderRight: "1px solid rgba(255,255,255,0.04)",
-                borderBottom: "1px solid rgba(255,255,255,0.04)",
-              }}>
-              {/* Decorative blob */}
-              <div className="absolute -top-12 -right-12 size-[180px] rounded-full bg-[#46c474]/12 blur-2xl pointer-events-none" />
-              <Leaf className="absolute -bottom-6 -right-4 size-[100px] text-white/[0.04] rotate-12 pointer-events-none" strokeWidth={1.2} />
+        <div className="relative max-w-[1440px] mx-auto flex flex-col gap-5 px-4 sm:px-6 lg:px-12 py-6">
+          {/* ===== TOP: brand row ===== */}
+          <div className="flex items-center gap-4">
+            <div className="size-[48px] sm:size-[56px] rounded-2xl bg-white p-1.5 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.45)] ring-1 ring-white/20 shrink-0">
+              <img src={siteInfo.logoUrl?.trim() ? siteInfo.logoUrl : imgLogo} className="w-full h-full object-contain" alt={siteInfo.siteNameEn || "MetaHerb"} />
+            </div>
+            <div className="min-w-0">
+              <h3 className={`${fontBold} text-[20px] sm:text-[22px] tracking-tight leading-none`} style={{ fontWeight: 800 }}>
+                {(() => {
+                  const name = (siteInfo.siteNameEn || "METAHERB").toUpperCase();
+                  const split = Math.ceil(name.length / 2);
+                  return (
+                    <>
+                      <span className="text-[#ff9b9b]">{name.slice(0, split)}</span>
+                      <span className="text-[#ffc070]">{name.slice(split)}</span>
+                    </>
+                  );
+                })()}
+              </h3>
+              <p className={`${font} text-[12px] sm:text-[13px] text-white/65 mt-1`}>{siteInfo.tagline || t("footer_tagline")}</p>
+            </div>
+          </div>
 
-              <div className="relative flex items-center gap-3.5">
-                <div className="relative size-[60px] rounded-2xl bg-white p-1.5 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.4)] rotate-[-4deg] ring-1 ring-white/40">
-                  <img src={imgLogo} className="w-full h-full" alt="MetaHerb" />
+          {/* ===== 3 BOX SECTIONS ===== */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Box 1: Contact */}
+            <div className="relative rounded-[20px] bg-gradient-to-br from-black/30 to-black/50 backdrop-blur-sm p-4 flex flex-col justify-center gap-2 hover:from-black/40 hover:to-black/60 transition-all overflow-hidden">
+              {/* Watermark — botanical leaf image */}
+              <img src={imgLeafA} alt="" aria-hidden className="absolute -bottom-6 -right-8 size-[140px] opacity-[0.12] rotate-[18deg] pointer-events-none select-none" />
+              <div className="absolute -top-8 -right-8 size-[120px] rounded-full bg-[#46c474]/10 blur-2xl pointer-events-none" />
+
+              <a href="https://maps.google.com" target="_blank" rel="noreferrer"
+                className="relative group flex items-start gap-2.5 -mx-1 px-1.5 py-1.5 rounded-lg text-white/85 hover:text-white hover:bg-white/[0.05] transition-all">
+                <div className="size-[26px] rounded-lg bg-[#46c474]/15 border border-[#46c474]/30 flex items-center justify-center shrink-0 group-hover:bg-[#46c474]/25 transition-colors">
+                  <MapPin className="size-[12px] text-[#46c474]" strokeWidth={2.4} />
                 </div>
-                <div>
-                  <span className={`${fontBold} text-[26px] tracking-wide block leading-none`} style={{ fontWeight: 700 }}>
-                    <span className="text-[#ff9b9b]">META</span><span className="text-[#ffc070]">HERB</span>
-                  </span>
-                  <p className={`${font} text-[10.5px] text-white/55 mt-1.5 tracking-[0.18em]`}>PURE • POTENT • NATURAL</p>
+                <span className={`${font} text-[12.5px] leading-[1.45] pt-0.5`}>{t("footer_address")}</span>
+              </a>
+              <a href="tel:0614213111"
+                className="relative group flex items-center gap-2.5 -mx-1 px-1.5 py-1.5 rounded-lg text-white/85 hover:text-white hover:bg-white/[0.05] transition-all">
+                <div className="size-[26px] rounded-lg bg-[#46c474]/15 border border-[#46c474]/30 flex items-center justify-center shrink-0 group-hover:bg-[#46c474]/25 transition-colors">
+                  <Phone className="size-[12px] text-[#46c474]" strokeWidth={2.4} />
                 </div>
-              </div>
+                <span className={`${font} text-[13px] tabular-nums`} style={{ fontWeight: 500 }}>06-1421-3111</span>
+              </a>
+              <a href="mailto:metaherb.herb@gmail.com"
+                className="relative group flex items-center gap-2.5 -mx-1 px-1.5 py-1.5 rounded-lg text-white/85 hover:text-white hover:bg-white/[0.05] transition-all">
+                <div className="size-[26px] rounded-lg bg-[#46c474]/15 border border-[#46c474]/30 flex items-center justify-center shrink-0 group-hover:bg-[#46c474]/25 transition-colors">
+                  <Mail className="size-[12px] text-[#46c474]" strokeWidth={2.4} />
+                </div>
+                <span className={`${font} text-[12.5px]`}>metaherb.herb@gmail.com</span>
+              </a>
+            </div>
 
-              <p className={`${font} relative text-[13px] text-white/75 leading-[1.75]`}>
-                ผลิตภัณฑ์สมุนไพรคุณภาพคัดสรรอย่างพิถีพิถัน ผสานภูมิปัญญาไทยกับมาตรฐานสากล ส่งตรงสุขภาพดีถึงคุณ
-              </p>
+            {/* Box 2: Links */}
+            <div className="relative rounded-[20px] bg-gradient-to-br from-black/30 to-black/50 backdrop-blur-sm p-4 flex flex-col justify-center gap-1 hover:from-black/40 hover:to-black/60 transition-all overflow-hidden">
+              {/* Watermark — botanical leaf image */}
+              <img src={imgLeafB} alt="" aria-hidden className="absolute -top-6 -right-6 size-[130px] opacity-[0.12] -rotate-[20deg] pointer-events-none select-none" />
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 size-[140px] rounded-full bg-[#46c474]/8 blur-3xl pointer-events-none" />
 
-              {/* Trust badges */}
-              <div className="relative flex items-center gap-1.5 flex-wrap">
+              {[
+                { label: t("footer_link_privacy"),  path: "/about" },
+                { label: t("footer_link_terms"),    path: "/about" },
+                { label: t("footer_link_howto"),    path: "/about" },
+                { label: t("footer_link_shipping"), path: "/about" },
+              ].map((item) => (
+                <a key={item.label} href={item.path}
+                  className={`${font} relative group flex items-center gap-2.5 -mx-1 px-2 py-1.5 rounded-lg text-[12.5px] text-white/80 hover:text-white hover:bg-white/[0.05] transition-all`}>
+                  <span className="size-[5px] rounded-full bg-[#46c474]/50 group-hover:bg-[#46c474] group-hover:shadow-[0_0_8px_rgba(70,196,116,0.8)] group-hover:scale-150 transition-all shrink-0" />
+                  <span className="group-hover:translate-x-0.5 transition-transform flex-1">{item.label}</span>
+                  <ArrowRight className="size-[12px] text-white/0 group-hover:text-[#46c474] group-hover:translate-x-0 -translate-x-1 transition-all" strokeWidth={2.4} />
+                </a>
+              ))}
+            </div>
+
+            {/* Box 3: Social + QR */}
+            <div className="relative rounded-[20px] bg-gradient-to-br from-black/30 to-black/50 backdrop-blur-sm p-4 flex items-center justify-between gap-3 hover:from-black/40 hover:to-black/60 transition-all overflow-hidden">
+              {/* Watermark — botanical leaf image */}
+              <img src={imgLeafC} alt="" aria-hidden className="absolute -bottom-8 left-[25%] size-[140px] opacity-[0.12] rotate-[35deg] pointer-events-none select-none" />
+              <div className="absolute -bottom-8 -right-8 size-[140px] rounded-full bg-[#46c474]/8 blur-3xl pointer-events-none" />
+
+              <div className="relative flex flex-col gap-1 flex-1 min-w-0">
                 {[
-                  { label: "GMP" },
-                  { label: "HALAL" },
-                  { label: "อย." },
-                ].map((b) => (
-                  <div key={b.label} className={`${font} flex items-center gap-1.5 pl-2 pr-3 py-1 rounded-full bg-gradient-to-br from-[#46c474]/20 to-[#319754]/10 border border-[#46c474]/30 text-[11px] text-white/95 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]`} style={{ fontWeight: 600 }}>
-                    <ShieldCheckLite />
-                    <span className="tracking-wide">{b.label}</span>
-                  </div>
+                  { name: "Facebook", brand: "#1877F2", icon: (
+                    <svg viewBox="0 0 32 32" className="size-[12px]"><path d="M20.4 20.6l.7-4.6h-4.4v-3c0-1.3.6-2.5 2.6-2.5h2V6.6s-1.8-.3-3.6-.3c-3.6 0-6 2.2-6 6.2V16H7.6v4.6h4.1V32h5V20.6h3.7z" fill="currentColor"/></svg>
+                  ) },
+                  { name: "Instagram", brand: "#E1306C", icon: (
+                    <svg viewBox="0 0 32 32" className="size-[12px]" fill="none" stroke="currentColor" strokeWidth="2.4">
+                      <rect x="6" y="6" width="20" height="20" rx="5"/>
+                      <circle cx="16" cy="16" r="4.5"/>
+                      <circle cx="22" cy="10" r="1.2" fill="currentColor"/>
+                    </svg>
+                  ) },
+                  { name: "Tiktok", brand: "#000", icon: (
+                    <svg viewBox="0 0 32 32" className="size-[12px]"><path d="M22 9.5c-1.6-.3-3-1.4-3.6-2.9H16v12.7c0 1.3-1 2.3-2.3 2.3-1.3 0-2.3-1-2.3-2.3 0-1.3 1-2.3 2.3-2.3.2 0 .5 0 .7.1V14c-.2 0-.5-.1-.7-.1-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9 4.9-2.2 4.9-4.9v-6.6c1.1.7 2.4 1.2 3.8 1.2V9.8c-.1 0-.3 0-.4-.3z" fill="currentColor"/></svg>
+                  ) },
+                  { name: "Youtube", brand: "#FF0000", icon: (
+                    <svg viewBox="0 0 32 32" className="size-[12px]"><path d="M13 11l9 5-9 5V11z" fill="currentColor"/></svg>
+                  ) },
+                ].map((s) => (
+                  <a key={s.name} href="#" aria-label={s.name}
+                    className={`${font} group flex items-center gap-2.5 -mx-1 px-2 py-1.5 rounded-lg text-[12.5px] text-white/85 hover:text-white hover:bg-white/[0.05] transition-all w-fit`}
+                    style={{ ["--brand" as any]: s.brand }}>
+                    <div className="size-[22px] rounded-md bg-white/[0.1] border border-white/15 flex items-center justify-center shrink-0 group-hover:bg-white group-hover:border-transparent transition-all">
+                      <span className="text-white/80 group-hover:text-[var(--brand)] transition-colors">{s.icon}</span>
+                    </div>
+                    <span className="group-hover:translate-x-0.5 transition-transform" style={{ fontWeight: 500 }}>{s.name}</span>
+                  </a>
                 ))}
               </div>
-
-              <div className="relative flex flex-col gap-2 mt-1">
-                <a href="https://maps.google.com" target="_blank" rel="noreferrer"
-                  className="group flex items-start gap-3 text-white/85 hover:text-white transition-colors">
-                  <div className="size-[36px] rounded-xl bg-white/[0.08] group-hover:bg-[#46c474]/25 border border-white/10 group-hover:border-[#46c474]/40 flex items-center justify-center shrink-0 transition-all">
-                    <MapPin className="size-[16px]" strokeWidth={2} />
-                  </div>
-                  <span className={`${font} text-[12.5px] leading-[1.6] mt-1.5`}>459/153 ถนนสุขสวัสดิ์ แขวงราษฎร์บูรณะ กรุงเทพฯ 10140</span>
-                </a>
-                <a href="tel:0614213111" className="group flex items-center gap-3 text-white/85 hover:text-white transition-colors">
-                  <div className="size-[36px] rounded-xl bg-white/[0.08] group-hover:bg-[#46c474]/25 border border-white/10 group-hover:border-[#46c474]/40 flex items-center justify-center shrink-0 transition-all">
-                    <Phone className="size-[16px]" strokeWidth={2} />
-                  </div>
-                  <span className={`${font} text-[13px] tabular-nums`}>06-1421-3111</span>
-                </a>
-                <a href="mailto:metaherb.herb@gmail.com" className="group flex items-center gap-3 text-white/85 hover:text-white transition-colors">
-                  <div className="size-[36px] rounded-xl bg-white/[0.08] group-hover:bg-[#46c474]/25 border border-white/10 group-hover:border-[#46c474]/40 flex items-center justify-center shrink-0 transition-all">
-                    <Mail className="size-[16px]" strokeWidth={2} />
-                  </div>
-                  <span className={`${font} text-[12.5px]`}>metaherb.herb@gmail.com</span>
-                </a>
-              </div>
-            </div>
-
-            {/* About column */}
-            <div className="lg:col-span-2 relative flex flex-col gap-2 rounded-3xl overflow-hidden p-6 transition-all duration-300 hover:-translate-y-[2px]"
-              style={{
-                background: "linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.08) inset, 0 12px 32px -12px rgba(0,0,0,0.4)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}>
-              <div className="flex items-center gap-2.5 mb-2 pb-3 border-b border-white/10">
-                <div className="size-[32px] rounded-xl bg-[#46c474]/15 border border-[#46c474]/25 flex items-center justify-center">
-                  <Info className="size-[14px] text-[#46c474]" strokeWidth={2.4} />
-                </div>
-                <p className={`${font} text-[14px] text-white`} style={{ fontWeight: 600 }}>เกี่ยวกับเรา</p>
-              </div>
-              {[
-                { label: "เรื่องราวของเรา", path: "/about" },
-                { label: "พันธกิจ", path: "/about" },
-                { label: "ข้อมูลติดต่อ", path: "/about" },
-                { label: "คูปองส่วนลด", path: "/coupons" },
-                { label: "บล็อกความรู้", path: "/blog" },
-              ].map((item) => (
-                <a key={item.label} href={item.path}
-                  className={`${font} group flex items-center gap-2 text-[12.5px] text-white/70 hover:text-white py-1 transition-colors`}>
-                  <span className="inline-block w-0 group-hover:w-3 h-[1.5px] bg-gradient-to-r from-[#46c474] to-transparent transition-all duration-200" />
-                  <span className="group-hover:translate-x-0.5 transition-transform">{item.label}</span>
-                </a>
-              ))}
-            </div>
-
-            {/* Help column */}
-            <div className="lg:col-span-3 relative flex flex-col gap-2 rounded-3xl overflow-hidden p-6 transition-all duration-300 hover:-translate-y-[2px]"
-              style={{
-                background: "linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.08) inset, 0 12px 32px -12px rgba(0,0,0,0.4)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}>
-              <div className="flex items-center gap-2.5 mb-2 pb-3 border-b border-white/10">
-                <div className="size-[32px] rounded-xl bg-[#46c474]/15 border border-[#46c474]/25 flex items-center justify-center">
-                  <ShieldCheck className="size-[14px] text-[#46c474]" strokeWidth={2.4} />
-                </div>
-                <p className={`${font} text-[14px] text-white`} style={{ fontWeight: 600 }}>ช่วยเหลือ</p>
-              </div>
-              {[
-                { label: "วิธีการสั่งซื้อ", path: "/about" },
-                { label: "วิธีการชำระเงิน", path: "/about" },
-                { label: "การจัดส่งสินค้า", path: "/about" },
-                { label: "การคืนเงิน / คืนสินค้า", path: "/about" },
-                { label: "นโยบายความเป็นส่วนตัว", path: "/about" },
-                { label: "เงื่อนไขการใช้งาน", path: "/about" },
-              ].map((item) => (
-                <a key={item.label} href={item.path}
-                  className={`${font} group flex items-center gap-2 text-[12.5px] text-white/70 hover:text-white py-1 transition-colors`}>
-                  <span className="inline-block w-0 group-hover:w-3 h-[1.5px] bg-gradient-to-r from-[#46c474] to-transparent transition-all duration-200" />
-                  <span className="group-hover:translate-x-0.5 transition-transform">{item.label}</span>
-                </a>
-              ))}
-            </div>
-
-            {/* Social + Payment column */}
-            <div className="lg:col-span-3 relative flex flex-col gap-5 rounded-3xl overflow-hidden p-6 transition-all duration-300 hover:-translate-y-[2px]"
-              style={{
-                background: "linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-                boxShadow: "0 1px 0 rgba(255,255,255,0.08) inset, 0 12px 32px -12px rgba(0,0,0,0.4)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}>
-              <div>
-                <div className="flex items-center gap-2.5 mb-3.5 pb-3 border-b border-white/10">
-                  <div className="size-[32px] rounded-xl bg-[#46c474]/15 border border-[#46c474]/25 flex items-center justify-center">
-                    <Heart className="size-[14px] text-[#46c474]" strokeWidth={2.4} />
-                  </div>
-                  <p className={`${font} text-[14px] text-white`} style={{ fontWeight: 600 }}>ติดตามเรา</p>
-                </div>
-                <div className="grid grid-cols-5 gap-2">
-                  {[
-                    { name: "Facebook", brand: "#1877F2", icon: (
-                      <svg viewBox="0 0 32 32" className="size-[18px]"><path d="M20.4 20.6l.7-4.6h-4.4v-3c0-1.3.6-2.5 2.6-2.5h2V6.6s-1.8-.3-3.6-.3c-3.6 0-6 2.2-6 6.2V16H7.6v4.6h4.1V32h5V20.6h3.7z" fill="currentColor"/></svg>
-                    ) },
-                    { name: "Line", brand: "#06C755", icon: (
-                      <svg viewBox="0 0 32 32" className="size-[18px]"><path d="M26 14.7c0-4.5-4.5-8.2-10-8.2S6 10.2 6 14.7c0 4 3.6 7.4 8.4 8.1.3.1.7.2.8.5.1.3.1.7 0 1l-.1.8c0 .2-.2 1 .9.5 1.1-.5 5.7-3.4 7.8-5.8 1.4-1.6 2.2-3.3 2.2-5.1z" fill="currentColor"/></svg>
-                    ) },
-                    { name: "Instagram", brand: "#E1306C", icon: (
-                      <svg viewBox="0 0 32 32" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.2">
-                        <rect x="6" y="6" width="20" height="20" rx="5"/>
-                        <circle cx="16" cy="16" r="4.5"/>
-                        <circle cx="22" cy="10" r="1.2" fill="currentColor"/>
-                      </svg>
-                    ) },
-                    { name: "Tiktok", brand: "#000", icon: (
-                      <svg viewBox="0 0 32 32" className="size-[18px]"><path d="M22 9.5c-1.6-.3-3-1.4-3.6-2.9H16v12.7c0 1.3-1 2.3-2.3 2.3-1.3 0-2.3-1-2.3-2.3 0-1.3 1-2.3 2.3-2.3.2 0 .5 0 .7.1V14c-.2 0-.5-.1-.7-.1-2.7 0-4.9 2.2-4.9 4.9s2.2 4.9 4.9 4.9 4.9-2.2 4.9-4.9v-6.6c1.1.7 2.4 1.2 3.8 1.2V9.8c-.1 0-.3 0-.4-.3z" fill="currentColor"/></svg>
-                    ) },
-                    { name: "Youtube", brand: "#FF0000", icon: (
-                      <svg viewBox="0 0 32 32" className="size-[18px]"><path d="M13 11l9 5-9 5V11z" fill="currentColor"/></svg>
-                    ) },
-                  ].map((s) => (
-                    <a key={s.name} href="#" aria-label={s.name}
-                      className="group/sm aspect-square w-full max-w-[44px] rounded-xl bg-white/[0.08] hover:bg-white border border-white/10 hover:border-transparent flex items-center justify-center text-white hover:-translate-y-1 hover:shadow-[0_10px_20px_-4px_rgba(0,0,0,0.3)] transition-all duration-200"
-                      style={{ ["--brand" as any]: s.brand }}>
-                      <span className="text-white group-hover/sm:text-[var(--brand)] transition-colors">{s.icon}</span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pt-1">
-                <div className="flex items-center gap-2.5 mb-3 pb-3 border-b border-white/10">
-                  <div className="size-[32px] rounded-xl bg-[#46c474]/15 border border-[#46c474]/25 flex items-center justify-center">
-                    <Wallet className="size-[14px] text-[#46c474]" strokeWidth={2.4} />
-                  </div>
-                  <p className={`${font} text-[14px] text-white`} style={{ fontWeight: 600 }}>ช่องทางชำระเงิน</p>
-                </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {[
-                    { label: "VISA",      color: "text-[#1a1f71]" },
-                    { label: "MC",        color: "text-[#eb001b]" },
-                    { label: "PromptPay", color: "text-[#003478]" },
-                    { label: "TrueMoney", color: "text-[#ff6600]" },
-                  ].map((p) => (
-                    <div key={p.label}
-                      className={`${font} px-2.5 py-1 rounded-lg bg-white ${p.color} text-[10px] tracking-wide shadow-[0_3px_8px_-2px_rgba(0,0,0,0.25),inset_0_1px_0_rgba(255,255,255,0.6)]`}
-                      style={{ fontWeight: 800 }}>
-                      {p.label}
-                    </div>
-                  ))}
-                </div>
+              {/* QR Code */}
+              <div className="relative size-[76px] shrink-0 self-end flex items-center justify-center">
+                <img src={imgQRCode} alt="QR Code" className="w-full h-full object-contain" />
               </div>
             </div>
           </div>
 
-          {/* Bottom bar */}
-          <div className="relative border-t border-white/10">
-            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <p className={`${font} text-[12.5px] text-white/65`}>© 2026 <span className="text-white/85" style={{ fontWeight: 600 }}>MetaHerb</span>. สงวนลิขสิทธิ์ทั้งหมด.</p>
-                <span className={`${font} inline-flex items-center gap-1 px-2 py-[3px] rounded-full bg-white/10 border border-white/15 text-[10.5px] text-white/80 tabular-nums`} style={{ fontWeight: 500 }}>
-                  <span className="size-[6px] rounded-full bg-[#46c474] shadow-[0_0_6px_rgba(70,196,116,0.8)]" />
-                  v{APP_VERSION}
-                </span>
-              </div>
-              <div className="flex items-center gap-4">
-                <a href="/about" className={`${font} text-[12px] text-white/65 hover:text-white transition-colors`}>เงื่อนไขการใช้งาน</a>
-                <span className="text-white/20">•</span>
-                <a href="/about" className={`${font} text-[12px] text-white/65 hover:text-white transition-colors`}>นโยบายความเป็นส่วนตัว</a>
-                <span className="text-white/20">•</span>
-                <a href="/about" className={`${font} text-[12px] text-white/65 hover:text-white transition-colors`}>คุกกี้</a>
+          {/* ===== BOTTOM BAR ===== */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+              <p className={`${font} text-[13px] text-white/75`}>{t("footer_copyright")}</p>
+              <span className={`${font} inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full bg-gradient-to-br from-[#46c474]/15 to-[#319754]/5 border border-[#46c474]/25 text-[11px] text-white/85 tabular-nums`} style={{ fontWeight: 600 }}>
+                <span className="size-[6px] rounded-full bg-[#46c474] shadow-[0_0_8px_rgba(70,196,116,0.9)] animate-pulse" />
+                v{APP_VERSION}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap justify-center">
+              <span className={`${font} text-[12px] text-white/65`} style={{ fontWeight: 500 }}>{t("footer_payment")}</span>
+              <div className="flex items-center gap-2">
+                {[
+                  { label: "VISA", color: "#1a1f71" },
+                  { label: "MC", color: "#eb001b" },
+                  { label: "PP", color: "#003478" },
+                  { label: "TM", color: "#ff6600" },
+                ].map((p) => (
+                  <div key={p.label}
+                    className={`${font} size-[34px] sm:size-[40px] rounded-full bg-white flex items-center justify-center text-[9px] sm:text-[10px] tracking-wide shadow-[0_3px_8px_-2px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.6)]`}
+                    style={{ color: p.color, fontWeight: 800 }}>
+                    {p.label}
+                  </div>
+                ))}
               </div>
             </div>
           </div>

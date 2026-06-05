@@ -35,8 +35,10 @@ export function AboutPage() {
 
   return (
     <div className="w-full">
-      {/* ========== HERO SECTION ========== Video extends up behind appbar */}
-      <section className="relative -mt-[64px] md:-mt-[116px] h-[614px] sm:h-[714px] md:h-[866px] lg:h-[966px] overflow-hidden">
+      {/* ========== HERO SECTION ========== Video extends up behind appbar.
+          Negative margin matches actual header height (mobile 98 / desktop 124) so the
+          video flushes against the viewport top with no white gap. */}
+      <section className="relative -mt-[98px] md:-mt-[124px] h-[614px] sm:h-[714px] md:h-[866px] lg:h-[966px] overflow-hidden">
         {/* Background image */}
         <div className="absolute inset-0">
           <video autoPlay loop muted playsInline className="w-full h-full object-cover">
@@ -47,7 +49,7 @@ export function AboutPage() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 max-w-[1440px] mx-auto px-6 sm:px-8 lg:pl-[69px] flex flex-col gap-6 justify-center h-full pt-[64px] md:pt-[116px]">
+        <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-8 lg:pl-[69px] flex flex-col gap-4 sm:gap-6 justify-center h-full pt-[98px] md:pt-[124px]">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-[rgba(125,184,112,0.2)] border border-[rgba(125,184,112,0.4)] rounded-full px-4 py-2 w-fit">
             <Leaf className="size-3.5 text-[#a8d5a0]" />
@@ -55,7 +57,7 @@ export function AboutPage() {
           </div>
 
           {/* Heading */}
-          <h1 className={`${fontHeading} text-[40px] sm:text-[56px] lg:text-[80px] leading-[1.25] lg:leading-[1.2]`}>
+          <h1 className={`${fontHeading} text-[32px] sm:text-[56px] lg:text-[80px] leading-[1.2] lg:leading-[1.2]`}>
             <span className="block text-white">{t("about_hero_1")}</span>
             <span className="block text-[#a8d5a0]">{t("about_hero_2")}</span>
             <span className="block text-white">{t("about_hero_3")}</span>

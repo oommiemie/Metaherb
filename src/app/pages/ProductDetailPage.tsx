@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
-import { products } from "../data/products";
+import { useProducts } from "../store/ProductsContext";
 import { useCart } from "../store/CartContext";
 import { useAuth } from "../store/AuthContext";
 import { useWishlist } from "../store/WishlistContext";
@@ -228,6 +228,7 @@ export default function ProductDetailPage() {
   const { openChat } = useChat();
   const { addRecent } = useRecentlyViewed();
   const { t } = useLanguage();
+  const { products } = useProducts();
   const product = products.find((p) => p.id === id);
   const [selectedOption, setSelectedOption] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -380,7 +381,7 @@ export default function ProductDetailPage() {
         <div className="flex-1 flex flex-col gap-[24px]">
           {/* Name + Rating */}
           <div className="flex flex-col gap-[10px]">
-            <h1 className={`${font} text-[20px] text-black truncate`} style={{ fontWeight: 500 }}>{product.name}</h1>
+            <h1 className={`${font} text-[18px] sm:text-[20px] text-black break-words`} style={{ fontWeight: 500 }}>{product.name}</h1>
             <div className="flex gap-[16px] items-center">
               <div className="flex items-center gap-[10px]">
                 <svg className="size-[14px] shrink-0" fill="none" viewBox="0 0 14 14">
