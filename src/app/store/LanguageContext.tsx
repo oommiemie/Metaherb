@@ -13,6 +13,7 @@ const translations = {
     /* ===== appbar / common ===== */
     menu_home:          "หน้าหลัก",
     menu_products:      "ผลิตภัณท์",
+    menu_trials:        "ทดลองผลิตภัณฑ์",
     menu_blog:          "สาระความรู้",
     menu_about:         "เกี่ยวกับเรา",
     button_login:       "เข้าสู่ระบบ",
@@ -1313,6 +1314,7 @@ const translations = {
     /* ===== appbar / common ===== */
     menu_home:          "Home",
     menu_products:      "Products",
+    menu_trials:        "Trials",
     menu_blog:          "Articles",
     menu_about:         "About",
     button_login:       "Sign in",

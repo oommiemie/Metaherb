@@ -13,8 +13,9 @@ import {
   AlertTriangle, Phone, Mail, ChevronRight, Filter,
   FileText, TrendingUp, Users, ShoppingBag, BarChart2, Download, FileSpreadsheet,
   ClipboardList, ScanSearch, Truck, PackageCheck, PackageX, EyeOff, Send,
-  Lock, Banknote, ArrowDownToLine, Info, Save, Menu
+  Lock, Banknote, ArrowDownToLine, Info, Save, Menu, FlaskConical
 } from "lucide-react";
+import { OwnerTrialsOverview, OwnerTrialsTracking, OwnerTrialsProducts, OwnerTrialsKpiStrip, AddTrialProductTab } from "./owner/OwnerTrialTabs";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from "recharts";
 import { Calendar as CalendarIcon } from "lucide-react";
@@ -90,7 +91,7 @@ const orderTabSvgs = {
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
-type OwnerTab = "overview" | "orders" | "order_detail" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "complaints" | "complaint_detail" | "reports" | "report_sales" | "report_customers" | "report_products" | "report_market";
+type OwnerTab = "overview" | "orders" | "order_detail" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "complaints" | "complaint_detail" | "reports" | "report_sales" | "report_customers" | "report_products" | "report_market" | "trials_overview" | "trials_tracking" | "trials_products" | "trials_add_product";
 type OrderFilterTab = "all" | "pending_payment" | "pending_verify" | "ready_ship" | "shipping" | "shipped" | "cancelled";
 
 interface SidebarItem {
@@ -108,6 +109,11 @@ const sidebarItems: SidebarItem[] = [
     { id: "flash_sale", label: "Flash Sale" },
     { id: "promotions", label: "โปรโมชั่น" },
     { id: "coupons", label: "คูปอง" },
+  ]},
+  { id: "trials_overview", label: "สินค้าทดลอง", icon: FlaskConical, children: [
+    { id: "trials_overview", label: "ภาพรวม" },
+    { id: "trials_tracking", label: "ติดตามสินค้าทดลอง" },
+    { id: "trials_products", label: "สินค้าทดลอง" },
   ]},
   { id: "reports", label: "Report", icon: FileText, children: [
     { id: "report_sales", label: "รายงานผลยอดขาย" },
@@ -595,7 +601,7 @@ function MenuBtn({ isActive, icon: Icon, label, onClick, hasArrow, expanded, col
 }
 
 function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; onSelect: (t: OwnerTab) => void; collapsed: boolean; onToggle: () => void }) {
-  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ products: true, settings: false });
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ products: true, trials_overview: true, settings: false });
   const navigate = useNavigate();
   const { t } = useLanguage();
   const toggle = (id: string) => setExpandedMenus((p) => ({ ...p, [id]: !p[id] }));
@@ -615,10 +621,15 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
     report_market: t("owner_sidebar_report_market"),
     finance: t("owner_sidebar_finance"),
     complaints: t("owner_sidebar_complaints"),
+    trials_overview: "สินค้าทดลอง",
+    trials_tracking: "ติดตามสินค้าทดลอง",
+    trials_products: "ทะเบียนสินค้าทดลอง",
   };
   // For parent items like "products", child id "products" overlaps — special-case the manage products label
   const childLabel = (id: string, fallback: string) => {
     if (id === "products") return t("owner_sidebar_manage_products");
+    if (id === "trials_overview") return "ภาพรวม";   // child uses "ภาพรวม", parent uses "สินค้าทดลอง"
+    if (id === "trials_products") return "สินค้าทดลอง";
     return labelMap[id] ?? fallback;
   };
 
@@ -5376,6 +5387,16 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
   return (
     <div>
       <h2 className={`${font} text-[24px] mb-6`} style={{ fontWeight: 500 }}>Dashboard</h2>
+
+      {/* Trial program KPI strip */}
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-2.5">
+          <h3 className={`${font} text-[15px] text-[#1a1a1a] inline-flex items-center gap-2`} style={{ fontWeight: 600 }}>
+            <FlaskConical className="size-[16px] text-[#319754]" strokeWidth={2.4} /> สรุปโปรแกรมสินค้าทดลอง
+          </h3>
+        </div>
+        <OwnerTrialsKpiStrip />
+      </div>
 
       {/* Wallet (left) + Order tracking (right) — side by side on xl */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5 items-stretch">
@@ -12824,6 +12845,10 @@ export function OwnerDashboard() {
         {activeTab === "report_customers" && <ReportCustomersTab />}
         {activeTab === "report_products" && <ReportProductsTab />}
         {activeTab === "report_market" && <ReportMarketTab />}
+        {activeTab === "trials_overview" && <OwnerTrialsOverview onGoTracking={() => setActiveTab("trials_tracking")} />}
+        {activeTab === "trials_tracking" && <OwnerTrialsTracking />}
+        {activeTab === "trials_products" && <OwnerTrialsProducts onAddProduct={() => setActiveTab("trials_add_product")} />}
+        {activeTab === "trials_add_product" && <AddTrialProductTab onBack={() => setActiveTab("trials_products")} />}
 
 
       </main>

@@ -7,7 +7,8 @@ import { useOrders } from "../store/OrderContext";
 import { useNotifications } from "../store/NotificationContext";
 import type { Notification } from "../store/NotificationContext";
 import { useWishlist } from "../store/WishlistContext";
-import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, MessageCircle, Info, BarChart3, DollarSign, Users, Image, Settings, Phone, Wallet, ClipboardCheck, Truck, PackageCheck, Mail, Leaf, ShieldCheck } from "lucide-react";
+import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, MessageCircle, Info, BarChart3, DollarSign, Users, Image, Settings, Phone, Wallet, ClipboardCheck, Truck, PackageCheck, Mail, Leaf, ShieldCheck, FlaskConical, Coins } from "lucide-react";
+import { TRIAL_PRODUCTS, loadRegistrations } from "../data/trialProducts";
 
 const ShieldCheckLite = () => <ShieldCheck className="size-[12px] text-[#46c474]" strokeWidth={2.4} />;
 import { NotificationDropdown } from "./NotificationDropdown";
@@ -33,6 +34,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useProducts } from "../store/ProductsContext";
 import { useSiteInfo } from "../store/SiteInfoContext";
 import { useLanguage, LANG_OPTIONS } from "../store/LanguageContext";
+import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
@@ -336,6 +338,16 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
   const isAdmin = user?.role === "admin";
   const isUser = user?.role === "user" || (!isOwner && !isAdmin);
 
+  // Trial reward points — sum from completed (evaluated) registrations
+  const trialPoints = (() => {
+    try {
+      const regs = loadRegistrations();
+      return TRIAL_PRODUCTS
+        .filter((p) => regs.some((r) => r.trialId === p.id && r.evaluatedAt))
+        .reduce((sum, p) => sum + p.rewardPoints, 0);
+    } catch { return 0; }
+  })();
+
   const orderStatuses = [
     { label: "รอชำระเงิน", Icon: Wallet,          count: 2,  tint: "#f97316" },  // orange
     { label: "รอตรวจสอบ", Icon: ClipboardCheck,  count: 1,  tint: "#0ea5e9" },  // sky
@@ -366,11 +378,22 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
           <div className="flex-1 min-w-0 pt-0.5">
             <p className={`${font} text-[17px] text-white truncate leading-tight`} style={{ fontWeight: 600 }}>{user?.username}</p>
             <p className={`${font} text-[12px] text-white/90 truncate mt-0.5`}>{user?.email}</p>
-            <span className={`inline-flex items-center gap-1.5 mt-2 px-2.5 py-[3px] rounded-full text-[11px] ${font} bg-white/25 text-white backdrop-blur-sm ring-1 ring-white/20`} style={{ fontWeight: 500 }}>
-              {isOwner ? <><Store className="size-3" strokeWidth={2.4} /> เจ้าของร้านค้า</> :
-               isAdmin ? <><Shield className="size-3" strokeWidth={2.4} /> ผู้ดูแลระบบ</> :
-                         <><User className="size-3" strokeWidth={2.4} /> สมาชิก</>}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] ${font} bg-white/25 text-white backdrop-blur-sm ring-1 ring-white/20`} style={{ fontWeight: 500 }}>
+                {isOwner ? <><Store className="size-3" strokeWidth={2.4} /> เจ้าของร้านค้า</> :
+                 isAdmin ? <><Shield className="size-3" strokeWidth={2.4} /> ผู้ดูแลระบบ</> :
+                           <><User className="size-3" strokeWidth={2.4} /> สมาชิก</>}
+              </span>
+              {isUser && (
+                <button onClick={() => go("/my-trials")}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[11px] ${font} bg-white/25 text-white backdrop-blur-sm ring-1 ring-white/20 hover:bg-white/35 cursor-pointer transition-colors`}
+                  style={{ fontWeight: 500 }}>
+                  <Coins className="size-3 text-amber-200" strokeWidth={2.4} />
+                  <span className="tabular-nums" style={{ fontWeight: 700 }}>+{trialPoints.toLocaleString()}</span>
+                  <span className="opacity-80">คะแนน</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -413,6 +436,7 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
               { icon: MapPin, label: "ที่อยู่จัดส่ง", path: "/addresses" },
               { icon: Heart, label: "สินค้าที่ชอบ", path: "/wishlist" },
               { icon: Ticket, label: "คูปองของฉัน", path: "/my-coupons" },
+              { icon: FlaskConical, label: "ผลิตภัณฑ์ทดสอบ", path: "/my-trials" },
             ].map((item) => (
               <button key={item.label} onClick={() => go(item.path)}
                 className="group/menu w-full flex items-center gap-3 px-3 py-2 rounded-[10px] hover:bg-[#319754]/[0.06] cursor-pointer transition-colors">
@@ -631,9 +655,14 @@ export function Layout() {
   // On customer-facing pages (e.g. /shop/:id, /about, /products) the page needs normal page-level scrolling.
   const useStaffShell = isStaffRole && (location.pathname.startsWith("/owner") || location.pathname.startsWith("/admin"));
 
-  const userMenuItems = [
+  // "ผลิตภัณฑ์" is rendered as a hover-dropdown — it owns child paths so visiting
+  // /products or /trials both light up the parent in the nav.
+  const userMenuItems: { label: string; path: string; children?: { label: string; path: string }[] }[] = [
     { label: t("menu_home"),     path: "/" },
-    { label: t("menu_products"), path: "/products" },
+    { label: t("menu_products"), path: "/products", children: [
+      { label: t("menu_products"), path: "/products" },
+      { label: t("menu_trials"),   path: "/trials" },
+    ]},
     { label: t("menu_blog"),     path: "/blog" },
   ];
 
@@ -824,11 +853,13 @@ export function Layout() {
 
           {/* Menu tabs — flex-1 centered, with hover lift + gradient active pill */}
           <nav className="flex-1 hidden md:flex items-center justify-center gap-[2px] min-w-0">
-            {(isStaffRole ? menuItems : [...userMenuItems, { label: t("menu_about"), path: "/about" }]).map((item) => {
-              const isActive = location.pathname === item.path;
-              return (
-                <button key={item.path} onClick={() => navigate(item.path)}
-                  className={`${font} group/tab relative flex items-center justify-center px-[18px] h-[34px] rounded-[100px] text-[14px] cursor-pointer transition-all duration-200 ${
+            {(isStaffRole ? menuItems : [...userMenuItems, { label: t("menu_about"), path: "/about" }]).map((item: any) => {
+              // Parent is "active" if current path matches its own path or any child path
+              const childPaths: string[] = item.children?.map((c: any) => c.path) || [];
+              const isActive = location.pathname === item.path || childPaths.includes(location.pathname);
+              const TabButton = (
+                <button onClick={() => navigate(item.path)}
+                  className={`${font} group/tab relative flex items-center gap-1 justify-center px-[18px] h-[34px] rounded-[100px] text-[14px] cursor-pointer transition-all duration-200 ${
                     isActive
                       ? "text-white"
                       : "text-[#1d5b32] hover:text-[#287745] hover:-translate-y-[1px]"
@@ -846,12 +877,45 @@ export function Layout() {
                       transition={{ type: "spring", stiffness: 380, damping: 30 }} />
                   )}
                   <span className="relative z-10 leading-none whitespace-nowrap">{item.label}</span>
+                  {item.children && (
+                    <ChevronDown className={`relative z-10 size-3 transition-transform group-hover/tab:rotate-180 ${isActive ? "text-white" : "text-[#319754]"}`} strokeWidth={2.4} />
+                  )}
                   {/* Underline accent on hover for inactive */}
                   {!isActive && (
                     <span className="absolute left-1/2 -translate-x-1/2 bottom-[4px] h-[2px] w-0 rounded-full bg-gradient-to-r from-[#319754] to-[#46c474] transition-all duration-300 group-hover/tab:w-[40%]" />
                   )}
                 </button>
               );
+
+              if (item.children) {
+                return (
+                  <HoverCardPrimitive.Root key={item.path} openDelay={80} closeDelay={120}>
+                    <HoverCardPrimitive.Trigger asChild>{TabButton}</HoverCardPrimitive.Trigger>
+                    <HoverCardPrimitive.Portal>
+                      <HoverCardPrimitive.Content align="center" sideOffset={29}
+                        className="z-50 min-w-[220px] rounded-[12px] bg-white border border-gray-100 shadow-[0px_4px_24px_0px_rgba(0,0,0,0.12)] p-1.5 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2">
+                        {item.children.map((child: any) => {
+                          const childActive = location.pathname === child.path;
+                          return (
+                            <button key={child.path} onClick={() => navigate(child.path)}
+                              className={`${font} w-full flex items-center gap-2.5 px-4 py-2.5 rounded-full cursor-pointer transition-colors text-left text-[13.5px] ${
+                                childActive ? "text-white" : "text-gray-700 hover:bg-gray-50"
+                              }`}
+                              style={{
+                                fontWeight: childActive ? 600 : 500,
+                                ...(childActive ? { background: "linear-gradient(135deg, #3fb56b 0%, #319754 50%, #267a43 100%)" } : {}),
+                              }}>
+                              {childActive && <span className="size-1.5 rounded-full bg-white shrink-0" />}
+                              <span className={childActive ? "" : "ml-3"}>{child.label}</span>
+                            </button>
+                          );
+                        })}
+                      </HoverCardPrimitive.Content>
+                    </HoverCardPrimitive.Portal>
+                  </HoverCardPrimitive.Root>
+                );
+              }
+              return <div key={item.path}>{TabButton}</div>;
             })}
           </nav>
 
@@ -1206,7 +1270,19 @@ export function Layout() {
                     visible: { transition: { staggerChildren: 0.04, delayChildren: 0.12 } },
                   }}
                   className="flex flex-col pb-2">
-                  {(isStaffRole ? menuItems : [...userMenuItems, { label: t("menu_about"), path: "/about" }]).map((item) => {
+                  {(() => {
+                    // Flatten children inline on mobile for easier navigation
+                    const base = isStaffRole ? menuItems : [...userMenuItems, { label: t("menu_about"), path: "/about" }];
+                    const flat: { label: string; path: string }[] = [];
+                    base.forEach((item: any) => {
+                      if (item.children) {
+                        item.children.forEach((c: any) => { if (!flat.find((x) => x.path === c.path)) flat.push({ label: c.label, path: c.path }); });
+                      } else if (!flat.find((x) => x.path === item.path)) {
+                        flat.push({ label: item.label, path: item.path });
+                      }
+                    });
+                    return flat;
+                  })().map((item) => {
                     const active = location.pathname === item.path;
                     return (
                       <motion.button key={item.path} onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}

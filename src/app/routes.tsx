@@ -4,6 +4,11 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ProductsPage } from "./pages/ProductsPage";
+import { TrialProductsPage } from "./pages/TrialProductsPage";
+import { TrialDetailPage } from "./pages/TrialDetailPage";
+import { TrialRegisterPage } from "./pages/TrialRegisterPage";
+import { TrialApplyPage } from "./pages/TrialApplyPage";
+import { MyTrialsPage } from "./pages/MyTrialsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import { CartPage } from "./pages/CartPage";
 import { PaymentPage } from "./pages/PaymentPage";
@@ -88,6 +93,11 @@ export const router = createBrowserRouter([
       { path: "register", Component: RegisterPage },
       { path: "products", Component: ProductsPage },
       { path: "product/:id", Component: ProductDetailPage },
+      { path: "trials", Component: TrialProductsPage },
+      { path: "trials/register", Component: TrialRegisterPage },
+      { path: "trials/:id", Component: TrialDetailPage },
+      { path: "trials/:id/apply", Component: TrialApplyPage },
+      { path: "my-trials", Component: MyTrialsPage },
       { path: "cart", Component: CartPage },
       { path: "payment", Component: PaymentPage },
       { path: "verify-payment/:id", Component: VerifyPaymentPage },
