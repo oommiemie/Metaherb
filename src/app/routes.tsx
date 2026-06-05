@@ -4,6 +4,13 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ProductsPage } from "./pages/ProductsPage";
+import { HerbalMarketPage } from "./pages/HerbalMarketPage";
+import HerbalMarketDetailPage from "./pages/HerbalMarketDetailPage";
+import HerbalMarketSamplePage from "./pages/HerbalMarketSamplePage";
+import HerbalMarketPurchasePage from "./pages/HerbalMarketPurchasePage";
+import HerbalMarketQuotePage from "./pages/HerbalMarketQuotePage";
+import SupplierDetailPage from "./pages/SupplierDetailPage";
+import SupplierRegisterPage from "./pages/SupplierRegisterPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import { CartPage } from "./pages/CartPage";
 import { PaymentPage } from "./pages/PaymentPage";
@@ -87,6 +94,14 @@ export const router = createBrowserRouter([
       { path: "login", Component: LoginPage },
       { path: "register", Component: RegisterPage },
       { path: "products", Component: ProductsPage },
+      { path: "market", Component: HerbalMarketPage },
+      { path: "market/:id", Component: HerbalMarketDetailPage },
+      { path: "market/:id/sample", Component: HerbalMarketSamplePage },
+      { path: "market/:id/purchase", Component: HerbalMarketPurchasePage },
+      { path: "market/:id/quote", Component: HerbalMarketQuotePage },
+      { path: "cart/quote", Component: HerbalMarketQuotePage },
+      { path: "supplier/register", Component: SupplierRegisterPage },
+      { path: "supplier/:id", Component: SupplierDetailPage },
       { path: "product/:id", Component: ProductDetailPage },
       { path: "cart", Component: CartPage },
       { path: "payment", Component: PaymentPage },

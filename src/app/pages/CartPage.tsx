@@ -2,11 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useCart } from "../store/CartContext";
 import { useLanguage } from "../store/LanguageContext";
-import { Trash2, Minus, Plus, ChevronLeft, Store, Tag, MessageCircle, ShieldCheck } from "lucide-react";
+import { Trash2, Minus, Plus, ChevronLeft, Store, MessageCircle, ShieldCheck, FileText, AlertCircle } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useChat } from "../store/ChatContext";
 import { toast } from "sonner";
 import { useProducts } from "../store/ProductsContext";
+import { MATERIALS } from "../data/herbalMaterials";
+
+const isMarketItem = (productId: string) => MATERIALS.some((m) => m.id === productId);
+const rowKey = (i: { productId: string; option: string }) => `${i.productId}|${i.option}`;
 import imgShop from "figma:asset/f9c837257a7dc5d10d1ea92a733813c293a76a81.png";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
@@ -25,28 +29,30 @@ export function CartPage() {
   const { openChat } = useChat();
   const { t } = useLanguage();
   const { products } = useProducts();
-  const [selected, setSelected] = useState<Set<string>>(new Set(items.filter((i) => i.inStock).map((i) => i.productId)));
+  const [selected, setSelected] = useState<Set<string>>(new Set(items.filter((i) => i.inStock).map(rowKey)));
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (key: string) => {
     const next = new Set(selected);
-    next.has(id) ? next.delete(id) : next.add(id);
+    next.has(key) ? next.delete(key) : next.add(key);
     setSelected(next);
   };
 
   const toggleAll = () => {
     if (selected.size === items.filter((i) => i.inStock).length) setSelected(new Set());
-    else setSelected(new Set(items.filter((i) => i.inStock).map((i) => i.productId)));
+    else setSelected(new Set(items.filter((i) => i.inStock).map(rowKey)));
   };
 
-  const selectedTotal = items.filter((i) => selected.has(i.productId)).reduce((s, i) => s + i.price * i.quantity, 0);
-  const selectedCount = items.filter((i) => selected.has(i.productId)).length;
+  const selectedTotal = items.filter((i) => selected.has(rowKey(i))).reduce((s, i) => s + i.price * i.quantity, 0);
+  const selectedCount = items.filter((i) => selected.has(rowKey(i))).length;
+  const selectedHasMarketItem = items.some((i) => selected.has(rowKey(i)) && isMarketItem(i.productId));
   const discount = appliedCoupon ? 100 : 0;
 
-  const handleRemove = (id: string, name: string) => {
-    removeItem(id);
-    selected.delete(id);
+  const handleRemove = (id: string, option: string, name: string) => {
+    removeItem(id, option);
+    const key = `${id}|${option}`;
+    selected.delete(key);
     setSelected(new Set(selected));
     toast(t("cart_removed"), { description: name });
   };
@@ -92,8 +98,8 @@ export function CartPage() {
                   <span className={`${font} text-[14px]`}>{t("cart_select_all")} ({items.length} {t("common_items")})</span>
                 </div>
                 <button onClick={() => {
-                  const toDelete = items.filter((i) => selected.has(i.productId));
-                  toDelete.forEach((i) => removeItem(i.productId));
+                  const toDelete = items.filter((i) => selected.has(rowKey(i)));
+                  toDelete.forEach((i) => removeItem(i.productId, i.option));
                   setSelected(new Set());
                   toast(t("cart_removed_selected"));
                 }} className={`text-[13px] text-red-400 ${font} cursor-pointer hover:text-red-500`}>{t("cart_delete_selected")}</button>
@@ -106,11 +112,11 @@ export function CartPage() {
                   <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100 gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <input type="checkbox"
-                        checked={shopItems.every((i) => !i.inStock || selected.has(i.productId))}
+                        checked={shopItems.every((i) => !i.inStock || selected.has(rowKey(i)))}
                         onChange={() => {
                           const next = new Set(selected);
-                          const allSelected = shopItems.every((i) => !i.inStock || next.has(i.productId));
-                          shopItems.forEach((i) => { if (i.inStock) { allSelected ? next.delete(i.productId) : next.add(i.productId); } });
+                          const allSelected = shopItems.every((i) => !i.inStock || next.has(rowKey(i)));
+                          shopItems.forEach((i) => { if (i.inStock) { allSelected ? next.delete(rowKey(i)) : next.add(rowKey(i)); } });
                           setSelected(next);
                         }}
                         className="accent-[#319754] cursor-pointer size-4 shrink-0" />
@@ -127,9 +133,9 @@ export function CartPage() {
                   {/* Items */}
                   <div className="divide-y divide-gray-50">
                     {shopItems.map((item) => (
-                      <div key={item.productId} className="px-4 py-3">
+                      <div key={rowKey(item)} className="px-4 py-3">
                         <div className="flex items-center gap-3 sm:gap-4">
-                          <input type="checkbox" checked={selected.has(item.productId)} onChange={() => toggleSelect(item.productId)}
+                          <input type="checkbox" checked={selected.has(rowKey(item))} onChange={() => toggleSelect(rowKey(item))}
                             disabled={!item.inStock} className="accent-[#319754] cursor-pointer size-4 shrink-0" />
                           <div className="size-[72px] sm:size-[80px] rounded-lg bg-gray-100 overflow-hidden shrink-0 cursor-pointer" onClick={() => navigate(`/product/${item.productId}`)}>
                             <ImageWithFallback src={item.image} alt={item.name} className="w-full h-full object-cover" />
@@ -137,10 +143,15 @@ export function CartPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <p className={`${font} text-[14px] truncate cursor-pointer hover:text-[#319754]`} onClick={() => navigate(`/product/${item.productId}`)}>{item.name}</p>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className={`${font} text-[14px] truncate cursor-pointer hover:text-[#319754]`} onClick={() => navigate(isMarketItem(item.productId) ? `/market/${item.productId}` : `/product/${item.productId}`)}>{item.name}</p>
+                                  {isMarketItem(item.productId) && (
+                                    <span className={`${font} text-[9px] bg-[#0088ff]/10 text-[#0088ff] px-1.5 py-0.5 rounded shrink-0`} style={{ fontWeight: 600 }}>RFQ เท่านั้น</span>
+                                  )}
+                                </div>
                                 <p className={`${font} text-[12px] text-gray-400`}>{item.option}</p>
                               </div>
-                              <button onClick={() => handleRemove(item.productId, item.name)} className="cursor-pointer shrink-0 p-1 hover:bg-red-50 rounded">
+                              <button onClick={() => handleRemove(item.productId, item.option, item.name)} className="cursor-pointer shrink-0 p-1 hover:bg-red-50 rounded">
                                 <Trash2 className="size-4 text-gray-400 hover:text-red-400" />
                               </button>
                             </div>
@@ -150,9 +161,9 @@ export function CartPage() {
                             <div className="flex items-center justify-between mt-2">
                               {item.inStock ? (
                                 <div className="flex items-center border border-gray-200 rounded">
-                                  <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} className="size-7 flex items-center justify-center cursor-pointer hover:bg-gray-50 border-r border-gray-200"><Minus className="size-3" /></button>
+                                  <button onClick={() => updateQuantity(item.productId, item.quantity - 1, item.option)} className="size-7 flex items-center justify-center cursor-pointer hover:bg-gray-50 border-r border-gray-200"><Minus className="size-3" /></button>
                                   <span className={`${font} text-[14px] w-8 text-center`}>{item.quantity}</span>
-                                  <button onClick={() => updateQuantity(item.productId, item.quantity + 1)} className="size-7 flex items-center justify-center cursor-pointer hover:bg-gray-50 border-l border-gray-200"><Plus className="size-3" /></button>
+                                  <button onClick={() => updateQuantity(item.productId, item.quantity + 1, item.option)} className="size-7 flex items-center justify-center cursor-pointer hover:bg-gray-50 border-l border-gray-200"><Plus className="size-3" /></button>
                                 </div>
                               ) : <div />}
                               <div className="text-right">
@@ -166,11 +177,6 @@ export function CartPage() {
                     ))}
                   </div>
 
-                  {/* Shop voucher */}
-                  <div className="px-4 py-2 border-t border-gray-100 bg-[#fff8f0] flex items-center gap-2">
-                    <Tag className="size-3.5 text-[#ee4d2d]" />
-                    <span className={`${font} text-[12px] text-[#ee4d2d]`}>{t("cart_shop_voucher")}</span>
-                  </div>
                 </div>
               ))}
             </div>
@@ -217,11 +223,34 @@ export function CartPage() {
                   <span className={`${font} text-[11px]`}>{t("cart_protected")}</span>
                 </div>
 
-                <button onClick={() => selectedCount > 0 && navigate("/payment")}
-                  className={`w-full mt-4 py-3 rounded-full text-[14px] ${font} cursor-pointer transition-colors ${selectedCount > 0 ? "bg-[#319754] text-white hover:bg-[#267a43]" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>
+                {selectedHasMarketItem && (
+                  <div className={`${font} mt-4 bg-[#fff8e6] border border-[#f0c674]/40 rounded-xl p-3 flex items-start gap-2 text-[12px] text-[#7a4a00]`}>
+                    <AlertCircle className="size-4 text-[#a86a00] shrink-0 mt-0.5" strokeWidth={2.2} />
+                    <span>วัตถุดิบจาก <span style={{ fontWeight: 600 }}>Herbal Market (B2B)</span> ต้องขอใบเสนอราคา (RFQ) เท่านั้น — ไม่สามารถสั่งซื้อตรงได้</span>
+                  </div>
+                )}
+                <button onClick={() => {
+                  if (selectedCount === 0) return;
+                  if (selectedHasMarketItem) {
+                    return toast.info("กรุณาเอาวัตถุดิบ B2B ออกจากที่เลือก หรือใช้ปุ่ม \"ขอใบเสนอราคา\" แทน");
+                  }
+                  navigate("/payment");
+                }}
+                  disabled={selectedCount === 0 || selectedHasMarketItem}
+                  className={`w-full ${selectedHasMarketItem ? "mt-2" : "mt-4"} py-3 rounded-full text-[14px] ${font} transition-colors ${selectedCount > 0 && !selectedHasMarketItem ? "bg-[#319754] text-white hover:bg-[#267a43] cursor-pointer" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>
                   {t("cart_checkout")} ({selectedCount})
                 </button>
-                <button onClick={() => navigate("/products")} className={`w-full mt-2 py-3 rounded-full border border-[#319754] text-[#319754] text-[14px] ${font} cursor-pointer hover:bg-[#319754]/5`}>{t("cart_continue")}</button>
+                <button onClick={() => {
+                  if (selectedCount === 0) return toast.info("เลือกสินค้าก่อนขอใบเสนอราคา");
+                  const ids = items.filter((i) => selected.has(rowKey(i))).map((i) => i.productId).join(",");
+                  navigate(`/cart/quote?ids=${ids}`);
+                }}
+                  className={`w-full mt-2 py-3 rounded-full border-2 border-[#0088ff] text-[#0088ff] text-[14px] ${font} cursor-pointer hover:bg-[#0088ff]/5 inline-flex items-center justify-center gap-2 transition-colors`}
+                  style={{ fontWeight: 600 }}>
+                  <FileText className="size-4" strokeWidth={2.4} />
+                  ขอใบเสนอราคา (RFQ · {selectedCount} รายการ)
+                </button>
+                <button onClick={() => navigate("/products")} className={`w-full mt-2 py-3 rounded-full border border-gray-200 text-gray-600 text-[14px] ${font} cursor-pointer hover:bg-gray-50`}>{t("cart_continue")}</button>
               </div>
             </div>
           </div>

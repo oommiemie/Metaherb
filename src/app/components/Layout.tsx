@@ -520,7 +520,8 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
 /* ========== LAYOUT ========== */
 export function Layout() {
   const { user, isAuthenticated } = useAuth();
-  const { items: cartItems, itemCount, total: cartTotal } = useCart();
+  const { items: cartItems, total: cartTotal } = useCart();
+  const cartLineCount = cartItems.length;
   const { totalUnread: chatUnread, openChatList } = useChat();
   const { notifications, unreadCount } = useNotifications();
   const { wishlistCount } = useWishlist();
@@ -634,6 +635,7 @@ export function Layout() {
   const userMenuItems = [
     { label: t("menu_home"),     path: "/" },
     { label: t("menu_products"), path: "/products" },
+    { label: t("menu_market"),   path: "/market" },
     { label: t("menu_blog"),     path: "/blog" },
   ];
 
@@ -924,10 +926,10 @@ export function Layout() {
                   onMouseLeave={() => { if (isAuthenticated) closeCart(); }}
                   className="group/icon size-[32px] rounded-full flex items-center justify-center cursor-pointer relative bg-white shadow-[0_1px_2px_rgba(16,24,40,0.06)] hover:bg-[#267a43] hover:shadow-[0_6px_16px_-4px_rgba(49,151,84,0.45)] hover:-translate-y-[1px] active:scale-95 active:translate-y-0 transition-all duration-200">
                   <ShoppingCart className="size-[16px] text-[#1d5b32] group-hover/icon:text-white transition-colors" strokeWidth={2} />
-                  {isAuthenticated && itemCount > 0 && (
+                  {isAuthenticated && cartLineCount > 0 && (
                     <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white shadow-[0_2px_6px_rgba(49,151,84,0.5)] z-10"
                       style={{ background: "linear-gradient(135deg, #46c474, #267a43)", fontWeight: 700 }}>
-                      {itemCount}
+                      {cartLineCount}
                     </span>
                   )}
                 </button>
@@ -1166,10 +1168,10 @@ export function Layout() {
                       className={`relative flex items-center gap-2.5 px-3 py-2.5 rounded-2xl bg-[#fafafa] border border-gray-100 cursor-pointer active:scale-[0.97] hover:bg-white hover:border-[#319754]/30 transition-all`}>
                       <span className="relative size-[36px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex items-center justify-center shrink-0">
                         <ShoppingCart className="size-[18px] text-[#1d5b32]" strokeWidth={2} />
-                        {isAuthenticated && itemCount > 0 && (
+                        {isAuthenticated && cartLineCount > 0 && (
                           <span className="absolute -top-[2px] -right-[2px] min-w-[18px] h-[18px] px-[5px] rounded-full text-[10px] tabular-nums text-white flex items-center justify-center ring-[1.5px] ring-white"
                             style={{ background: "linear-gradient(135deg, #46c474, #267a43)", fontWeight: 700 }}>
-                            {itemCount}
+                            {cartLineCount}
                           </span>
                         )}
                       </span>

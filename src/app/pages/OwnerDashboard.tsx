@@ -13,7 +13,7 @@ import {
   AlertTriangle, Phone, Mail, ChevronRight, Filter,
   FileText, TrendingUp, Users, ShoppingBag, BarChart2, Download, FileSpreadsheet,
   ClipboardList, ScanSearch, Truck, PackageCheck, PackageX, EyeOff, Send,
-  Lock, Banknote, ArrowDownToLine, Info, Save, Menu
+  Lock, Banknote, ArrowDownToLine, Info, Save, Beaker, Menu
 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from "recharts";
@@ -4487,6 +4487,7 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
   const [productName, setProductName] = useState("");
   const [category, setCategory] = useState("");
   const [sku, setSku] = useState("");
+  const [salesChannel, setSalesChannel] = useState<"retail" | "market" | "both">("retail");
   // 3 cover-image slots; null = empty, string = data URL. Use array of 3 so
   // each upload tile owns a specific slot (cover / image-2 / image-3).
   const [productImages, setProductImages] = useState<(string | null)[]>([null, null, null]);
@@ -4693,6 +4694,55 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
             <input ref={productImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleProductImageFile} />
             <input ref={variantImageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleVariantImageFile} />
           </div>
+        </section>
+
+        {/* Section: ช่องทางจำหน่าย */}
+        <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <Store className="size-5 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <div>
+              <h3 className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>ช่องทางจำหน่าย</h3>
+              <p className={`${font} text-[12px] text-gray-500`}>เลือกว่าสินค้านี้จะแสดงในส่วนใดของแพลตฟอร์ม</p>
+            </div>
+          </div>
+          <div className="h-px bg-gray-100" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {[
+              { id: "retail" as const, Icon: ShoppingBag, label: "ขายปลีก (B2C)",   desc: "แสดงในหน้าผลิตภัณฑ์ทั่วไป — ลูกค้าซื้อทีละชิ้น" },
+              { id: "market" as const, Icon: Beaker,      label: "Herbal Market (B2B)", desc: "แสดงในตลาดวัตถุดิบ — ขายเป็นกิโล/ตัน MOQ + ขอใบเสนอราคา" },
+              { id: "both"   as const, Icon: Package,     label: "ทั้งสอง",           desc: "แสดงทั้ง 2 ที่ — ขายปลีก + รับ RFQ จากผู้ผลิต" },
+            ].map((opt) => {
+              const active = salesChannel === opt.id;
+              return (
+                <button key={opt.id} type="button" onClick={() => setSalesChannel(opt.id)}
+                  className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                    active ? "border-[#319754] bg-[#319754]/5" : "border-gray-200 hover:border-gray-300"
+                  }`}>
+                  <div className="flex items-center justify-between w-full">
+                    <div className={`size-9 rounded-lg flex items-center justify-center ${active ? "bg-[#319754] text-white" : "bg-gray-100 text-gray-500"}`}>
+                      <opt.Icon className="size-4" strokeWidth={2.2} />
+                    </div>
+                    <div className={`size-4 rounded-full border-2 flex items-center justify-center ${active ? "border-[#319754]" : "border-gray-300"}`}>
+                      {active && <div className="size-2 rounded-full bg-[#319754]" />}
+                    </div>
+                  </div>
+                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: active ? 600 : 500 }}>{opt.label}</p>
+                  <p className={`${font} text-[11px] text-gray-500 leading-snug`}>{opt.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+          {salesChannel !== "retail" && (
+            <div className="bg-[#319754]/5 rounded-xl p-3 flex items-start gap-2.5 border border-[#319754]/20">
+              <Info className="size-4 text-[#319754] shrink-0 mt-0.5" strokeWidth={2.2} />
+              <div className={`${font} text-[12px] text-gray-700`}>
+                <p style={{ fontWeight: 600 }} className="text-[#287745]">โหมด Herbal Market</p>
+                <p className="mt-0.5">สินค้าที่ลงในตลาดวัตถุดิบจะ<span style={{ fontWeight: 600 }}>รับเฉพาะ RFQ (ขอใบเสนอราคา)</span> — ลูกค้าจะไม่สามารถสั่งซื้อตรงผ่านตะกร้าได้ ต้องมี MOQ ขั้นต่ำ + ระบุเกรด/ใบรับรอง</p>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Section: ข้อมูลสินค้า */}
