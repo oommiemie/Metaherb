@@ -15,8 +15,8 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[];
   addItem: (item: CartItem) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, qty: number) => void;
+  removeItem: (productId: string, option?: string) => void;
+  updateQuantity: (productId: string, qty: number, option?: string) => void;
   clearCart: () => void;
   total: number;
   itemCount: number;
@@ -37,9 +37,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeItem = (productId: string) => setItems((prev) => prev.filter((i) => i.productId !== productId));
-  const updateQuantity = (productId: string, qty: number) =>
-    setItems((prev) => prev.map((i) => (i.productId === productId ? { ...i, quantity: Math.max(1, qty) } : i)));
+  const removeItem = (productId: string, option?: string) =>
+    setItems((prev) => prev.filter((i) => !(i.productId === productId && (option === undefined || i.option === option))));
+  const updateQuantity = (productId: string, qty: number, option?: string) =>
+    setItems((prev) => prev.map((i) => (i.productId === productId && (option === undefined || i.option === option) ? { ...i, quantity: Math.max(1, qty) } : i)));
   const clearCart = () => setItems([]);
   const total = items.filter((i) => i.inStock).reduce((s, i) => s + i.price * i.quantity, 0);
   const itemCount = items.reduce((s, i) => s + i.quantity, 0);
