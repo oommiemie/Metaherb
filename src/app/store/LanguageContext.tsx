@@ -14,6 +14,7 @@ const translations = {
     menu_home:          "หน้าหลัก",
     menu_products:      "ผลิตภัณท์",
     menu_trials:        "ทดลองผลิตภัณฑ์",
+    menu_market:        "Herbal Market",
     menu_blog:          "สาระความรู้",
     menu_about:         "เกี่ยวกับเรา",
     button_login:       "เข้าสู่ระบบ",
@@ -1315,6 +1316,7 @@ const translations = {
     menu_home:          "Home",
     menu_products:      "Products",
     menu_trials:        "Trials",
+    menu_market:        "Herbal Market",
     menu_blog:          "Articles",
     menu_about:         "About",
     button_login:       "Sign in",
@@ -2589,6 +2591,7 @@ const translations = {
     /* ===== appbar / common ===== */
     menu_home:          "首页",
     menu_products:      "产品",
+    menu_market:        "草药市场",
     menu_blog:          "文章",
     menu_about:         "关于我们",
     button_login:       "登录",
