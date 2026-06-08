@@ -120,8 +120,8 @@ export default function HerbalMarketDetailPage() {
             {/* Grade pill */}
             <div className="absolute top-3 left-3">
               <span className={`${font} text-[11px] px-2.5 py-1 rounded-full shadow-sm`}
-                style={{ backgroundColor: gradeStyle.bg, color: gradeStyle.color, fontWeight: 600 }}>
-                เกรด {material.grade}
+                style={{ background: gradeStyle.bg, color: gradeStyle.color, fontWeight: 700, boxShadow: gradeStyle.shadow, textShadow: gradeStyle.textShadow, letterSpacing: "0.02em" }}>
+                {material.grade}
               </span>
             </div>
             {material.supplierVerified && (
@@ -241,7 +241,7 @@ export default function HerbalMarketDetailPage() {
           <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 600 }}>รายละเอียดวัตถุดิบ</h2>
           <p className={`${font} text-[14px] text-black leading-relaxed`}>
             {material.name} ({material.scientificName}) เป็นวัตถุดิบสมุนไพรคุณภาพคัดสรร จากแหล่งปลูก{material.location} —
-            ผ่านกระบวนการทำความสะอาด ตากแห้ง และคัดเกรดด้วยมาตรฐาน{material.grade === "Premium" ? "ระดับพรีเมียม" : `เกรด ${material.grade}`} —
+            ผ่านกระบวนการทำความสะอาด ตากแห้ง และคัดเกรดด้วยมาตรฐานระดับ{material.grade} —
             พร้อมใบรับรอง {material.certifications.join(" / ")} เหมาะสำหรับโรงงานผลิตอาหารเสริม / ชาสมุนไพร / เครื่องสำอาง
           </p>
         </div>
@@ -252,7 +252,7 @@ export default function HerbalMarketDetailPage() {
             {[
               { label: "ประเภทวัตถุดิบ",  value: material.category },
               { label: "ชื่อวิทยาศาสตร์",  value: material.scientificName },
-              { label: "เกรด",              value: `${material.grade}${material.grade === "Premium" ? " (พรีเมียม)" : ""}` },
+              { label: "เกรด",              value: material.grade },
               { label: "MOQ",               value: `${material.moq} กก. / คำสั่งซื้อ` },
               { label: "คงเหลือในสต็อก",   value: `${material.stock.toLocaleString()} กก.` },
               { label: "แหล่งผลิต",         value: material.location },
@@ -356,8 +356,8 @@ export default function HerbalMarketDetailPage() {
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     <div className="absolute top-2.5 left-2.5">
                       <span className={`${font} text-[10px] px-2 py-1 rounded-full shadow-sm`}
-                        style={{ backgroundColor: gStyle.bg, color: gStyle.color, fontWeight: 600 }}>
-                        เกรด {m.grade}
+                        style={{ background: gStyle.bg, color: gStyle.color, fontWeight: 700, boxShadow: gStyle.shadow, textShadow: gStyle.textShadow, letterSpacing: "0.02em" }}>
+                        {m.grade}
                       </span>
                     </div>
                   </div>

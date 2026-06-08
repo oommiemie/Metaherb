@@ -110,8 +110,6 @@ export default function HerbalMarketQuotePage() {
     );
   }
 
-  const singleGradeStyle = singleMaterial ? GRADE_STYLE[singleMaterial.grade] : undefined;
-
   const handlePreview = () => {
     if (!companyName.trim()) return toast.error("กรุณากรอกชื่อบริษัท");
     if (!companyAddress.trim()) return toast.error("กรุณากรอกที่อยู่บริษัท");
@@ -475,14 +473,8 @@ export default function HerbalMarketQuotePage() {
         {/* Material preview — single OR bulk list */}
         {!isBulk && singleMaterial && (
           <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
-            <div className="shrink-0 size-[64px] rounded-lg overflow-hidden bg-gray-100 relative">
+            <div className="shrink-0 size-[64px] rounded-lg overflow-hidden bg-gray-100">
               <ImageWithFallback src={singleMaterial.image} alt={singleMaterial.name} className="w-full h-full object-cover" />
-              <div className="absolute top-1 left-1">
-                <span className={`${font} text-[9px] px-1.5 py-0.5 rounded-full`}
-                  style={{ backgroundColor: singleGradeStyle!.bg, color: singleGradeStyle!.color, fontWeight: 600 }}>
-                  {singleMaterial.grade}
-                </span>
-              </div>
             </div>
             <div className="flex-1 min-w-0">
               <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>{singleMaterial.name}</p>
@@ -511,20 +503,10 @@ export default function HerbalMarketQuotePage() {
               </button>
             </div>
             <div className="divide-y divide-gray-50">
-              {quoteItems.map((q) => {
-                const gradeSt = q.grade ? GRADE_STYLE[q.grade as keyof typeof GRADE_STYLE] : undefined;
-                return (
+              {quoteItems.map((q) => (
                   <div key={q.id} className="px-4 py-3 flex items-center gap-3">
-                    <div className="shrink-0 size-[56px] rounded-lg overflow-hidden bg-gray-100 relative">
+                    <div className="shrink-0 size-[56px] rounded-lg overflow-hidden bg-gray-100">
                       <ImageWithFallback src={q.image} alt={q.name} className="w-full h-full object-cover" />
-                      {q.grade && gradeSt && (
-                        <div className="absolute top-1 left-1">
-                          <span className={`${font} text-[9px] px-1.5 py-0.5 rounded-full`}
-                            style={{ backgroundColor: gradeSt.bg, color: gradeSt.color, fontWeight: 600 }}>
-                            {q.grade}
-                          </span>
-                        </div>
-                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }}>{q.name}</p>
@@ -539,8 +521,7 @@ export default function HerbalMarketQuotePage() {
                       {q.pricePerKg && <p className={`${font} text-[11px] text-gray-400`}>≈ ฿{(q.pricePerKg * q.quantity).toLocaleString()}</p>}
                     </div>
                   </div>
-                );
-              })}
+              ))}
             </div>
             <div className="px-4 py-2 bg-[#0088ff]/5 border-t border-[#0088ff]/10 flex items-center gap-2">
               <Sparkles className="size-3 text-[#0088ff]" strokeWidth={2.4} />
