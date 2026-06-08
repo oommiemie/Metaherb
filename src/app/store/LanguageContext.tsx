@@ -13,8 +13,8 @@ const translations = {
     /* ===== appbar / common ===== */
     menu_home:          "หน้าหลัก",
     menu_products:      "ผลิตภัณท์",
-    menu_trials:        "ทดลองผลิตภัณฑ์",
-    menu_market:        "Herbal Market",
+    menu_trials:        "ผลิตภัณฑ์ทดสอบ",
+    menu_market:        "ตลาดสมุนไพร",
     menu_blog:          "สาระความรู้",
     menu_about:         "เกี่ยวกับเรา",
     button_login:       "เข้าสู่ระบบ",
@@ -145,6 +145,7 @@ const translations = {
 
     /* ===== home ===== */
     home_recommended:      "สินค้าแนะนำ",
+    home_promotion:        "สินค้าโปรโมชั่น",
     home_flash_sale:       "Flash Sale",
     home_articles:         "บทความแนะนำ",
     home_videos:           "วีดีโอแนะนำ",
@@ -1441,6 +1442,7 @@ const translations = {
     register_accept_terms: "Please accept the terms",
 
     home_recommended:      "Recommended",
+    home_promotion:        "Promotions",
     home_flash_sale:       "Flash Sale",
     home_articles:         "Featured articles",
     home_videos:           "Featured videos",

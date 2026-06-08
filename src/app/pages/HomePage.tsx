@@ -25,6 +25,9 @@ import { BannerSkeleton, CategorySkeleton, ProductGridSkeleton, ArticleSkeleton,
 import svgPaths from "../../imports/svg-7w99agzzp8";
 import svgArticlePaths from "../../imports/svg-ef1ajdelip";
 import imgBanner from "figma:asset/8733913171c15098e7d05ed46e3984edcb6d5ed1.png";
+import imgPromoSongkran from "../../assets/sec-banner-pro-songkran.jpg";
+import imgFlashSale2 from "../../assets/flashsale-2.jpg";
+import { productImages, getProductImage } from "../data/productImages";
 
 // Category icons from Figma
 import imgHerb from "figma:asset/73e2cbf5354624aa57506e53de4958d0acf61e55.png";
@@ -80,8 +83,7 @@ const SAFE_IMAGES = [
   "https://images.unsplash.com/photo-1624454002302-36b824d7bd0a?w=600&q=80", // essential oil
   "https://images.unsplash.com/photo-1644061923948-f5b918b524c7?w=600&q=80", // amla dried
 ];
-const productImages = SAFE_IMAGES.slice(0, 7);
-const flashSaleImages = SAFE_IMAGES.slice(2, 8);
+const flashSaleImages = productImages.length >= 8 ? productImages.slice(2, 8) : SAFE_IMAGES.slice(2, 8);
 
 /* ===== Flash Sale Countdown ===== */
 function FlashSaleCountdown() {
@@ -469,6 +471,8 @@ export function HomePage() {
   const [recPage, setRecPage] = useState(0);
   const [catPage, setCatPage] = useState(0);
   const [recDirection, setRecDirection] = useState(0);
+  const [promoPage, setPromoPage] = useState(0);
+  const [promoDirection, setPromoDirection] = useState(0);
   const [flashPage, setFlashPage] = useState(0);
   const [flashDirection, setFlashDirection] = useState(0);
   const [videoPage, setVideoPage] = useState(0);
@@ -547,15 +551,15 @@ export function HomePage() {
           <div className="grid grid-cols-2 gap-[10px] lg:flex lg:flex-col lg:flex-[230_1_0%] min-w-0">
             <div className="rounded-[16px] overflow-hidden flex-1 relative aspect-[230/75] lg:aspect-auto lg:min-h-0">
               <ImageWithFallback
-                src="https://www.figma.com/api/mcp/asset/0f3a054e-37ab-4007-84bb-9cbb2d875abe"
-                alt="Bewell promo"
+                src={imgPromoSongkran}
+                alt="โปรโมชั่นสงกรานต์"
                 className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
             <div className="rounded-[16px] overflow-hidden flex-1 relative aspect-[230/75] lg:aspect-auto lg:min-h-0">
               <ImageWithFallback
-                src="https://www.figma.com/api/mcp/asset/5f63c3f3-0721-44d3-8df8-e13edff65d77"
-                alt="Beauty promo"
+                src={imgFlashSale2}
+                alt="Flash Sale"
                 className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
@@ -606,7 +610,7 @@ export function HomePage() {
                     className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 flex flex-col h-[259px] group/card"
                   >
                     <div className="flex-1 relative min-h-0 overflow-hidden">
-                      <img src={productImages[globalIdx % productImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
+                      <img src={getProductImage(p.id)} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
                       {/* Single Tag - priority: flashsale > discount > recommended */}
                       {tag === "flashsale" && (
                         <>
@@ -671,6 +675,95 @@ export function HomePage() {
             {/* Right Arrow */}
             {recPage < totalRecPages - 1 && (
               <button onClick={() => { setRecDirection(1); setRecPage(p => p + 1); }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10">
+                <ChevronRight className="size-5" strokeWidth={2.4} />
+              </button>
+            )}
+          </div>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* Promotion Products */}
+      <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
+        <div className="bg-white rounded-[16px] p-[16px]">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-[16px]">
+            <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("home_promotion")}</p>
+            <button onClick={() => navigate("/products")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
+              <span className={`${font} text-[12px]`}>{t("common_view_all")}</span>
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+          {/* Product Grid */}
+          {(() => {
+            // Promotion = has discount, NOT flash sale, NOT recommended (those already shown above)
+            const promoProducts = products.filter(p => !p.isFlashSale && !p.isRecommended && p.discountPercent);
+            const totalPromoPages = Math.max(1, Math.ceil(promoProducts.length / productsPerPage));
+            const pagedProducts = promoProducts.slice(promoPage * productsPerPage, promoPage * productsPerPage + productsPerPage);
+            return (
+            <div className="group relative overflow-x-clip py-2 -my-2">
+            <AnimatePresence mode="wait" initial={false} custom={promoDirection}>
+            <motion.div
+              key={promoPage}
+              custom={promoDirection}
+              initial={{ x: promoDirection > 0 ? 300 : -300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: promoDirection > 0 ? -300 : 300, opacity: 0 }}
+              transition={{ duration: 0.35, ease: "easeInOut" }}
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]"
+              style={{ backgroundColor: "transparent" }}
+            >
+              {pagedProducts.map((p, i) => {
+                const globalIdx = promoPage * productsPerPage + i;
+                return (
+                  <div
+                    key={`promo-${p.id}`}
+                    onClick={() => navigate(`/product/${p.id}`)}
+                    className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 flex flex-col h-[259px] group/card"
+                  >
+                    <div className="flex-1 relative min-h-0 overflow-hidden">
+                      <img src={getProductImage(p.id)} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
+                      <div className="absolute top-0 right-0 p-[6px]">
+                        <div className="bg-[#e62e05] px-2.5 py-0.5 rounded-full shadow-[0_2px_6px_rgba(230,46,5,0.4)]">
+                          <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>{t("home_discount_prefix")} {p.discountPercent}%</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-[10px] flex flex-col gap-[4px]">
+                      <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{p.name}</p>
+                      <div className="flex items-center gap-[10px]">
+                        <span className={`font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[14px] text-[#e62e05]`} style={{ fontWeight: 600 }}>฿ {p.price.toFixed(2)}</span>
+                        {p.originalPrice && (
+                          <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-[#a3a3a3] line-through">฿{p.originalPrice.toFixed(2)}</span>
+                        )}
+                        {p.hasCoupon && <CouponIcon />}
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-[8px]">
+                          <svg className="size-[14px] shrink-0" fill="none" viewBox="0 0 14 14">
+                            <path d="M14 0H0V14H14V0Z" fill="#F7C42B" opacity="0" />
+                            <path d={svgPaths.p1052b000} fill="#F7C42B" />
+                          </svg>
+                          <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-black">{p.rating}/5</span>
+                        </div>
+                        <span className="font-['IBM_Plex_Sans_Thai_Looped',sans-serif] text-[10px] text-black text-right">{p.sold}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </motion.div>
+            </AnimatePresence>
+            {promoPage > 0 && (
+              <button onClick={() => { setPromoDirection(-1); setPromoPage(p => p - 1); }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10">
+                <ChevronLeft className="size-5" strokeWidth={2.4} />
+              </button>
+            )}
+            {promoPage < totalPromoPages - 1 && (
+              <button onClick={() => { setPromoDirection(1); setPromoPage(p => p + 1); }}
                 className="absolute right-0 top-1/2 -translate-y-1/2 size-8 rounded-full bg-[rgba(217,217,217,0.5)] backdrop-blur-[2px] hover:bg-[#319754] flex items-center justify-center text-white cursor-pointer transition-all duration-200 z-10">
                 <ChevronRight className="size-5" strokeWidth={2.4} />
               </button>

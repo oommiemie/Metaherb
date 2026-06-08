@@ -7,15 +7,8 @@ import { useProducts } from "../store/ProductsContext";
 import { Heart, ShoppingCart, Star, Trash2 } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { toast } from "sonner";
+import { getProductImage } from "../data/productImages";
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
-const productImages = [
-  "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80",
-  "https://images.unsplash.com/photo-1559525839-d9acfd03c2cf?w=600&q=80",
-  "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=600&q=80",
-  "https://images.unsplash.com/photo-1546549032-9571cd6b27df?w=600&q=80",
-  "https://images.unsplash.com/photo-1591282017732-207fbba7dfd4?w=600&q=80",
-  "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=600&q=80",
-];
 
 export function WishlistPage() {
   const navigate = useNavigate();
@@ -32,7 +25,7 @@ export function WishlistPage() {
     addItem({
       productId: p.id,
       name: p.name,
-      image: productImages[i % productImages.length],
+      image: getProductImage(p.id),
       price: p.price,
       originalPrice: p.originalPrice,
       option: p.options[0],
@@ -67,7 +60,7 @@ export function WishlistPage() {
               {wishlistProducts.map((p, i) => (
                 <div key={p.id} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-100 group">
                   <div className="relative aspect-square bg-gray-100 overflow-hidden cursor-pointer" onClick={() => navigate(`/product/${p.id}`)}>
-                    <ImageWithFallback src={productImages[i % productImages.length]} alt={p.name} className="w-full h-full object-cover" />
+                    <ImageWithFallback src={getProductImage(p.id)} alt={p.name} className="w-full h-full object-cover" />
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleWishlist(p.id); toast(t("pd_removed_from_wishlist")); }}
                       className="absolute top-2 right-2 size-8 bg-white/90 rounded-full flex items-center justify-center cursor-pointer shadow-sm"

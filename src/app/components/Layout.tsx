@@ -656,14 +656,10 @@ export function Layout() {
   // On customer-facing pages (e.g. /shop/:id, /about, /products) the page needs normal page-level scrolling.
   const useStaffShell = isStaffRole && (location.pathname.startsWith("/owner") || location.pathname.startsWith("/admin"));
 
-  // "ผลิตภัณฑ์" is rendered as a hover-dropdown — it owns child paths so visiting
-  // /products or /trials both light up the parent in the nav.
   const userMenuItems: { label: string; path: string; children?: { label: string; path: string }[] }[] = [
     { label: t("menu_home"),     path: "/" },
-    { label: t("menu_products"), path: "/products", children: [
-      { label: t("menu_products"), path: "/products" },
-      { label: t("menu_trials"),   path: "/trials" },
-    ]},
+    { label: t("menu_products"), path: "/products" },
+    { label: t("menu_trials"),   path: "/trials" },
     { label: t("menu_market"),   path: "/market" },
     { label: t("menu_blog"),     path: "/blog" },
   ];

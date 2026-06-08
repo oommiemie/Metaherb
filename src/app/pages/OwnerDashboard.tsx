@@ -5438,16 +5438,6 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
     <div>
       <h2 className={`${font} text-[24px] mb-6`} style={{ fontWeight: 500 }}>Dashboard</h2>
 
-      {/* Trial program KPI strip */}
-      <div className="mb-5">
-        <div className="flex items-center justify-between mb-2.5">
-          <h3 className={`${font} text-[15px] text-[#1a1a1a] inline-flex items-center gap-2`} style={{ fontWeight: 600 }}>
-            <FlaskConical className="size-[16px] text-[#319754]" strokeWidth={2.4} /> สรุปโปรแกรมสินค้าทดลอง
-          </h3>
-        </div>
-        <OwnerTrialsKpiStrip />
-      </div>
-
       {/* Wallet (left) + Order tracking (right) — side by side on xl */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5 items-stretch">
       {/* Wallet — brand-green card with wallet illustration center-bottom overlapping right cards */}

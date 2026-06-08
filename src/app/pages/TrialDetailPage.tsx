@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronLeft, ChevronRight, Share2, Sparkles, Clock, Users, Coins, Check, FlaskConical, Store, MessageCircle, Heart, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Share2, Sparkles, Clock, Users, Coins, Check, FlaskConical, Store, MessageCircle, Heart, Send, AlertTriangle, BadgeCheck, ListChecks, Beaker, TrendingUp, CalendarCheck, Star, Lightbulb, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../store/AuthContext";
 import { TRIAL_PRODUCTS, loadRegistrations, saveRegistrations, getTrialImages, getActiveRegistration, type TrialProduct, type Registration, type Evaluation } from "../data/trialProducts";
@@ -148,23 +148,29 @@ export function TrialDetailPage() {
 
         {/* Right: details — mirrors ProductDetailPage text styling */}
         <div className="flex-1 flex flex-col gap-[24px] w-full">
-          {/* Name + meta row (same shape as price page's Name + Rating) */}
+          {/* Name + meta row */}
           <div className="flex flex-col gap-[10px]">
-            <h1 className={`${font} text-[18px] sm:text-[20px] text-black break-words`} style={{ fontWeight: 500 }}>{product.name}</h1>
-            <div className="flex gap-[16px] items-center flex-wrap">
-              <div className="flex items-center gap-[6px]">
-                <FlaskConical className="size-[14px] text-[#319754]" strokeWidth={2.2} />
-                <span className={`${font} text-[12px] text-black`}>{product.category}</span>
-              </div>
-              <div className="flex items-center gap-[6px]">
-                <Clock className="size-[12px] text-black/85" strokeWidth={2.2} />
-                <span className={`${font} text-[12px] text-black`}>เหลือ {product.endsInDays} วัน</span>
-              </div>
-              <div className="flex items-center gap-[6px]">
-                <Users className="size-[12px] text-black/85" strokeWidth={2.2} />
-                <span className={`${font} text-[12px] text-black`}>{product.spotsTaken}/{product.spotsTotal} ที่</span>
-              </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`${font} inline-flex items-center gap-1 text-[11px] text-white px-2.5 py-0.5 rounded-full`} style={{ background: "linear-gradient(135deg, #0088ff, #9747ff)", fontWeight: 600 }}>
+                <Sparkles className="size-3" strokeWidth={2.4} /> Beta
+              </span>
+              <span className={`${font} text-[11px] bg-[#319754]/12 text-[#1d5b32] px-2.5 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>{product.category}</span>
             </div>
+            <h1 className={`${font} text-[22px] sm:text-[24px] text-[#1a1a1a] leading-tight break-words`} style={{ fontWeight: 700 }}>{product.name}</h1>
+            {(product.studioName || product.detail?.developerName) && (
+              <div className="flex items-center gap-2 flex-wrap text-[13px]">
+                {product.studioName && (
+                  <span className={`${font} inline-flex items-center gap-1.5 text-[#319754]`} style={{ fontWeight: 600 }}>
+                    <span className="size-1.5 rounded-full bg-[#319754]" />{product.studioName}
+                  </span>
+                )}
+                {product.studioName && product.detail?.developerName && <span className="text-gray-300">·</span>}
+                {product.detail?.developerName && (
+                  <span className={`${font} text-gray-600`}>ผู้พัฒนา: <span style={{ fontWeight: 600, color: "#1a1a1a" }}>{product.detail.developerName}</span></span>
+                )}
+              </div>
+            )}
+            <p className={`${font} text-[14px] text-gray-700 leading-relaxed`}>{product.detail?.longDescription ?? product.tagline}</p>
           </div>
 
           {/* Reward + Time + Spots cards */}
@@ -288,44 +294,8 @@ export function TrialDetailPage() {
         </div>
       </div>
 
-      {/* ===== Product details card ===== */}
-      <div className="bg-white rounded-[16px] p-[16px] flex flex-col gap-[16px] mt-6 border border-gray-200">
-        <div className="flex flex-col gap-[10px]">
-          <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>รายละเอียดผลิตภัณฑ์</h2>
-          <p className={`${font} text-[14px] text-black leading-relaxed`}>
-            {product.tagline} ผลิตภัณฑ์นี้อยู่ในช่วงทดสอบสูตร — METAHERB คัดเลือกผู้ใช้จริงในกลุ่มเป้าหมายเพื่อรับฟังความคิดเห็น ก่อนผลิตเชิงพาณิชย์.
-            ทุกความคิดเห็นจะถูกนำไปปรับปรุงสูตรและบรรจุภัณฑ์ในรอบถัดไป.
-          </p>
-        </div>
-        <div className="h-px w-full bg-[#D4D4D8]" />
-        <div className="flex flex-col gap-[10px]">
-          <h3 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>สิ่งที่ต้องประเมิน</h3>
-          <ul className={`${font} text-[14px] text-black space-y-1.5`}>
-            {product.whatToTest.map((w) => (
-              <li key={w} className="flex items-start gap-2">
-                <Check className="size-4 text-[#319754] mt-0.5 shrink-0" strokeWidth={2.6} /> {w}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="h-px w-full bg-[#D4D4D8]" />
-        <div className="flex flex-col gap-[10px]">
-          <h3 className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลการทดสอบ</h3>
-          {[
-            { label: "หมวดหมู่", value: product.category },
-            { label: "ระยะเวลาทดสอบ", value: `${product.endsInDays} วัน` },
-            { label: "ที่นั่งทั้งหมด", value: `${product.spotsTotal} ที่` },
-            { label: "ที่นั่งคงเหลือ", value: isClosed ? "ปิดรับสมัคร" : `${spotsLeft} ที่` },
-            { label: "รหัส Trial", value: product.id.toUpperCase() },
-            { label: "คะแนนที่ได้รับ", value: `+${product.rewardPoints.toLocaleString()} คะแนน` },
-          ].map((s) => (
-            <div key={s.label} className="flex gap-[10px]">
-              <span className={`${font} text-[14px] text-black w-[120px] shrink-0`} style={{ fontWeight: 500 }}>{s.label}</span>
-              <span className={`${font} text-[14px] text-black`}>{s.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* ===== Rich detail sections (rendered only when data exists) ===== */}
+      <DetailSections product={product} isClosed={isClosed} spotsLeft={spotsLeft} />
 
       {/* ===== Shop info ===== */}
       <div className="bg-white rounded-[16px] p-[16px] mt-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-[16px] border border-gray-200">
@@ -448,5 +418,229 @@ function RelatedTrialCard({ p, onClick }: { p: TrialProduct; onClick: () => void
         </div>
       </div>
     </div>
+  );
+}
+
+/* ===================================================================
+   Rich detail sections — only render sections whose data is provided.
+   Layout: section header (icon + title) + content block.
+   =================================================================== */
+function DetailSections({ product, isClosed, spotsLeft }: { product: TrialProduct; isClosed: boolean; spotsLeft: number }) {
+  const d = product.detail;
+
+  // Fallback "Test information" table — always shown so the basic metadata is visible
+  const baseInfo: { label: string; value: string }[] = [
+    { label: "หมวดหมู่",       value: product.category },
+    { label: "ระยะเวลาทดสอบ", value: `${product.endsInDays} วัน` },
+    { label: "ที่นั่งทั้งหมด",   value: `${product.spotsTotal} ที่` },
+    { label: "ที่นั่งคงเหลือ",   value: isClosed ? "ปิดรับสมัคร" : `${spotsLeft} ที่` },
+    { label: "รหัส Trial",     value: product.id.toUpperCase() },
+    { label: "คะแนนที่ได้รับ",   value: `+${product.rewardPoints.toLocaleString()} คะแนน` },
+  ];
+
+  return (
+    <div className="mt-6 flex flex-col gap-4">
+      {/* ===== ข้อมูลผลิตภัณฑ์ ===== */}
+      <SectionCard icon={<FlaskConical className="size-5 text-[#319754]" strokeWidth={2.2} />} title="ข้อมูลผลิตภัณฑ์">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+          {(d?.productInfo ?? baseInfo).map((row) => (
+            <div key={row.label} className="flex gap-3 py-1.5 border-b border-gray-100">
+              <span className={`${font} text-[13px] text-gray-500 w-[110px] shrink-0`} style={{ fontWeight: 500 }}>{row.label}</span>
+              <span className={`${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>{row.value}</span>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      {/* ===== มาตรฐานการผลิต ===== */}
+      {d?.certifications && d.certifications.length > 0 && (
+        <SectionCard icon={<BadgeCheck className="size-5 text-[#319754]" strokeWidth={2.2} />} title="มาตรฐานการผลิต">
+          <div className="flex flex-wrap gap-2">
+            {d.certifications.map((c) => (
+              <span key={c} className={`${font} inline-flex items-center gap-1.5 text-[12.5px] text-[#1d5b32] bg-[#319754]/10 border border-[#319754]/25 px-3 py-1.5 rounded-full`} style={{ fontWeight: 500 }}>
+                <ShieldCheck className="size-3.5" strokeWidth={2.4} /> {c}
+              </span>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
+      {/* ===== สรรพคุณ ===== */}
+      {d?.benefits && d.benefits.length > 0 && (
+        <SectionCard icon={<Lightbulb className="size-5 text-amber-500" strokeWidth={2.2} />} title="สรรพคุณ">
+          <ul className="space-y-2">
+            {d.benefits.map((b) => (
+              <li key={b} className="flex items-start gap-2.5">
+                <Check className="size-4 text-[#319754] mt-0.5 shrink-0" strokeWidth={2.6} />
+                <span className={`${font} text-[14px] text-[#1a1a1a] leading-relaxed`}>{b}</span>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      )}
+
+      {/* ===== วิธีใช้ ===== */}
+      {d?.howToUse && d.howToUse.length > 0 && (
+        <SectionCard icon={<ListChecks className="size-5 text-[#319754]" strokeWidth={2.2} />} title="วิธีใช้">
+          <ol className="space-y-2.5">
+            {d.howToUse.map((step, i) => (
+              <li key={step} className="flex items-start gap-3">
+                <span className={`${font} size-6 rounded-full bg-[#319754] text-white text-[12px] inline-flex items-center justify-center shrink-0 tabular-nums`} style={{ fontWeight: 700 }}>{i + 1}</span>
+                <span className={`${font} text-[14px] text-[#1a1a1a] leading-relaxed pt-0.5`}>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </SectionCard>
+      )}
+
+      {/* ===== คำเตือน ===== */}
+      {d?.warnings && d.warnings.length > 0 && (
+        <SectionCard
+          icon={<AlertTriangle className="size-5 text-amber-600" strokeWidth={2.2} />}
+          title="คำเตือน"
+          tone="warning"
+        >
+          <ul className="space-y-2">
+            {d.warnings.map((w) => (
+              <li key={w} className="flex items-start gap-2.5">
+                <span className="text-amber-600 mt-1.5 size-1.5 rounded-full bg-amber-500 shrink-0" />
+                <span className={`${font} text-[13.5px] text-amber-900 leading-relaxed`}>{w}</span>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      )}
+
+      {/* ===== ข้อมูลการศึกษาและความปลอดภัย ===== */}
+      {(d?.studyStats || d?.safetyTests || d?.ingredients) && (
+        <SectionCard icon={<Beaker className="size-5 text-[#319754]" strokeWidth={2.2} />} title="ข้อมูลการศึกษาและความปลอดภัย">
+          {/* 4 KPI cards */}
+          {d.studyStats && d.studyStats.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+              {d.studyStats.map((s) => (
+                <div key={s.label} className="bg-[#f0fdf4] border border-[#319754]/20 rounded-[14px] p-3.5">
+                  <p className={`${font} text-[11.5px] text-[#1d5b32] mb-1`} style={{ fontWeight: 600 }}>{s.label}</p>
+                  <p className={`${font} text-[22px] text-[#1a1a1a] tabular-nums leading-none`} style={{ fontWeight: 700 }}>{s.value}</p>
+                  {s.sub && <p className={`${font} text-[11px] text-gray-600 mt-1.5`}>{s.sub}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Safety tests list */}
+          {d.safetyTests && d.safetyTests.length > 0 && (
+            <div className="mb-5">
+              <p className={`${font} text-[13.5px] text-[#1a1a1a] mb-2.5`} style={{ fontWeight: 600 }}>ผลการทดสอบความปลอดภัย</p>
+              <ul className="space-y-2">
+                {d.safetyTests.map((t) => (
+                  <li key={t} className="flex items-start gap-2.5">
+                    <BadgeCheck className="size-4 text-[#319754] mt-0.5 shrink-0" strokeWidth={2.4} />
+                    <span className={`${font} text-[13.5px] text-gray-700 leading-relaxed`}>{t}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {/* Ingredients */}
+          {d.ingredients && d.ingredients.length > 0 && (
+            <div>
+              <p className={`${font} text-[13.5px] text-[#1a1a1a] mb-2.5`} style={{ fontWeight: 600 }}>ส่วนประกอบหลัก (Key Ingredients)</p>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {d.ingredients.map((ing) => (
+                  <span key={ing.name}
+                    className={`${font} text-[12px] px-3 py-1 rounded-full border ${
+                      ing.isActive ? "bg-[#319754]/10 border-[#319754]/30 text-[#1d5b32]" : "bg-gray-50 border-gray-200 text-gray-700"
+                    }`} style={{ fontWeight: ing.isActive ? 600 : 500 }}>
+                    {ing.name}
+                  </span>
+                ))}
+              </div>
+              <p className={`${font} text-[11px] text-gray-500`}>
+                <span className="inline-block size-2 rounded-full bg-[#319754] mr-1.5 align-middle" />
+                สีเขียว = สารออกฤทธิ์หลัก
+              </p>
+            </div>
+          )}
+        </SectionCard>
+      )}
+
+      {/* ===== ผลความพึงพอใจจากเทสเตอร์รุ่นก่อน ===== */}
+      {product.prevAvgRating != null && (
+        <SectionCard icon={<TrendingUp className="size-5 text-[#319754]" strokeWidth={2.2} />} title="ผลความพึงพอใจจากเทสเตอร์รุ่นก่อน">
+          <div className="flex flex-col md:flex-row gap-5 items-start">
+            {/* Big rating */}
+            <div className="bg-[#f0fdf4] border border-[#319754]/20 rounded-[16px] p-5 text-center md:w-[200px] shrink-0">
+              <p className={`${font} text-[44px] text-[#1d5b32] tabular-nums leading-none`} style={{ fontWeight: 700 }}>
+                {product.prevAvgRating.toFixed(1)}
+              </p>
+              <p className={`${font} text-[12px] text-gray-600 mt-1`}>จาก 5.0</p>
+              <div className="flex justify-center gap-0.5 my-2">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star key={n} className={`size-4 ${n <= Math.round(product.prevAvgRating!) ? "fill-amber-400 text-amber-400" : "fill-transparent text-gray-300"}`} strokeWidth={2} />
+                ))}
+              </div>
+              <p className={`${font} text-[12px] text-[#319754] mt-1`} style={{ fontWeight: 600 }}>{Math.round((product.prevAvgRating / 5) * 100)}% พึงพอใจโดยรวม</p>
+              {product.prevRatingCount != null && (
+                <p className={`${font} text-[11px] text-gray-500 mt-1.5`}>จากเทสเตอร์ {product.prevRatingCount} คน รุ่น v1</p>
+              )}
+            </div>
+            {/* Per-criterion bars */}
+            {d?.prevCriteriaRatings && d.prevCriteriaRatings.length > 0 && (
+              <div className="flex-1 w-full space-y-3">
+                {d.prevCriteriaRatings.map((c) => (
+                  <div key={c.criterion}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>{c.criterion}</span>
+                      <span className={`${font} text-[13px] text-[#1a1a1a] tabular-nums`} style={{ fontWeight: 700 }}>{c.rating.toFixed(1)}</span>
+                    </div>
+                    <div className="h-[8px] rounded-full bg-gray-100 overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{
+                        width: `${(c.rating / 5) * 100}%`,
+                        background: c.rating >= 4 ? "#319754" : c.rating >= 3 ? "#f59e0b" : "#dc2626",
+                      }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </SectionCard>
+      )}
+
+      {/* ===== สิ่งที่ต้องประเมิน ===== */}
+      <SectionCard icon={<ListChecks className="size-5 text-[#319754]" strokeWidth={2.2} />} title="สิ่งที่ต้องประเมิน">
+        {d?.testSchedule && d.testSchedule.length > 0 ? (
+          <div className="space-y-3">
+            {d.testSchedule.map((s) => (
+              <div key={s.day} className="flex gap-3 p-3 bg-gray-50 rounded-[12px]">
+                <span className={`${font} text-[12px] text-[#319754] bg-[#319754]/10 px-3 py-1 rounded-full shrink-0 h-fit`} style={{ fontWeight: 700 }}>{s.day}</span>
+                <p className={`${font} text-[13.5px] text-[#1a1a1a] leading-relaxed pt-0.5`}>{s.focus}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ul className="space-y-1.5">
+            {product.whatToTest.map((w) => (
+              <li key={w} className="flex items-start gap-2">
+                <Check className="size-4 text-[#319754] mt-0.5 shrink-0" strokeWidth={2.6} />
+                <span className={`${font} text-[14px] text-[#1a1a1a]`}>{w}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SectionCard>
+    </div>
+  );
+}
+
+function SectionCard({ icon, title, tone = "default", children }: { icon: React.ReactNode; title: string; tone?: "default" | "warning"; children: React.ReactNode }) {
+  const bg = tone === "warning" ? "bg-amber-50 border-amber-200" : "bg-white border-gray-200";
+  return (
+    <section className={`${bg} rounded-[18px] p-5 border`}>
+      <div className="flex items-center gap-2.5 mb-4">
+        <div className="size-9 rounded-[10px] bg-[#319754]/10 flex items-center justify-center shrink-0">{icon}</div>
+        <h2 className={`${font} text-[17px] text-[#1a1a1a]`} style={{ fontWeight: 700 }}>{title}</h2>
+      </div>
+      {children}
+    </section>
   );
 }

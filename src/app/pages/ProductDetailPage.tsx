@@ -23,6 +23,7 @@ import imgFrame42 from "figma:asset/2760a63146309433afbbc9a2171f4189dfd27e07.png
 import imgFrame43 from "figma:asset/623849f160a45efb31fada62d7efbfb3f3bab60f.png";
 import imgFrame44 from "figma:asset/b251ac55d2f44764962036699fe6da4d05a98501.png";
 import svgPaths from "../../imports/svg-ho36dslifz";
+import { productImages } from "../data/productImages";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
@@ -184,7 +185,15 @@ const defaultImages = [imgProd1, imgProd2, imgProd3];
 const recommendedImages = [imgProd1, imgFrame40, imgFrame41, imgFrame42, imgFrame43, imgFrame44];
 
 function getProductImages(productId: string): string[] {
-  return productImageMap[productId] || defaultImages;
+  if (productImages.length === 0) return productImageMap[productId] || defaultImages;
+  // Use the same id → index mapping as the card grid: id "14" → product-14.* (index 13)
+  const n = parseInt(productId, 10);
+  const start = !Number.isNaN(n) && n >= 1 ? (n - 1) % productImages.length : 0;
+  return [
+    productImages[start],
+    productImages[(start + 1) % productImages.length],
+    productImages[(start + 2) % productImages.length],
+  ];
 }
 
 /* ===== Countdown Timer ===== */

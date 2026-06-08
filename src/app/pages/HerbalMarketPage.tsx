@@ -65,7 +65,7 @@ export function HerbalMarketPage() {
   return (
     <div>
       {/* Hero banner */}
-      <div className="bg-gradient-to-br from-[#eaf3ee] via-[#f5fae8] to-[#fff7ed] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-8 md:pb-10">
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-8 md:pb-10">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 flex flex-col items-center text-center gap-2">
           <h1 className={`${font} text-[28px] md:text-[34px] text-[#319754]`} style={{ fontWeight: 600 }}>
             {searchQuery ? `${t("common_search_results")} "${searchQuery}"` : "ตลาดวัตถุดิบสมุนไพร"}
@@ -92,7 +92,7 @@ export function HerbalMarketPage() {
 
       <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         {/* Sidebar filters */}
-        <aside className="hidden lg:block w-[240px] shrink-0">
+        <aside className="hidden lg:block w-[218px] shrink-0">
           <div className="bg-white rounded-2xl p-4 flex flex-col gap-4 sticky top-[140px]">
             <div className="flex items-center justify-between">
               <span className={`${font} text-[18px] text-black`} style={{ fontWeight: 500 }}>{t("products_filter")}</span>
@@ -220,7 +220,7 @@ export function HerbalMarketPage() {
               <p className={`${font} text-[14px]`}>ไม่พบวัตถุดิบที่ตรงกับเงื่อนไข</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[16px]">
               {paginatedItems.map((m) => {
                 const gradeStyle = GRADE_STYLE[m.grade];
                 return (
@@ -283,17 +283,6 @@ export function HerbalMarketPage() {
                         <span className="truncate">{m.location}</span>
                       </div>
 
-                      {/* Certifications */}
-                      {m.certifications.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {m.certifications.slice(0, 3).map((c) => (
-                            <span key={c} className={`${font} inline-flex items-center gap-0.5 text-[10px] bg-[#319754]/8 text-[#287745] px-1.5 py-0.5 rounded`} style={{ fontWeight: 500 }}>
-                              <ShieldCheck className="size-2.5" strokeWidth={2.4} />
-                              {c}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
                 );

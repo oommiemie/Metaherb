@@ -11,22 +11,9 @@ import { toast } from "sonner";
 import svgPaths from "../../imports/svg-7w99agzzp8";
 import { FilterSkeleton, ProductGridSkeleton } from "../components/Skeleton";
 import * as SliderPrimitive from "@radix-ui/react-slider";
+import { productImages, getProductImage } from "../data/productImages";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
-const productImages = [
-  "https://images.unsplash.com/photo-1610643625267-aee6dae3ca22?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiYWwlMjB0ZWElMjBvcmdhbmljfGVufDF8fHx8MTc3MzgzMTQ2OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1599639932525-213272ff954b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvcmdhbmljJTIwY29mZmVlJTIwZHJpcCUyMGJhZ3xlbnwxfHx8fDE3NzM4MzE0NzF8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1645693091199-77a764e1ea16?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob25leSUyMGphciUyMG9yZ2FuaWN8ZW58MXx8fHwxNzczODIzNjY0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1740592754365-2117f5977528?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0dXJtZXJpYyUyMHN1cHBsZW1lbnQlMjBjYXBzdWxlfGVufDF8fHx8MTc3MzgzMTQ2OHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1591282017732-207fbba7dfd4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb2NvbnV0JTIwb2lsJTIwbmF0dXJhbHxlbnwxfHx8fDE3NzM3NDQ5MDJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1759064716219-ba8c60a7ce07?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkcmllZCUyMGhlcmJzJTIwc3BpY2VzfGVufDF8fHx8MTc3MzgzMTQ3MHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1558429773-0d5084b445aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZXJyeSUyMGphbSUyMGhvbWV0YWRlJTIwamFyfGVufDF8fHx8MTc3MzgzMTQ3Mnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1645549826194-1956802d83c2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGlsaSUyMHNhdWNlJTIwYXJ0ิษน์JTIwYm90ต์เล็กxelanwxfHx8fDE3NzM4MzE0NzJ8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1748390359572-8e7a47bf5cb5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbG9lJTIwdmVyYSUyMHNraW5jYXJlJTIwY3JlYW18ZW58MXx8fHwxNzczODMxNDY5fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1765850257647-811b8d3c20ca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvbGl2ZSUyMG9pbCUyMGJvdHRsZSUyMHByZW1pdW18ZW58MXx8fHwxNzczNzM2NzU5fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1624454002302-36b824d7bd0a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiYWwlMjBlc3NlbnRpYWwlMjBvaWwlMjBhcm9tYXRoZXJhcHl8ZW58MXx8fHwxNzczODMxNDcxfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  "https://images.unsplash.com/photo-1644061923948-f5b918b524c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbWxhJTIwaW5kaWFuJTIwZ29vc2ViZXJyeSUyMGRyaWVkfGVufDF8fHx8MTc3MzgzMTQ3Mnww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-];
 
 export function ProductsPage() {
   const navigate = useNavigate();
@@ -403,7 +390,7 @@ export function ProductsPage() {
                 <div key={p.id} onClick={() => navigate(`/product/${p.id}`)}
                   className="bg-white rounded-[16px] border border-[#d4d4d4] overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 flex flex-col h-[259px] group/card">
                   <div className="flex-1 relative min-h-0 overflow-hidden">
-                    <ImageWithFallback src={productImages[i % productImages.length]} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
+                    <ImageWithFallback src={getProductImage(p.id)} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
                     {/* Single Tag — priority: flashsale > discount > recommended */}
                     {tag === "flashsale" && (
                       <>
