@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { motion } from "motion/react";
-import { ChevronLeft, Heart, MessageCircle, Share2, Star, BadgeCheck, Package, Beaker, Clock, Award, Store, ShoppingBag, FileText } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { ChevronLeft, Heart, MessageCircle, Share2, Star, BadgeCheck, Package, Beaker, Clock, Award, Store, ShoppingBag, FileText, ClipboardList, Check } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useLanguage } from "../store/LanguageContext";
 import { useChat } from "../store/ChatContext";
@@ -23,6 +23,9 @@ export default function HerbalMarketDetailPage() {
   const material = MATERIALS.find((m) => m.id === id);
   const [mainImage, setMainImage] = useState(0);
   const [quantity, setQuantity] = useState(material?.moq ?? 1);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [flyingItem, setFlyingItem] = useState<{ x: number; y: number; targetX: number; targetY: number; img: string } | null>(null);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
 
   if (!material) {
     return (
@@ -50,22 +53,47 @@ export default function HerbalMarketDetailPage() {
     navigate(`/market/${material.id}/quote?qty=${quantity}`);
   };
 
+  const handleIssuePR = () => {
+    navigate(`/market/${material.id}/pr?qty=${quantity}`);
+  };
+
   const handleAddToCart = () => {
     if (belowMoq) {
       toast.error(`จำนวนต่ำกว่า MOQ — ขั้นต่ำ ${material.moq} กก.`);
       return;
     }
+
+    // Trigger flying animation from button → cart icon
+    if (addBtnRef.current) {
+      const btnRect = addBtnRef.current.getBoundingClientRect();
+      const cartIcon = document.querySelector('[alt="cart"]');
+      const targetRect = cartIcon ? cartIcon.getBoundingClientRect() : { left: window.innerWidth - 80, top: 20, width: 40, height: 40 };
+      setFlyingItem({
+        x: btnRect.left + btnRect.width / 2 - 25,
+        y: btnRect.top - 25,
+        targetX: targetRect.left + (targetRect.width / 2) - 25,
+        targetY: targetRect.top + (targetRect.height / 2) - 25,
+        img: material.image,
+      });
+      setTimeout(() => setFlyingItem(null), 800);
+    }
+
     addItem({
       productId: material.id,
       name: material.name,
       image: material.image,
       price: material.pricePerKg,
-      option: `เกรด ${material.grade} · ${quantity} กก.`,
+      option: `${material.grade} · ${quantity} กก.`,
       quantity,
       inStock: material.stock > 0,
       shopName: material.supplier,
     });
-    toast.success(`เพิ่ม "${material.name}" ลงตะกร้าแล้ว`, { description: `${quantity} กก. · ฿${totalPrice.toLocaleString()}` });
+    setAddedToCart(true);
+    toast.success(`เพิ่ม "${material.name}" ลงตะกร้าแล้ว`, {
+      description: `${quantity} กก. · ฿${totalPrice.toLocaleString()}`,
+      action: { label: "ดูตะกร้า", onClick: () => navigate("/cart") },
+    });
+    setTimeout(() => setAddedToCart(false), 2000);
   };
 
   const handleShare = () => {
@@ -85,10 +113,10 @@ export default function HerbalMarketDetailPage() {
         <div className="flex flex-col gap-[10px] shrink-0 w-full lg:w-[450px]">
           {/* Top bar */}
           <div className="flex items-center justify-between w-full">
-            <button onClick={() => navigate(-1)}
+            <button onClick={() => navigate("/market")}
               className="group inline-flex items-center gap-1.5 bg-[#f5f5f5] hover:bg-[#319754]/10 text-gray-700 hover:text-[#319754] px-3.5 py-1.5 rounded-full cursor-pointer transition-colors">
               <ChevronLeft className="size-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" strokeWidth={2.4} />
-              <span className={`${font} text-[12px]`} style={{ fontWeight: 500 }}>{t("common_back")}</span>
+              <span className={`${font} text-[12px]`} style={{ fontWeight: 500 }}>ช็อปปิ้งต่อ</span>
             </button>
             <div className="flex items-center gap-2">
               <motion.button
@@ -217,19 +245,50 @@ export default function HerbalMarketDetailPage() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-[10px] flex-wrap">
-            <button onClick={handleAddToCart}
-              className={`${font} flex items-center justify-center gap-2 h-[48px] flex-1 min-w-[140px] rounded-full border-2 border-[#319754] text-[#319754] text-[13px] cursor-pointer hover:bg-[#319754]/5 transition-colors`}
+          <div className="flex gap-[10px] flex-wrap py-[8px]">
+            <motion.button
+              ref={addBtnRef}
+              onClick={handleAddToCart}
+              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              className={`flex items-center justify-center gap-[10px] h-[48px] flex-1 sm:flex-none sm:w-[200px] rounded-full border-2 cursor-pointer transition-colors ${
+                addedToCart ? "border-[#319754] bg-[#319754] text-white" : "border-[#db8b0a] text-[#db8b0a] hover:bg-[#db8b0a]/5"
+              }`}
               style={{ fontWeight: 600 }}>
-              <ShoppingBag className="size-4" strokeWidth={2.4} />
-              ใส่ตะกร้า
-            </button>
-            <button onClick={handleQuoteRequest}
-              className={`${font} flex items-center justify-center gap-2 h-[48px] flex-1 min-w-[140px] rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+              <AnimatePresence mode="wait">
+                {addedToCart ? (
+                  <motion.span key="added" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
+                    className="flex items-center gap-2">
+                    <Check className="size-4" strokeWidth={2.6} />
+                    <span className={`${font} text-[14px]`}>เพิ่มแล้ว!</span>
+                  </motion.span>
+                ) : (
+                  <motion.span key="add" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
+                    className="flex items-center gap-[10px]">
+                    <ShoppingBag className="size-4" strokeWidth={2.4} />
+                    <span className={`${font} text-[14px]`}>เพิ่มใส่รถเข็น</span>
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+            <motion.button
+              onClick={handleQuoteRequest}
+              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              className={`${font} flex items-center justify-center gap-2 h-[48px] flex-1 sm:flex-none sm:w-[200px] rounded-full border-2 border-[#0088ff] text-[#0088ff] text-[14px] cursor-pointer hover:bg-[#0088ff]/5 transition-colors`}
               style={{ fontWeight: 600 }}>
               <FileText className="size-4" strokeWidth={2.4} />
               ขอใบเสนอราคา
-            </button>
+            </motion.button>
+            <motion.button
+              onClick={handleIssuePR}
+              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              className={`${font} flex items-center justify-center gap-2 h-[48px] flex-1 sm:flex-none sm:w-[200px] rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[14px] cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+              style={{ fontWeight: 600 }}>
+              <ClipboardList className="size-4" strokeWidth={2.4} />
+              ออกใบ PR
+            </motion.button>
           </div>
 
         </div>
@@ -375,6 +434,47 @@ export default function HerbalMarketDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Flying item animation overlay — image flies from button → cart icon */}
+      <AnimatePresence>
+        {flyingItem && (
+          <motion.div
+            key="flying-cart-item"
+            initial={{
+              position: "fixed",
+              left: flyingItem.x,
+              top: flyingItem.y,
+              width: 50,
+              height: 50,
+              opacity: 1,
+              scale: 1,
+              zIndex: 9999,
+              borderRadius: 12,
+              overflow: "hidden",
+              pointerEvents: "none" as const,
+              boxShadow: "0 4px 20px rgba(49,151,84,0.4)",
+            }}
+            animate={{
+              left: flyingItem.targetX,
+              top: flyingItem.targetY,
+              width: 20,
+              height: 20,
+              opacity: 0.3,
+              scale: 0.3,
+              borderRadius: 20,
+            }}
+            exit={{ opacity: 0, scale: 0 }}
+            transition={{
+              duration: 0.7,
+              ease: [0.22, 1, 0.36, 1],
+              left: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+              top: { duration: 0.7, ease: [0.15, 0, 0.2, 1] },
+            }}
+          >
+            <img src={flyingItem.img} alt="" className="w-full h-full object-cover" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

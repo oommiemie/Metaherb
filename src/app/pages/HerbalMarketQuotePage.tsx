@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { ChevronLeft, Building2, Phone, Mail, Calendar, Sparkles, ClipboardList, CheckCircle2, MessageSquare, BadgeCheck, Package, ShoppingBag, Download } from "lucide-react";
+import { ChevronLeft, ChevronDown, Building2, Phone, Mail, Sparkles, ClipboardList, CheckCircle2, MessageSquare, BadgeCheck, Package, ShoppingBag, Download } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../store/AuthContext";
 import { useCart } from "../store/CartContext";
@@ -542,11 +542,11 @@ export default function HerbalMarketQuotePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Field label="ชื่อบริษัท / นิติบุคคล" required value={companyName} onChange={setCompanyName} placeholder="เช่น บริษัท เฮอร์บาแบรนด์ จำกัด" />
               <Field label="เลขประจำตัวผู้เสียภาษี" value={taxId} onChange={setTaxId} placeholder="13 หลัก" />
-              <div className="md:col-span-2 flex flex-col gap-1">
-                <label className={`${font} text-[12px] text-gray-600`}>ที่อยู่บริษัท <span className="text-[#ff3b30] ml-1">*</span></label>
+              <div className="md:col-span-2 flex flex-col gap-2">
+                <label className={`${font} text-[13px] text-gray-700`} style={{ fontWeight: 500 }}>ที่อยู่บริษัท <span className="text-[#ff3b30] ml-1">*</span></label>
                 <textarea value={companyAddress} onChange={(e) => setCompanyAddress(e.target.value)}
                   rows={2} placeholder="เลขที่ / ซอย / ถนน / ตำบล / อำเภอ / จังหวัด / รหัสไปรษณีย์"
-                  className={`${font} w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] resize-none outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+                  className={`${font} bg-[#fafafa] w-full px-6 py-3 rounded-2xl text-[14px] resize-none outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
               </div>
             </div>
           </section>
@@ -590,25 +590,28 @@ export default function HerbalMarketQuotePage() {
                     placeholder="เช่น ขมิ้นชันออร์แกนิก แห้ง บด 80 mesh" icon={Package} />
 
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-2 flex flex-col gap-1">
-                      <label className={`${font} text-[12px] text-gray-600`}>ปริมาณ <span className="text-[#ff3b30] ml-0.5">*</span></label>
+                    <div className="col-span-2 flex flex-col gap-2">
+                      <label className={`${font} text-[13px] text-gray-700`} style={{ fontWeight: 500 }}>ปริมาณ <span className="text-[#ff3b30] ml-0.5">*</span></label>
                       <input type="number" value={qty} placeholder="100"
                         onChange={(e) => setQty(e.target.value === "" ? "" : Number(e.target.value))}
-                        className={`${font} h-10 px-3 rounded-lg border border-gray-200 text-[13px] outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+                        className={`${font} bg-[#fafafa] h-12 px-6 rounded-full text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className={`${font} text-[12px] text-gray-600`}>หน่วย</label>
-                      <select value={unit} onChange={(e) => setUnit(e.target.value)}
-                        className={`${font} h-10 px-3 rounded-lg border border-gray-200 text-[13px] outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white cursor-pointer transition-all`}>
-                        {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-                      </select>
+                    <div className="flex flex-col gap-2">
+                      <label className={`${font} text-[13px] text-gray-700`} style={{ fontWeight: 500 }}>หน่วย</label>
+                      <div className="relative">
+                        <select value={unit} onChange={(e) => setUnit(e.target.value)}
+                          className={`${font} bg-[#fafafa] h-12 pl-6 pr-12 w-full rounded-full text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow cursor-pointer appearance-none`}>
+                          {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" strokeWidth={2.2} />
+                      </div>
                     </div>
                   </div>
                 </>
               )}
 
               <div>
-                <label className={`${font} text-[12px] text-gray-600 block mb-1.5`}>เกรด / Certificate ที่ต้องการ</label>
+                <label className={`${font} text-[13px] text-gray-700 block mb-2`} style={{ fontWeight: 500 }}>เกรด / Certificate ที่ต้องการ</label>
                 <div className="flex flex-wrap gap-2">
                   {CERT_OPTIONS.map((c) => {
                     const active = certPref === c;
@@ -624,24 +627,21 @@ export default function HerbalMarketQuotePage() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className={`${font} text-[12px] text-gray-600`}>ต้องการภายใน <span className="text-[#ff3b30] ml-0.5">*</span></label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" strokeWidth={2.2} />
-                  <input type="date" value={requiredBy}
-                    onChange={(e) => setRequiredBy(e.target.value)}
-                    className={`${font} h-10 pl-10 pr-3 w-full rounded-lg border border-gray-200 text-[13px] outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
-                </div>
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[13px] text-gray-700`} style={{ fontWeight: 500 }}>ต้องการภายใน <span className="text-[#ff3b30] ml-0.5">*</span></label>
+                <input type="date" value={requiredBy}
+                  onChange={(e) => setRequiredBy(e.target.value)}
+                  className={`${font} bg-[#fafafa] h-12 px-6 w-full rounded-full text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow`} />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className={`${font} text-[12px] text-gray-600 flex items-center gap-1`}>
-                  <MessageSquare className="size-3 text-gray-400" strokeWidth={2.4} />
-                  หมายเหตุ <span className="text-gray-400 text-[11px]">(optional)</span>
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[13px] text-gray-700 flex items-center gap-1.5`} style={{ fontWeight: 500 }}>
+                  <MessageSquare className="size-3.5 text-gray-400" strokeWidth={2.4} />
+                  หมายเหตุ <span className="text-gray-400 text-[12px]">(optional)</span>
                 </label>
                 <textarea value={note} onChange={(e) => setNote(e.target.value)}
                   rows={3} placeholder="เช่น ต้องการแหล่งปลูกในไทย / ขอ COA แนบ / ส่งตัวอย่างก่อน"
-                  className={`${font} w-full px-3 py-2 rounded-lg border border-gray-200 text-[13px] resize-none outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+                  className={`${font} bg-[#fafafa] w-full px-6 py-3 rounded-2xl text-[14px] resize-none outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
               </div>
             </div>
           </section>
@@ -707,15 +707,15 @@ function Field({ label, value, onChange, placeholder, required, icon: Icon, type
   label: string; value: string; onChange: (v: string) => void; placeholder?: string; required?: boolean; icon?: any; type?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className={`${font} text-[12px] text-gray-600`}>
+    <div className="flex flex-col gap-2">
+      <label className={`${font} text-[13px] text-gray-700`} style={{ fontWeight: 500 }}>
         {label}{required && <span className="text-[#ff3b30] ml-1">*</span>}
       </label>
       <div className="relative">
-        {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" strokeWidth={2.2} />}
+        {Icon && <Icon className="absolute left-5 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" strokeWidth={2.2} />}
         <input type={type} value={value} placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
-          className={`${font} h-10 ${Icon ? "pl-10" : "pl-3"} pr-3 w-full rounded-lg border border-gray-200 text-[13px] outline-none focus:border-[#319754] focus:ring-2 focus:ring-[#319754]/10 bg-white transition-all`} />
+          className={`${font} bg-[#fafafa] h-12 ${Icon ? "pl-12" : "pl-6"} pr-6 w-full rounded-full text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
       </div>
     </div>
   );
