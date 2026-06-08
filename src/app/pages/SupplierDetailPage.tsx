@@ -254,9 +254,9 @@ export default function SupplierDetailPage() {
                         <ImageWithFallback src={m.image} alt={m.name}
                           className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                         <div className="absolute top-2.5 left-2.5">
-                          <span className={`${font} text-[10px] px-2 py-1 rounded-full shadow-sm`}
-                            style={{ backgroundColor: gStyle.bg, color: gStyle.color, fontWeight: 600 }}>
-                            เกรด {m.grade}
+                          <span className={`${font} text-[10px] px-2 py-1 rounded-full`}
+                            style={{ background: gStyle.bg, color: gStyle.color, fontWeight: 700, boxShadow: gStyle.shadow, textShadow: gStyle.textShadow, letterSpacing: "0.02em" }}>
+                            {m.grade}
                           </span>
                         </div>
                         <div className="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-sm rounded-full px-2 py-0.5">

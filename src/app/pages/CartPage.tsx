@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useCart } from "../store/CartContext";
 import { useLanguage } from "../store/LanguageContext";
-import { Trash2, Minus, Plus, ChevronLeft, Store, MessageCircle, ShieldCheck, FileText, AlertCircle } from "lucide-react";
+import { Trash2, Minus, Plus, ChevronLeft, Store, MessageCircle, ShieldCheck, FileText, ClipboardList } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useChat } from "../store/ChatContext";
 import { toast } from "sonner";
@@ -46,7 +46,6 @@ export function CartPage() {
 
   const selectedTotal = items.filter((i) => selected.has(rowKey(i))).reduce((s, i) => s + i.price * i.quantity, 0);
   const selectedCount = items.filter((i) => selected.has(rowKey(i))).length;
-  const selectedHasMarketItem = items.some((i) => selected.has(rowKey(i)) && isMarketItem(i.productId));
   const discount = appliedCoupon ? 100 : 0;
 
   const handleRemove = (id: string, option: string, name: string) => {
@@ -223,22 +222,15 @@ export function CartPage() {
                   <span className={`${font} text-[11px]`}>{t("cart_protected")}</span>
                 </div>
 
-                {selectedHasMarketItem && (
-                  <div className={`${font} mt-4 bg-[#fff8e6] border border-[#f0c674]/40 rounded-xl p-3 flex items-start gap-2 text-[12px] text-[#7a4a00]`}>
-                    <AlertCircle className="size-4 text-[#a86a00] shrink-0 mt-0.5" strokeWidth={2.2} />
-                    <span>วัตถุดิบจาก <span style={{ fontWeight: 600 }}>Herbal Market (B2B)</span> ต้องขอใบเสนอราคา (RFQ) เท่านั้น — ไม่สามารถสั่งซื้อตรงได้</span>
-                  </div>
-                )}
                 <button onClick={() => {
-                  if (selectedCount === 0) return;
-                  if (selectedHasMarketItem) {
-                    return toast.info("กรุณาเอาวัตถุดิบ B2B ออกจากที่เลือก หรือใช้ปุ่ม \"ขอใบเสนอราคา\" แทน");
-                  }
-                  navigate("/payment");
+                  if (selectedCount === 0) return toast.info("เลือกสินค้าก่อนออกใบ PR");
+                  const ids = items.filter((i) => selected.has(rowKey(i))).map((i) => i.productId).join(",");
+                  navigate(`/cart/pr?ids=${ids}`);
                 }}
-                  disabled={selectedCount === 0 || selectedHasMarketItem}
-                  className={`w-full ${selectedHasMarketItem ? "mt-2" : "mt-4"} py-3 rounded-full text-[14px] ${font} transition-colors ${selectedCount > 0 && !selectedHasMarketItem ? "bg-[#319754] text-white hover:bg-[#267a43] cursor-pointer" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>
-                  {t("cart_checkout")} ({selectedCount})
+                  className={`w-full mt-4 py-3 rounded-full bg-[#319754] hover:bg-[#267a43] text-white text-[14px] ${font} cursor-pointer transition-colors inline-flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+                  style={{ fontWeight: 600 }}>
+                  <ClipboardList className="size-4" strokeWidth={2.4} />
+                  ออกใบ PR ({selectedCount})
                 </button>
                 <button onClick={() => {
                   if (selectedCount === 0) return toast.info("เลือกสินค้าก่อนขอใบเสนอราคา");

@@ -5,6 +5,7 @@ import { useLanguage } from "../store/LanguageContext";
 import { useProducts } from "../store/ProductsContext";
 import { useCategories } from "../store/CategoriesContext";
 import { readImageFile } from "../data/imageUpload";
+import { MATERIALS, GRADE_STYLE, type MaterialGrade } from "../data/herbalMaterials";
 import { useNavigate } from "react-router";
 import {
   BarChart3, Package, ShoppingCart, Zap, Megaphone, Ticket,
@@ -2079,6 +2080,7 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { products: ctxProducts, removeProduct } = useProducts();
+  const [productType, setProductType] = useState<"regular" | "material">("regular");
   const [productFilter, setProductFilter] = useState("all");
   const [previewProduct, setPreviewProduct] = useState<typeof mockProducts[0] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -2112,7 +2114,7 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
   }, [ctxProducts, shopName]);
 
   // Combine context products + the original mockProducts demo set (deduped by id)
-  const allProducts = useMemo(() => {
+  const regularProducts = useMemo(() => {
     const seen = new Set<string>();
     const out: typeof mockProducts = [];
     [...shopProducts, ...mockProducts].forEach((p) => {
@@ -2122,6 +2124,34 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
     });
     return out;
   }, [shopProducts]);
+
+  // Adapt Herbal Market materials → same shape as products for the table
+  const materialProducts = useMemo(() => {
+    // Solid accent per grade for the small type chip in the table (gradient bg is used elsewhere)
+    const GRADE_ACCENT: Record<string, string> = {
+      พรีเมียม: "#d97706", คัดสรร: "#475569", มาตรฐาน: "#c2410c", ทั่วไป: "#047857", ประหยัด: "#475569",
+    };
+    return MATERIALS.map((m) => {
+      const status = m.stock === 0 ? "สินค้าหมด" : "เปิดขาย";
+      const statusColor = m.stock === 0 ? "#dc2626" : "#319754";
+      return {
+        id: m.id,
+        name: m.name,
+        category: m.category,
+        type: `วัตถุดิบ · ${m.grade}`,
+        typeColor: GRADE_ACCENT[m.grade] || "#0088ff",
+        price: `฿ ${m.pricePerKg.toLocaleString()} / กก.`,
+        stock: `${m.stock.toLocaleString()} กก.`,
+        status,
+        statusColor,
+        flash: false,
+        recommended: false,
+        image: m.image,
+      } as typeof mockProducts[0];
+    });
+  }, []);
+
+  const allProducts = productType === "regular" ? regularProducts : materialProducts;
 
   // Counts derived from data so tabs always match current inventory
   const counts = {
@@ -2171,6 +2201,27 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
           </span>
           <span className="hidden sm:inline" style={{ fontWeight: 600 }}>{t("owner_products_add")}</span>
         </motion.button>
+      </div>
+
+      {/* Product type tabs — regular vs Herbal Market */}
+      <div className="inline-flex items-center gap-1 bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-4">
+        {[
+          { id: "regular"  as const, label: "สินค้าปกติ",               Icon: ShoppingBag, count: regularProducts.length },
+          { id: "material" as const, label: "วัตถุดิบ (Herbal Market)", Icon: Beaker,      count: materialProducts.length },
+        ].map((tab) => {
+          const active = productType === tab.id;
+          return (
+            <button key={tab.id}
+              onClick={() => { setProductType(tab.id); setProductFilter("all"); setCurrentPage(1); }}
+              className={`${font} inline-flex items-center gap-2 px-4 h-10 rounded-full text-[13px] cursor-pointer transition-all ${
+                active ? "bg-[#319754] text-white shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "text-gray-600 hover:bg-gray-50"
+              }`} style={{ fontWeight: 600 }}>
+              <tab.Icon className="size-4" strokeWidth={2.2} />
+              {tab.label}
+              <span className={`text-[11px] tabular-nums px-1.5 py-0.5 rounded-full ${active ? "bg-white/25" : "bg-gray-100"}`}>{tab.count}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filter tabs + search (in one pill) */}
@@ -4597,6 +4648,18 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
   const [category, setCategory] = useState("");
   const [sku, setSku] = useState("");
   const [salesChannel, setSalesChannel] = useState<"retail" | "market" | "both">("retail");
+  // ----- Herbal Market (B2B) extra fields — only used when salesChannel !== "retail" -----
+  const [scientificName, setScientificName] = useState("");
+  const [materialGrade, setMaterialGrade] = useState<MaterialGrade>("พรีเมียม");
+  const [moq, setMoq] = useState("");
+  const [pricePerKg, setPricePerKg] = useState("");
+  const [materialLocation, setMaterialLocation] = useState("");
+  const [certifications, setCertifications] = useState<string[]>([]);
+  const [processingMethod, setProcessingMethod] = useState("");
+  const [packagingFormat, setPackagingFormat] = useState("25kg-bag");
+  const [shelfLife, setShelfLife] = useState("");
+  const toggleCert = (c: string) =>
+    setCertifications((arr) => (arr.includes(c) ? arr.filter((x) => x !== c) : [...arr, c]));
   // 3 cover-image slots; null = empty, string = data URL. Use array of 3 so
   // each upload tile owns a specific slot (cover / image-2 / image-3).
   const [productImages, setProductImages] = useState<(string | null)[]>([null, null, null]);
@@ -4924,6 +4987,153 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
             </div>
           </div>
         </section>
+
+        {/* Section: ข้อมูล Herbal Market (B2B) — only shown when salesChannel includes market */}
+        {salesChannel !== "retail" && (
+          <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-4 border-2 border-[#319754]/15">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Beaker className="size-5 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <h3 className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>ข้อมูล Herbal Market (B2B)</h3>
+                <p className={`${font} text-[12px] text-gray-500`}>ข้อมูลเพิ่มเติมสำหรับลงในตลาดวัตถุดิบ</p>
+              </div>
+            </div>
+            <div className="h-px bg-gray-100" />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Scientific name */}
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ชื่อวิทยาศาสตร์ <span className="text-[#ff3b30]">*</span></label>
+                <input value={scientificName} onChange={(e) => setScientificName(e.target.value)} placeholder="เช่น: Curcuma longa"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] italic outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+              </div>
+
+              {/* Grade — chip layout, wraps to multiple rows if many grades */}
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>เกรด <span className="text-[#ff3b30]">*</span></label>
+                <div className="flex flex-wrap items-center gap-1.5 min-h-[48px]">
+                  {(Object.keys(GRADE_STYLE) as (keyof typeof GRADE_STYLE)[]).map((g) => {
+                    const active = materialGrade === g;
+                    const color = GRADE_STYLE[g];
+                    return (
+                      <button key={g} type="button" onClick={() => setMaterialGrade(g)}
+                        className={`${font} h-10 px-5 min-w-[80px] rounded-full text-[13px] cursor-pointer transition-all inline-flex items-center justify-center`}
+                        style={active ? {
+                          background: color.bg,
+                          color: color.color,
+                          border: "1px solid transparent",
+                          fontWeight: 700,
+                          boxShadow: color.shadow,
+                          textShadow: color.textShadow,
+                          letterSpacing: "0.02em",
+                        } : {
+                          backgroundColor: "transparent",
+                          color: "#6b7280",
+                          border: "2px solid #e5e7eb",
+                          fontWeight: 500,
+                        }}>
+                        {g}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Price per kg + MOQ */}
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ราคา / กก. (บาท) <span className="text-[#ff3b30]">*</span></label>
+                <input type="number" value={pricePerKg} onChange={(e) => setPricePerKg(e.target.value)} placeholder="เช่น: 320"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>MOQ ขั้นต่ำ (กก.) <span className="text-[#ff3b30]">*</span></label>
+                <input type="number" value={moq} onChange={(e) => setMoq(e.target.value)} placeholder="เช่น: 25"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+              </div>
+
+              {/* Location */}
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>แหล่งผลิต / จังหวัด <span className="text-[#ff3b30]">*</span></label>
+                <div className="relative">
+                  <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" strokeWidth={2.2} />
+                  <input value={materialLocation} onChange={(e) => setMaterialLocation(e.target.value)} placeholder="เช่น: เชียงใหม่"
+                    className={`${font} bg-[#fafafa] h-12 rounded-full pl-12 pr-6 w-full text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+                </div>
+              </div>
+
+              {/* Processing method */}
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>วิธีการแปรรูป</label>
+                <div className="relative">
+                  <select value={processingMethod} onChange={(e) => setProcessingMethod(e.target.value)}
+                    className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-6 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
+                    <option value="">เลือกรูปแบบ</option>
+                    <option>อบแห้ง (ทั้งใบ/ทั้งราก)</option>
+                    <option>สับ / ฝาน</option>
+                    <option>บด (ผง)</option>
+                    <option>คั่ว</option>
+                    <option>สกัด</option>
+                    <option>น้ำมันหอมระเหย</option>
+                    <option>อื่นๆ</option>
+                  </select>
+                  <ChevronDown className="size-4 text-gray-400 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
+                </div>
+              </div>
+
+              {/* Packaging */}
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>บรรจุภัณฑ์เริ่มต้น</label>
+                <div className="relative">
+                  <select value={packagingFormat} onChange={(e) => setPackagingFormat(e.target.value)}
+                    className={`${font} bg-[#fafafa] h-12 w-full rounded-full pl-6 pr-12 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow appearance-none cursor-pointer`}>
+                    <option value="1kg-bag">ถุงสุญญากาศ 1 กก.</option>
+                    <option value="5kg-bag">ถุง 5 กก.</option>
+                    <option value="10kg-bag">ถุง 10 กก.</option>
+                    <option value="25kg-bag">กระสอบ 25 กก.</option>
+                    <option value="custom">ตามที่ลูกค้ากำหนด</option>
+                  </select>
+                  <ChevronDown className="size-4 text-gray-400 absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
+                </div>
+              </div>
+
+              {/* Shelf life */}
+              <div className="flex flex-col gap-2">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>อายุการเก็บรักษา (เดือน)</label>
+                <input type="number" value={shelfLife} onChange={(e) => setShelfLife(e.target.value)} placeholder="เช่น: 12"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+              </div>
+            </div>
+
+            {/* Certifications */}
+            <div className="flex flex-col gap-2">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ใบรับรองมาตรฐาน <span className="text-gray-400 ml-1 text-[12px]">(เลือกได้หลายอัน — แสดงเป็น trust badge บนหน้ารายการ)</span></label>
+              <div className="flex flex-wrap gap-2">
+                {["อย.", "Organic Thailand", "GAP", "GMP", "HACCP", "ISO 22000", "ECOCERT", "USDA Organic", "EU Organic", "Halal"].map((c) => {
+                  const active = certifications.includes(c);
+                  return (
+                    <button key={c} type="button" onClick={() => toggleCert(c)}
+                      className={`${font} h-9 px-4 rounded-full text-[12px] cursor-pointer transition-all inline-flex items-center gap-1.5 ${
+                        active ? "bg-[#319754] text-white shadow-[0_2px_6px_rgba(49,151,84,0.25)]" : "bg-[#fafafa] text-gray-700 hover:bg-gray-100"
+                      }`} style={{ fontWeight: 500 }}>
+                      {active && <Check className="size-3" strokeWidth={2.8} />}
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Info banner */}
+            <div className="bg-[#319754]/5 rounded-xl p-3 flex items-start gap-2.5 border border-[#319754]/15">
+              <Info className="size-4 text-[#319754] shrink-0 mt-0.5" strokeWidth={2.2} />
+              <p className={`${font} text-[12px] text-gray-700 leading-relaxed`}>
+                สินค้า Herbal Market จะใช้ <span style={{ fontWeight: 600 }}>ราคา/กก.</span> เป็นหลัก — ลูกค้า B2B จะเห็น MOQ และเกรดเป็นข้อมูลสำคัญ และจะ<span style={{ fontWeight: 600 }}>รับเฉพาะ RFQ (ขอใบเสนอราคา)</span> ไม่สามารถสั่งซื้อตรงผ่านตะกร้าได้
+              </p>
+            </div>
+          </section>
+        )}
 
         {/* Section: ตัวเลือกสินค้า */}
         <section id="addprod-variants" onMouseEnter={() => { setActiveStep(2); setMaxVisitedStep((p) => Math.max(p, 2)); }}

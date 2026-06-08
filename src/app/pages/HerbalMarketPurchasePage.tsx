@@ -162,7 +162,7 @@ export default function HerbalMarketPurchasePage() {
                     <ImageWithFallback src={material.image} alt={material.name} className="w-full h-full object-cover" />
                     <div className="absolute top-1 left-1">
                       <span className={`${font} text-[9px] px-1.5 py-0.5 rounded-full`}
-                        style={{ backgroundColor: gradeStyle.bg, color: gradeStyle.color, fontWeight: 600 }}>
+                        style={{ background: gradeStyle.bg, color: gradeStyle.color, fontWeight: 700, boxShadow: gradeStyle.shadow, textShadow: gradeStyle.textShadow, letterSpacing: "0.02em" }}>
                         {material.grade}
                       </span>
                     </div>
@@ -410,7 +410,7 @@ export default function HerbalMarketPurchasePage() {
                 <ImageWithFallback src={material.image} alt={material.name} className="w-full h-full object-cover" />
                 <div className="absolute top-1 left-1">
                   <span className={`${font} text-[9px] px-1.5 py-0.5 rounded-full`}
-                    style={{ backgroundColor: gradeStyle.bg, color: gradeStyle.color, fontWeight: 600 }}>
+                    style={{ background: gradeStyle.bg, color: gradeStyle.color, fontWeight: 700, boxShadow: gradeStyle.shadow, textShadow: gradeStyle.textShadow, letterSpacing: "0.02em" }}>
                     {material.grade}
                   </span>
                 </div>

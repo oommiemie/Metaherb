@@ -56,7 +56,8 @@ export function HerbalMarketPage() {
       return b.rating - a.rating;  // popular
     });
 
-  const ITEMS_PER_PAGE = 12;
+  // 20 = fills the 5-col grid (4 rows) and 4-col grid (5 rows) evenly
+  const ITEMS_PER_PAGE = 20;
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
   const paginatedItems = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
@@ -233,8 +234,8 @@ export function HerbalMarketPage() {
                       {/* Grade pill */}
                       <div className="absolute top-2.5 left-2.5">
                         <span className={`${font} text-[10px] px-2 py-1 rounded-full shadow-sm`}
-                          style={{ backgroundColor: gradeStyle.bg, color: gradeStyle.color, fontWeight: 600 }}>
-                          เกรด {m.grade}
+                          style={{ background: gradeStyle.bg, color: gradeStyle.color, fontWeight: 700, boxShadow: gradeStyle.shadow, textShadow: gradeStyle.textShadow, letterSpacing: "0.02em" }}>
+                          {m.grade}
                         </span>
                       </div>
                       {/* Verified supplier */}

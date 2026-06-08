@@ -16,6 +16,7 @@ import HerbalMarketDetailPage from "./pages/HerbalMarketDetailPage";
 import HerbalMarketSamplePage from "./pages/HerbalMarketSamplePage";
 import HerbalMarketPurchasePage from "./pages/HerbalMarketPurchasePage";
 import HerbalMarketQuotePage from "./pages/HerbalMarketQuotePage";
+import HerbalMarketPRPage from "./pages/HerbalMarketPRPage";
 import SupplierDetailPage from "./pages/SupplierDetailPage";
 import SupplierRegisterPage from "./pages/SupplierRegisterPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
@@ -107,6 +108,8 @@ export const router = createBrowserRouter([
       { path: "market/:id/purchase", Component: HerbalMarketPurchasePage },
       { path: "market/:id/quote", Component: HerbalMarketQuotePage },
       { path: "cart/quote", Component: HerbalMarketQuotePage },
+      { path: "market/:id/pr", Component: HerbalMarketPRPage },
+      { path: "cart/pr", Component: HerbalMarketPRPage },
       { path: "supplier/register", Component: SupplierRegisterPage },
       { path: "supplier/:id", Component: SupplierDetailPage },
       { path: "product/:id", Component: ProductDetailPage },

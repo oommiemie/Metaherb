@@ -1,5 +1,5 @@
 export type MaterialCategory = "ราก/หัว" | "ใบ" | "ดอก" | "เปลือก" | "ผล/เมล็ด" | "สมุนไพรรวม";
-export type MaterialGrade = "Premium" | "A" | "B";
+export type MaterialGrade = "พรีเมียม" | "คัดสรร" | "มาตรฐาน" | "ทั่วไป" | "ประหยัด";
 
 export interface HerbalMaterial {
   id: string;
@@ -30,27 +30,74 @@ export const MATERIAL_IMAGES = [
 ];
 
 export const MATERIALS: HerbalMaterial[] = [
-  { id: "m-1",  name: "ขมิ้นชันแห้ง (ผง)",        scientificName: "Curcuma longa",        category: "ราก/หัว",       image: MATERIAL_IMAGES[1], pricePerKg: 320,  moq: 25,  stock: 2400, grade: "Premium", supplier: "ฟาร์มสมุนไพรนำชัย",     supplierVerified: true,  location: "เชียงใหม่",   rating: 4.9, certifications: ["อย.", "Organic Thailand", "GMP"] },
-  { id: "m-2",  name: "ตะไคร้แห้ง (สับ)",         scientificName: "Cymbopogon citratus",  category: "ใบ",            image: MATERIAL_IMAGES[0], pricePerKg: 180,  moq: 20,  stock: 1800, grade: "A",       supplier: "ฟาร์มสมุนไพรนำชัย",     supplierVerified: true,  location: "เชียงใหม่",   rating: 4.7, certifications: ["อย.", "Organic Thailand"] },
-  { id: "m-3",  name: "ใบบัวบกแห้ง",              scientificName: "Centella asiatica",     category: "ใบ",            image: MATERIAL_IMAGES[6], pricePerKg: 450,  moq: 10,  stock: 800,  grade: "Premium", supplier: "วิสาหกิจชุมชนแม่จัน",    supplierVerified: true,  location: "เชียงราย",    rating: 4.8, certifications: ["อย.", "ECOCERT"] },
-  { id: "m-4",  name: "ดอกอัญชันแห้ง",            scientificName: "Clitoria ternatea",    category: "ดอก",           image: MATERIAL_IMAGES[2], pricePerKg: 520,  moq: 5,   stock: 320,  grade: "Premium", supplier: "Herbal Garden Bangkok",  supplierVerified: true,  location: "นครปฐม",      rating: 4.9, certifications: ["อย.", "Organic Thailand"] },
-  { id: "m-5",  name: "ขิงแก่แห้ง (ฝาน)",         scientificName: "Zingiber officinale",   category: "ราก/หัว",       image: MATERIAL_IMAGES[3], pricePerKg: 280,  moq: 30,  stock: 3500, grade: "A",       supplier: "สหกรณ์เกษตรอินทรีย์",   supplierVerified: true,  location: "ลำปาง",       rating: 4.6, certifications: ["อย.", "GAP"] },
-  { id: "m-6",  name: "อบเชยเทศ (แท่ง)",          scientificName: "Cinnamomum verum",     category: "เปลือก",        image: MATERIAL_IMAGES[4], pricePerKg: 780,  moq: 10,  stock: 450,  grade: "Premium", supplier: "Spice Trading Co.",     supplierVerified: true,  location: "กรุงเทพฯ",   rating: 4.8, certifications: ["อย.", "HACCP"] },
-  { id: "m-7",  name: "เมล็ดเทียนสัตตบุษย์",      scientificName: "Pimpinella anisum",    category: "ผล/เมล็ด",    image: MATERIAL_IMAGES[7], pricePerKg: 620,  moq: 5,   stock: 220,  grade: "A",       supplier: "Spice Trading Co.",     supplierVerified: true,  location: "กรุงเทพฯ",   rating: 4.5, certifications: ["อย."] },
-  { id: "m-8",  name: "กระชายแห้ง (ฝาน)",         scientificName: "Boesenbergia rotunda",  category: "ราก/หัว",       image: MATERIAL_IMAGES[3], pricePerKg: 420,  moq: 15,  stock: 1100, grade: "A",       supplier: "ฟาร์มสมุนไพรน่าน",       supplierVerified: true,  location: "น่าน",         rating: 4.7, certifications: ["อย.", "GAP"] },
-  { id: "m-9",  name: "ดอกคำฝอย",                  scientificName: "Carthamus tinctorius",  category: "ดอก",           image: MATERIAL_IMAGES[2], pricePerKg: 380,  moq: 5,   stock: 180,  grade: "Premium", supplier: "วิสาหกิจชุมชนแม่จัน",    supplierVerified: true,  location: "เชียงราย",    rating: 4.6, certifications: ["อย.", "Organic Thailand"] },
-  { id: "m-10", name: "สมุนไพรชา 7 ชนิดผสม",     scientificName: "Herbal Tea Blend",       category: "สมุนไพรรวม", image: MATERIAL_IMAGES[5], pricePerKg: 950,  moq: 5,   stock: 240,  grade: "Premium", supplier: "Metaherb Wholesale",     supplierVerified: true,  location: "กรุงเทพฯ",   rating: 4.9, certifications: ["อย.", "ISO 22000", "HACCP"] },
-  { id: "m-11", name: "ใบมะรุมแห้ง (ผง)",        scientificName: "Moringa oleifera",      category: "ใบ",            image: MATERIAL_IMAGES[6], pricePerKg: 540,  moq: 10,  stock: 680,  grade: "Premium", supplier: "ฟาร์มมะรุมพะเยา",         supplierVerified: false, location: "พะเยา",       rating: 4.5, certifications: ["อย."] },
-  { id: "m-12", name: "เมล็ดเจียแห้ง",             scientificName: "Salvia hispanica",       category: "ผล/เมล็ด",    image: MATERIAL_IMAGES[7], pricePerKg: 280,  moq: 20,  stock: 1400, grade: "A",       supplier: "Healthy Seeds Import",   supplierVerified: true,  location: "กรุงเทพฯ",   rating: 4.4, certifications: ["อย.", "Organic"] },
+  { id: "m-1",  name: "ขมิ้นชันแห้ง (ผง)",        scientificName: "Curcuma longa",        category: "ราก/หัว",       image: MATERIAL_IMAGES[1], pricePerKg: 320,  moq: 25,  stock: 2400, grade: "พรีเมียม", supplier: "ฟาร์มสมุนไพรนำชัย",     supplierVerified: true,  location: "เชียงใหม่",   rating: 4.9, certifications: ["อย.", "Organic Thailand", "GMP"] },
+  { id: "m-2",  name: "ตะไคร้แห้ง (สับ)",         scientificName: "Cymbopogon citratus",  category: "ใบ",            image: MATERIAL_IMAGES[0], pricePerKg: 180,  moq: 20,  stock: 1800, grade: "คัดสรร", supplier: "ฟาร์มสมุนไพรนำชัย",     supplierVerified: true,  location: "เชียงใหม่",   rating: 4.7, certifications: ["อย.", "Organic Thailand"] },
+  { id: "m-3",  name: "ใบบัวบกแห้ง",              scientificName: "Centella asiatica",     category: "ใบ",            image: MATERIAL_IMAGES[6], pricePerKg: 450,  moq: 10,  stock: 800,  grade: "พรีเมียม", supplier: "วิสาหกิจชุมชนแม่จัน",    supplierVerified: true,  location: "เชียงราย",    rating: 4.8, certifications: ["อย.", "ECOCERT"] },
+  { id: "m-4",  name: "ดอกอัญชันแห้ง",            scientificName: "Clitoria ternatea",    category: "ดอก",           image: MATERIAL_IMAGES[2], pricePerKg: 520,  moq: 5,   stock: 320,  grade: "พรีเมียม", supplier: "Herbal Garden Bangkok",  supplierVerified: true,  location: "นครปฐม",      rating: 4.9, certifications: ["อย.", "Organic Thailand"] },
+  { id: "m-5",  name: "ขิงแก่แห้ง (ฝาน)",         scientificName: "Zingiber officinale",   category: "ราก/หัว",       image: MATERIAL_IMAGES[3], pricePerKg: 280,  moq: 30,  stock: 3500, grade: "คัดสรร", supplier: "สหกรณ์เกษตรอินทรีย์",   supplierVerified: true,  location: "ลำปาง",       rating: 4.6, certifications: ["อย.", "GAP"] },
+  { id: "m-6",  name: "อบเชยเทศ (แท่ง)",          scientificName: "Cinnamomum verum",     category: "เปลือก",        image: MATERIAL_IMAGES[4], pricePerKg: 780,  moq: 10,  stock: 450,  grade: "พรีเมียม", supplier: "Spice Trading Co.",     supplierVerified: true,  location: "กรุงเทพฯ",   rating: 4.8, certifications: ["อย.", "HACCP"] },
+  { id: "m-7",  name: "เมล็ดเทียนสัตตบุษย์",      scientificName: "Pimpinella anisum",    category: "ผล/เมล็ด",    image: MATERIAL_IMAGES[7], pricePerKg: 620,  moq: 5,   stock: 220,  grade: "คัดสรร", supplier: "Spice Trading Co.",     supplierVerified: true,  location: "กรุงเทพฯ",   rating: 4.5, certifications: ["อย."] },
+  { id: "m-8",  name: "กระชายแห้ง (ฝาน)",         scientificName: "Boesenbergia rotunda",  category: "ราก/หัว",       image: MATERIAL_IMAGES[3], pricePerKg: 420,  moq: 15,  stock: 1100, grade: "คัดสรร", supplier: "ฟาร์มสมุนไพรน่าน",       supplierVerified: true,  location: "น่าน",         rating: 4.7, certifications: ["อย.", "GAP"] },
+  { id: "m-9",  name: "ดอกคำฝอย",                  scientificName: "Carthamus tinctorius",  category: "ดอก",           image: MATERIAL_IMAGES[2], pricePerKg: 380,  moq: 5,   stock: 180,  grade: "พรีเมียม", supplier: "วิสาหกิจชุมชนแม่จัน",    supplierVerified: true,  location: "เชียงราย",    rating: 4.6, certifications: ["อย.", "Organic Thailand"] },
+  { id: "m-10", name: "สมุนไพรชา 7 ชนิดผสม",     scientificName: "Herbal Tea Blend",       category: "สมุนไพรรวม", image: MATERIAL_IMAGES[5], pricePerKg: 950,  moq: 5,   stock: 240,  grade: "พรีเมียม", supplier: "Metaherb Wholesale",     supplierVerified: true,  location: "กรุงเทพฯ",   rating: 4.9, certifications: ["อย.", "ISO 22000", "HACCP"] },
+  { id: "m-11", name: "ใบมะรุมแห้ง (ผง)",        scientificName: "Moringa oleifera",      category: "ใบ",            image: MATERIAL_IMAGES[6], pricePerKg: 540,  moq: 10,  stock: 680,  grade: "พรีเมียม", supplier: "ฟาร์มมะรุมพะเยา",         supplierVerified: false, location: "พะเยา",       rating: 4.5, certifications: ["อย."] },
+  { id: "m-12", name: "เมล็ดเจียแห้ง",             scientificName: "Salvia hispanica",       category: "ผล/เมล็ด",    image: MATERIAL_IMAGES[7], pricePerKg: 280,  moq: 20,  stock: 1400, grade: "คัดสรร", supplier: "Healthy Seeds Import",   supplierVerified: true,  location: "กรุงเทพฯ",   rating: 4.4, certifications: ["อย.", "Organic"] },
+
+  /* ===== มาตรฐาน — mid-tier, single cert (อย.), commercial farms ===== */
+  { id: "m-13", name: "ตะไคร้หอม (สับ)",          scientificName: "Cymbopogon nardus",     category: "ใบ",            image: MATERIAL_IMAGES[0], pricePerKg: 220,  moq: 25,  stock: 1500, grade: "มาตรฐาน", supplier: "ฟาร์มสมุนไพรนำชัย",     supplierVerified: true,  location: "เชียงใหม่",   rating: 4.3, certifications: ["อย."] },
+  { id: "m-14", name: "ใบเตยแห้ง",                 scientificName: "Pandanus amaryllifolius", category: "ใบ",          image: MATERIAL_IMAGES[6], pricePerKg: 160,  moq: 20,  stock: 900,  grade: "มาตรฐาน", supplier: "ฟาร์มสมุนไพรน่าน",       supplierVerified: true,  location: "น่าน",         rating: 4.4, certifications: ["อย.", "GAP"] },
+  { id: "m-15", name: "รากชะเอมเทศ (ฝาน)",         scientificName: "Glycyrrhiza glabra",     category: "ราก/หัว",       image: MATERIAL_IMAGES[3], pricePerKg: 380,  moq: 15,  stock: 600,  grade: "มาตรฐาน", supplier: "Spice Trading Co.",     supplierVerified: true,  location: "กรุงเทพฯ",   rating: 4.2, certifications: ["อย."] },
+  { id: "m-16", name: "ดอกกุหลาบแห้ง",             scientificName: "Rosa damascena",         category: "ดอก",           image: MATERIAL_IMAGES[2], pricePerKg: 480,  moq: 5,   stock: 280,  grade: "มาตรฐาน", supplier: "Herbal Garden Bangkok", supplierVerified: true,  location: "นครปฐม",      rating: 4.3, certifications: ["อย.", "GAP"] },
+
+  /* ===== ทั่วไป — commercial/industrial bulk, lower price ===== */
+  { id: "m-17", name: "ข่าแห้ง (ฝาน)",            scientificName: "Alpinia galanga",        category: "ราก/หัว",       image: MATERIAL_IMAGES[3], pricePerKg: 140,  moq: 30,  stock: 2200, grade: "ทั่วไป",   supplier: "สหกรณ์เกษตรอินทรีย์",   supplierVerified: true,  location: "ลำปาง",       rating: 4.0, certifications: ["อย."] },
+  { id: "m-18", name: "เปลือกมะกรูดแห้ง",          scientificName: "Citrus hystrix",         category: "เปลือก",        image: MATERIAL_IMAGES[4], pricePerKg: 180,  moq: 25,  stock: 800,  grade: "ทั่วไป",   supplier: "ฟาร์มสมุนไพรน่าน",       supplierVerified: true,  location: "น่าน",         rating: 4.1, certifications: ["อย."] },
+  { id: "m-19", name: "ใบโหระพาแห้ง",              scientificName: "Ocimum basilicum",       category: "ใบ",            image: MATERIAL_IMAGES[6], pricePerKg: 130,  moq: 30,  stock: 1100, grade: "ทั่วไป",   supplier: "ฟาร์มมะรุมพะเยา",         supplierVerified: false, location: "พะเยา",       rating: 3.9, certifications: ["อย."] },
+  { id: "m-20", name: "กระเทียมแห้ง (สับ)",        scientificName: "Allium sativum",         category: "ราก/หัว",       image: MATERIAL_IMAGES[3], pricePerKg: 200,  moq: 30,  stock: 1800, grade: "ทั่วไป",   supplier: "สหกรณ์เกษตรอินทรีย์",   supplierVerified: true,  location: "ลำปาง",       rating: 4.0, certifications: ["อย."] },
+
+  /* ===== ประหยัด — economy/budget tier, minimal certs ===== */
+  { id: "m-21", name: "หญ้าหนวดแมวแห้ง",            scientificName: "Orthosiphon stamineus",  category: "ใบ",            image: MATERIAL_IMAGES[6], pricePerKg: 90,   moq: 50,  stock: 3000, grade: "ประหยัด", supplier: "ฟาร์มสมุนไพรน่าน",       supplierVerified: false, location: "น่าน",         rating: 3.7, certifications: ["อย."] },
+  { id: "m-22", name: "ใบฝรั่งแห้ง",                scientificName: "Psidium guajava",        category: "ใบ",            image: MATERIAL_IMAGES[6], pricePerKg: 75,   moq: 50,  stock: 2500, grade: "ประหยัด", supplier: "ฟาร์มมะรุมพะเยา",         supplierVerified: false, location: "พะเยา",       rating: 3.8, certifications: [] },
+  { id: "m-23", name: "เมล็ดงาดำ",                  scientificName: "Sesamum indicum",        category: "ผล/เมล็ด",    image: MATERIAL_IMAGES[7], pricePerKg: 110,  moq: 40,  stock: 1800, grade: "ประหยัด", supplier: "Healthy Seeds Import",   supplierVerified: true,  location: "กรุงเทพฯ",   rating: 4.0, certifications: ["อย."] },
+  { id: "m-24", name: "ใบหม่อนแห้ง",                scientificName: "Morus alba",             category: "ใบ",            image: MATERIAL_IMAGES[6], pricePerKg: 95,   moq: 50,  stock: 2400, grade: "ประหยัด", supplier: "สหกรณ์เกษตรอินทรีย์",   supplierVerified: true,  location: "ลำปาง",       rating: 3.8, certifications: ["อย."] },
 ];
 
 export const CATEGORIES: ("ทั้งหมด" | MaterialCategory)[] = ["ทั้งหมด", "ราก/หัว", "ใบ", "ดอก", "เปลือก", "ผล/เมล็ด", "สมุนไพรรวม"];
-export const GRADES: ("ทั้งหมด" | MaterialGrade)[] = ["ทั้งหมด", "Premium", "A", "B"];
+export const GRADES: ("ทั้งหมด" | MaterialGrade)[] = ["ทั้งหมด", "พรีเมียม", "คัดสรร", "มาตรฐาน", "ทั่วไป", "ประหยัด"];
 
-export const GRADE_STYLE: Record<MaterialGrade, { bg: string; color: string }> = {
-  Premium: { bg: "#319754", color: "#fff" },
-  A:       { bg: "#3b82f6", color: "#fff" },
-  B:       { bg: "#9ca3af", color: "#fff" },
+// Metallic gradients + glow for premium feel — International B2B tier names
+// `bg` is a CSS background (gradient), use with `background: gradeStyle.bg` (not backgroundColor)
+export const GRADE_STYLE: Record<MaterialGrade, { bg: string; color: string; shadow: string; textShadow: string }> = {
+  พรีเมียม: {
+    bg: "linear-gradient(135deg, #fde68a 0%, #f59e0b 45%, #b45309 100%)",
+    color: "#fff",
+    shadow: "0 2px 8px rgba(245,158,11,0.45), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.1)",
+    textShadow: "0 1px 1px rgba(120,53,15,0.4)",
+  },
+  คัดสรร: {
+    bg: "linear-gradient(135deg, #f1f5f9 0%, #94a3b8 50%, #475569 100%)",
+    color: "#fff",
+    shadow: "0 2px 8px rgba(100,116,139,0.4), inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(0,0,0,0.1)",
+    textShadow: "0 1px 1px rgba(51,65,85,0.5)",
+  },
+  มาตรฐาน: {
+    bg: "linear-gradient(135deg, #fdba74 0%, #c2410c 50%, #7c2d12 100%)",
+    color: "#fff",
+    shadow: "0 2px 8px rgba(194,65,12,0.45), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.15)",
+    textShadow: "0 1px 1px rgba(124,45,18,0.5)",
+  },
+  ทั่วไป: {
+    bg: "linear-gradient(135deg, #a7f3d0 0%, #10b981 50%, #047857 100%)",
+    color: "#fff",
+    shadow: "0 2px 8px rgba(16,185,129,0.35), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.1)",
+    textShadow: "0 1px 1px rgba(4,120,87,0.4)",
+  },
+  ประหยัด: {
+    bg: "linear-gradient(135deg, #cbd5e1 0%, #64748b 50%, #334155 100%)",
+    color: "#fff",
+    shadow: "0 2px 8px rgba(100,116,139,0.35), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.1)",
+    textShadow: "0 1px 1px rgba(51,65,85,0.4)",
+  },
 };
 
 /* ===== Supplier profiles ===== */
