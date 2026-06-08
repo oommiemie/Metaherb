@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "../store/AuthContext";
 import { TRIAL_PRODUCTS, loadRegistrations, saveRegistrations, getTrialImages, getActiveRegistration, type TrialProduct, type Registration, type Evaluation } from "../data/trialProducts";
 import { EvaluationModal } from "../components/EvaluationModal";
+import { TrialCard } from "../components/TrialCard";
 import imgLogo from "../../assets/logo.png";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
@@ -354,8 +355,16 @@ export function TrialDetailPage() {
             <ChevronRight className="size-4" />
           </button>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]">
-          {relatedTrials.map((p) => <RelatedTrialCard key={p.id} p={p} onClick={() => { navigate(`/trials/${p.id}`); window.scrollTo(0, 0); }} />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-[16px]">
+          {relatedTrials.slice(0, 4).map((p, i) => (
+            <TrialCard
+              key={p.id}
+              p={p}
+              isRegistered={registrations.some((r) => r.trialId === p.id && !r.rejectedAt)}
+              onOpen={() => { navigate(`/trials/${p.id}`); window.scrollTo(0, 0); }}
+              index={i}
+            />
+          ))}
         </div>
       </div>
 
@@ -367,59 +376,6 @@ export function TrialDetailPage() {
   );
 }
 
-function RelatedTrialCard({ p, onClick }: { p: TrialProduct; onClick: () => void }) {
-  const spotsLeft = p.spotsTotal - p.spotsTaken;
-  const pct = (p.spotsTaken / p.spotsTotal) * 100;
-  const isClosed = spotsLeft <= 0 || p.endsInDays <= 0;
-  return (
-    <div
-      onClick={onClick}
-      className={`bg-white rounded-[16px] border overflow-hidden flex flex-col h-[259px] group/card cursor-pointer transition-all duration-300 ${
-        isClosed ? "border-[#d4d4d4] opacity-70" : "border-[#d4d4d4] hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40"
-      }`}
-    >
-      <div className="flex-1 relative min-h-0 overflow-hidden">
-        <img src={p.image} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" />
-        <div className="absolute top-0 right-0 p-[6px]">
-          {isClosed ? (
-            <div className="bg-gray-600 h-[22px] w-[88px] rounded-full shadow-[0_2px_6px_rgba(0,0,0,0.2)] flex items-center justify-center">
-              <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ปิดรับสมัคร</span>
-            </div>
-          ) : (
-            <div className="h-[22px] w-[88px] rounded-full shadow-[0_2px_6px_rgba(151,71,255,0.4)] flex items-center justify-center gap-1"
-              style={{ background: "linear-gradient(135deg, #0088ff, #9747ff)" }}>
-              <Sparkles className="size-2.5 text-white" strokeWidth={2.4} />
-              <span className={`${font} text-[10px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>Beta</span>
-            </div>
-          )}
-        </div>
-        {!isClosed && (
-          <div className="absolute bottom-0 left-0 backdrop-blur-[4px] bg-black/55 flex gap-[6px] items-center px-[10px] py-[6px] rounded-tr-[12px]">
-            <Clock className="size-2.5 text-white" strokeWidth={2.6} />
-            <span className={`${font} text-[11px] text-white tabular-nums`} style={{ fontWeight: 600 }}>{p.endsInDays} วัน</span>
-          </div>
-        )}
-      </div>
-      <div className="p-[10px] flex flex-col gap-[4px]">
-        <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{p.name}</p>
-        <div className="flex items-center gap-1">
-          <Coins className="size-[12px] text-[#d97706] shrink-0" strokeWidth={2.4} />
-          <span className={`${font} text-[12px] text-[#d97706] tabular-nums`} style={{ fontWeight: 700 }}>+{p.rewardPoints.toLocaleString()}</span>
-          <span className={`${font} text-[10px] text-gray-500`}>คะแนน</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className={`${font} text-[10px] text-gray-500`}>ที่นั่ง {p.spotsTaken}/{p.spotsTotal}</span>
-        </div>
-        <div className="h-[4px] rounded-full bg-gray-100 overflow-hidden">
-          <div className="h-full rounded-full transition-all" style={{
-            width: `${Math.min(100, pct)}%`,
-            background: pct >= 90 ? "#dc2626" : pct >= 60 ? "#f59e0b" : "#319754",
-          }} />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ===================================================================
    Rich detail sections — only render sections whose data is provided.

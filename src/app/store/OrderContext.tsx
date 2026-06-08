@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import type { CartItem } from "./CartContext";
 import { useNotificationsOptional } from "./NotificationContext";
 import { usePersistentState } from "./usePersistentState";
@@ -22,6 +22,8 @@ interface OrderContextType {
   orders: Order[];
   addOrder: (order: Omit<Order, "id" | "date">) => string;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
+  /** Generic patch — used by owner detail page to tweak any field (e.g., trackingNumber, status). */
+  updateOrder: (id: string, patch: Partial<Order>) => void;
   addReview: (id: string, rating: number, comment: string) => void;
 }
 
@@ -122,6 +124,60 @@ const mockOrders: Order[] = [
     paymentMethod: "พร้อมเพย์ PromptPay",
     shopName: "สมุนไพรบ้านสวน",
   },
+  // === Additional METAHERB Store orders to populate the finance/transactions demo ===
+  {
+    id: "ORD-20260213-09502",
+    items: [
+      { productId: "1", name: "ชาออร์แกนิก", image: "https://images.unsplash.com/photo-1576092759770-14d9e692eb45?w=400&q=80", price: 259, option: "แพ็ค 30 ซอง", quantity: 1, inStock: true },
+    ],
+    total: 259,
+    status: "completed",
+    date: "13 ก.พ. 2569 - 13:20 น.",
+    shippingAddress: "เลขที่ 2 ชั้นที่ 2 ซอยสุขสวัสดิ์33 แขวงราษฎร์บูรณะ, เขตราษฎร์บูรณะ กรุงเทพมหานคร 10140",
+    paymentMethod: "พร้อมเพย์ PromptPay",
+    shopName: "METAHERB Store",
+    trackingNumber: "TH112233445",
+    review: { rating: 5, comment: "ชาหอม รสนุ่ม กลิ่นสมุนไพรชัด" },
+  },
+  {
+    id: "ORD-20260214-10788",
+    items: [
+      { productId: "3", name: "ขมิ้นชันแคปซูล", image: "https://images.unsplash.com/photo-1740592754365-2117f5977528?w=400&q=80", price: 185, option: "60 แคปซูล", quantity: 2, inStock: true },
+      { productId: "11", name: "ชาดอกไม้รวม", image: "https://images.unsplash.com/photo-1720082301739-5d250b4a5551?w=400&q=80", price: 220, option: "กล่อง 20 ซอง", quantity: 1, inStock: true },
+    ],
+    total: 590,
+    status: "delivered",
+    date: "14 ก.พ. 2569 - 09:00 น.",
+    shippingAddress: "45/12 ซอยลาดพร้าว 71 แขวงลาดพร้าว เขตลาดพร้าว กรุงเทพฯ 10230",
+    paymentMethod: "บัญชีธนาคาร",
+    shopName: "METAHERB Store",
+    trackingNumber: "TH998877665",
+  },
+  {
+    id: "ORD-20260216-11923",
+    items: [
+      { productId: "5", name: "น้ำมันมะพร้าวสกัดเย็น", image: "https://images.unsplash.com/photo-1662058595162-10e024b1a907?w=400&q=80", price: 189, option: "ขนาด 500ml", quantity: 1, inStock: true },
+    ],
+    total: 189,
+    status: "shipped",
+    date: "16 ก.พ. 2569 - 11:30 น.",
+    shippingAddress: "88/3 ถ.รัชดาภิเษก ดินแดง กรุงเทพฯ 10400",
+    paymentMethod: "พร้อมเพย์ PromptPay",
+    shopName: "METAHERB Store",
+    trackingNumber: "TH445566778",
+  },
+  {
+    id: "ORD-20260217-12345",
+    items: [
+      { productId: "4", name: "กาแฟดริปสมุนไพร", image: "https://images.unsplash.com/photo-1631149206144-4549c0468787?w=400&q=80", price: 250, option: "แพ็ค 10 ซอง", quantity: 3, inStock: true },
+    ],
+    total: 750,
+    status: "preparing",
+    date: "17 ก.พ. 2569 - 10:15 น.",
+    shippingAddress: "เลขที่ 2 ชั้นที่ 2 ซอยสุขสวัสดิ์33 แขวงราษฎร์บูรณะ, เขตราษฎร์บูรณะ กรุงเทพมหานคร 10140",
+    paymentMethod: "บัญชีธนาคาร",
+    shopName: "METAHERB Store",
+  },
 ];
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -139,6 +195,16 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   // Notifications are best-effort — fall back to no-ops so OrderProvider never
   // crashes if it happens to mount before NotificationProvider during HMR.
   const { addNotification, notifyOwner, notifyAdmin } = useNotificationsOptional();
+
+  // One-time migration: existing localStorage may not have the newer METAHERB
+  // Store demo orders (added to power the finance/transactions tabs). Merge
+  // any missing seed orders without overwriting the user's real history.
+  useEffect(() => {
+    const existing = new Set(orders.map((o) => o.id));
+    const missing = mockOrders.filter((o) => !existing.has(o.id));
+    if (missing.length) setOrders((prev) => [...missing, ...prev]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const addOrder = (order: Omit<Order, "id" | "date">) => {
     const id = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(Math.floor(Math.random() * 100000)).padStart(5, "0")}`;
@@ -195,6 +261,12 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateOrder = (id: string, patch: Partial<Order>) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+    // If status changed, also fire the status-change notification path
+    if (patch.status) updateOrderStatus(id, patch.status);
+  };
+
   const addReview = (id: string, rating: number, comment: string) => {
     const existing = orders.find((o) => o.id === id);
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, review: { rating, comment } } : o)));
@@ -209,7 +281,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  return <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus, addReview }}>{children}</OrderContext.Provider>;
+  return <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus, updateOrder, addReview }}>{children}</OrderContext.Provider>;
 }
 
 export function useOrders() {

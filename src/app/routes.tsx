@@ -9,6 +9,8 @@ import { TrialDetailPage } from "./pages/TrialDetailPage";
 import { TrialRegisterPage } from "./pages/TrialRegisterPage";
 import { TrialApplyPage } from "./pages/TrialApplyPage";
 import { MyTrialsPage } from "./pages/MyTrialsPage";
+import { BrandRegisterPage } from "./pages/BrandRegisterPage";
+import { SellerRegisterPage } from "./pages/SellerRegisterPage";
 import { HerbalMarketPage } from "./pages/HerbalMarketPage";
 import HerbalMarketDetailPage from "./pages/HerbalMarketDetailPage";
 import HerbalMarketSamplePage from "./pages/HerbalMarketSamplePage";
@@ -113,6 +115,8 @@ export const router = createBrowserRouter([
       { path: "trials/:id", Component: TrialDetailPage },
       { path: "trials/:id/apply", Component: TrialApplyPage },
       { path: "my-trials", Component: MyTrialsPage },
+      { path: "seller/register", Component: SellerRegisterPage },
+      { path: "brand/register", Component: BrandRegisterPage },
       { path: "cart", Component: CartPage },
       { path: "payment", Component: PaymentPage },
       { path: "verify-payment/:id", Component: VerifyPaymentPage },

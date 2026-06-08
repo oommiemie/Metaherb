@@ -13,7 +13,7 @@ import {
   AlertTriangle, Phone, Mail, ChevronRight, Filter,
   FileText, TrendingUp, Users, ShoppingBag, BarChart2, Download, FileSpreadsheet,
   ClipboardList, ScanSearch, Truck, PackageCheck, PackageX, EyeOff, Send,
-  Lock, Banknote, ArrowDownToLine, Info, Save, Beaker, Menu, FlaskConical
+  Lock, Banknote, ArrowDownToLine, Info, Save, Beaker, Menu, FlaskConical, LayoutDashboard
 } from "lucide-react";
 import { OwnerTrialsOverview, OwnerTrialsTracking, OwnerTrialsProducts, OwnerTrialsKpiStrip, AddTrialProductTab } from "./owner/OwnerTrialTabs";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -39,6 +39,11 @@ import imgCoupon from "../../assets/coupon.png";
 import imgSellingProducts from "../../assets/selling-products.png";
 import imgRecommendedProducts from "../../assets/recommended-products.png";
 import imgWalletIllust from "../../assets/wallet-illust.png";
+import imgCion1 from "../../assets/cion1.png";
+import imgCion2 from "../../assets/cion2.png";
+import imgCion3 from "../../assets/cion3.png";
+import imgCion4 from "../../assets/cion4.png";
+import imgCion5 from "../../assets/cion5.png";
 import imgEscrowIllust from "../../assets/escrow.png";
 import imgAccumIncomeIllust from "../../assets/accumulated-income.png";
 import { Calendar } from "../components/ui/calendar";
@@ -91,7 +96,7 @@ const orderTabSvgs = {
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
-type OwnerTab = "overview" | "orders" | "order_detail" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "complaints" | "complaint_detail" | "reports" | "report_sales" | "report_customers" | "report_products" | "report_market" | "trials_overview" | "trials_tracking" | "trials_products" | "trials_add_product";
+type OwnerTab = "overview" | "orders" | "order_detail" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "finance_transactions" | "complaints" | "complaint_detail" | "reports" | "report_sales" | "report_customers" | "report_products" | "report_market" | "trials_overview" | "trials_tracking" | "trials_products" | "trials_add_product";
 type OrderFilterTab = "all" | "pending_payment" | "pending_verify" | "ready_ship" | "shipping" | "shipped" | "cancelled";
 
 interface SidebarItem {
@@ -121,8 +126,10 @@ const sidebarItems: SidebarItem[] = [
     { id: "report_products", label: "รายงานข้อมูลสินค้า" },
     { id: "report_market", label: "Market Report" },
   ]},
-  // การเงิน — เมนูเดี่ยว (กระเป๋าเงิน) ส่วน "ตั้งค่าการเงิน" เข้าผ่านปุ่มในหน้านี้แทน
-  { id: "finance", label: "การเงิน", icon: Wallet },
+  { id: "finance", label: "การเงิน", icon: Wallet, children: [
+    { id: "finance_transactions", label: "ธุรกรรม" },
+    { id: "finance",         label: "ภาพรวม" },
+  ]},
 ];
 
 const sidebarSettings: SidebarItem[] = [];
@@ -297,7 +304,13 @@ const mockFlashProducts: FlashProductRow[] = [
   { id: "8", name: "ชาตะไคร้ใบเตย 30 ซอง",        image: "https://images.unsplash.com/photo-1592479996-0c8a1e8c5d4e?w=400&q=80", normalPrice: "฿ 110.00", flashPrice: "฿ 79.00",  start: "12 พ.ค. 2569 - 00:00 น.", end: "13 พ.ค. 2569 - 23:59 น.", status: "กำหนดไว้ล่วงหน้า", statusColor: "#f59e0b", flashPriceDisplay: "฿ 79.00", originalPriceDisplay: "฿ 110.00", quantity: 60,  sold: 0, startsAt: _flashOffsetIso(4, 0, 0) },
 ];
 
-type OrderStatus = "pending_payment" | "pending_verify" | "ready_ship" | "shipping" | "shipped" | "cancelled";
+// Union of legacy OwnerDashboard statuses + statuses defined in OrderContext
+// (so both old code paths and orders loaded via useOrders() keep working).
+type OrderStatus =
+  | "pending_payment" | "pending_verify"
+  | "ready_ship" | "shipping" | "shipped"     // legacy OwnerDashboard flow
+  | "preparing" | "delivered" | "completed"   // OrderContext flow
+  | "cancelled";
 type ShippingMethod = "รับที่ร้าน" | "จัดส่งปกติ" | "จัดส่งด่วน";
 type OrderItem = { name: string; option: string; qty: number; price: number; image: string };
 type PaymentMethod = "พร้อมเพย์ PromptPay" | "บัญชีธนาคาร" | "บัตรเครดิต/บัตรเดบิต" | "ชำระเงินปลายทาง";
@@ -554,7 +567,17 @@ const orderTabs: { id: OrderFilterTab; label: string; count: number }[] = [
 ];
 
 /* ========== SIDEBAR ========== */
-const childIconMap: Record<string, any> = { products: Package, flash_sale: Zap, promotions: Megaphone, coupons: Ticket, report_sales: TrendingUp, report_customers: Users, report_products: ShoppingBag, report_market: BarChart2 };
+const childIconMap: Record<string, any> = {
+  products: Package, flash_sale: Zap, promotions: Megaphone, coupons: Ticket,
+  report_sales: TrendingUp, report_customers: Users, report_products: ShoppingBag, report_market: BarChart2,
+  // Trial sub-menu
+  trials_overview:  LayoutDashboard,
+  trials_tracking:  ClipboardList,
+  trials_products:  Beaker,
+  // Finance sub-menu
+  finance:               LayoutDashboard,
+  finance_transactions:  ArrowDownToLine,
+};
 
 const sidebarActiveStyle = { backgroundImage: "linear-gradient(90deg, rgba(49,151,84,0.1) 0%, rgba(49,151,84,0.1) 100%), linear-gradient(90deg, #fff 0%, #fff 100%)" };
 
@@ -601,7 +624,7 @@ function MenuBtn({ isActive, icon: Icon, label, onClick, hasArrow, expanded, col
 }
 
 function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; onSelect: (t: OwnerTab) => void; collapsed: boolean; onToggle: () => void }) {
-  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ products: true, trials_overview: true, settings: false });
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ products: true, trials_overview: true, finance: true, settings: false });
   const navigate = useNavigate();
   const { t } = useLanguage();
   const toggle = (id: string) => setExpandedMenus((p) => ({ ...p, [id]: !p[id] }));
@@ -620,6 +643,7 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
     report_products: t("owner_sidebar_report_products"),
     report_market: t("owner_sidebar_report_market"),
     finance: t("owner_sidebar_finance"),
+    finance_transactions: "ธุรกรรม",
     complaints: t("owner_sidebar_complaints"),
     trials_overview: "สินค้าทดลอง",
     trials_tracking: "ติดตามสินค้าทดลอง",
@@ -630,6 +654,7 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
     if (id === "products") return t("owner_sidebar_manage_products");
     if (id === "trials_overview") return "ภาพรวม";   // child uses "ภาพรวม", parent uses "สินค้าทดลอง"
     if (id === "trials_products") return "สินค้าทดลอง";
+    if (id === "finance") return "ภาพรวม";           // child uses "ภาพรวม", parent uses "การเงิน"
     return labelMap[id] ?? fallback;
   };
 
@@ -771,11 +796,16 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
 /* ========== ORDER TAB CONTENT ========== */
 // Status visual config — pill bg + status note tag (Figma)
 const statusConfig: Record<OrderStatus, { label: string; pillBg: string; noteText: string; noteColor: string }> = {
-  pending_payment: { label: "รอชำระเงิน",   pillBg: "#ff8d28", noteText: "ยังไม่ชำระเงิน",  noteColor: "#ff9500" },
+  pending_payment: { label: "รอชำระเงิน",   pillBg: "#ff8d28", noteText: "ยังไม่ชำระเงิน",       noteColor: "#ff9500" },
   pending_verify:  { label: "รอตรวจสอบ",   pillBg: "#ff9500", noteText: "รอร้านตรวจสอบ",  noteColor: "#ff9500" },
-  ready_ship:      { label: "พร้อมจัดส่ง", pillBg: "#007aff", noteText: "พร้อมส่งให้ลูกค้า", noteColor: "#007aff" },
-  shipping:        { label: "กำลังจัดส่ง", pillBg: "#319754", noteText: "ระหว่างจัดส่ง",   noteColor: "#319754" },
-  shipped:         { label: "ส่งสำเร็จ",    pillBg: "#10b981", noteText: "ส่งสำเร็จแล้ว",    noteColor: "#10b981" },
+  // Legacy OwnerDashboard flow
+  ready_ship:      { label: "พร้อมจัดส่ง",    pillBg: "#007aff", noteText: "พร้อมส่งให้ลูกค้า",      noteColor: "#007aff" },
+  shipping:        { label: "กำลังจัดส่ง",    pillBg: "#319754", noteText: "ระหว่างจัดส่ง",         noteColor: "#319754" },
+  shipped:         { label: "ส่งสำเร็จ",      pillBg: "#10b981", noteText: "ส่งสำเร็จแล้ว",         noteColor: "#10b981" },
+  // OrderContext flow
+  preparing:       { label: "เตรียมสินค้า",  pillBg: "#0088ff", noteText: "ร้านกำลังเตรียมสินค้า", noteColor: "#0088ff" },
+  delivered:       { label: "ส่งถึงปลายทาง", pillBg: "#16a34a", noteText: "ลูกค้ารับสินค้าแล้ว",   noteColor: "#16a34a" },
+  completed:       { label: "สำเร็จ",         pillBg: "#319754", noteText: "ปิดดีลเรียบร้อย",       noteColor: "#319754" },
   cancelled:       { label: "ยกเลิก",       pillBg: "#ff3b30", noteText: "ยกเลิกแล้ว",       noteColor: "#ff3b30" },
 };
 
@@ -1598,33 +1628,39 @@ function OrderDetailTab({ order, onBack, onUpdate }: {
             </div>
           </div>
 
-          {/* Payment info card */}
-          <div className="bg-white rounded-2xl overflow-hidden">
-            <div className="flex flex-col gap-4 pt-4 px-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลการชำระเงิน</h3>
-                <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full text-[12px]`}
-                  style={{ backgroundColor: `${paymentNote.color}1a`, color: paymentNote.color }}>
-                  <AlertCircle className="size-3.5" fill={paymentNote.color} stroke="white" strokeWidth={2.5} />
-                  {paymentNote.text}
-                </span>
+          {/* Order metadata card — country / time / shipping method / warehouse / SLA */}
+          {(() => {
+            // Derive SLA deadlines from order.date string "4 ก.พ. 2569 - 08:12 น."
+            const orderDateText = order.date.replace(/ น\.$/, "");
+            const skuId = "MHB-" + order.id.replace(/[^\d]/g, "").slice(0, 12);
+            const warehouseId = "75086249" + order.id.replace(/[^\d]/g, "").slice(0, 8);
+            return (
+              <div className="bg-white rounded-2xl overflow-hidden">
+                <div className="flex flex-col gap-4 pt-4 px-4">
+                  <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลคำสั่งซื้อ</h3>
+                  <div className="h-px bg-gray-200 w-full" />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-4 p-4">
+                  {[
+                    { label: "ตำแหน่ง", value: "TH (ประเทศไทย)" },
+                    { label: "เวลาที่สร้าง", value: orderDateText, mono: true },
+                    { label: "ตัวเลือกในการจัดส่ง", value: "การจัดส่งมาตรฐาน" },
+                    { label: "รหัสคลังสินค้า", value: warehouseId, mono: true },
+                    { label: "ชื่อคลังสินค้า", value: "METAHERB Store" },
+                    { label: "วิธีการจัดส่ง", value: order.shippingMethod === "รับที่ร้าน" ? "รับที่ร้าน" : "จัดส่งผ่านแพลตฟอร์ม" },
+                    { label: "SKU ID", value: skuId, mono: true },
+                    { label: "จัดส่งคำสั่งซื้อภายใน", value: "ภายใน 24 ชม. หลังลูกค้าชำระ", warn: true },
+                    { label: "ยกเลิกอัตโนมัติเมื่อ", value: "5 วันหลังสร้างคำสั่งซื้อ", warn: true },
+                  ].map((f) => (
+                    <div key={f.label}>
+                      <p className={`${font} text-[11.5px] text-gray-500`} style={{ fontWeight: 500 }}>{f.label}</p>
+                      <p className={`${font} text-[13px] mt-0.5 ${f.warn ? "text-[#ff8d28]" : "text-black"} ${f.mono ? "tabular-nums break-all" : ""}`} style={{ fontWeight: 500 }}>{f.value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="h-px bg-gray-200 w-full" />
-            </div>
-            <div className="flex flex-col gap-4 p-4">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className={`${font} text-[14px] text-black`}>วิธีชำระเงิน:</span>
-                <span className={`${font} text-[16px] text-black`} style={{ fontWeight: 500 }}>{order.paymentMethod}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <span className={`${font} text-[14px] text-black`}>สถานะการชำระเงิน:</span>
-                <span className={`${font} text-[12px] text-white px-4 py-1 rounded-full whitespace-nowrap`}
-                  style={{ backgroundColor: paymentPaid ? "#319754" : "#ff8d28", fontWeight: 500 }}>
-                  {paymentPaid ? "ชำระแล้ว" : "รอชำระเงิน"}
-                </span>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Cancellation card — only when cancelled (replaces stepper) */}
           {order.status === "cancelled" && (() => {
@@ -1847,6 +1883,68 @@ function OrderDetailTab({ order, onBack, onUpdate }: {
               </div>
             </div>
           )}
+
+          {/* Finance — payment method + status + earnings breakdown (merged) */}
+          {(() => {
+            const subtotal = order.total;
+            const shippingFee = 0;
+            const grossTotal = subtotal + shippingFee;
+            const gp = Math.round(grossTotal * 0.07 * 100) / 100;
+            const payout = Math.round((grossTotal - gp) * 100) / 100;
+            const isPaid = order.status !== "pending_payment" && order.status !== "pending_verify" && order.status !== "cancelled";
+            return (
+              <>
+                <div className="h-px bg-gray-100 mx-4" />
+                <div className="px-4 py-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className={`${font} text-[12px] text-gray-500`} style={{ fontWeight: 500 }}>ข้อมูลการเงิน</p>
+                    <span className={`${font} text-[11px] text-white px-2.5 py-0.5 rounded-full whitespace-nowrap`}
+                      style={{ backgroundColor: paymentPaid ? "#319754" : "#ff8d28", fontWeight: 500 }}>
+                      {paymentPaid ? "ชำระแล้ว" : "รอชำระเงิน"}
+                    </span>
+                  </div>
+
+                  {/* Payment method row */}
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                    <span className={`${font} text-[12px] text-gray-600`}>วิธีชำระเงิน</span>
+                    <span className={`${font} text-[12.5px] text-black`} style={{ fontWeight: 500 }}>{order.paymentMethod}</span>
+                  </div>
+
+                  <p className={`${font} text-[11px] text-gray-400 uppercase tracking-wide mt-3 mb-2`} style={{ fontWeight: 500 }}>ยอดที่ลูกค้าจ่าย</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className={`${font} text-[12px] text-gray-600`}>ผลรวมสินค้า</span>
+                      <span className={`${font} text-[12.5px] text-black tabular-nums`} style={{ fontWeight: 500 }}>฿{subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className={`${font} text-[12px] text-gray-600`}>ค่าจัดส่ง</span>
+                      <span className={`${font} text-[12.5px] text-black tabular-nums`} style={{ fontWeight: 500 }}>฿{shippingFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+                      <span className={`${font} text-[12.5px] text-black`} style={{ fontWeight: 600 }}>ยอดรวม</span>
+                      <span className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 700 }}>฿{grossTotal.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#319754]/8 mx-4 mb-4 rounded-2xl border border-[#319754]/15 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className={`${font} text-[12px] text-[#1d5b32]`} style={{ fontWeight: 600 }}>ยอดที่คุณได้รับ</p>
+                    <span className={`${font} text-[10px] bg-white text-[#319754] px-2 py-0.5 rounded-full border border-[#319754]/20`} style={{ fontWeight: 500 }}>
+                      {isPaid ? "ยืนยันแล้ว" : "รอชำระ"}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className={`${font} text-[22px] text-[#1d5b32] tabular-nums leading-none`} style={{ fontWeight: 700 }}>฿{payout.toFixed(2)}</span>
+                  </div>
+                  <p className={`${font} text-[10.5px] text-[#1d5b32]/70 mt-1.5`}>
+                    หักค่าธรรมเนียม GP 7% (฿{gp.toFixed(2)})
+                    {isPaid && <span className="block mt-0.5">→ ปล่อยเข้ากระเป๋าหลังลูกค้ารับสินค้า 7 วัน</span>}
+                  </p>
+                </div>
+              </>
+            );
+          })()}
 
           {/* Action buttons — full width stacked */}
           <div className="flex flex-col gap-3 p-4">
@@ -5239,13 +5337,26 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
 }
 
 /* ========== OVERVIEW ========== */
-function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab) => void }) {
+function OverviewTab({ orders, onViewOrders }: { orders: Order[]; onViewOrders?: (filter?: OrderFilterTab) => void }) {
   const { t } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(16);
   const [currentMonth, setCurrentMonth] = useState(0);
   const [currentYear, setCurrentYear] = useState(2026);
   const [viewMode, setViewMode] = useState<"monthly" | "yearly">("monthly");
   const [salesPopupScope, setSalesPopupScope] = useState<"day" | "month" | "year" | null>(null);
+
+  // Wallet stats — derive from real orders so all surfaces (Dashboard / Finance / Transactions) agree
+  const financeTxs = useMemo(() => deriveFinanceTransactions(orders), [orders]);
+  const walletAvailable = financeTxs
+    .filter((tx) => tx.type === "ปล่อยยอด")
+    .reduce((s, tx) => s + Math.abs(parseFloat(tx.amount.replace(/[^\d.]/g, "")) || 0), 0);
+  const escrowOrders = (() => {
+    const released = new Set(financeTxs.filter((tx) => tx.type === "ปล่อยยอด").map((tx) => tx.order));
+    return financeTxs.filter((tx) => tx.type === "Escrow" && !released.has(tx.order));
+  })();
+  const walletEscrow = escrowOrders.reduce((s, tx) => s + Math.abs(parseFloat(tx.amount.replace(/[^\d.]/g, "")) || 0), 0);
+  const walletEscrowOrderCount = escrowOrders.length;
+  const fmtTHB2 = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   // Lock body scroll while popup is open
   useEffect(() => {
@@ -5446,7 +5557,7 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
         <motion.img
           src={imgWalletIllust}
           alt=""
-          className="absolute bottom-[-40px] left-[calc(50%-29px)] -translate-x-1/2 size-[178px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 z-0"
+          className="absolute bottom-[-40px] left-[calc(50%-29px)] -translate-x-1/2 size-[178px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 z-0"
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
@@ -5458,9 +5569,9 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
           <div className="flex flex-col gap-[10px] items-start">
             <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>{t("owner_finance_balance")}</p>
             <p className={`${font} text-[24px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
-              <AnimatedValue value="฿2,775.21" />
+              <AnimatedValue value={fmtTHB2(walletAvailable)} />
             </p>
-            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>+12.5%</p>
+            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>พร้อมถอนเข้าบัญชี</p>
             <button className={`${font} bg-white hover:bg-gray-50 text-[#287745] h-10 w-[110px] rounded-full text-[13px] inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors shrink-0 shadow-[0_2px_8px_rgba(0,0,0,0.12)]`}
               style={{ fontWeight: 600 }}>
               <Wallet className="size-3.5" />
@@ -5478,17 +5589,17 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
               <span className="inline-flex items-center justify-center size-2.5 rounded-full border border-white/50 text-[7px] text-white/80">i</span>
             </div>
             <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
-              <AnimatedValue value="฿1,370.6" />
+              <AnimatedValue value={fmtTHB2(walletEscrow)} />
             </p>
-            <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>8 {t("owner_overview_orders")}</p>
+            <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>{walletEscrowOrderCount} {t("owner_overview_orders")}</p>
           </div>
           {/* รายได้สะสม */}
           <div className="bg-white/15 backdrop-blur-[10px] rounded-2xl flex-1 flex flex-col gap-2 items-start p-4 overflow-hidden">
             <p className={`${font} text-[10px] text-white whitespace-nowrap`}>{t("owner_finance_total_income")}</p>
             <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
-              <AnimatedValue value="฿2,775.21" />
+              <AnimatedValue value={fmtTHB2(walletAvailable)} />
             </p>
-            <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>+18.2% MTD</p>
+            <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>รายได้สุทธิทั้งหมด</p>
           </div>
         </div>
       </div>
@@ -5949,29 +6060,63 @@ function OverviewTab({ onViewOrders }: { onViewOrders?: (filter?: OrderFilterTab
 }
 
 /* ========== FINANCE TAB ========== */
-const financeTransactions = [
-  { date: "16 มี.ค. 2569 14:42", type: "ค่าธรรมเนียม GP", typeColor: "bg-[#ff9500] text-white", order: "#ORD-20260316-202753-1", amount: "-฿3.96", balance: "฿0.00" },
-  { date: "16 มี.ค. 2569 14:42", type: "ปล่อยยอด", typeColor: "bg-[#319754] text-white", order: "#ORD-20260316-202753-1", amount: "+฿115.24", balance: "฿0.00" },
-  { date: "16 มี.ค. 2569 14:41", type: "Escrow", typeColor: "bg-[#007aff] text-white", order: "#ORD-20260316-202753-1", amount: "-฿119.20", balance: "฿0.00" },
-  { date: "13 มี.ค. 2569 11:52", type: "ค่าธรรมเนียม GP", typeColor: "bg-[#ff9500] text-white", order: "#ORD-20260313-472419-1", amount: "-฿5.56", balance: "฿0.00" },
-  { date: "13 มี.ค. 2569 11:52", type: "ปล่อยยอด", typeColor: "bg-[#319754] text-white", order: "#ORD-20260313-472419-1", amount: "+฿105.64", balance: "฿0.00" },
-  { date: "13 มี.ค. 2569 11:44", type: "Escrow", typeColor: "bg-[#007aff] text-white", order: "#ORD-20260313-472419-1", amount: "-฿111.20", balance: "฿0.00" },
-  { date: "13 มี.ค. 2569 11:21", type: "ค่าธรรมเนียม GP", typeColor: "bg-[#ff9500] text-white", order: "#ORD-20260313-288830-1", amount: "-฿17.32", balance: "฿0.00" },
-  { date: "13 มี.ค. 2569 11:21", type: "ปล่อยยอด", typeColor: "bg-[#319754] text-white", order: "#ORD-20260313-288830-1", amount: "+���329.08", balance: "฿0.00" },
-  { date: "13 มี.ค. 2569 11:18", type: "Escrow", typeColor: "bg-[#007aff] text-white", order: "#ORD-20260313-288830-1", amount: "-฿346.40", balance: "฿0.00" },
-  { date: "12 มี.ค. 2569 19:00", type: "Escrow", typeColor: "bg-[#007aff] text-white", order: "#ORD-20260312-108642-1", amount: "-฿160.00", balance: "฿0.00" },
-];
+/** Derive finance transactions from real orders (METAHERB Store only) at runtime.
+ *  Flow per order based on status:
+ *  - pending_payment / cancelled    → no entries (unpaid or void)
+ *  - pending_verify / preparing /
+ *    shipped / delivered            → Escrow only (paid, awaiting release)
+ *  - completed                      → Escrow + GP (7%) + Release (full 3-step)
+ */
+type FinanceTx = { date: string; type: string; typeColor: string; order: string; amount: string; balance: string };
+const GP_RATE = 0.07;
+const fmtTx = (n: number) => (n < 0 ? "-" : "+") + "฿" + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-function FinanceTab({ onBankSettings }: { onBankSettings: () => void }) {
+function deriveFinanceTransactions(orders: Order[]): FinanceTx[] {
+  // Local OwnerDashboard orders use the legacy status flow (ready_ship → shipping
+  // → shipped). Treat "shipped" as the completed payout state and the in-flight
+  // states as Escrow-held.
+  const settledStatuses = new Set<OrderStatus>(["shipped", "completed", "delivered"]);
+  const escrowOnly = new Set<OrderStatus>(["pending_verify", "ready_ship", "shipping", "preparing"]);
+
+  const txs: FinanceTx[] = [];
+  for (const o of orders) {
+    if (!settledStatuses.has(o.status) && !escrowOnly.has(o.status)) continue;
+
+    const orderRef = `#${o.id}`;
+    const escrowDate = o.date.replace(/ น\.$/, "");                  // strip trailing " น."
+    txs.push({
+      date: escrowDate, type: "Escrow", typeColor: "bg-[#007aff] text-white",
+      order: orderRef, amount: fmtTx(-o.total), balance: "฿0.00",
+    });
+
+    if (settledStatuses.has(o.status)) {
+      const gp = Math.round(o.total * GP_RATE * 100) / 100;
+      const payout = Math.round((o.total - gp) * 100) / 100;
+      // Release happens ~7 days after escrow per platform policy
+      txs.push({
+        date: escrowDate, type: "ค่าธรรมเนียม GP", typeColor: "bg-[#ff9500] text-white",
+        order: orderRef, amount: fmtTx(-gp), balance: "฿0.00",
+      });
+      txs.push({
+        date: escrowDate, type: "ปล่อยยอด", typeColor: "bg-[#319754] text-white",
+        order: orderRef, amount: fmtTx(payout), balance: "฿0.00",
+      });
+    }
+  }
+  return txs.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+function FinanceTab({ orders, onBankSettings }: { orders: Order[]; onBankSettings: () => void }) {
   const { t } = useLanguage();
+  const financeTransactions = useMemo(() => deriveFinanceTransactions(orders), [orders]);
   const [activeView, setActiveView] = useState<"all" | "withdraw">("all");
-  const [selectedMonth, setSelectedMonth] = useState("มี.ค. 2569");
+  const [selectedMonth, setSelectedMonth] = useState("ก.พ. 2569");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const monthOptions = [
-    { value: "มี.ค. 2569", label: "มีนาคม 2569" },
     { value: "ก.พ. 2569", label: "กุมภาพันธ์ 2569" },
     { value: "ม.ค. 2569", label: "มกราคม 2569" },
+    { value: "ธ.ค. 2568", label: "ธันวาคม 2568" },
   ];
   const filteredTx = financeTransactions.filter((tx) => tx.date.includes(selectedMonth));
   const totalPages = Math.max(1, Math.ceil(filteredTx.length / perPage));
@@ -5987,12 +6132,24 @@ function FinanceTab({ onBankSettings }: { onBankSettings: () => void }) {
     return "#737373"; // gray fallback
   };
 
-  // 4 stat cards — สีและไอคอน lucide
+  // 4 stat cards — รวมจาก financeTransactions เพื่อให้ตรงกับธุรกรรมจริงในระบบ
+  const settledReleases = financeTransactions
+    .filter((tx) => tx.type === "ปล่อยยอด")
+    .reduce((s, tx) => s + Math.abs(parseFloat(tx.amount.replace(/[^\d.]/g, "")) || 0), 0);
+  const escrowHeld = (() => {
+    // For each order, sum Escrow if no Release entry exists yet
+    const ordersWithRelease = new Set(financeTransactions.filter((tx) => tx.type === "ปล่อยยอด").map((tx) => tx.order));
+    return financeTransactions
+      .filter((tx) => tx.type === "Escrow" && !ordersWithRelease.has(tx.order))
+      .reduce((s, tx) => s + Math.abs(parseFloat(tx.amount.replace(/[^\d.]/g, "")) || 0), 0);
+  })();
+  const fmtTHB = (n: number) => `฿${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
   const stats = [
-    { label: "ยอดพร้อมถอน",  value: "฿2,775.21", color: "#319754", Icon: Wallet,           hint: "พร้อมถอนเข้าบัญชีได้ทันที" },
-    { label: "ยอด ESCROW",   value: "฿1,370.60", color: "#0088ff", Icon: Lock,             hint: "รอการปล่อยยอดอัตโนมัติ", info: true },
-    { label: "รายได้สะสม",   value: "฿2,775.21", color: "#9747ff", Icon: TrendingUp,       hint: "รายได้สุทธิทั้งหมด" },
-    { label: "ถอนไปแล้ว",    value: "฿0.00",     color: "#ff9500", Icon: Banknote,         hint: "ยอดที่โอนเข้าบัญชีแล้ว" },
+    { label: "ยอดพร้อมถอน",  value: fmtTHB(settledReleases), color: "#319754", Icon: Wallet,     hint: "พร้อมถอนเข้าบัญชีได้ทันที" },
+    { label: "ยอด ESCROW",   value: fmtTHB(escrowHeld),      color: "#0088ff", Icon: Lock,       hint: "รอการปล่อยยอดอัตโนมัติ", info: true },
+    { label: "รายได้สะสม",   value: fmtTHB(settledReleases), color: "#9747ff", Icon: TrendingUp, hint: "รายได้สุทธิทั้งหมด" },
+    { label: "ถอนไปแล้ว",    value: "฿0.00",                 color: "#ff9500", Icon: Banknote,   hint: "ยอดที่โอนเข้าบัญชีแล้ว" },
   ];
 
   return (
@@ -6209,6 +6366,693 @@ function BankBadge({ bank, size = 40 }: { bank: typeof bankOptions[0]; size?: nu
     >
       {bank.code}
     </div>
+  );
+}
+
+/* ========================= TRANSACTIONS TAB ========================= */
+/** Settlement-level transaction ledger for the seller — mirrors the TikTok Seller Center
+ *  finance/transactions page layout. Clicking the order number jumps to /owner order detail;
+ *  clicking "ดูรายละเอียด" opens the breakdown side-panel for that settlement. */
+type SettlementBreakdown = {
+  // === Revenue side — line items that compose "ราคาสุทธิ" ===
+  productPriceBeforeDiscount: number;  // ราคาสินค้า (ก่อนหักส่วนลด)
+  shopDiscount: number;                // ส่วนลดร้านค้า (ร้านจัดโปรโมชั่นเอง — negative)
+  platformDiscount: number;            // ส่วนลดจากแพลตฟอร์ม-แต้มสะสม (เป็นบวกเสมอ = ฟรีค่าธรรมเนียม)
+  couponDiscount: number;              // ส่วนคูปอง (negative)
+  flashSaleDiscount: number;           // ส่วนลด Flash Sale (negative — optional)
+  netPrice: number;                    // ราคาสุทธิ = สินค้า − ส่วนลดทั้งหมด
+  // === Shipping ===
+  platformShippingDiscount: number;    // ส่วนลดค่าขนส่งจากแพลตฟอร์ม (เป็นบวกเสมอ)
+  customerShippingFee: number;         // ค่าขนส่งของลูกค้า (ที่ลูกค้าจ่ายจริง)
+  // === VAT (informational, already included in price) ===
+  vat: number;
+  // === Customer-paid total (Escrow amount) ===
+  grossSales: number;
+  // === Fees ===
+  commission: number;                  // ค่าธรรมเนียมแพลตฟอร์ม GP 7% (negative)
+  /** @deprecated kept for back-compat */
+  promoDiscount: number;
+  sellerDiscount: number;
+  shippingFee: number;
+  orderFee: number;
+  shippingPaidByShop: number;
+  shippingFeeReal: number;
+  customerShippingTotal: number;
+  customerShippingBeforeDiscount: number;
+  shopShippingDiscount: number;
+  tiktokShippingDiscount: number;
+  shippingSupport: number;
+  xtraCouponFee: number;
+  growthSupportFee: number;
+};
+type Settlement = {
+  id: string;            // settlement transaction id
+  orderId: string;       // related order id
+  orderCreatedAt: string;
+  settledAt: string;
+  payoutAmount: number;  // จำนวนเงินที่ชำระทั้งหมด
+  status: "settled" | "pending";
+  breakdown: SettlementBreakdown;
+};
+
+/** Money helpers — strip "+", "-", "฿", "," from financeTransactions amounts (some have a mojibake `…�329.08` so we keep digits + dot only). */
+const parseMoney = (s: string): number => {
+  const digits = s.replace(/[^\d.]/g, "");
+  const num = parseFloat(digits);
+  if (Number.isNaN(num)) return 0;
+  return /-/.test(s) ? -num : num;
+};
+
+/** Build Settlement[] by grouping financeTransactions by order id.
+ *  Each order has at most 3 entries: Escrow (hold), ค่าธรรมเนียม GP (fee), ปล่อยยอด (release).
+ *  - settled  → all three present
+ *  - pending  → only Escrow present (release not yet triggered) */
+function buildSettlementsFromFinance(financeTxs: FinanceTx[]): Settlement[] {
+  const byOrder = new Map<string, { escrow?: FinanceTx; gp?: FinanceTx; release?: FinanceTx }>();
+  for (const tx of financeTxs) {
+    const key = tx.order;
+    if (!byOrder.has(key)) byOrder.set(key, {});
+    const slot = byOrder.get(key)!;
+    if (tx.type === "Escrow")            slot.escrow = tx;
+    else if (tx.type === "ค่าธรรมเนียม GP") slot.gp = tx;
+    else if (tx.type === "ปล่อยยอด")      slot.release = tx;
+  }
+
+  // Strip leading "#" from the order id so the URL/lookup matches Orders tab.
+  const cleanId = (raw: string) => raw.startsWith("#") ? raw.slice(1) : raw;
+
+  return Array.from(byOrder.entries()).map(([rawOrder, parts], idx) => {
+    const gross = parts.escrow ? Math.abs(parseMoney(parts.escrow.amount)) : 0;
+    const gp    = parts.gp     ? -Math.abs(parseMoney(parts.gp.amount))   : 0;
+    const release = parts.release ? Math.abs(parseMoney(parts.release.amount)) : 0;
+    const status: Settlement["status"] = parts.release ? "settled" : "pending";
+    const escrowDate = parts.escrow?.date ?? parts.gp?.date ?? "";
+    const releaseDate = parts.release?.date ?? "";
+
+    // Mock realistic breakdown matching the Thai marketplace settlement model:
+    // net = product − shop − coupon + platform_refund
+    // gross = net + customer_shipping − platform_shipping_subsidy
+    const variants = [
+      { shopPct: 0.20, platformPct: 0.05, coupon: 50, customerShipping: 40, platformShipSub: 20 },
+      { shopPct: 0.15, platformPct: 0.04, coupon: 30, customerShipping: 40, platformShipSub: 15 },
+      { shopPct: 0.10, platformPct: 0.06, coupon: 0,  customerShipping: 50, platformShipSub: 25 },
+      { shopPct: 0.25, platformPct: 0.05, coupon: 50, customerShipping: 40, platformShipSub: 20 },
+    ];
+    const v = variants[idx % variants.length];
+    // Work backwards from gross to product price:
+    // gross = (product − shop − coupon + platform) + customerShip − platformShipSub
+    // Let product = X. Then:
+    //   net = X(1 − shopPct) − coupon + X·platformPct
+    //       = X(1 − shopPct + platformPct) − coupon
+    // gross = net + customerShip − platformShipSub
+    const netFromGross = gross - v.customerShipping + v.platformShipSub;
+    const productBefore = (netFromGross + v.coupon) / (1 - v.shopPct + v.platformPct);
+    const shopDiscount       = -Math.round(productBefore * v.shopPct * 100) / 100;
+    const platformDiscount   =  Math.round(productBefore * v.platformPct * 100) / 100; // positive (refund)
+    const couponDiscount     = -v.coupon;
+    const netPrice           = Math.round((productBefore + shopDiscount + platformDiscount + couponDiscount) * 100) / 100;
+    const vatIncluded        = Math.round(gross * 7 / 107 * 100) / 100; // VAT inclusive
+
+    return {
+      id: `${cleanId(rawOrder).replace(/-/g, "")}-S`,
+      orderId: cleanId(rawOrder),
+      orderCreatedAt: escrowDate,
+      settledAt: releaseDate || "—",
+      payoutAmount: release,
+      status,
+      breakdown: {
+        productPriceBeforeDiscount: Math.round(productBefore * 100) / 100,
+        shopDiscount, platformDiscount, couponDiscount,
+        flashSaleDiscount: 0,
+        netPrice,
+        platformShippingDiscount: v.platformShipSub,  // positive
+        customerShippingFee: v.customerShipping,
+        vat: vatIncluded,
+        grossSales: gross,
+        commission: gp,
+        // back-compat
+        promoDiscount: 0,
+        sellerDiscount: shopDiscount + couponDiscount,
+        shippingFee: v.customerShipping,
+        orderFee: 0, shippingPaidByShop: 0,
+        shippingFeeReal: 0, customerShippingTotal: 0,
+        customerShippingBeforeDiscount: 0, shopShippingDiscount: 0,
+        tiktokShippingDiscount: 0, shippingSupport: 0,
+        xtraCouponFee: 0, growthSupportFee: 0,
+      },
+    };
+  });
+}
+
+function TransactionsTab({ orders, onViewOrder }: { orders: Order[]; onViewOrder: (orderId: string) => void }) {
+  const settlements = useMemo(() => buildSettlementsFromFinance(deriveFinanceTransactions(orders)), [orders]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [tab, setTab] = useState<"settled" | "pending">("settled");
+  const [selectedSettlement, setSelectedSettlement] = useState<Settlement | null>(null);
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 5;
+  const [dateLabel, setDateLabel] = useState("เดือนมิถุนายน 2569");
+  const [dateOpen, setDateOpen] = useState(false);
+  const handleExport = () => toast.success("ส่งออกข้อมูลธุรกรรมเรียบร้อย", { description: `ช่วงเวลา: ${dateLabel}` });
+
+  const rows = useMemo(() => {
+    const list = settlements.filter((s) => s.status === tab);
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.trim().toLowerCase();
+    return list.filter((s) => s.orderId.includes(q) || s.id.includes(q));
+  }, [tab, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / PER_PAGE));
+  const pagedRows = rows.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  useEffect(() => { setPage(1); }, [tab, searchQuery]);
+
+  // 4 independent KPI buckets — always show big picture regardless of which tab is active
+  const kpis = useMemo(() => {
+    const settled = settlements.filter((s) => s.status === "settled");
+    const pending = settlements.filter((s) => s.status === "pending");
+    const totalPayout = settled.reduce((s, x) => s + x.payoutAmount, 0);              // released to wallet
+    const totalEscrow = pending.reduce((s, x) => s + x.breakdown.grossSales, 0);      // still held
+    const totalFees   = settled.reduce((s, x) => s + x.breakdown.commission, 0);      // GP fees (negative)
+    const totalGross  = settlements.reduce((s, x) => s + x.breakdown.grossSales, 0); // headline volume
+    return {
+      totalGross, totalPayout, totalEscrow, totalFees,
+      settledCount: settled.length, pendingCount: pending.length,
+      orderCount: settlements.length,
+    };
+  }, [settlements]);
+
+  return (
+    <div>
+      {/* Header: title + export button */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-5 gap-3">
+        <h2 className={`${font} text-[24px]`} style={{ fontWeight: 500 }}>ธุรกรรม</h2>
+        <button onClick={handleExport}
+          className={`${font} text-[13px] inline-flex items-center gap-1.5 h-[40px] px-4 rounded-full bg-[#319754] hover:bg-[#287745] text-white cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+          style={{ fontWeight: 500 }}>
+          <ArrowDownToLine className="size-4" strokeWidth={2.4} /> ส่งออก
+          <ChevronDown className="size-3.5" strokeWidth={2.4} />
+        </button>
+      </div>
+
+      {/* Hero wallet card — same look as Dashboard wallet */}
+      <div className="group bg-[#319754] rounded-2xl flex flex-col lg:flex-row items-stretch overflow-hidden shadow-[0px_4px_16px_rgba(49,151,84,0.22)] min-h-[180px] relative mb-4 p-2">
+        {/* Decorative coins — 8 scattered across the whole green card, 80px each.
+            Rotations are Tailwind classes (not inline transform) so group-hover:scale
+            composes correctly via Tailwind's transform variable system. */}
+        <div aria-hidden className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <img src={imgCion1} alt="" className="absolute -rotate-[18deg] opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-[28deg]" style={{ left: "-4%",  top: "-20%", width: 80 }} />
+          <img src={imgCion2} alt="" className="absolute  rotate-[22deg] opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[32deg]"  style={{ left: "18%",  top: "55%",  width: 80 }} />
+          <img src={imgCion3} alt="" className="absolute  rotate-[40deg] opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[52deg]"  style={{ left: "32%",  top: "-25%", width: 80 }} />
+          <img src={imgCion4} alt="" className="absolute -rotate-[12deg] opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-[22deg]" style={{ left: "48%",  top: "60%",  width: 80 }} />
+          <img src={imgCion5} alt="" className="absolute  rotate-[28deg] opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[40deg]"  style={{ left: "62%",  top: "-15%", width: 80 }} />
+          <img src={imgCion1} alt="" className="absolute -rotate-[30deg] opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-[40deg]" style={{ left: "78%",  top: "45%",  width: 80 }} />
+          <img src={imgCion3} alt="" className="absolute  rotate-[15deg] opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[25deg]"  style={{ left: "90%",  top: "-10%", width: 80 }} />
+          <img src={imgCion2} alt="" className="absolute  rotate-[35deg] opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:rotate-[45deg]"  style={{ left: "5%",   top: "80%",  width: 80 }} />
+        </div>
+
+        {/* Left: hero — ยอดขายรวม */}
+        <div className="w-full lg:flex-1 flex flex-col items-start justify-between p-4 relative min-w-0 z-10">
+          <p className={`${font} text-[14px] text-white whitespace-nowrap`} style={{ fontWeight: 700 }}>สรุปธุรกรรม</p>
+          <div className="flex flex-col gap-[10px] items-start">
+            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>ยอดขายรวม</p>
+            <p className={`${font} text-[26px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
+              ฿{kpis.totalGross.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p className={`${font} text-[12px] text-white/85 whitespace-nowrap`}>{kpis.orderCount} รายการ — เดือนนี้</p>
+          </div>
+        </div>
+
+        {/* Right: 3 frosted-glass KPI cards — equal split with hero */}
+        <TooltipPrimitive.Provider>
+          <div className="w-full lg:flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 min-w-0 relative z-10">
+            {/* ยอดที่ชำระแล้ว */}
+            <div className="bg-white/15 backdrop-blur-[10px] rounded-2xl flex flex-col gap-2 items-start justify-center px-5 py-4 overflow-hidden">
+              <div className="flex items-center gap-1.5 w-full">
+                <Check className="size-3.5 text-white" strokeWidth={2.4} />
+                <p className={`${font} text-[11px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ยอดที่ชำระแล้ว</p>
+                <KpiInfoTip text="ยอดเงินที่แพลตฟอร์มปล่อยเข้ากระเป๋าร้านค้าแล้ว (หลังหัก GP) — จากคำสั่งซื้อที่ลูกค้ารับสินค้าและยืนยันครบ 7 วัน" />
+              </div>
+              <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
+                ฿{kpis.totalPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>{kpis.settledCount} รายการ</p>
+            </div>
+            {/* ยอดรอชำระ Escrow */}
+            <div className="bg-white/15 backdrop-blur-[10px] rounded-2xl flex flex-col gap-2 items-start justify-center px-5 py-4 overflow-hidden">
+              <div className="flex items-center gap-1.5 w-full">
+                <Clock className="size-3.5 text-white" strokeWidth={2.4} />
+                <p className={`${font} text-[11px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>รอชำระ (Escrow)</p>
+                <KpiInfoTip text="ยอดเงินที่ลูกค้าจ่ายแล้วแต่แพลตฟอร์ม “พักไว้” (Escrow) จนกว่าจะส่งสินค้าถึงและพ้นช่วงคุ้มครอง 7 วัน — แล้วจึงปล่อยเข้ากระเป๋า" />
+              </div>
+              <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
+                ฿{kpis.totalEscrow.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>{kpis.pendingCount} รายการ</p>
+            </div>
+            {/* ค่าธรรมเนียม GP */}
+            <div className="bg-white/15 backdrop-blur-[10px] rounded-2xl flex flex-col gap-2 items-start justify-center px-5 py-4 overflow-hidden">
+              <div className="flex items-center gap-1.5 w-full">
+                <Percent className="size-3.5 text-white" strokeWidth={2.4} />
+                <p className={`${font} text-[11px] text-white whitespace-nowrap`} style={{ fontWeight: 600 }}>ค่าธรรมเนียม GP</p>
+                <KpiInfoTip text="ค่าธรรมเนียมแพลตฟอร์ม MetaHerb (Gross Profit) — หัก 7% จากยอดขายของคำสั่งซื้อที่ปล่อยยอดแล้ว" />
+              </div>
+              <p className={`${font} text-[20px] text-white tabular-nums leading-none whitespace-nowrap`} style={{ fontWeight: 700 }}>
+                ฿{Math.abs(kpis.totalFees).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className={`${font} text-[10px] text-white/85 whitespace-nowrap`}>หักแพลตฟอร์ม 7%</p>
+            </div>
+          </div>
+        </TooltipPrimitive.Provider>
+      </div>
+
+      {/* Tabs + filters — single white pill row */}
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 flex items-center gap-2 flex-wrap mb-4">
+        {/* Status tabs */}
+        <div className="flex items-center gap-1 shrink-0">
+          {([
+            { key: "settled", label: "ชำระเงินแล้ว", count: kpis.settledCount, icon: Check },
+            { key: "pending", label: "ที่จะชำระเงิน",  count: kpis.pendingCount, icon: Clock },
+          ] as const).map((t) => {
+            const isAct = tab === t.key;
+            return (
+              <motion.button key={t.key} onClick={() => setTab(t.key)}
+                whileTap={{ scale: 0.94 }} whileHover={!isAct ? { scale: 1.04 } : undefined}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
+                {isAct && (
+                  <motion.span layoutId="transactionsTabActivePill"
+                    className="absolute inset-0 bg-[#319754] rounded-full"
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }} />
+                )}
+                <motion.span layout className="relative flex items-center justify-center size-[26px] rounded-full shrink-0"
+                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.22)" : "#d6eadd" }}
+                  transition={{ duration: 0.2 }}>
+                  <t.icon className="size-[14px]" style={{ color: isAct ? "#fff" : "#319754" }} strokeWidth={2.2} />
+                </motion.span>
+                <span className={`${font} relative text-[13px] whitespace-nowrap`} style={{ color: isAct ? "#fff" : "#171717", fontWeight: isAct ? 600 : 500 }}>{t.label}</span>
+                <span className={`${font} relative text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center`}
+                  style={{ backgroundColor: isAct ? "rgba(255,255,255,0.25)" : "#ff3b30", color: "#fff", fontWeight: 600 }}>{t.count}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {/* Date picker (inside pill — moved from header) */}
+        <Popover open={dateOpen} onOpenChange={setDateOpen}>
+          <PopoverTrigger asChild>
+            <button className={`${font} inline-flex items-center gap-1.5 h-[36px] px-4 rounded-full bg-[#f5f5f5] hover:bg-[#ececec] cursor-pointer text-[13px] text-gray-700 shrink-0 group lg:ml-auto transition-colors`} style={{ fontWeight: 500 }}>
+              <CalendarIcon className="size-3.5 text-gray-500 group-hover:text-[#319754]" strokeWidth={2.2} />
+              <span className="group-hover:text-[#319754] transition-colors">{dateLabel}</span>
+              <ChevronDown className="size-3 text-gray-400 group-hover:text-[#319754]" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[260px] p-0 overflow-hidden" align="end">
+            {/* Statement-style: last 6 months only */}
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+              <p className={`${font} text-[12px] text-gray-500 flex items-center gap-1.5`}>
+                <CalendarIcon className="size-3.5 text-gray-400" strokeWidth={2.2} />
+                ใบแจ้งยอดย้อนหลัง 6 เดือน
+              </p>
+            </div>
+            <div className="p-1.5">
+              {(() => {
+                const MONTHS_FULL = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+                // "Current" = June 2569 (current platform date for demo); show last 6 months working backwards
+                const currentMonthIdx = 5;   // 0-based June
+                const currentYearBE   = 2569;
+                const months: { label: string; isCurrent: boolean }[] = [];
+                for (let i = 0; i < 6; i++) {
+                  let m = currentMonthIdx - i;
+                  let y = currentYearBE;
+                  if (m < 0) { m += 12; y -= 1; }
+                  months.push({ label: `เดือน${MONTHS_FULL[m]} ${y}`, isCurrent: i === 0 });
+                }
+                return months.map((opt) => {
+                  const active = dateLabel === opt.label;
+                  return (
+                    <button key={opt.label} onClick={() => { setDateLabel(opt.label); setDateOpen(false); }}
+                      className={`${font} w-full flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${active ? "bg-[#319754]/10" : "hover:bg-gray-50"}`}>
+                      <span className={`text-[13px] ${active ? "text-[#319754]" : "text-gray-700"}`} style={{ fontWeight: active ? 600 : 500 }}>{opt.label}</span>
+                      <span className="flex items-center gap-2">
+                        {opt.isCurrent && (
+                          <span className={`${font} text-[10px] bg-[#319754]/10 text-[#319754] px-1.5 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>ปัจจุบัน</span>
+                        )}
+                        {active && <Check className="size-3.5 text-[#319754]" strokeWidth={2.6} />}
+                      </span>
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Search (inside same pill) */}
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px]">
+          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
+            placeholder="ค้นหาหมายเลขคำสั่งซื้อ..." />
+          <button className="size-[28px] rounded-full bg-[#319754] flex items-center justify-center text-white shrink-0 cursor-pointer">
+            <Search className="size-3.5" strokeWidth={2.4} />
+          </button>
+        </div>
+      </div>
+
+      {/* Table — matches ProductsTab style */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-6">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col style={{ width: "22%" }}  />{/* หมายเลขคำสั่งซื้อ (มี 2 บรรทัด) */}
+            <col style={{ width: "11%" }}  />{/* วันที่สร้าง */}
+            <col style={{ width: "11%" }}  />{/* วันที่ชำระ */}
+            <col style={{ width: "11%" }}  />{/* ยอดรับ (gross) */}
+            <col style={{ width: "10%" }}  />{/* GP */}
+            <col style={{ width: "12%" }}  />{/* ยอดการชำระเงิน (net) */}
+            <col style={{ width: "10%" }}  />{/* ประเภท */}
+            <col style={{ width: "13%" }}  />{/* การดำเนินการ */}
+          </colgroup>
+          <thead>
+            <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>หมายเลขคำสั่งซื้อ/รหัสการปรับ</th>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>วันที่สร้างคำสั่งซื้อ</th>
+              <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>วันที่ชำระเงิน</th>
+              <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ยอดรับ</th>
+              <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }} title="ค่าธรรมเนียมแพลตฟอร์ม 7%">GP</th>
+              <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }} title="ยอดการชำระเงินสุทธิ = ยอดรับ − GP">ยอดการชำระเงิน</th>
+              <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>ประเภท</th>
+              <th className="text-center pb-3" style={{ fontWeight: 500 }}>การดำเนินการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pagedRows.length === 0 && (
+              <tr><td colSpan={8} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการธุรกรรม</td></tr>
+            )}
+            {pagedRows.map((s) => {
+              const b = s.breakdown;
+              return (
+                <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                  <td className="py-3 pr-4 align-middle">
+                    <button onClick={() => onViewOrder(s.orderId)}
+                      className={`${font} text-[#319754] hover:underline tabular-nums text-[13px] inline-flex items-center gap-1 cursor-pointer truncate max-w-full`}
+                      style={{ fontWeight: 500 }}>
+                      <span className="truncate">{s.orderId}</span>
+                      <ArrowUpRight className="size-3 shrink-0" strokeWidth={2.4} />
+                    </button>
+                    <p className={`${font} text-[11px] text-gray-400 tabular-nums mt-0.5 truncate`}>ID: {s.id}</p>
+                  </td>
+                  <td className={`${font} py-3 pr-4 text-[12.5px] text-gray-700 tabular-nums align-middle`}>
+                    <div className="flex flex-col leading-tight">
+                      <span>{(s.orderCreatedAt.split(" ").slice(0, 3).join(" ")) || "—"}</span>
+                      <span className="text-[11px] text-gray-400">{s.orderCreatedAt.split(" ").slice(3).join(" ")}</span>
+                    </div>
+                  </td>
+                  <td className={`${font} py-3 pr-4 text-[12.5px] text-gray-700 tabular-nums align-middle`}>
+                    {s.settledAt === "—" ? (
+                      <span className="text-gray-400">—</span>
+                    ) : (
+                      <div className="flex flex-col leading-tight">
+                        <span>{s.settledAt.split(" ").slice(0, 3).join(" ")}</span>
+                        <span className="text-[11px] text-gray-400">{s.settledAt.split(" ").slice(3).join(" ")}</span>
+                      </div>
+                    )}
+                  </td>
+                  {/* ยอดรับ (gross sales) */}
+                  <td className={`${font} py-3 pr-4 text-right text-[13.5px] text-[#1a1a1a] tabular-nums align-middle`} style={{ fontWeight: 500 }}>
+                    ฿{b.grossSales.toFixed(2)}
+                  </td>
+                  {/* GP */}
+                  <td className={`${font} py-3 pr-4 text-right text-[13px] tabular-nums align-middle`} style={{ fontWeight: 500 }}>
+                    {b.commission < 0 ? (
+                      <span className="text-[#c2410c]">฿{b.commission.toFixed(2)}</span>
+                    ) : s.status === "pending" ? (
+                      <span className="text-gray-300">—</span>
+                    ) : (
+                      <span className="text-gray-400">฿0.00</span>
+                    )}
+                  </td>
+                  {/* ยอดการชำระเงิน (net payout) */}
+                  <td className={`${font} py-3 pr-4 text-right text-[14px] text-[#1a1a1a] tabular-nums align-middle`} style={{ fontWeight: 700 }}>
+                    {s.status === "pending" ? (
+                      <span className="inline-flex items-center text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full text-[11px]" style={{ fontWeight: 500 }}>รอปล่อย</span>
+                    ) : (
+                      `฿${s.payoutAmount.toFixed(2)}`
+                    )}
+                  </td>
+                  <td className="py-3 pr-4 text-center align-middle">
+                    <span className={`${font} inline-flex items-center text-[11px] bg-[#319754]/10 text-[#319754] px-2.5 py-1 rounded-full`} style={{ fontWeight: 500 }}>คำสั่งซื้อ</span>
+                  </td>
+                  <td className="py-3 text-center align-middle">
+                    <button onClick={() => setSelectedSettlement(s)}
+                      title="ดูรายละเอียด"
+                      className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#319754] text-gray-700 hover:text-white transition-colors cursor-pointer mx-auto">
+                      <Eye className="size-4" strokeWidth={2} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between pt-4 mt-2 border-t border-gray-100">
+          <span className={`${font} text-[12px] text-gray-500`}>แถวทั้งหมด: {rows.length}</span>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+              className={`size-8 rounded-full flex items-center justify-center cursor-pointer ${page === 1 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-gray-100"}`}>
+              <ChevronLeft className="size-4" strokeWidth={2.4} />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+              <button key={n} onClick={() => setPage(n)}
+                className={`${font} size-8 rounded-full text-[12.5px] cursor-pointer ${page === n ? "bg-[#319754] text-white" : "text-gray-600 hover:bg-gray-100"}`}
+                style={{ fontWeight: page === n ? 600 : 500 }}>{n}</button>
+            ))}
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+              className={`size-8 rounded-full flex items-center justify-center cursor-pointer ${page === totalPages ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:bg-gray-100"}`}>
+              <ChevronRight className="size-4" strokeWidth={2.4} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Side panel — breakdown */}
+      <AnimatePresence>
+        {selectedSettlement && <SettlementBreakdownPanel s={selectedSettlement} onClose={() => setSelectedSettlement(null)} onViewOrder={onViewOrder} />}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function SummaryKpi({ tone, icon: Icon, label, value, sub }: {
+  tone: "blue" | "green" | "amber" | "red";
+  icon: any;
+  label: string;
+  value: number;
+  sub: string;
+}) {
+  const palette = {
+    blue:  { bg: "#e0eaf5", border: "#3b82f6", text: "#1e3a5f", icon: "#3b82f6" },
+    green: { bg: "#e6f5ec", border: "#319754", text: "#1d5b32", icon: "#319754" },
+    amber: { bg: "#fff4e0", border: "#f59e0b", text: "#92400e", icon: "#f59e0b" },
+    red:   { bg: "#ffe6e6", border: "#dc2626", text: "#991b1b", icon: "#dc2626" },
+  }[tone];
+  return (
+    <div className="rounded-2xl p-4 border" style={{ background: palette.bg, borderColor: `${palette.border}33` }}>
+      <div className="flex items-center justify-between mb-2">
+        <span className={`${font} text-[12px]`} style={{ color: palette.text, fontWeight: 600 }}>{label}</span>
+        <div className="size-8 rounded-full flex items-center justify-center" style={{ background: palette.icon }}>
+          <Icon className="size-4 text-white" strokeWidth={2.4} />
+        </div>
+      </div>
+      <p className={`${font} text-[22px] tabular-nums leading-tight`} style={{ color: palette.text, fontWeight: 700 }}>
+        ฿{Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </p>
+      <p className={`${font} text-[11px] mt-1`} style={{ color: `${palette.text}b3` }}>{sub}</p>
+    </div>
+  );
+}
+
+function SettlementBreakdownPanel({ s, onClose, onViewOrder }: { s: Settlement; onClose: () => void; onViewOrder: (id: string) => void }) {
+  const b = s.breakdown;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 16 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[560px] bg-white rounded-3xl shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)] max-h-[90vh] overflow-y-auto"
+      >
+        {/* Header — title + close */}
+        <div className="sticky top-0 bg-white px-6 pt-5 pb-4 flex items-start justify-between gap-3 z-10 rounded-t-3xl">
+          <div className="flex items-center gap-2.5">
+            <div className="size-9 rounded-xl bg-[#319754]/10 flex items-center justify-center">
+              <FileText className="size-4 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <h2 className={`${font} text-[16px] text-[#1a1a1a]`} style={{ fontWeight: 700 }}>รายละเอียดการชำระเงิน</h2>
+          </div>
+          <button onClick={onClose} className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer">
+            <X className="size-4" strokeWidth={2.4} />
+          </button>
+        </div>
+
+        {/* Order banner */}
+        <div className="mx-6 mb-4 bg-gradient-to-br from-[#319754]/8 to-[#46c474]/5 border border-[#319754]/15 rounded-2xl px-4 py-3.5">
+          <p className={`${font} text-[11px] text-[#319754]`} style={{ fontWeight: 600, letterSpacing: "0.04em" }}>หมายเลขคำสั่งซื้อ</p>
+          <div className="flex items-center justify-between gap-2 mt-1.5">
+            <button onClick={() => { onViewOrder(s.orderId); onClose(); }}
+              className={`${font} text-[16px] text-[#1d5b32] hover:underline tabular-nums inline-flex items-center gap-1.5 cursor-pointer`} style={{ fontWeight: 700 }}>
+              {s.orderId}
+              <ArrowUpRight className="size-4" strokeWidth={2.4} />
+            </button>
+            <span className={`${font} text-[11px] bg-white text-[#319754] px-2.5 py-1 rounded-full border border-[#319754]/20`} style={{ fontWeight: 600 }}>คำสั่งซื้อ</span>
+          </div>
+        </div>
+
+        {/* Dates — clean 3-col grid */}
+        <div className="mx-6 mb-4 bg-gray-50 rounded-2xl p-4 grid grid-cols-3 gap-3">
+          {[
+            { label: "วันที่สร้าง",       value: s.orderCreatedAt },
+            { label: "วันที่ใบแจ้งยอด",   value: s.settledAt },
+            { label: "ID รายได้",        value: s.id, mono: true },
+          ].map((d) => (
+            <div key={d.label}>
+              <p className={`${font} text-[10.5px] text-gray-500 uppercase tracking-wide mb-1`} style={{ fontWeight: 600 }}>{d.label}</p>
+              <p className={`${font} text-[12.5px] text-[#1a1a1a] leading-tight break-all ${d.mono ? "tabular-nums" : ""}`} style={{ fontWeight: 600 }}>{d.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Breakdown tree */}
+        <div className="px-6 pb-5 space-y-3">
+          <BreakdownGroup title="ราคาสุทธิ" amount={b.netPrice} positive defaultOpen tip="ราคาสินค้าหลังหักส่วนลดทุกอย่างแล้ว">
+            <BreakdownRow indent={1} label="ราคาสินค้า (ก่อนหักส่วนลด)" amount={b.productPriceBeforeDiscount} positive tip="ราคาสินค้าก่อนหักส่วนลดใด ๆ" />
+            {b.shopDiscount       < 0 && <BreakdownRow indent={2} label="ส่วนลดจากร้านค้า"        amount={b.shopDiscount}     tip="ส่วนลดที่ร้านค้าจัดโปรโมชั่นเอง (จัดโดยร้าน)" />}
+            {b.platformDiscount   > 0 && <BreakdownRow indent={2} label="ส่วนลดจากแพลตฟอร์ม"     amount={b.platformDiscount} positive tip="ส่วนลดจากกิจกรรมแพลตฟอร์ม / แต้มสะสม — ฟรีค่าธรรมเนียม (เป็นบวกเสมอ — แพลตฟอร์มช่วยจ่าย)" />}
+            {b.couponDiscount     < 0 && <BreakdownRow indent={2} label="ส่วนลดจากคูปอง"          amount={b.couponDiscount}   tip="ส่วนลดจากคูปองที่ลูกค้าใช้" />}
+            {b.flashSaleDiscount  < 0 && <BreakdownRow indent={2} label="ส่วนลดจาก Flash Sale"   amount={b.flashSaleDiscount} tip="ส่วนลดจากการเข้าร่วม Flash Sale" />}
+          </BreakdownGroup>
+
+          <BreakdownGroup title="ค่าจัดส่ง" amount={b.customerShippingFee - b.platformShippingDiscount} positive defaultOpen tip="ค่าจัดส่งที่ลูกค้าจ่ายจริง − ส่วนลดค่าขนส่งจากแพลตฟอร์ม">
+            <BreakdownRow indent={1} label="ค่าขนส่งของลูกค้า" amount={b.customerShippingFee} positive tip="ค่าจัดส่งที่ลูกค้าจ่ายให้ร้าน" />
+            {b.platformShippingDiscount > 0 && (
+              <BreakdownRow indent={1} label="ส่วนลดค่าขนส่งจากแพลตฟอร์ม" amount={b.platformShippingDiscount} positive tip="แพลตฟอร์มช่วยจ่ายค่าขนส่ง (เป็นบวกเสมอ)" />
+            )}
+          </BreakdownGroup>
+
+          <BreakdownGroup title="ค่าธรรมเนียมแพลตฟอร์ม" amount={b.commission} tip="ค่าธรรมเนียม GP — แพลตฟอร์ม MetaHerb หัก 7% จากราคาสุทธิ">
+            <BreakdownRow indent={1} label="ค่าธรรมเนียม GP (MetaHerb 7%)" amount={b.commission} tip="ค่าธรรมเนียมที่แพลตฟอร์มหักจากร้านค้า" />
+          </BreakdownGroup>
+
+          {b.vat > 0 && (
+            <div className="px-4 py-3 bg-gray-50 rounded-2xl border border-gray-100 flex items-start gap-2.5">
+              <Info className="size-4 text-gray-400 shrink-0 mt-0.5" strokeWidth={2.2} />
+              <p className={`${font} text-[12px] text-gray-600 leading-relaxed`}>
+                ภาษีมูลค่าเพิ่ม VAT 7% (รวมในราคาแล้ว) ≈ <span className="tabular-nums" style={{ fontWeight: 600 }}>฿{b.vat.toFixed(2)}</span>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Total payout — sticky footer */}
+        <div className="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 rounded-b-3xl">
+          <div className="bg-gradient-to-br from-[#319754] to-[#267a43] rounded-2xl px-5 py-4 flex items-center justify-between shadow-[0_4px_14px_-2px_rgba(49,151,84,0.4)]">
+            <div>
+              <p className={`${font} text-[11px] text-white/85`} style={{ fontWeight: 500, letterSpacing: "0.04em" }}>จำนวนเงินที่ชำระทั้งหมด</p>
+              <p className={`${font} text-[10px] text-white/65 mt-0.5`}>เข้ากระเป๋าร้านค้าแล้ว</p>
+            </div>
+            <span className={`${font} text-[24px] text-white tabular-nums leading-none`} style={{ fontWeight: 700 }}>฿{s.payoutAmount.toFixed(2)}</span>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/** White Info icon variant for use on dark / coloured backgrounds (e.g. green wallet card). */
+function KpiInfoTip({ text }: { text: string }) {
+  return (
+    <TooltipPrimitive.Root delayDuration={120}>
+      <TooltipPrimitive.Trigger asChild>
+        <button type="button" tabIndex={-1}
+          className="ml-auto text-white/70 hover:text-white transition-colors cursor-help"
+          onClick={(e) => e.stopPropagation()}>
+          <Info className="size-3.5" strokeWidth={2.2} />
+        </button>
+      </TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Portal>
+        <TooltipPrimitive.Content side="top" sideOffset={6}
+          className={`${font} bg-white text-[#1a1a1a] text-[11.5px] leading-snug rounded-lg px-3 py-2 max-w-[260px] z-[60] shadow-[0_8px_24px_rgba(0,0,0,0.18)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0`}
+          style={{ fontWeight: 400 }}>
+          {text}
+          <TooltipPrimitive.Arrow className="fill-white" />
+        </TooltipPrimitive.Content>
+      </TooltipPrimitive.Portal>
+    </TooltipPrimitive.Root>
+  );
+}
+
+/** Small Info icon that shows a Radix tooltip with descriptive text on hover. */
+function InfoTip({ text }: { text: string }) {
+  return (
+    <TooltipPrimitive.Root delayDuration={120}>
+      <TooltipPrimitive.Trigger asChild>
+        <button type="button" tabIndex={-1} className="text-gray-400 hover:text-[#319754] transition-colors cursor-help" onClick={(e) => e.stopPropagation()}>
+          <Info className="size-3.5" strokeWidth={2.2} />
+        </button>
+      </TooltipPrimitive.Trigger>
+      <TooltipPrimitive.Portal>
+        <TooltipPrimitive.Content side="top" sideOffset={6}
+          className={`${font} bg-[#1a1a1a] text-white text-[11.5px] leading-snug rounded-lg px-3 py-2 max-w-[260px] z-[60] shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0`}
+          style={{ fontWeight: 400 }}>
+          {text}
+          <TooltipPrimitive.Arrow className="fill-[#1a1a1a]" />
+        </TooltipPrimitive.Content>
+      </TooltipPrimitive.Portal>
+    </TooltipPrimitive.Root>
+  );
+}
+
+function BreakdownGroup({ title, amount, positive, defaultOpen, tip, children }: { title: string; amount: number; positive?: boolean; defaultOpen?: boolean; tip?: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen ?? false);
+  const color = amount === 0 ? "text-gray-500" : positive ?? amount > 0 ? "text-[#1a1a1a]" : "text-[#dc2626]";
+  return (
+    <TooltipPrimitive.Provider>
+      <div className="border border-gray-100 rounded-2xl overflow-hidden">
+        <button onClick={() => setOpen(!open)}
+          className="w-full px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors">
+          <div className="flex items-center gap-2">
+            <ChevronDown className={`size-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={2.4} />
+            <span className={`${font} text-[14px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>{title}</span>
+            {tip && <span className="inline-flex" onClick={(e) => e.stopPropagation()}><InfoTip text={tip} /></span>}
+          </div>
+          <span className={`${font} text-[14px] tabular-nums ${color}`} style={{ fontWeight: 700 }}>฿{amount.toFixed(2)}</span>
+        </button>
+        {open && <div className="px-4 pb-3 pt-1 space-y-1">{children}</div>}
+      </div>
+    </TooltipPrimitive.Provider>
+  );
+}
+
+function BreakdownRow({ indent, label, amount, positive, tip }: { indent: 1 | 2; label: string; amount: number; positive?: boolean; tip?: string }) {
+  const color = amount === 0 ? "text-gray-500" : positive ?? amount > 0 ? "text-[#1a1a1a]" : "text-[#dc2626]";
+  return (
+    <TooltipPrimitive.Provider>
+      <div className="flex items-start justify-between gap-3 py-1">
+        <div className={`flex items-start gap-2 flex-1 min-w-0 ${indent === 2 ? "pl-6" : ""}`}>
+          <span className={`size-1 rounded-full mt-2 shrink-0 ${indent === 2 ? "bg-gray-300" : "bg-gray-500"}`} />
+          <span className={`${font} text-[12.5px] text-gray-600 leading-relaxed`}>{label}</span>
+          {tip && <span className="inline-flex mt-0.5"><InfoTip text={tip} /></span>}
+        </div>
+        <span className={`${font} text-[13px] tabular-nums ${color}`} style={{ fontWeight: 500 }}>฿{amount.toFixed(2)}</span>
+      </div>
+    </TooltipPrimitive.Provider>
   );
 }
 
@@ -7699,7 +8543,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgCoin}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7723,7 +8567,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgBox}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7747,7 +8591,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgCost}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -7771,7 +8615,7 @@ function ReportSalesTab() {
                 <motion.img
                   src={imgCoinUp}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8353,24 +9197,26 @@ function ReportSalesTab() {
             <div className="hidden md:block">
               <table className="w-full table-fixed">
                 <colgroup>
-                  <col style={{ width: "11%" }} />
-                  <col style={{ width: "22%" }} />
-                  <col style={{ width: "7%" }} />
                   <col style={{ width: "10%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "11%" }} />
-                  <col style={{ width: "9%" }} />
-                  <col style={{ width: "12%" }} />
+                  <col style={{ width: "20%" }} />
+                  <col style={{ width: "6%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "8%" }} />
+                  <col style={{ width: "10%" }} />
                 </colgroup>
                 <thead>
                   <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
                     <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>วันที่</th>
                     <th className="text-left pb-3 pr-3 pl-5" style={{ fontWeight: 500 }}>สินค้า</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>จำนวน</th>
-                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ยอดขาย</th>
-                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ค่าธรรมเนียมแพลตฟอร์ม 7%">GP</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ราคาขายเต็มก่อนหักส่วนลด">ราคาขาย</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ส่วนลด</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ยอดขายหลังหักส่วนลด">ยอดขาย</th>
+                    <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ค่าธรรมเนียมแพลตฟอร์ม 7%">GP</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }} title="ร้านรับสุทธิ = ยอดขาย − GP">ร้านรับสุทธิ</th>
                     <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>ต้นทุน</th>
                     <th className="text-right pb-3" style={{ fontWeight: 500 }}>กำไร</th>
@@ -8414,11 +9260,12 @@ function ReportSalesTab() {
                               <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
                                 {p.qty} <span className="text-gray-400 text-[11px]">ชิ้น</span>
                               </td>
-                              <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#1a1a1a] tabular-nums`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
-                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#c2410c] tabular-nums`} style={{ fontWeight: 500 }}>−฿{p.gp.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-gray-600 tabular-nums`}>฿{(p.sales + p.discount).toLocaleString()}</td>
                               <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#a16207] tabular-nums`} style={{ fontWeight: 500 }}>
                                 {p.discount > 0 ? `−฿${p.discount.toLocaleString()}` : <span className="text-gray-300">−</span>}
                               </td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#1a1a1a] tabular-nums`} style={{ fontWeight: 600 }}>฿{p.sales.toLocaleString()}</td>
+                              <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#c2410c] tabular-nums`} style={{ fontWeight: 500 }}>−฿{p.gp.toLocaleString()}</td>
                               <td className={`py-3 pr-3 text-right ${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 700 }}>฿{p.net.toLocaleString()}</td>
                               <td className={`py-3 pr-3 text-right ${font} text-[13px] text-gray-600 tabular-nums`}>฿{p.cost.toLocaleString()}</td>
                               <td className="py-3 text-right">
@@ -8436,7 +9283,7 @@ function ReportSalesTab() {
                     );
                   })}
                   {pageGroups.length === 0 && (
-                    <tr><td colSpan={9} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</td></tr>
+                    <tr><td colSpan={10} className={`py-10 text-center ${font} text-[13px] text-gray-400`}>ไม่พบรายการขายในช่วงนี้</td></tr>
                   )}
                 </tbody>
                 {pageGroups.length > 0 && (
@@ -8445,11 +9292,12 @@ function ReportSalesTab() {
                       <td className={`pt-3 pr-3 ${font} text-[12px]`} style={{ fontWeight: 600 }}>{pageGroups.length} กลุ่ม</td>
                       <td className={`pt-3 pr-3 pl-5 ${font} text-[12px]`} style={{ fontWeight: 600 }}>รวม {totalRows} รายการ</td>
                       <td className={`pt-3 pr-3 text-right ${font} text-[13px] tabular-nums`} style={{ fontWeight: 700 }}>{pageTotalQty} <span className="text-gray-400 text-[11px]">ชิ้น</span></td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[14px] tabular-nums`} style={{ fontWeight: 700 }}>฿{pageTotalSales.toLocaleString()}</td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-[#c2410c] tabular-nums`} style={{ fontWeight: 600 }}>−฿{pageTotalGp.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-gray-600 tabular-nums`} style={{ fontWeight: 600 }}>฿{(pageTotalSales + pageTotalDiscount).toLocaleString()}</td>
                       <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-[#a16207] tabular-nums`} style={{ fontWeight: 600 }}>
                         {pageTotalDiscount > 0 ? `−฿${pageTotalDiscount.toLocaleString()}` : <span className="text-gray-300">−</span>}
                       </td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[14px] tabular-nums`} style={{ fontWeight: 700 }}>฿{pageTotalSales.toLocaleString()}</td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-[#c2410c] tabular-nums`} style={{ fontWeight: 600 }}>−฿{pageTotalGp.toLocaleString()}</td>
                       <td className={`pt-3 pr-3 text-right ${font} text-[14px] text-[#319754] tabular-nums`} style={{ fontWeight: 700 }}>฿{pageTotalNet.toLocaleString()}</td>
                       <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-gray-600 tabular-nums`} style={{ fontWeight: 600 }}>฿{pageTotalCost.toLocaleString()}</td>
                       <td className={`pt-3 text-right ${font} text-[14px] text-[#15803d] tabular-nums`} style={{ fontWeight: 700 }}>
@@ -8825,7 +9673,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgNewCustomer}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8847,7 +9695,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgRepeatCustomers}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8869,7 +9717,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgGroupCustomer}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -8891,7 +9739,7 @@ function ReportCustomersTab() {
                 <motion.img
                   src={imgMember}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9620,7 +10468,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgProductsSold}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9642,7 +10490,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgProductsStore}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9664,7 +10512,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgStock}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -9686,7 +10534,7 @@ function ReportProductsTab() {
                 <motion.img
                   src={imgRating}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10574,7 +11422,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgVisitors}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10596,7 +11444,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgBagInCart}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10618,7 +11466,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgConvert}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -10640,7 +11488,7 @@ function ReportMarketTab() {
                 <motion.img
                   src={imgCoupon}
                   alt=""
-                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
+                  className="absolute -bottom-4 -right-1 size-[64px] sm:-bottom-6 sm:-right-2 sm:size-[110px] object-contain pointer-events-none select-none opacity-80 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3 opacity-60 sm:opacity-100"
                   style={{
                     maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
                     WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
@@ -12798,7 +13646,13 @@ export function OwnerDashboard() {
   const [flashEventIsNewJoin, setFlashEventIsNewJoin] = useState(false);
   const [selectedFlashEvent, setSelectedFlashEvent] = useState<FlashEvent | null>(null);
   const [ordersInitialFilter, setOrdersInitialFilter] = useState<OrderFilterTab>("all");
+  // OwnerDashboard's local orders array — rich shape (customer/phone/address/OrderItem)
+  // used by OrdersTab + OrderDetailTab. Settlement data is derived from these
+  // same orders so click-through from TransactionsTab always finds the order.
   const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const updateOrder = (id: string, patch: Partial<Order>) => {
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+  };
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const mainRef = React.useRef<HTMLElement>(null);
 
@@ -12827,9 +13681,7 @@ export function OwnerDashboard() {
     setActiveTab("orders");
   };
 
-  const updateOrder = (id: string, patch: Partial<Order>) => {
-    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
-  };
+  // updateOrder is defined inline above with the local orders state.
 
   const openOrderDetail = (id: string) => {
     setSelectedOrderId(id);
@@ -12868,7 +13720,7 @@ export function OwnerDashboard() {
 
       {/* Content — only this area scrolls, sidebar stays fixed */}
       <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">
-        {activeTab === "overview" && <OverviewTab onViewOrders={openOrders} />}
+        {activeTab === "overview" && <OverviewTab orders={orders} onViewOrders={openOrders} />}
         {activeTab === "orders" && <OrdersTab initialFilter={ordersInitialFilter} orders={orders} onUpdate={updateOrder} onOpenDetail={openOrderDetail} />}
         {activeTab === "order_detail" && <OrderDetailTab order={orders.find((o) => o.id === selectedOrderId) || null} onBack={() => setActiveTab("orders")} onUpdate={updateOrder} />}
         {activeTab === "products" && <ProductsTab onAddProduct={() => setActiveTab("add_product")} />}
@@ -12879,7 +13731,8 @@ export function OwnerDashboard() {
         {activeTab === "coupons" && <CouponsTab />}
         {activeTab === "complaints" && <ComplaintsTab onViewDetail={(id: string) => { setSelectedComplaintId(id); setActiveTab("complaint_detail"); }} />}
         {activeTab === "complaint_detail" && <ComplaintDetailTab complaintId={selectedComplaintId} onBack={() => setActiveTab("complaints")} />}
-        {activeTab === "finance" && <FinanceTab onBankSettings={() => setActiveTab("bank_settings")} />}
+        {activeTab === "finance" && <FinanceTab orders={orders} onBankSettings={() => setActiveTab("bank_settings")} />}
+        {activeTab === "finance_transactions" && <TransactionsTab orders={orders} onViewOrder={(id) => { setSelectedOrderId(id); setActiveTab("order_detail"); }} />}
         {activeTab === "bank_settings" && <BankSettingsTab onBack={() => setActiveTab("finance")} />}
         {activeTab === "report_sales" && <ReportSalesTab />}
         {activeTab === "report_customers" && <ReportCustomersTab />}
