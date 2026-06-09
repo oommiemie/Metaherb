@@ -1279,46 +1279,46 @@ function AddTrialProductForm({ onBack, onSave }: { onBack: () => void; onSave: (
           </div>
           <div className="h-px bg-gray-100 mb-4" />
           <div className="space-y-4">
-            {/* Lab result */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="md:col-span-2">
-                <DocUpload label="ผลทดสอบจากห้องแล็บ (ISO/GMP)" hint="PDF / JPG / PNG" fileName={docs.labResult}
+            {/* Row 1: Lab result (DocUpload) + Lab summary (Input) — 50/50 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <DocUpload label="ผลทดสอบจากห้องแล็บ (ISO/GMP)" fileName={docs.labResult}
                   onPick={() => docRefs.labResult.current?.click()} onClear={() => updDoc("labResult", "")} />
                 <input ref={docRefs.labResult} type="file" accept=".pdf,image/*" className="hidden" onChange={onDocFile("labResult")} />
               </div>
               <Input label="สรุปผลทดสอบสั้น ๆ (ทางเลือก)" value={docs.labNote} onChange={(v) => updDoc("labNote", v)} placeholder="เช่น ผ่าน Patch Test 99%" />
             </div>
 
-            {/* FDA */}
+            {/* Row 2: FDA — Input (with hint slot) + DocUpload (with hint) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Input label="เลข อย. *" value={docs.fdaNumber} onChange={(v) => updDoc("fdaNumber", v)} placeholder="10-1-6200xxxxx" />
               <div>
-                <DocUpload label="ใบอนุญาต อย." hint="หรือเอกสารเทียบเท่า" fileName={docs.fdaDoc}
+                <DocUpload label="ใบอนุญาต อย." fileName={docs.fdaDoc}
                   onPick={() => docRefs.fdaDoc.current?.click()} onClear={() => updDoc("fdaDoc", "")} />
                 <input ref={docRefs.fdaDoc} type="file" accept=".pdf,image/*" className="hidden" onChange={onDocFile("fdaDoc")} />
               </div>
             </div>
 
-            {/* Factory */}
+            {/* Row 3: Factory name + GMP cert */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Input label="ชื่อโรงงานผลิต *" value={docs.factoryName} onChange={(v) => updDoc("factoryName", v)} placeholder="เช่น โรงงาน ABC Pharma" />
               <div>
-                <DocUpload label="ใบรับรอง GMP โรงงาน" hint="หากมี" fileName={docs.factoryGmpDoc}
+                <DocUpload label="ใบรับรอง GMP โรงงาน" fileName={docs.factoryGmpDoc}
                   onPick={() => docRefs.factoryGmpDoc.current?.click()} onClear={() => updDoc("factoryGmpDoc", "")} />
                 <input ref={docRefs.factoryGmpDoc} type="file" accept=".pdf,image/*" className="hidden" onChange={onDocFile("factoryGmpDoc")} />
               </div>
             </div>
             <Textarea label="ที่อยู่โรงงาน" value={docs.factoryAddress} onChange={(v) => updDoc("factoryAddress", v)} rows={2} placeholder="เลขที่ ถนน แขวง/ตำบล จังหวัด รหัสไปรษณีย์" />
 
-            {/* SDS + Insurance */}
+            {/* Row 5: SDS + Insurance — both DocUpload (both already have hints) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <DocUpload label="Safety Data Sheet (SDS)" hint="เอกสารความปลอดภัยของวัตถุดิบ" fileName={docs.sdsDoc}
+                <DocUpload label="Safety Data Sheet (SDS)" fileName={docs.sdsDoc}
                   onPick={() => docRefs.sdsDoc.current?.click()} onClear={() => updDoc("sdsDoc", "")} />
                 <input ref={docRefs.sdsDoc} type="file" accept=".pdf,image/*" className="hidden" onChange={onDocFile("sdsDoc")} />
               </div>
               <div>
-                <DocUpload label="ประกันความรับผิดต่อผลิตภัณฑ์" hint="หากมี" fileName={docs.insuranceDoc}
+                <DocUpload label="ประกันความรับผิดต่อผลิตภัณฑ์" fileName={docs.insuranceDoc}
                   onPick={() => docRefs.insuranceDoc.current?.click()} onClear={() => updDoc("insuranceDoc", "")} />
                 <input ref={docRefs.insuranceDoc} type="file" accept=".pdf,image/*" className="hidden" onChange={onDocFile("insuranceDoc")} />
               </div>
@@ -1490,12 +1490,14 @@ function AddTrialProductForm({ onBack, onSave }: { onBack: () => void; onSave: (
 }
 
 /** Pill input — matches AddProductTab style */
-function Input({ label, value, onChange, placeholder, type = "text", required = false }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; required?: boolean }) {
+function Input({ label, value, onChange, placeholder, type = "text", required = false, hint }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; required?: boolean; hint?: string }) {
   return (
     <div className="flex flex-col gap-2">
       <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>
         {label} {required && <span className="text-[#ff3b30]">*</span>}
       </label>
+      {/* min-h forces empty hint to occupy the same vertical space as a populated one */}
+      {hint !== undefined && <p className={`${font} text-[11.5px] text-gray-500 -mt-1 min-h-[17px]`}>{hint || " "}</p>}
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
         className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
     </div>
