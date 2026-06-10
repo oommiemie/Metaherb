@@ -105,12 +105,17 @@ export default function HerbalMarketDetailPage() {
       setTimeout(() => setFlyingItem(null), 800);
     }
 
+    // Cart math: total = price × quantity. For Herbal Market we sell whole
+    // packaged units (e.g. 25,000g bag), so `price` must be the cost of ONE
+    // package and `quantity` the number of packages. That makes the cart total
+    // match what the buyer sees on the product page.
+    const pricePerPackage = (gramPerItem / 1000) * effectivePricePerKg;
     addItem({
       productId: material.id,
       name: material.name,
       image: material.image,
-      price: effectivePricePerKg,
-      option: `${material.grade} · ${gramPerItem.toLocaleString()}g × ${itemCount} ชิ้น`,
+      price: pricePerPackage,
+      option: `${material.grade} · ${gramPerItem.toLocaleString()}g`,
       quantity: itemCount,
       inStock: material.stock > 0,
       shopName: material.supplier,
