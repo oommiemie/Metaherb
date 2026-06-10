@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { ChevronLeft, Heart, MessageCircle, Share2, Star, BadgeCheck, Package, Beaker, Clock, Award, Store, ShoppingBag, FileText, ClipboardList, Check } from "lucide-react";
+import { ChevronLeft, Heart, MessageCircle, Share2, Star, BadgeCheck, Package, Beaker, Clock, Award, Store, ShoppingBag, Check } from "lucide-react";
+import svgPaths from "../../imports/svg-ho36dslifz";
+import { useAuth } from "../store/AuthContext";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useLanguage } from "../store/LanguageContext";
 import { useChat } from "../store/ChatContext";
@@ -19,10 +21,14 @@ export default function HerbalMarketDetailPage() {
   const { openChat } = useChat();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { addItem } = useCart();
+  const { isAuthenticated } = useAuth();
 
   const material = MATERIALS.find((m) => m.id === id);
   const [mainImage, setMainImage] = useState(0);
-  const [quantity, setQuantity] = useState(material?.moq ?? 1);
+  // Two-axis quantity: per-item gram size × item count. Bigger per-item packs
+  // unlock cheaper effective price/kg (PRICE_TIERS below).
+  const [gramPerItem, setGramPerItem] = useState((material?.moq ?? 1) * 1000); // start at MOQ × 1kg
+  const [itemCount, setItemCount] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const [flyingItem, setFlyingItem] = useState<{ x: number; y: number; targetX: number; targetY: number; img: string } | null>(null);
   const addBtnRef = useRef<HTMLButtonElement>(null);
@@ -46,16 +52,37 @@ export default function HerbalMarketDetailPage() {
 
   const wishlisted = isWishlisted(material.id);
   const gradeStyle = GRADE_STYLE[material.grade];
-  const totalPrice = quantity * material.pricePerKg;
-  const belowMoq = quantity < material.moq;
 
-  const handleQuoteRequest = () => {
-    navigate(`/market/${material.id}/quote?qty=${quantity}`);
-  };
+  // Per-item packaging tiers — larger packs lower the effective price/kg
+  // because they cost less per unit to package, label, and ship at bulk scale.
+  const PRICE_TIERS = [
+    { minGrams: 50000, multiplier: 0.90 },   // 50 kg+  → 10% off
+    { minGrams: 25000, multiplier: 0.95 },   // 25 kg+  → 5% off
+    { minGrams: 5000,  multiplier: 1.00 },   // 5 kg+   → base
+    { minGrams: 0,     multiplier: 1.08 },   // < 5 kg  → +8% small-pack surcharge
+  ];
+  const tierMultiplier = (grams: number) =>
+    PRICE_TIERS.find((t) => grams >= t.minGrams)?.multiplier ?? 1;
 
-  const handleIssuePR = () => {
-    navigate(`/market/${material.id}/pr?qty=${quantity}`);
-  };
+  const totalGrams = gramPerItem * itemCount;
+  const totalKg = totalGrams / 1000;
+  const effectivePricePerKg = material.pricePerKg * tierMultiplier(gramPerItem);
+  const totalPrice = totalKg * effectivePricePerKg;
+  const quantity = totalKg; // kept as a kg alias for downstream cart calls / MOQ check
+  const belowMoq = totalKg < material.moq;
+
+  // Suggested better packaging — when buying ≥ next tier's threshold is possible,
+  // show how much the user would save by consolidating into bigger packs.
+  const nextTier = PRICE_TIERS.find((t) => gramPerItem < t.minGrams && totalGrams >= t.minGrams);
+  const suggestion = nextTier && (() => {
+    const newGramPerItem = nextTier.minGrams;
+    const newCount = Math.max(1, Math.floor(totalGrams / newGramPerItem));
+    const newTotalKg = (newGramPerItem * newCount) / 1000;
+    const newPricePerKg = material.pricePerKg * nextTier.multiplier;
+    const newTotal = newTotalKg * newPricePerKg;
+    const save = totalPrice - newTotal;
+    return save > 0 ? { newGramPerItem, newCount, save } : null;
+  })();
 
   const handleAddToCart = () => {
     if (belowMoq) {
@@ -82,18 +109,23 @@ export default function HerbalMarketDetailPage() {
       productId: material.id,
       name: material.name,
       image: material.image,
-      price: material.pricePerKg,
-      option: `${material.grade} · ${quantity} กก.`,
-      quantity,
+      price: effectivePricePerKg,
+      option: `${material.grade} · ${gramPerItem.toLocaleString()}g × ${itemCount} ชิ้น`,
+      quantity: itemCount,
       inStock: material.stock > 0,
       shopName: material.supplier,
     });
     setAddedToCart(true);
     toast.success(`เพิ่ม "${material.name}" ลงตะกร้าแล้ว`, {
-      description: `${quantity} กก. · ฿${totalPrice.toLocaleString()}`,
+      description: `${totalKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} กก. · ฿${totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       action: { label: "ดูตะกร้า", onClick: () => navigate("/cart") },
     });
     setTimeout(() => setAddedToCart(false), 2000);
+  };
+
+  const handleBuyNow = () => {
+    handleAddToCart();
+    if (isAuthenticated) navigate("/cart");
   };
 
   const handleShare = () => {
@@ -197,15 +229,25 @@ export default function HerbalMarketDetailPage() {
           <div className="bg-white border border-gray-200 rounded-[16px] p-[16px] flex flex-col gap-3">
             <span className={`${font} text-[13px] text-gray-500`}>ราคาวัตถุดิบ</span>
             <div className="flex items-end gap-[10px]">
-              <span className={`${font} text-[32px] text-[#319754]`} style={{ fontWeight: 700 }}>฿{material.pricePerKg.toLocaleString()}</span>
-              <span className={`${font} text-[14px] text-gray-500 pb-1.5`}>/ กก.</span>
-              {quantity >= material.moq && (
-                <div className="ml-auto text-right">
-                  <p className={`${font} text-[11px] text-gray-500`}>ยอดสุทธิ ({quantity} กก.)</p>
-                  <p className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>฿{totalPrice.toLocaleString()}</p>
-                </div>
-              )}
+              <span className={`${font} text-[14px] text-gray-500 pb-1.5`}>ราคา</span>
+              <span className={`${font} text-[32px] text-[#db8b0a]`} style={{ fontWeight: 700 }} title={`฿${effectivePricePerKg.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/กก.`}>
+                ฿{totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <div className="ml-auto text-right">
+                <p className={`${font} text-[11px] text-[#db8b0a]`} style={{ fontWeight: 600 }}>Price per kg:</p>
+                <p className={`${font} text-[14px] text-[#db8b0a] tabular-nums`} style={{ fontWeight: 700 }}>฿{effectivePricePerKg.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
             </div>
+
+            {/* Tier suggestion hint — like "ถ้าเลือก 50,000 กรัม 1 ชิ้น จะประหยัดกว่า 15.00฿" */}
+            {suggestion && (
+              <div className="bg-[#fff7ed] border border-[#fed7aa] rounded-2xl p-3 flex items-start gap-2">
+                <span className="size-5 rounded-full bg-[#db8b0a]/15 text-[#db8b0a] inline-flex items-center justify-center shrink-0 mt-0.5" style={{ fontWeight: 700 }}>💡</span>
+                <p className={`${font} text-[12px] text-[#92400e] leading-relaxed`}>
+                  ถ้าเลือก <span style={{ fontWeight: 700 }}>{suggestion.newGramPerItem.toLocaleString()} กรัม</span> {suggestion.newCount} ชิ้น จะประหยัดกว่า <span className="text-[#db8b0a]" style={{ fontWeight: 700 }}>{suggestion.save.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}฿</span>
+                </p>
+              </div>
+            )}
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
               <span className={`${font} inline-flex items-center gap-1 text-[11px] bg-[#f59e0b]/10 text-[#b45309] px-2 py-1 rounded-full`} style={{ fontWeight: 600 }}>
                 <Package className="size-3" strokeWidth={2.4} />
@@ -215,80 +257,126 @@ export default function HerbalMarketDetailPage() {
             </div>
           </div>
 
-          {/* Quantity selector */}
-          <div className="flex flex-col gap-2">
-            <span className={`${font} text-[13px] text-gray-700`} style={{ fontWeight: 500 }}>จำนวน (กก.)</span>
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="bg-[#f5f5f5] flex items-center gap-4 px-3 py-2 rounded-full">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 5))}
-                  className={`${font} text-[16px] text-gray-700 cursor-pointer hover:text-[#319754] transition-colors size-6 flex items-center justify-center`}>
+          {/* Quantity selector — ปริมาณ (g per item) × จำนวน (item count) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* ปริมาณ (gram per item) */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col gap-2">
+              <span className={`${font} text-[13px] text-gray-700 text-center`} style={{ fontWeight: 500 }}>ปริมาณ</span>
+              <div className="bg-[#fafafa] rounded-xl px-4 h-[44px] flex items-center gap-2">
+                <input type="number"
+                  min={5}
+                  value={gramPerItem === 0 ? "" : gramPerItem}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "") { setGramPerItem(0); return; }
+                    const n = Number(v);
+                    if (!Number.isNaN(n)) setGramPerItem(n);
+                  }}
+                  onBlur={(e) => {
+                    const n = Number(e.target.value);
+                    if (!n || n < 5) setGramPerItem(5);
+                  }}
+                  className={`${font} flex-1 bg-transparent text-[15px] text-black outline-none tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} style={{ fontWeight: 600 }} />
+                <span className={`${font} text-[12px] text-gray-400`} style={{ fontWeight: 600 }}>GRAM</span>
+              </div>
+              <p className={`${font} text-[11px] text-gray-500 text-center`}>ขั้นต่ำ: 5g</p>
+            </div>
+
+            {/* จำนวน (item count) */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-4 flex flex-col gap-2">
+              <span className={`${font} text-[13px] text-gray-700 text-center inline-flex items-center justify-center gap-1`} style={{ fontWeight: 500 }}>
+                จำนวน
+                <span className="size-3 rounded-full border border-gray-300 inline-flex items-center justify-center text-[8px] text-gray-400" title={`คงเหลือ ${material.stock} กก.`}>i</span>
+              </span>
+              <div className="bg-[#fafafa] rounded-xl h-[44px] flex items-center">
+                <button onClick={() => setItemCount(Math.max(1, itemCount - 1))}
+                  className={`${font} text-[18px] text-gray-700 cursor-pointer hover:text-[#319754] transition-colors flex-1 h-full flex items-center justify-center`}>
                   −
                 </button>
-                <input type="number" value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Math.min(material.stock, Number(e.target.value) || 1)))}
-                  className={`${font} w-16 bg-transparent text-center text-[14px] text-black outline-none tabular-nums`} style={{ fontWeight: 600 }} />
-                <button onClick={() => setQuantity(Math.min(material.stock, quantity + 5))}
-                  className={`${font} text-[16px] text-gray-700 cursor-pointer hover:text-[#319754] transition-colors size-6 flex items-center justify-center`}>
+                <input type="number"
+                  min={1}
+                  value={itemCount === 0 ? "" : itemCount}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "") { setItemCount(0); return; }
+                    const n = Number(v);
+                    if (!Number.isNaN(n)) setItemCount(n);
+                  }}
+                  onBlur={(e) => {
+                    const n = Number(e.target.value);
+                    if (!n || n < 1) setItemCount(1);
+                  }}
+                  className={`${font} w-12 bg-transparent text-center text-[15px] text-black outline-none tabular-nums border-x border-gray-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} style={{ fontWeight: 700 }} />
+                <button onClick={() => setItemCount(itemCount + 1)}
+                  className={`${font} text-[18px] text-gray-700 cursor-pointer hover:text-[#319754] transition-colors flex-1 h-full flex items-center justify-center`}>
                   +
                 </button>
               </div>
-              <button onClick={() => setQuantity(material.moq)}
-                className={`${font} text-[11px] text-[#319754] hover:underline cursor-pointer`}>
-                ตั้งเป็น MOQ ({material.moq} กก.)
-              </button>
-              {belowMoq && (
-                <span className={`${font} text-[11px] text-[#ff3b30]`}>
-                  ต่ำกว่า MOQ — ขั้นต่ำ {material.moq} กก.
-                </span>
-              )}
+              <p className={`${font} text-[11px] text-gray-500 text-center`}>ชิ้น</p>
             </div>
           </div>
+          {/* Quick-pick preset sizes — fills the ปริมาณ field. Mapped to PRICE_TIERS
+              thresholds so picking a chip jumps the buyer into a cheaper unit price. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`${font} text-[11px] text-gray-500 mr-1`}>เลือกขนาดด่วน:</span>
+            {[
+              { g: 5,     label: "5g" },
+              { g: 100,   label: "100g" },
+              { g: 1000,  label: "1kg" },
+              { g: 5000,  label: "5kg" },
+              { g: 25000, label: "25kg" },
+              { g: 50000, label: "50kg" },
+            ].map((p) => {
+              const active = gramPerItem === p.g;
+              return (
+                <button key={p.g} type="button" onClick={() => setGramPerItem(p.g)}
+                  className={`${font} text-[11px] h-7 px-2.5 rounded-full cursor-pointer transition-all ${
+                    active
+                      ? "bg-[#319754] text-white shadow-[0_2px_6px_rgba(49,151,84,0.3)]"
+                      : "bg-[#f5f5f5] text-gray-700 hover:bg-[#319754]/10 hover:text-[#319754]"
+                  }`} style={{ fontWeight: active ? 700 : 500 }}>
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* Action buttons */}
-          <div className="flex gap-[10px] flex-wrap py-[8px]">
+          {belowMoq && (
+            <p className={`${font} text-[12px] text-[#ff3b30]`}>
+              ต่ำกว่า MOQ — ขั้นต่ำ {material.moq} กก. (ตอนนี้ {totalKg.toLocaleString(undefined, { maximumFractionDigits: 2 })} กก.)
+            </p>
+          )}
+
+          {/* Action buttons — mirrors ProductDetailPage: outline orange + solid green */}
+          <div className="flex gap-[10px] py-[24px]">
             <motion.button
               ref={addBtnRef}
               onClick={handleAddToCart}
               whileTap={{ scale: 0.95 }}
               whileHover={{ scale: 1.02 }}
-              className={`flex items-center justify-center gap-[10px] h-[48px] flex-1 sm:flex-none sm:w-[200px] rounded-full border-2 cursor-pointer transition-colors ${
-                addedToCart ? "border-[#319754] bg-[#319754] text-white" : "border-[#db8b0a] text-[#db8b0a] hover:bg-[#db8b0a]/5"
-              }`}
-              style={{ fontWeight: 600 }}>
+              className={`flex items-center justify-center gap-[10px] h-[48px] flex-1 sm:flex-none sm:w-[200px] rounded-full border cursor-pointer transition-colors ${addedToCart ? "border-[#319754] bg-[#319754] text-white" : "border-[#db8b0a] text-[#db8b0a] hover:bg-[#db8b0a]/5"}`}
+            >
               <AnimatePresence mode="wait">
                 {addedToCart ? (
-                  <motion.span key="added" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
-                    className="flex items-center gap-2">
-                    <Check className="size-4" strokeWidth={2.6} />
-                    <span className={`${font} text-[14px]`}>เพิ่มแล้ว!</span>
+                  <motion.span key="added" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} className="flex items-center gap-2">
+                    <Check className="size-4" /> {t("pd_added_btn")}
                   </motion.span>
                 ) : (
-                  <motion.span key="add" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
-                    className="flex items-center gap-[10px]">
-                    <ShoppingBag className="size-4" strokeWidth={2.4} />
-                    <span className={`${font} text-[14px]`}>เพิ่มใส่รถเข็น</span>
+                  <motion.span key="add" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }} className="flex items-center gap-[10px]">
+                    <svg width="22" height="16" viewBox="0 0 22 16" fill="none">
+                      <path d={svgPaths.p3087100} fill="#C59507" />
+                      <path d={svgPaths.p5cbde00} fill="#C59507" />
+                    </svg>
+                    <span className={`${font} text-[14px]`}>{t("pd_add_to_cart_btn")}</span>
                   </motion.span>
                 )}
               </AnimatePresence>
             </motion.button>
-            <motion.button
-              onClick={handleQuoteRequest}
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.02 }}
-              className={`${font} flex items-center justify-center gap-2 h-[48px] flex-1 sm:flex-none sm:w-[200px] rounded-full border-2 border-[#0088ff] text-[#0088ff] text-[14px] cursor-pointer hover:bg-[#0088ff]/5 transition-colors`}
-              style={{ fontWeight: 600 }}>
-              <FileText className="size-4" strokeWidth={2.4} />
-              ขอใบเสนอราคา
-            </motion.button>
-            <motion.button
-              onClick={handleIssuePR}
-              whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.02 }}
-              className={`${font} flex items-center justify-center gap-2 h-[48px] flex-1 sm:flex-none sm:w-[200px] rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[14px] cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
-              style={{ fontWeight: 600 }}>
-              <ClipboardList className="size-4" strokeWidth={2.4} />
-              ออกใบ PR
-            </motion.button>
+            <button onClick={handleBuyNow}
+              className={`flex items-center justify-center gap-[10px] h-[48px] flex-1 sm:flex-none sm:w-[200px] rounded-full bg-[#319754] text-white ${font} text-[14px] cursor-pointer hover:bg-[#267a43] transition-colors`}>
+              <svg width="14" height="16" viewBox="0 0 14 16" fill="none"><path d={svgPaths.p294be700} fill="white" /></svg>
+              {t("pd_buy_now_btn")}
+            </button>
           </div>
 
         </div>

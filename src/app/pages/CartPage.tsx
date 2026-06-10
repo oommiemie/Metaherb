@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useCart } from "../store/CartContext";
 import { useLanguage } from "../store/LanguageContext";
-import { Trash2, Minus, Plus, ChevronLeft, Store, MessageCircle, ShieldCheck, FileText, ClipboardList } from "lucide-react";
+import { Trash2, Minus, Plus, ChevronLeft, Store, MessageCircle, ShieldCheck, FileText, ClipboardList, ShoppingBag } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useChat } from "../store/ChatContext";
 import { toast } from "sonner";
@@ -223,11 +223,20 @@ export function CartPage() {
                 </div>
 
                 <button onClick={() => {
+                  if (selectedCount === 0) return toast.info("เลือกสินค้าก่อนสั่งซื้อ");
+                  navigate("/payment");
+                }}
+                  className={`w-full mt-4 py-3 rounded-full bg-[#319754] hover:bg-[#267a43] text-white text-[14px] ${font} cursor-pointer transition-colors inline-flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+                  style={{ fontWeight: 600 }}>
+                  <ShoppingBag className="size-4" strokeWidth={2.4} />
+                  ซื้อสินค้า ({selectedCount})
+                </button>
+                <button onClick={() => {
                   if (selectedCount === 0) return toast.info("เลือกสินค้าก่อนออกใบ PR");
                   const ids = items.filter((i) => selected.has(rowKey(i))).map((i) => i.productId).join(",");
                   navigate(`/cart/pr?ids=${ids}`);
                 }}
-                  className={`w-full mt-4 py-3 rounded-full bg-[#319754] hover:bg-[#267a43] text-white text-[14px] ${font} cursor-pointer transition-colors inline-flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+                  className={`w-full mt-2 py-3 rounded-full border-2 border-[#319754] text-[#319754] hover:bg-[#319754]/5 text-[14px] ${font} cursor-pointer transition-colors inline-flex items-center justify-center gap-2`}
                   style={{ fontWeight: 600 }}>
                   <ClipboardList className="size-4" strokeWidth={2.4} />
                   ออกใบ PR ({selectedCount})

@@ -45,15 +45,17 @@ const LANGUAGES = ["ไทย", "อังกฤษ", "จีน", "ญี่ป
 
 export default function SupplierRegisterPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, setSupplierStatus } = useAuth();
 
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
 
   // Step 1 — Business
+  // Pre-fill company/brand from the shopName collected at owner-register time so
+  // a shop that's already registered doesn't have to retype the same name.
   const [businessType, setBusinessType] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [brandName, setBrandName] = useState("");
+  const [companyName, setCompanyName] = useState(user?.shopName || "");
+  const [brandName, setBrandName] = useState(user?.shopName || "");
   const [registrationNo, setRegistrationNo] = useState("");
   const [taxId, setTaxId] = useState("");
   const [foundedYear, setFoundedYear] = useState("");
@@ -125,7 +127,11 @@ export default function SupplierRegisterPage() {
   const handleNext = () => {
     if (!validateStep()) return;
     if (step < 5) { setStep(step + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }
-    else { setSubmitted(true); toast.success("ส่งใบสมัคร Supplier เรียบร้อย — ทีมงานจะตรวจสอบภายใน 3 วันทำการ"); }
+    else {
+      setSubmitted(true);
+      setSupplierStatus(true);  // unlock supplier-only tabs in owner dashboard
+      toast.success("ส่งใบสมัคร Supplier เรียบร้อย — ทีมงานจะตรวจสอบภายใน 3 วันทำการ");
+    }
   };
 
   const handleBack = () => {
@@ -156,16 +162,12 @@ export default function SupplierRegisterPage() {
               <li className="flex items-start gap-2"><Check className="size-3.5 text-[#319754] mt-1 shrink-0" strokeWidth={2.4} /> หลังผ่านการอนุมัติ คุณจะได้ Badge "Verified Supplier" บนหน้าร้าน</li>
             </ul>
           </div>
-          <div className="flex gap-3 justify-center">
-            <button onClick={() => navigate("/market")}
-              className={`${font} h-11 px-5 rounded-full border border-[#319754] text-[#319754] text-[13px] cursor-pointer hover:bg-[#319754]/5`}
+          <div className="flex justify-center">
+            <button onClick={() => navigate("/owner")}
+              className={`${font} h-11 px-6 rounded-full bg-[#319754] text-white text-[13px] cursor-pointer hover:bg-[#287745] inline-flex items-center gap-2`}
               style={{ fontWeight: 600 }}>
-              กลับสู่ตลาดวัตถุดิบ
-            </button>
-            <button onClick={() => navigate("/")}
-              className={`${font} h-11 px-5 rounded-full bg-[#319754] text-white text-[13px] cursor-pointer hover:bg-[#287745]`}
-              style={{ fontWeight: 600 }}>
-              ไปหน้าหลัก
+              ไปที่ร้านค้าของฉัน
+              <ChevronRight className="size-4" strokeWidth={2.4} />
             </button>
           </div>
         </div>
@@ -178,7 +180,16 @@ export default function SupplierRegisterPage() {
   return (
     <div>
       {/* Hero */}
-      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6">
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 relative">
+        {/* Back to dashboard — top-left, doesn't affect step navigation */}
+        <div className="max-w-[960px] mx-auto px-4 sm:px-6 lg:px-12 flex justify-start mb-3">
+          <button onClick={() => navigate(-1)}
+            className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-white hover:bg-gray-50 px-4 py-1.5 rounded-full cursor-pointer transition-colors shadow-[0_1px_4px_rgba(0,0,0,0.06)]`}
+            style={{ fontWeight: 500 }}>
+            <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+            กลับ
+          </button>
+        </div>
         <div className="max-w-[960px] mx-auto px-4 sm:px-6 lg:px-12 flex flex-col items-center text-center gap-2">
           <h1 className={`${font} text-[24px] md:text-[28px] text-[#319754]`} style={{ fontWeight: 600 }}>
             ลงทะเบียนเป็น Supplier

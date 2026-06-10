@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Truck, CreditCard, QrCode, Landmark, Banknote, Tag, MoreHorizontal } from "lucide-react";
+import { MapPin, Truck, CreditCard, QrCode, Landmark, Banknote, Tag, MoreHorizontal, Coins } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 import { useCart } from "../store/CartContext";
@@ -30,11 +30,18 @@ export function PaymentPage() {
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<any>(null);
   const [couponCode, setCouponCode] = useState("");
+  // MetaHerb Coin — 1000 coins = ฿1. User balance is mocked for now; can be
+  // wired to a real ledger later without changing the input/summary UX.
+  const COIN_PER_BAHT = 1000;
+  const userCoins = 12500;
+  const [coinInput, setCoinInput] = useState("");
+  const coinUsed = Math.max(0, Math.min(userCoins, Number(coinInput) || 0));
+  const coinDiscount = coinUsed / COIN_PER_BAHT;
 
   const discount = selectedCoupon ? 100 : 0;
   const vat = (total - discount) * 0.07;
   const shipping = 0;
-  const grandTotal = total - discount + vat + shipping;
+  const grandTotal = Math.max(0, total - discount - coinDiscount + vat + shipping);
 
   const handleConfirm = () => {
     // Derive shop from cart items (first item's shop wins) so owner notifications
@@ -184,9 +191,60 @@ export function PaymentPage() {
               </div>
             </div>
 
+            {/* MetaHerb Coin */}
+            <div className="bg-[rgba(242,242,247,0.5)] flex flex-col gap-3 p-4 rounded-[16px] w-full">
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <div className="flex gap-2 items-center">
+                  <Coins className="size-4 text-[#f7931d]" />
+                  <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ใช้ MetaHerb Coin</span>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className={`${font} text-[12px] text-gray-500 inline-flex items-center gap-1 tabular-nums`}>
+                    มีอยู่ <span className="text-[#f7931d]" style={{ fontWeight: 700 }}>{userCoins.toLocaleString()}</span> เหรียญ
+                  </span>
+                  <span className={`${font} text-[11px] text-gray-400 tabular-nums`}>
+                    ({COIN_PER_BAHT.toLocaleString()} เหรียญ = ฿1)
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center bg-white rounded-full pl-4 pr-1 h-[40px] flex-1 min-w-[180px] border border-gray-200 focus-within:border-[#319754] transition-colors">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={userCoins}
+                    placeholder="กรอกจำนวน Coin ที่ต้องการใช้"
+                    value={coinInput}
+                    onChange={(e) => setCoinInput(e.target.value)}
+                    className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                  />
+                  <button type="button" onClick={() => setCoinInput(String(userCoins))}
+                    className={`${font} bg-[#f7931d]/10 text-[#f7931d] text-[11px] px-3 h-7 rounded-full cursor-pointer hover:bg-[#f7931d]/20 transition-colors`}
+                    style={{ fontWeight: 600 }}>
+                    ใช้ทั้งหมด
+                  </button>
+                </div>
+              </div>
+              {coinUsed > 0 && (
+                <p className={`${font} text-[12px] text-[#319754] tabular-nums`} style={{ fontWeight: 500 }}>
+                  ใช้ {coinUsed.toLocaleString()} เหรียญ — ส่วนลด ฿{coinDiscount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              )}
+            </div>
+
             {/* Summary rows */}
             <div className="flex justify-between px-4"><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("pay_subtotal")} ({items.length} {t("common_pieces")})</span><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>฿{total.toFixed(2)}</span></div>
             <div className="flex justify-between px-4"><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("pay_discount")}</span><span className={`${font} text-[14px] text-[#34c759]`} style={{ fontWeight: 500 }}>-฿{discount.toFixed(2)}</span></div>
+            {coinUsed > 0 && (
+              <div className="flex justify-between px-4">
+                <span className={`${font} text-[14px] text-black inline-flex items-center gap-1.5`} style={{ fontWeight: 500 }}>
+                  <Coins className="size-3.5 text-[#f7931d]" />
+                  Coin ({coinUsed.toLocaleString()})
+                </span>
+                <span className={`${font} text-[14px] text-[#34c759] tabular-nums`} style={{ fontWeight: 500 }}>-฿{coinDiscount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between px-4"><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("pay_vat")}</span><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>฿{vat.toFixed(2)}</span></div>
             <div className="flex justify-between px-4"><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("pay_shipping")}</span><span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>฿{shipping.toFixed(2)}</span></div>
 
