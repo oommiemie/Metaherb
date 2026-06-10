@@ -7,7 +7,7 @@ import { useOrders } from "../store/OrderContext";
 import { useNotifications } from "../store/NotificationContext";
 import type { Notification } from "../store/NotificationContext";
 import { useWishlist } from "../store/WishlistContext";
-import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, MessageCircle, Info, BarChart3, DollarSign, Users, Image, Settings, Phone, Wallet, ClipboardCheck, Truck, PackageCheck, Mail, Leaf, ShieldCheck, FlaskConical, Coins } from "lucide-react";
+import { ShoppingCart, Bell, Search, ChevronDown, User, LogOut, Store, Shield, MapPin, Heart, Ticket, Monitor, ArrowRight, Menu, X, Clock, TrendingUp, Package, Tag, MessageSquare, MessageCircle, Info, BarChart3, DollarSign, Users, Image, Settings, Phone, Wallet, ClipboardCheck, Truck, PackageCheck, Mail, Leaf, ShieldCheck, FlaskConical, Coins, Beaker } from "lucide-react";
 import { TRIAL_PRODUCTS, loadRegistrations } from "../data/trialProducts";
 
 const ShieldCheckLite = () => <ShieldCheck className="size-[12px] text-[#46c474]" strokeWidth={2.4} />;
@@ -322,7 +322,7 @@ function ProfileHoverPreview({ user, onNavigate }: { user: any; onNavigate: (pat
 
 /* ========== PROFILE DIALOG ========== */
 function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigate: (path: string) => void }) {
-  const { user, logout, switchRole } = useAuth();
+  const { user, logout, switchRole, setSupplierStatus } = useAuth();
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -528,6 +528,25 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
             </button>
           ))}
         </div>
+
+        {/* Supplier toggle — owners only, lets the tester flip B2B mode without going through the registration flow */}
+        {user?.role === "owner" && (
+          <button onClick={() => setSupplierStatus(!user?.isSupplier)}
+            className="mt-2 group/sup flex items-center gap-2.5 cursor-pointer w-full text-left px-2 py-1.5 rounded-[8px] hover:bg-white hover:shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all">
+            <div className="size-[28px] rounded-full flex items-center justify-center shrink-0 transition-colors" style={{ backgroundColor: user?.isSupplier ? "#3197541a" : "#9ca3af1a" }}>
+              <Beaker className="size-[13px]" style={{ color: user?.isSupplier ? "#319754" : "#6b7280" }} strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`${font} text-[13px] text-gray-700`} style={{ fontWeight: 500 }}>โหมด Supplier (B2B)</p>
+              <p className={`${font} text-[10px]`} style={{ color: user?.isSupplier ? "#319754" : "#9ca3af", fontWeight: 600 }}>
+                {user?.isSupplier ? "เปิดใช้งาน — เห็น Herbal Market" : "ปิดอยู่ — แตะเพื่อทดสอบ"}
+              </p>
+            </div>
+            <div className={`relative w-9 h-5 rounded-full transition-colors ${user?.isSupplier ? "bg-[#319754]" : "bg-gray-300"}`}>
+              <div className={`absolute top-0.5 size-4 bg-white rounded-full shadow transition-transform ${user?.isSupplier ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+            </div>
+          </button>
+        )}
       </div>
 
       {/* ===== LOGOUT ===== */}

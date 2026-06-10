@@ -17,11 +17,13 @@ import {
   Lock, Banknote, ArrowDownToLine, Info, Save, Beaker, Menu, FlaskConical, LayoutDashboard
 } from "lucide-react";
 import { OwnerTrialsOverview, OwnerTrialsTracking, OwnerTrialsProducts, OwnerTrialsKpiStrip, AddTrialProductTab } from "./owner/OwnerTrialTabs";
+import { loadRegistrations, getRegistrationStatus } from "../data/trialProducts";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, ComposedChart } from "recharts";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import imgCoin from "../../assets/cion.png";
+import imgRegisSupplier from "../../assets/regissupplier.png";
 import imgBox from "../../assets/box-in-caer.png";
 import imgCoinUp from "../../assets/cion-up.png";
 import imgCost from "../../assets/cost.png";
@@ -97,7 +99,7 @@ const orderTabSvgs = {
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
-type OwnerTab = "overview" | "orders" | "order_detail" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "finance_transactions" | "complaints" | "complaint_detail" | "reports" | "report_sales" | "report_customers" | "report_products" | "report_market" | "trials_overview" | "trials_tracking" | "trials_products" | "trials_add_product";
+type OwnerTab = "overview" | "orders" | "order_detail" | "po_detail" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "finance_transactions" | "complaints" | "complaint_detail" | "reports" | "report_sales" | "report_customers" | "report_products" | "report_market" | "trials_overview" | "trials_tracking" | "trials_products" | "trials_add_product" | "herbal_market" | "herbal_market_intro" | "quotations_issued" | "po_list";
 type OrderFilterTab = "all" | "pending_payment" | "pending_verify" | "ready_ship" | "shipping" | "shipped" | "cancelled";
 
 interface SidebarItem {
@@ -107,9 +109,14 @@ interface SidebarItem {
   children?: { id: OwnerTab; label: string }[];
 }
 
-const sidebarItems: SidebarItem[] = [
+const ALL_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "overview", label: "Dashboard", icon: BarChart3 },
   { id: "orders", label: "คำสั่งซื้อ", icon: ShoppingCart },
+  // Herbal Market — supplier-only when isSupplier=true; CTA-only otherwise
+  { id: "herbal_market", label: "Herbal Market", icon: Beaker, children: [
+    { id: "quotations_issued", label: "ใบเสนอราคา" },
+    { id: "po_list", label: "ใบ PO" },
+  ]},
   { id: "products", label: "สินค้า", icon: Package, children: [
     { id: "products", label: "จัดการสินค้า" },
     { id: "flash_sale", label: "Flash Sale" },
@@ -132,6 +139,19 @@ const sidebarItems: SidebarItem[] = [
     { id: "finance",         label: "ภาพรวม" },
   ]},
 ];
+
+// Build sidebar based on supplier status:
+//   isSupplier=true  → Herbal Market expands with full sub-menus
+//   isSupplier=false → Herbal Market collapses into a single CTA button that
+//                       routes to the supplier-invitation intro page
+function buildSidebarItems(isSupplier: boolean): SidebarItem[] {
+  return ALL_SIDEBAR_ITEMS.map((item) => {
+    if (item.id === "herbal_market" && !isSupplier) {
+      return { id: "herbal_market_intro" as OwnerTab, label: "Herbal Market", icon: Beaker };
+    }
+    return item;
+  });
+}
 
 const sidebarSettings: SidebarItem[] = [];
 
@@ -554,6 +574,193 @@ const buildOrders = (): Order[] => {
 
 const mockOrders: Order[] = buildOrders();
 
+/* ========== PURCHASE ORDERS (B2B — from Herbal ERP) ==========
+ * A PO arrives from a factory's Herbal ERP after they accept a quotation or
+ * issue a PR. It carries company/tax info, payment terms, and bulk-material
+ * line items priced per kg. Treated as a special kind of "order" — shows up
+ * in the same Orders tab via a view-mode toggle. */
+type POStatus = "received" | "preparing" | "shipped" | "delivered" | "cancelled";
+type POItem = {
+  name: string;
+  grade: string;
+  qty: number;        // in unit
+  unit: string;       // "กก." | "ตัน"
+  pricePerUnit: number;
+  image: string;
+};
+type POPaymentTerms = "ชำระทันที" | "เครดิต 30 วัน" | "เครดิต 60 วัน" | "เครดิต 90 วัน";
+type PurchaseOrder = {
+  id: string;                 // PO number, e.g. PO-2569-0042
+  status: POStatus;
+  poDate: string;             // PO issued date
+  deliveryDate: string;       // requested delivery
+  company: {
+    name: string;
+    taxId: string;            // 13-digit Thai tax ID
+    contactName: string;
+    phone: string;
+    email: string;
+    address: string;
+  };
+  items: POItem[];
+  subtotal: number;
+  vat: number;                // 7% Thai VAT
+  total: number;
+  paymentTerms: POPaymentTerms;
+  refQuotationId?: string;
+  refPrId?: string;
+  shippingMethod: string;
+  trackingNumber?: string;
+  note?: string;
+};
+
+const PO_STATUS_CFG: Record<POStatus, { label: string; pillBg: string; noteText: string; noteColor: string }> = {
+  received:  { label: "PO ใหม่",            pillBg: "#ff9500", noteText: "PO เข้ามาแล้ว รอจัดเตรียม", noteColor: "#ff9500" },
+  preparing: { label: "พร้อมจัดส่ง",       pillBg: "#007aff", noteText: "พร้อมส่งให้ลูกค้า",         noteColor: "#007aff" },
+  shipped:   { label: "กำลังจัดส่ง",       pillBg: "#319754", noteText: "ส่งของแล้ว รอผู้ซื้อรับ", noteColor: "#319754" },
+  delivered: { label: "ส่งสำเร็จ",          pillBg: "#10b981", noteText: "ผู้ซื้อรับของแล้ว",         noteColor: "#10b981" },
+  cancelled: { label: "ยกเลิก",             pillBg: "#ff3b30", noteText: "ยกเลิกแล้ว",                 noteColor: "#ff3b30" },
+};
+
+const MOCK_PURCHASE_ORDERS: PurchaseOrder[] = [
+  {
+    id: "PO-2569-0042",
+    status: "received",
+    poDate: "12 มี.ค. 2569",
+    deliveryDate: "25 มี.ค. 2569",
+    company: {
+      name: "บริษัท สมุนไพรไทยพัฒนา จำกัด",
+      taxId: "0105563012345",
+      contactName: "คุณวิภาดา จันทร์เพ็ญ",
+      phone: "02-555-1234",
+      email: "purchasing@thaihealthherb.co.th",
+      address: "55 หมู่ 9 ถ.พหลโยธิน ต.คลองหนึ่ง อ.คลองหลวง จ.ปทุมธานี 12120",
+    },
+    items: [
+      { name: "ขมิ้นชันแห้ง (ผง)", grade: "พรีเมียม", qty: 200, unit: "กก.", pricePerUnit: 320, image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=200&q=80" },
+      { name: "อบเชยเทศ (แท่ง)",   grade: "คัดสรร",   qty: 100, unit: "กก.", pricePerUnit: 780, image: "https://images.unsplash.com/photo-1599991834996-216fd55a7b2c?w=200&q=80" },
+    ],
+    subtotal: 142000, vat: 9940, total: 151940,
+    paymentTerms: "เครดิต 30 วัน",
+    refQuotationId: "QT-2569-0125",
+    shippingMethod: "จัดส่งโดยผู้ขาย",
+    note: "ขอให้บรรจุในกระสอบ 25 กก. ปิดผนึกแน่นหนา",
+  },
+  {
+    id: "PO-2569-0039",
+    status: "received",
+    poDate: "10 มี.ค. 2569",
+    deliveryDate: "22 มี.ค. 2569",
+    company: {
+      name: "บริษัท บ้านยาไทย คอมพานี จำกัด",
+      taxId: "0105561098765",
+      contactName: "คุณสรณ์สิริ พรหมโชติ",
+      phone: "02-987-6543",
+      email: "po@banyathai.co.th",
+      address: "234/12 ถ.พระราม 2 แขวงท่าข้าม เขตบางขุนเทียน กรุงเทพฯ 10150",
+    },
+    items: [
+      { name: "ฟ้าทะลายโจร (ผง)", grade: "พรีเมียม", qty: 500, unit: "กก.", pricePerUnit: 240, image: "https://images.unsplash.com/photo-1583500178690-f7eb1664d873?w=200&q=80" },
+      { name: "ใบบัวบกแห้ง",       grade: "คัดสรร",   qty: 150, unit: "กก.", pricePerUnit: 180, image: "https://images.unsplash.com/photo-1597301518497-69c4d4d10e7a?w=200&q=80" },
+      { name: "ใบมะรุมแห้ง (ผง)", grade: "มาตรฐาน",  qty: 80,  unit: "กก.", pricePerUnit: 540, image: "https://images.unsplash.com/photo-1591282017732-207fbba7dfd4?w=200&q=80" },
+    ],
+    subtotal: 190200, vat: 13314, total: 203514,
+    paymentTerms: "เครดิต 60 วัน",
+    refQuotationId: "QT-2569-0119",
+    shippingMethod: "จัดส่งโดยผู้ขาย",
+    trackingNumber: "TH00126589321",
+  },
+  {
+    id: "PO-2569-0033",
+    status: "preparing",
+    poDate: "5 มี.ค. 2569",
+    deliveryDate: "20 มี.ค. 2569",
+    company: {
+      name: "ห้างหุ้นส่วนจำกัด เฮอร์บัลซัพพลาย",
+      taxId: "0993000456789",
+      contactName: "คุณธีระ ศรีบุญรอด",
+      phone: "081-234-5678",
+      email: "thira@herbalsupply.co.th",
+      address: "78 ถ.มิตรภาพ ต.ในเมือง อ.เมือง จ.ขอนแก่น 40000",
+    },
+    items: [
+      { name: "ขิงผงออร์แกนิก", grade: "พรีเมียม", qty: 300, unit: "กก.", pricePerUnit: 280, image: "https://images.unsplash.com/photo-1573821663912-6df460f9c684?w=200&q=80" },
+    ],
+    subtotal: 84000, vat: 5880, total: 89880,
+    paymentTerms: "เครดิต 30 วัน",
+    refPrId: "PR-2569-0098",
+    shippingMethod: "จัดส่งโดยผู้ขาย",
+  },
+  {
+    id: "PO-2569-0028",
+    status: "shipped",
+    poDate: "28 ก.พ. 2569",
+    deliveryDate: "15 มี.ค. 2569",
+    company: {
+      name: "บริษัท ธรรมชาติเฮิร์บส์ จำกัด",
+      taxId: "0105560123456",
+      contactName: "คุณณัฐณิชา รุ่งอรุณ",
+      phone: "02-444-5678",
+      email: "purchasing@naturalherbs.co.th",
+      address: "100 ถ.รามคำแหง แขวงหัวหมาก เขตบางกะปิ กรุงเทพฯ 10240",
+    },
+    items: [
+      { name: "เห็ดหลินจือสกัด", grade: "พรีเมียม", qty: 50,  unit: "กก.", pricePerUnit: 2400, image: "https://images.unsplash.com/photo-1644061923948-f5b918b524c7?w=200&q=80" },
+      { name: "เก๊กฮวยแห้ง",       grade: "คัดสรร",   qty: 80,  unit: "กก.", pricePerUnit: 420,  image: "https://images.unsplash.com/photo-1610643625267-aee6dae3ca22?w=200&q=80" },
+    ],
+    subtotal: 153600, vat: 10752, total: 164352,
+    paymentTerms: "เครดิต 60 วัน",
+    refQuotationId: "QT-2569-0098",
+    shippingMethod: "ขนส่งบริษัท Kerry",
+    trackingNumber: "TH00125478963",
+  },
+  {
+    id: "PO-2569-0025",
+    status: "delivered",
+    poDate: "22 ก.พ. 2569",
+    deliveryDate: "8 มี.ค. 2569",
+    company: {
+      name: "บริษัท ผลิตภัณฑ์สมุนไพร เอเชีย จำกัด (มหาชน)",
+      taxId: "0107556789123",
+      contactName: "คุณพชรพล อินทรพิทักษ์",
+      phone: "02-666-7890",
+      email: "supply@asianherbs.com",
+      address: "999 อาคารเอเชียทาวเวอร์ ชั้น 18 ถ.สาทรใต้ แขวงทุ่งมหาเมฆ เขตสาทร กรุงเทพฯ 10120",
+    },
+    items: [
+      { name: "ขมิ้นชันแคปซูล",   grade: "GMP",     qty: 1000, unit: "กก.", pricePerUnit: 380, image: "https://images.unsplash.com/photo-1740592754365-2117f5977528?w=200&q=80" },
+      { name: "ฟ้าทะลายโจรสกัด", grade: "พรีเมียม", qty: 400,  unit: "กก.", pricePerUnit: 520, image: "https://images.unsplash.com/photo-1583500178690-f7eb1664d873?w=200&q=80" },
+    ],
+    subtotal: 588000, vat: 41160, total: 629160,
+    paymentTerms: "เครดิต 90 วัน",
+    refQuotationId: "QT-2569-0076",
+    shippingMethod: "ขนส่งโดยผู้ซื้อ",
+    trackingNumber: "TH00124589632",
+  },
+  {
+    id: "PO-2569-0019",
+    status: "cancelled",
+    poDate: "18 ก.พ. 2569",
+    deliveryDate: "5 มี.ค. 2569",
+    company: {
+      name: "บริษัท แพทย์แผนไทยร่วมสมัย จำกัด",
+      taxId: "0105562345678",
+      contactName: "คุณสมหญิง วิจิตรกุล",
+      phone: "02-333-2222",
+      email: "po@modernthai.co.th",
+      address: "456 ถ.รัชดาภิเษก แขวงห้วยขวาง เขตห้วยขวาง กรุงเทพฯ 10310",
+    },
+    items: [
+      { name: "ดอกอัญชันแห้ง", grade: "พรีเมียม", qty: 100, unit: "กก.", pricePerUnit: 520, image: "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=200&q=80" },
+    ],
+    subtotal: 52000, vat: 3640, total: 55640,
+    paymentTerms: "เครดิต 30 วัน",
+    refQuotationId: "QT-2569-0061",
+    shippingMethod: "จัดส่งโดยผู้ขาย",
+    note: "ลูกค้ายกเลิกเนื่องจากเปลี่ยนสูตร",
+  },
+];
+
 const countByStatus = (status: OrderFilterTab) =>
   status === "all" ? mockOrders.length : mockOrders.filter((o) => o.status === status).length;
 
@@ -578,6 +785,9 @@ const childIconMap: Record<string, any> = {
   // Finance sub-menu
   finance:               LayoutDashboard,
   finance_transactions:  ArrowDownToLine,
+  // Herbal Market sub-menu
+  quotations_issued: ClipboardList,
+  po_list:           FileText,
 };
 
 const sidebarActiveStyle = { backgroundImage: "linear-gradient(90deg, rgba(49,151,84,0.1) 0%, rgba(49,151,84,0.1) 100%), linear-gradient(90deg, #fff 0%, #fff 100%)" };
@@ -628,6 +838,8 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({ products: true, trials_overview: true, finance: true, settings: false });
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const sidebarItems = buildSidebarItems(!!user?.isSupplier);
   const toggle = (id: string) => setExpandedMenus((p) => ({ ...p, [id]: !p[id] }));
 
   // Translate sidebar labels based on tab id
@@ -649,6 +861,10 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
     trials_overview: "สินค้าทดลอง",
     trials_tracking: "ติดตามสินค้าทดลอง",
     trials_products: "ทะเบียนสินค้าทดลอง",
+    herbal_market: "Herbal Market",
+    herbal_market_intro: "Herbal Market",
+    quotations_issued: "ใบเสนอราคา",
+    po_list: "ใบ PO",
   };
   // For parent items like "products", child id "products" overlaps — special-case the manage products label
   const childLabel = (id: string, fallback: string) => {
@@ -1098,6 +1314,176 @@ function OrderCard({ order, onUpdate, onShowDetail, onContact, onBlock, onConfir
   );
 }
 
+/* ========== PO CARD — B2B purchase order from a factory's Herbal ERP ========== */
+function POCard({ po, onShowDetail, onUpdate }: {
+  po: PurchaseOrder;
+  onShowDetail: (id: string) => void;
+  onUpdate: (id: string, patch: Partial<PurchaseOrder>) => void;
+}) {
+  const cfg = PO_STATUS_CFG[po.status];
+
+  const contactBtn = (
+    <button onClick={(e) => { e.stopPropagation(); toast.info(`เปิดแชทกับ ${po.company.contactName} (${po.company.phone})`); }}
+      className={`${font} border border-gray-300 text-gray-700 hover:bg-gray-50 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
+      <MessageCircle className="size-3.5" />
+      ติดต่อลูกค้า
+    </button>
+  );
+
+  const actions = (() => {
+    switch (po.status) {
+      case "received":
+        return (
+          <>
+            {contactBtn}
+            <button onClick={(e) => { e.stopPropagation(); onUpdate(po.id, { status: "preparing" }); toast.success("เปลี่ยนสถานะเป็นพร้อมจัดส่ง"); }}
+              className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+              พร้อมจัดส่ง
+              <ArrowRightCircle className="size-4" />
+            </button>
+          </>
+        );
+      case "preparing":
+        return (
+          <>
+            {contactBtn}
+            <button onClick={(e) => { e.stopPropagation(); onUpdate(po.id, { status: "shipped" }); toast.success("จัดส่งแล้ว"); }}
+              className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+              <Truck className="size-4" />
+              ยืนยันจัดส่ง
+            </button>
+          </>
+        );
+      case "shipped":
+      case "delivered":
+        return contactBtn;
+      default:
+        return null;
+    }
+  })();
+
+  return (
+    <div onClick={() => onShowDetail(po.id)}
+      className="group bg-white rounded-2xl border border-gray-100 overflow-hidden cursor-pointer hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] hover:border-gray-200 transition-all">
+      {/* Header: PO id + status pill | date + arrow */}
+      <div className="flex flex-col gap-4 px-4 pt-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{po.id}</span>
+            <span className={`${font} text-[12px] text-white px-4 py-1 rounded-full whitespace-nowrap`}
+              style={{ backgroundColor: cfg.pillBg, fontWeight: 500 }}>
+              {cfg.label}
+            </span>
+          </div>
+          <div className="flex items-center gap-2.5">
+            <span className={`${font} text-[12px] text-[#8e8e93]`}>{po.poDate}</span>
+            <ChevronRight className="size-4 text-[#8e8e93] group-hover:text-[#319754] group-hover:translate-x-0.5 transition-all" strokeWidth={2.4} />
+          </div>
+        </div>
+        <div className="h-px bg-gray-200 w-full" />
+      </div>
+
+      {/* Items list */}
+      <div className="flex flex-col gap-2.5 p-4">
+        {po.items.map((item, i) => (
+          <div key={i} className="flex items-start gap-2.5">
+            <div className="size-[70px] rounded-2xl overflow-hidden shrink-0 bg-gray-100">
+              <ImageWithFallback src={item.image} alt={item.name} className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-1">
+              <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{item.name}</p>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`${font} bg-[#319754]/10 text-[#319754] text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap`} style={{ fontWeight: 600 }}>
+                    เกรด {item.grade}
+                  </span>
+                  <span className={`${font} bg-[#f5f5f5] text-[#262626] text-[10px] px-2.5 py-0.5 rounded-full whitespace-nowrap tabular-nums`} style={{ fontWeight: 500 }}>
+                    {item.qty.toLocaleString()} {item.unit} × ฿{item.pricePerUnit.toLocaleString()}/{item.unit}
+                  </span>
+                </div>
+                <span className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 600 }}>฿{(item.qty * item.pricePerUnit).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Company info — delivery slip style */}
+      <div className="px-4">
+        <div className="bg-[#fafbfc] border border-gray-100 rounded-2xl overflow-hidden">
+          <div className="flex items-center gap-2 flex-wrap px-4 py-2.5 bg-white/60 border-b border-gray-100">
+            <span className={`${font} bg-[#319754]/10 text-[#319754] text-[11px] pl-2 pr-3 py-1 rounded-full whitespace-nowrap inline-flex items-center gap-1.5`} style={{ fontWeight: 600 }}>
+              <Truck className="size-3" strokeWidth={2.4} />
+              {po.shippingMethod}
+            </span>
+            <span className={`${font} text-[11px] text-gray-500 inline-flex items-center gap-1 ml-auto`}>
+              <CalendarIcon className="size-3" />
+              <span style={{ fontWeight: 500 }}>ส่งภายใน {po.deliveryDate}</span>
+            </span>
+            {po.trackingNumber && (
+              <span className={`${font} text-[11px] text-gray-500 inline-flex items-center gap-1`}>
+                <Package className="size-3" />
+                <span className="tabular-nums" style={{ fontWeight: 500 }}>{po.trackingNumber}</span>
+              </span>
+            )}
+          </div>
+          <div className="p-4 flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Store className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className={`${font} text-[15px] text-black leading-tight`} style={{ fontWeight: 600 }}>{po.company.name}</span>
+                <span className={`${font} text-[11px] text-gray-500 tabular-nums mt-0.5`}>เลขผู้เสียภาษี {po.company.taxId}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <UserIcon className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className={`${font} text-[14px] text-black leading-tight`} style={{ fontWeight: 500 }}>{po.company.contactName}</span>
+                <span className={`${font} text-[12px] text-gray-500 tabular-nums mt-0.5`}>{po.company.phone}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <MapPin className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <p className={`${font} text-[13px] text-gray-700 leading-relaxed flex-1 min-w-0`}>{po.company.address}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer: total + payment terms | action */}
+      <div className="flex items-center justify-between flex-wrap gap-3 p-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <span className={`${font} text-[14px] text-[#8e8e93]`} style={{ fontWeight: 500 }}>ยอดรวม:</span>
+            <span className={`${font} text-[20px] text-[#ff383c] tabular-nums`} style={{ fontWeight: 500 }}>
+              ฿{po.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+          <span className={`${font} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] bg-[#f59e0b]/10 text-[#d97706]`} style={{ fontWeight: 600 }}>
+            <Wallet className="size-3" strokeWidth={2.4} />
+            {po.paymentTerms}
+          </span>
+          {(po.refQuotationId || po.refPrId) && (
+            <span className={`${font} inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] bg-gray-100 text-gray-600`} style={{ fontWeight: 500 }}>
+              <FileText className="size-3" />
+              อ้างอิง {po.refQuotationId || po.refPrId}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {actions}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // FilterTabPills — แสดง tabs row บน lg+ / dropdown icon บน < lg (ใช้ทั่วระบบร้านค้า)
 function FilterTabPills<T extends string>({ tabs, active, onChange, pillId }: {
   tabs: { id: T; label: string; count: number; Icon: any }[];
@@ -1107,15 +1493,38 @@ function FilterTabPills<T extends string>({ tabs, active, onChange, pillId }: {
 }) {
   const activeTab = tabs.find((t) => t.id === active);
   const ActiveIcon = activeTab?.Icon;
+  const scrollerRef = React.useRef<HTMLDivElement>(null);
+
+  // Scroll a tab into view inside the scroller — uses the clicked button itself
+  // so we always have the exact target, even mid-motion-animation.
+  const scrollBtnIntoView = (btn: HTMLElement) => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const btnRect = btn.getBoundingClientRect();
+    const scRect = scroller.getBoundingClientRect();
+    const PAD = 12;
+    if (btnRect.left < scRect.left + PAD) {
+      scroller.scrollBy({ left: btnRect.left - scRect.left - PAD, behavior: "smooth" });
+    } else if (btnRect.right > scRect.right - PAD) {
+      scroller.scrollBy({ left: btnRect.right - scRect.right + PAD, behavior: "smooth" });
+    }
+  };
+
+  const handleSelect = (id: T, e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget;
+    onChange(id);
+    // Defer to next frame so any motion layout shift settles before measuring.
+    requestAnimationFrame(() => scrollBtnIntoView(btn));
+  };
 
   return (
     <>
-      {/* Desktop (lg+): tabs row */}
-      <div className="hidden lg:flex items-center gap-2 flex-wrap flex-1 min-w-0">
+      {/* Desktop (lg+): single-row, horizontal scroll */}
+      <div ref={scrollerRef} className="hidden lg:flex items-center gap-2 flex-nowrap flex-1 min-w-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
         {tabs.map((tab) => {
           const isAct = active === tab.id;
           return (
-            <motion.button key={tab.id} onClick={() => onChange(tab.id)}
+            <motion.button key={tab.id} onClick={(e) => handleSelect(tab.id, e)}
               whileTap={{ scale: 0.94 }} whileHover={!isAct ? { scale: 1.04 } : undefined}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
               className={`relative flex items-center gap-2 h-[36px] pl-1.5 pr-3 rounded-full cursor-pointer shrink-0 ${!isAct ? "hover:bg-gray-50" : ""}`}>
@@ -1499,6 +1908,402 @@ function ReviewModal({ open, order, onClose }: { open: boolean; order: Order | n
 }
 
 /* ========== ORDER DETAIL TAB (subpage) ========== */
+/* ========== PO DETAIL — full page detail for an ERP-issued purchase order ========== */
+function POOrderDetailTab({ po, onBack, onUpdate }: {
+  po: PurchaseOrder | null;
+  onBack: () => void;
+  onUpdate: (id: string, patch: Partial<PurchaseOrder>) => void;
+}) {
+  const [shipModalOpen, setShipModalOpen] = useState(false);
+  const [shipTrackingInput, setShipTrackingInput] = useState("");
+
+  if (!po) {
+    return (
+      <div>
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors mb-5`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+        <div className="bg-white rounded-2xl border border-gray-100 py-16 flex flex-col items-center justify-center gap-2">
+          <Beaker className="size-10 text-gray-300" strokeWidth={1.5} />
+          <p className={`${font} text-[14px] text-gray-400`}>ไม่พบใบ PO</p>
+        </div>
+      </div>
+    );
+  }
+  const cfg = PO_STATUS_CFG[po.status];
+
+  const submitShip = () => {
+    if (!shipTrackingInput.trim()) return;
+    onUpdate(po.id, { status: "shipped", trackingNumber: shipTrackingInput.trim() });
+    toast.success("อัปเดตสถานะการจัดส่งเรียบร้อย");
+    setShipModalOpen(false);
+  };
+
+  // Payment status — PO uses credit terms; for visual parity with retail order
+  // detail, treat "delivered" as paid (terms cleared); everything else awaits payment.
+  const paymentPaid = po.status === "delivered";
+  const paymentNote = paymentPaid
+    ? { text: "ชำระเงินแล้ว", color: "#319754" }
+    : { text: `รอชำระตาม${po.paymentTerms}`, color: "#ff9500" };
+
+  return (
+    <div>
+      {/* Top bar: back + date */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+        <span className={`${font} text-[12px] text-[#8e8e93]`}>{po.poDate}</span>
+      </div>
+
+      {/* Title row: PO id + status pill */}
+      <div className="flex items-center gap-4 mb-5 flex-wrap">
+        <h2 className={`${font} text-[20px] text-black leading-[30px]`} style={{ fontWeight: 500 }}>{po.id}</h2>
+        <span className={`${font} text-[12px] text-white px-4 py-1 rounded-full whitespace-nowrap`}
+          style={{ backgroundColor: cfg.pillBg, fontWeight: 500 }}>
+          {cfg.label}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2/3: items + payment + timeline */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          {/* Items card */}
+          <div className="bg-white rounded-2xl overflow-hidden">
+            <div className="flex flex-col gap-4 pt-4 px-4">
+              <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>รายการสินค้า</h3>
+              <div className="h-px bg-gray-200 w-full" />
+            </div>
+            <div className="flex flex-col gap-2.5 p-4">
+              {po.items.map((it, i) => (
+                <div key={i} className="flex items-start gap-2.5">
+                  <div className="size-[70px] rounded-2xl overflow-hidden shrink-0 bg-gray-100">
+                    <ImageWithFallback src={it.image} alt={it.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch py-1">
+                    <p className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 500 }}>{it.name}</p>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`${font} bg-[#319754]/10 text-[#319754] text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>เกรด {it.grade}</span>
+                        <span className={`${font} bg-[#f5f5f5] text-[#262626] text-[10px] px-2.5 py-0.5 rounded-full whitespace-nowrap tabular-nums`} style={{ fontWeight: 500 }}>
+                          {it.qty.toLocaleString()} {it.unit} × ฿{it.pricePerUnit.toLocaleString()}/{it.unit}
+                        </span>
+                      </div>
+                      <span className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 600 }}>
+                        ฿{(it.qty * it.pricePerUnit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Totals */}
+            <div className="px-4 pb-2 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className={`${font} text-[13px] text-[#8e8e93]`}>ยอดรวม</span>
+                <span className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 500 }}>฿{po.subtotal.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className={`${font} text-[13px] text-[#8e8e93]`}>VAT 7%</span>
+                <span className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 500 }}>฿{po.vat.toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-4 pt-2 border-t border-gray-100 mt-2">
+              <span className={`${font} text-[14px] text-[#8e8e93]`} style={{ fontWeight: 500 }}>รวมทั้งสิ้น:</span>
+              <span className={`${font} text-[20px] text-[#ff383c] tabular-nums`} style={{ fontWeight: 500 }}>
+                ฿{po.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+
+          {/* Payment info card */}
+          <div className="bg-white rounded-2xl overflow-hidden">
+            <div className="flex flex-col gap-4 pt-4 px-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลการชำระเงิน</h3>
+                <span className={`${font} inline-flex items-center gap-2 pl-2 pr-3 py-1 rounded-full text-[12px]`}
+                  style={{ backgroundColor: `${paymentNote.color}1a`, color: paymentNote.color }}>
+                  <AlertCircle className="size-3.5" fill={paymentNote.color} stroke="white" strokeWidth={2.5} />
+                  {paymentNote.text}
+                </span>
+              </div>
+              <div className="h-px bg-gray-200 w-full" />
+            </div>
+            <div className="flex flex-col gap-4 p-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className={`${font} text-[14px] text-black`}>เงื่อนไขชำระเงิน:</span>
+                <span className={`${font} text-[16px] text-[#d97706]`} style={{ fontWeight: 600 }}>{po.paymentTerms}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className={`${font} text-[14px] text-black`}>เอกสารอ้างอิง:</span>
+                <span className={`${font} text-[14px] text-[#319754]`} style={{ fontWeight: 500 }}>{po.refQuotationId || po.refPrId || "—"}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className={`${font} text-[14px] text-black`}>วันที่ส่งของ:</span>
+                <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{po.deliveryDate}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Cancellation note — when cancelled */}
+          {po.status === "cancelled" && (
+            <div className="bg-white rounded-2xl overflow-hidden">
+              <div className="flex flex-col gap-4 pt-4 px-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>การยกเลิก PO</h3>
+                  <span className={`${font} text-[12px] text-white px-3 py-0.5 rounded-full bg-[#ff3b30]`} style={{ fontWeight: 500 }}>ยกเลิกแล้ว</span>
+                </div>
+                <div className="h-px bg-gray-200 w-full" />
+              </div>
+              <div className="p-4 flex flex-col gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="size-10 rounded-full bg-[#ff3b30]/10 flex items-center justify-center shrink-0">
+                    <X className="size-5 text-[#ff3b30]" strokeWidth={2.6} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`${font} text-[14px] text-[#ff3b30]`} style={{ fontWeight: 600 }}>PO นี้ถูกยกเลิก</p>
+                    <p className={`${font} text-[12px] text-gray-500 mt-0.5`}>{po.poDate}</p>
+                  </div>
+                </div>
+                {po.note && (
+                  <div className="bg-[#fef2f2] border border-[#fecaca] rounded-xl p-3.5">
+                    <p className={`${font} text-[11px] text-[#8e8e93] uppercase tracking-wider`} style={{ fontWeight: 600 }}>หมายเหตุ</p>
+                    <p className={`${font} text-[14px] text-[#101828] mt-1`} style={{ fontWeight: 500 }}>{po.note}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* PO progress — vertical timeline */}
+          {po.status !== "cancelled" && (() => {
+            const steps = [
+              { label: "PO เข้าระบบ" },
+              { label: "พร้อมจัดส่ง" },
+              { label: "กำลังจัดส่ง" },
+              { label: "ส่งสำเร็จ" },
+            ];
+            const stepMap: Partial<Record<POStatus, number>> = {
+              received:  1,
+              preparing: 2,
+              shipped:   3,
+              delivered: 4,
+            };
+            const currentStep = stepMap[po.status] ?? 0;
+            const accent = "#319754";
+
+            return (
+              <div className="bg-white rounded-2xl overflow-hidden">
+                <div className="flex flex-col gap-4 pt-4 px-4">
+                  <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>สถานะการจัดส่ง</h3>
+                  <div className="h-px bg-gray-200 w-full" />
+                </div>
+                <div className="px-6 py-4">
+                  {steps.map((s, i) => {
+                    const done = i < currentStep;
+                    const current = i === currentStep;
+                    const isLast = i === steps.length - 1;
+                    return (
+                      <div key={s.label} className="flex gap-4 items-stretch">
+                        <div className="flex flex-col items-center shrink-0 w-6">
+                          <motion.div
+                            initial={false}
+                            animate={current ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+                            transition={current ? { duration: 1.4, repeat: Infinity, ease: "easeInOut" } : { duration: 0.2 }}
+                            className={`size-6 rounded-full flex items-center justify-center text-[12px] shrink-0 transition-all duration-300 ${
+                              done    ? "bg-[#319754] text-white shadow-[0_2px_6px_rgba(49,151,84,0.25)]"
+                              : current ? `bg-white border-2`
+                              :           "bg-white border-2 border-gray-300 text-gray-400"
+                            }`}
+                            style={current ? { borderColor: accent, color: accent, boxShadow: `0 0 0 4px ${accent}1a` } : {}}
+                          >
+                            <span style={{ fontWeight: 700 }}>{i + 1}</span>
+                          </motion.div>
+                          {!isLast && (
+                            <div className={`flex-1 w-0.5 my-1 transition-colors duration-300 ${
+                              done ? "bg-[#319754]" : "bg-gray-200"
+                            }`} style={{ minHeight: 32 }} />
+                          )}
+                        </div>
+                        <div className={`flex flex-col gap-1 ${isLast ? "pb-0" : "pb-5"} pt-0.5 flex-1 min-w-0`}>
+                          <p className={`${font} text-[14px] transition-colors duration-300 ${
+                            done    ? "text-[#319754]"
+                            : current ? ""
+                            :           "text-gray-700"
+                          }`} style={{ fontWeight: done || current ? 600 : 500, color: current ? accent : undefined }}>
+                            {s.label}
+                          </p>
+                          <p className={`${font} text-[12px] ${done || current ? "text-gray-700" : "text-gray-400"}`}>
+                            {done || current ? po.poDate : "-"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Right 1/3: buyer info + shipping + actions */}
+        <div className="bg-white rounded-2xl overflow-hidden self-start">
+          <div className="flex flex-col gap-4 pt-4 px-4">
+            <h3 className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ข้อมูลผู้ซื้อ / จัดส่ง</h3>
+            <div className="h-px bg-gray-200 w-full" />
+          </div>
+
+          {/* Buyer info — icon-row layout matching order detail */}
+          <div className="flex flex-col gap-3 p-4">
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Store className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>{po.company.name}</p>
+                <p className={`${font} text-[11px] text-gray-500 tabular-nums`}>เลขผู้เสียภาษี {po.company.taxId}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <UserIcon className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{po.company.contactName}</p>
+                <p className={`${font} text-[12px] text-gray-500 tabular-nums`}>{po.company.phone}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Mail className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <p className={`${font} text-[13px] text-gray-700 break-all flex-1 min-w-0`}>{po.company.email}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <Truck className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{po.shippingMethod}</p>
+                {po.trackingNumber && (
+                  <p className={`${font} text-[12px] text-[#319754] tabular-nums`} style={{ fontWeight: 500 }}>{po.trackingNumber}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="size-9 rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <MapPin className="size-4 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <p className={`${font} text-[13px] text-gray-700 leading-relaxed flex-1 min-w-0`}>{po.company.address}</p>
+            </div>
+          </div>
+
+          {/* Note from buyer */}
+          {po.note && po.status !== "cancelled" && (
+            <div className="px-4 pb-4">
+              <div className="bg-[rgba(242,242,247,0.7)] rounded-2xl p-4">
+                <p className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>หมายเหตุจากผู้ซื้อ</p>
+                <p className={`${font} text-[12px] text-black mt-1`}>{po.note}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex flex-col gap-3 p-4">
+            <button onClick={() => toast.success(`เริ่มดาวน์โหลด ${po.id}.pdf`)}
+              className={`${font} w-full border border-[#319754] text-[#319754] hover:bg-[#319754]/5 h-10 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center justify-center gap-2`}
+              style={{ fontWeight: 500 }}>
+              <Download className="size-4" strokeWidth={2.4} />
+              โหลดเอกสาร PO
+            </button>
+            {po.status !== "cancelled" && (
+              <button onClick={() => toast.info(`เปิดแชทกับ ${po.company.contactName} (${po.company.phone})`)}
+                className={`${font} w-full border border-[#319754] text-[#319754] hover:bg-[#319754]/5 h-10 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center justify-center gap-2`}
+                style={{ fontWeight: 500 }}>
+                <MessageCircle className="size-4" />
+                ติดต่อลูกค้า
+              </button>
+            )}
+            {po.status === "received" && (
+              <button onClick={() => { onUpdate(po.id, { status: "preparing" }); toast.success("เปลี่ยนสถานะเป็นพร้อมจัดส่ง"); }}
+                className={`${font} w-full bg-[#319754] hover:bg-[#287745] text-white h-10 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+                style={{ fontWeight: 500 }}>
+                พร้อมจัดส่ง
+                <ArrowRightCircle className="size-4" />
+              </button>
+            )}
+            {po.status === "preparing" && (
+              <button onClick={() => { setShipModalOpen(true); setShipTrackingInput(""); }}
+                className={`${font} w-full bg-[#319754] hover:bg-[#287745] text-white h-10 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center justify-center gap-2 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+                style={{ fontWeight: 500 }}>
+                <Truck className="size-4" />
+                ยืนยันการจัดส่ง
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Ship-confirm modal */}
+      <AnimatePresence>
+        {shipModalOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+            onClick={() => setShipModalOpen(false)}>
+            <motion.div initial={{ scale: 0.95, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 12 }}
+              className="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`${font} text-[18px]`} style={{ fontWeight: 700 }}>ยืนยันการจัดส่ง</h3>
+                <button onClick={() => setShipModalOpen(false)} className="size-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer">
+                  <X className="size-4" />
+                </button>
+              </div>
+              <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                <p className={`${font} text-[12px] text-gray-500`}>ใบ PO</p>
+                <p className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>{po.id}</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>ผู้ซื้อ</p>
+                <p className={`${font} text-[14px]`}>{po.company.name}</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>วิธีจัดส่ง</p>
+                <p className={`${font} text-[14px]`}>{po.shippingMethod}</p>
+                <p className={`${font} text-[12px] text-gray-500 mt-2`}>ที่อยู่</p>
+                <p className={`${font} text-[13px]`}>{po.company.address}</p>
+              </div>
+              <label className={`${font} text-[13px] text-black block mb-2`} style={{ fontWeight: 500 }}>หมายเลขพัสดุ <span className="text-[#ff3b30]">*</span></label>
+              <input
+                value={shipTrackingInput}
+                onChange={(e) => setShipTrackingInput(e.target.value)}
+                placeholder="เช่น TH1234567890"
+                className={`${font} bg-[#fafafa] h-11 w-full rounded-full px-4 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow mb-4`}
+              />
+              <p className={`${font} text-[11px] text-gray-500 mb-5`}>
+                ผู้ซื้อจะติดตามพัสดุได้ และสถานะ PO จะเปลี่ยนเป็น "กำลังจัดส่ง"
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setShipModalOpen(false)}
+                  className={`${font} flex-1 h-11 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer text-[14px] transition-colors`}>
+                  ยกเลิก
+                </button>
+                <button onClick={submitShip} disabled={!shipTrackingInput.trim()}
+                  className={`${font} flex-1 h-11 rounded-full bg-[#319754] hover:bg-[#287745] disabled:bg-gray-300 disabled:cursor-not-allowed text-white cursor-pointer text-[14px] shadow-[0_2px_8px_rgba(49,151,84,0.25)] transition-colors`}
+                  style={{ fontWeight: 600 }}>
+                  ยืนยันการจัดส่ง
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function OrderDetailTab({ order, onBack, onUpdate }: {
   order: Order | null;
   onBack: () => void;
@@ -2076,7 +2881,7 @@ function OrderDetailTab({ order, onBack, onUpdate }: {
 }
 
 /* ========== PRODUCTS TAB ========== */
-function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
+function ProductsTab({ onAddProduct }: { onAddProduct: (mode: "regular" | "material") => void }) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { products: ctxProducts, removeProduct } = useProducts();
@@ -2185,43 +2990,45 @@ function ProductsTab({ onAddProduct }: { onAddProduct: () => void }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6">
         <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("owner_products_title")}</h2>
+      </div>
+
+      {/* Product type tabs + per-tab Add button — adds make it explicit which type is being created */}
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div className="inline-flex items-center gap-1 bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1">
+          {[
+            { id: "regular"  as const, label: "ผลิตภัณฑ์",                 Icon: ShoppingBag, count: regularProducts.length },
+            { id: "material" as const, label: "วัตถุดิบ (Herbal Market)", Icon: Beaker,      count: materialProducts.length },
+          ].map((tab) => {
+            const active = productType === tab.id;
+            return (
+              <button key={tab.id}
+                onClick={() => { setProductType(tab.id); setProductFilter("all"); setCurrentPage(1); }}
+                className={`${font} inline-flex items-center gap-2 px-4 h-10 rounded-full text-[13px] cursor-pointer transition-all ${
+                  active ? "bg-[#319754] text-white shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "text-gray-600 hover:bg-gray-50"
+                }`} style={{ fontWeight: 600 }}>
+                <tab.Icon className="size-4" strokeWidth={2.2} />
+                {tab.label}
+                <span className={`text-[11px] tabular-nums px-1.5 py-0.5 rounded-full ${active ? "bg-white/25" : "bg-gray-100"}`}>{tab.count}</span>
+              </button>
+            );
+          })}
+        </div>
         <motion.button
-          onClick={onAddProduct}
+          onClick={() => onAddProduct(productType)}
           whileTap={{ scale: 0.96 }}
           whileHover={{ y: -1 }}
           transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
-          style={{ transition: "background-color 200ms, box-shadow 200ms" }}
-          aria-label={t("owner_products_add")}
-        >
-          <span className="size-[26px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
+          className={`group flex items-center gap-2 bg-[#319754] text-white pl-1.5 pr-4 h-[40px] rounded-full text-[13px] ${font} cursor-pointer hover:bg-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+          style={{ transition: "background-color 200ms, box-shadow 200ms" }}>
+          <span className="size-[28px] bg-white/20 rounded-full flex items-center justify-center group-hover:rotate-90 transition-transform duration-300">
             <Plus className="size-[14px]" strokeWidth={2.6} />
           </span>
-          <span className="hidden sm:inline" style={{ fontWeight: 600 }}>{t("owner_products_add")}</span>
+          <span style={{ fontWeight: 600 }}>
+            {productType === "regular" ? "เพิ่มผลิตภัณฑ์" : "เพิ่มวัตถุดิบ"}
+          </span>
         </motion.button>
-      </div>
-
-      {/* Product type tabs — regular vs Herbal Market */}
-      <div className="inline-flex items-center gap-1 bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-4">
-        {[
-          { id: "regular"  as const, label: "สินค้าปกติ",               Icon: ShoppingBag, count: regularProducts.length },
-          { id: "material" as const, label: "วัตถุดิบ (Herbal Market)", Icon: Beaker,      count: materialProducts.length },
-        ].map((tab) => {
-          const active = productType === tab.id;
-          return (
-            <button key={tab.id}
-              onClick={() => { setProductType(tab.id); setProductFilter("all"); setCurrentPage(1); }}
-              className={`${font} inline-flex items-center gap-2 px-4 h-10 rounded-full text-[13px] cursor-pointer transition-all ${
-                active ? "bg-[#319754] text-white shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "text-gray-600 hover:bg-gray-50"
-              }`} style={{ fontWeight: 600 }}>
-              <tab.Icon className="size-4" strokeWidth={2.2} />
-              {tab.label}
-              <span className={`text-[11px] tabular-nums px-1.5 py-0.5 rounded-full ${active ? "bg-white/25" : "bg-gray-100"}`}>{tab.count}</span>
-            </button>
-          );
-        })}
       </div>
 
       {/* Filter tabs + search (in one pill) */}
@@ -4631,12 +5438,13 @@ function NumberStepper({ value, onChange, min = 0, step = 1 }: { value: number; 
   );
 }
 
-function AddProductTab({ onBack }: { onBack: () => void }) {
+function AddProductTab({ mode, onBack }: { mode: "regular" | "material"; onBack: () => void }) {
   const { user } = useAuth();
   const { addProduct } = useProducts();
   const { activeCategories } = useCategories();
+  const isMarket = mode === "material";
   const [activeStep, setActiveStep] = useState(0);
-  const [maxVisitedStep, setMaxVisitedStep] = useState(0); // furthest step the user has visited (clicked or scrolled past)
+  const [maxVisitedStep, setMaxVisitedStep] = useState(0);
   const [hasVariants, setHasVariants] = useState(false);
   const [seoEnabled, setSeoEnabled] = useState(false);
   const [recommended, setRecommended] = useState(false);
@@ -4647,12 +5455,22 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
   const [productName, setProductName] = useState("");
   const [category, setCategory] = useState("");
   const [sku, setSku] = useState("");
-  const [salesChannel, setSalesChannel] = useState<"retail" | "market" | "both">("retail");
-  // ----- Herbal Market (B2B) extra fields — only used when salesChannel !== "retail" -----
+  // ----- Herbal Market (B2B) extra fields -----
   const [scientificName, setScientificName] = useState("");
   const [materialGrade, setMaterialGrade] = useState<MaterialGrade>("พรีเมียม");
   const [moq, setMoq] = useState("");
   const [pricePerKg, setPricePerKg] = useState("");
+  // Volume-tier pricing — each tier is { minQty, pricePerKg }; price-per-kg drops as qty rises
+  type PriceTier = { id: string; minQty: number; pricePerKg: number };
+  const [priceTiers, setPriceTiers] = useState<PriceTier[]>([
+    { id: "t1", minQty: 5, pricePerKg: 0 },
+  ]);
+  const updateTier = (id: string, patch: Partial<PriceTier>) =>
+    setPriceTiers((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  const addTier = () =>
+    setPriceTiers((prev) => [...prev, { id: `t${Date.now()}`, minQty: 0, pricePerKg: 0 }]);
+  const removeTier = (id: string) =>
+    setPriceTiers((prev) => prev.filter((t) => t.id !== id));
   const [materialLocation, setMaterialLocation] = useState("");
   const [certifications, setCertifications] = useState<string[]>([]);
   const [processingMethod, setProcessingMethod] = useState("");
@@ -4723,17 +5541,20 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
     setVariantRows((prev) => prev.filter((r) => r.id !== id));
 
   // Validation per section
-  const infoValid = productName.trim().length > 0 && category.length > 0 && sku.trim().length > 0;
+  const infoValid = productName.trim().length > 0 && category.length > 0 && sku.trim().length > 0
+    && (!isMarket || scientificName.trim().length > 0);
   const uploadedImages = productImages.filter((x): x is string => !!x);
   const imagesValid = uploadedImages.length > 0;
-  const variantsValid = hasVariants
-    ? variantRows.every((r) => r.name.trim().length > 0 && r.price > 0 && r.stock > 0 && r.weight > 0)
-    : price > 0 && stock > 0 && weight > 0;
+  const variantsValid = isMarket
+    ? Number(pricePerKg) > 0 && Number(moq) > 0 && stock > 0
+    : hasVariants
+      ? variantRows.every((r) => r.name.trim().length > 0 && r.price > 0 && r.stock > 0 && r.weight > 0)
+      : price > 0 && stock > 0 && weight > 0;
 
   const sections: { id: string; label: string; required: boolean; valid: boolean }[] = [
     { id: "images",   label: "รูปภาพสินค้า",   required: true,  valid: imagesValid    },
     { id: "info",     label: "ข้อมูลสินค้า",   required: true,  valid: infoValid      },
-    { id: "variants", label: "ตัวเลือกสินค้า", required: true,  valid: variantsValid  },
+    { id: "variants", label: isMarket ? "ตั้งราคา" : "ตัวเลือกสินค้า", required: true, valid: variantsValid },
     { id: "seo",      label: "ตั้งค่า SEO",    required: false, valid: !seoEnabled || true },
     { id: "settings", label: "ตั้งค่าสินค้า",  required: false, valid: true           },
   ];
@@ -4787,7 +5608,9 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
 
         {/* Title row */}
         <div className="flex items-center gap-4 mb-5 flex-wrap">
-          <h2 className={`${font} text-[20px] text-black leading-[30px]`} style={{ fontWeight: 500 }}>เพิ่มสินค้าใหม่</h2>
+          <h2 className={`${font} text-[20px] text-black leading-[30px]`} style={{ fontWeight: 500 }}>
+            {isMarket ? "เพิ่มวัตถุดิบ Herbal Market" : "เพิ่มผลิตภัณฑ์ใหม่"}
+          </h2>
         </div>
 
         {/* Sections — equal spacing via space-y */}
@@ -4868,55 +5691,6 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
           </div>
         </section>
 
-        {/* Section: ช่องทางจำหน่าย */}
-        <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
-              <Store className="size-5 text-[#319754]" strokeWidth={2.2} />
-            </div>
-            <div>
-              <h3 className={`${font} text-[18px] text-black`} style={{ fontWeight: 600 }}>ช่องทางจำหน่าย</h3>
-              <p className={`${font} text-[12px] text-gray-500`}>เลือกว่าสินค้านี้จะแสดงในส่วนใดของแพลตฟอร์ม</p>
-            </div>
-          </div>
-          <div className="h-px bg-gray-100" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {[
-              { id: "retail" as const, Icon: ShoppingBag, label: "ขายปลีก (B2C)",   desc: "แสดงในหน้าผลิตภัณฑ์ทั่วไป — ลูกค้าซื้อทีละชิ้น" },
-              { id: "market" as const, Icon: Beaker,      label: "Herbal Market (B2B)", desc: "แสดงในตลาดวัตถุดิบ — ขายเป็นกิโล/ตัน MOQ + ขอใบเสนอราคา" },
-              { id: "both"   as const, Icon: Package,     label: "ทั้งสอง",           desc: "แสดงทั้ง 2 ที่ — ขายปลีก + รับ RFQ จากผู้ผลิต" },
-            ].map((opt) => {
-              const active = salesChannel === opt.id;
-              return (
-                <button key={opt.id} type="button" onClick={() => setSalesChannel(opt.id)}
-                  className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${
-                    active ? "border-[#319754] bg-[#319754]/5" : "border-gray-200 hover:border-gray-300"
-                  }`}>
-                  <div className="flex items-center justify-between w-full">
-                    <div className={`size-9 rounded-lg flex items-center justify-center ${active ? "bg-[#319754] text-white" : "bg-gray-100 text-gray-500"}`}>
-                      <opt.Icon className="size-4" strokeWidth={2.2} />
-                    </div>
-                    <div className={`size-4 rounded-full border-2 flex items-center justify-center ${active ? "border-[#319754]" : "border-gray-300"}`}>
-                      {active && <div className="size-2 rounded-full bg-[#319754]" />}
-                    </div>
-                  </div>
-                  <p className={`${font} text-[14px] text-black`} style={{ fontWeight: active ? 600 : 500 }}>{opt.label}</p>
-                  <p className={`${font} text-[11px] text-gray-500 leading-snug`}>{opt.desc}</p>
-                </button>
-              );
-            })}
-          </div>
-          {salesChannel !== "retail" && (
-            <div className="bg-[#319754]/5 rounded-xl p-3 flex items-start gap-2.5 border border-[#319754]/20">
-              <Info className="size-4 text-[#319754] shrink-0 mt-0.5" strokeWidth={2.2} />
-              <div className={`${font} text-[12px] text-gray-700`}>
-                <p style={{ fontWeight: 600 }} className="text-[#287745]">โหมด Herbal Market</p>
-                <p className="mt-0.5">สินค้าที่ลงในตลาดวัตถุดิบจะ<span style={{ fontWeight: 600 }}>รับเฉพาะ RFQ (ขอใบเสนอราคา)</span> — ลูกค้าจะไม่สามารถสั่งซื้อตรงผ่านตะกร้าได้ ต้องมี MOQ ขั้นต่ำ + ระบุเกรด/ใบรับรอง</p>
-              </div>
-            </div>
-          )}
-        </section>
-
         {/* Section: ข้อมูลสินค้า */}
         <section id="addprod-info" onMouseEnter={() => { setActiveStep(1); setMaxVisitedStep((p) => Math.max(p, 1)); }}
           className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-4">
@@ -4979,6 +5753,14 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
               <input placeholder="เช่น: MetaHerb"
                 className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
             </div>
+            {/* Scientific name — only for Herbal Market mode */}
+            {isMarket && (
+              <div className="flex flex-col gap-2 md:col-span-3">
+                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ชื่อวิทยาศาสตร์ <span className="text-[#ff3b30]">*</span></label>
+                <input value={scientificName} onChange={(e) => setScientificName(e.target.value)} placeholder="เช่น: Curcuma longa"
+                  className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] italic outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
+              </div>
+            )}
             {/* Row 3 — Description spans all 3 columns */}
             <div className="flex flex-col gap-2 md:col-span-3">
               <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>รายละเอียดสินค้า</label>
@@ -4988,8 +5770,8 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
           </div>
         </section>
 
-        {/* Section: ข้อมูล Herbal Market (B2B) — only shown when salesChannel includes market */}
-        {salesChannel !== "retail" && (
+        {/* Section: ข้อมูล Herbal Market (B2B) — material mode only */}
+        {isMarket && (
           <section className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-4 border-2 border-[#319754]/15">
             <div className="flex items-center gap-3">
               <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
@@ -5003,15 +5785,8 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
             <div className="h-px bg-gray-100" />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Scientific name */}
-              <div className="flex flex-col gap-2 md:col-span-2">
-                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ชื่อวิทยาศาสตร์ <span className="text-[#ff3b30]">*</span></label>
-                <input value={scientificName} onChange={(e) => setScientificName(e.target.value)} placeholder="เช่น: Curcuma longa"
-                  className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] italic outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
-              </div>
-
               {/* Grade — chip layout, wraps to multiple rows if many grades */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 md:col-span-3">
                 <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>เกรด <span className="text-[#ff3b30]">*</span></label>
                 <div className="flex flex-wrap items-center gap-1.5 min-h-[48px]">
                   {(Object.keys(GRADE_STYLE) as (keyof typeof GRADE_STYLE)[]).map((g) => {
@@ -5039,18 +5814,6 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
                     );
                   })}
                 </div>
-              </div>
-
-              {/* Price per kg + MOQ */}
-              <div className="flex flex-col gap-2">
-                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ราคา / กก. (บาท) <span className="text-[#ff3b30]">*</span></label>
-                <input type="number" value={pricePerKg} onChange={(e) => setPricePerKg(e.target.value)} placeholder="เช่น: 320"
-                  className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>MOQ ขั้นต่ำ (กก.) <span className="text-[#ff3b30]">*</span></label>
-                <input type="number" value={moq} onChange={(e) => setMoq(e.target.value)} placeholder="เช่น: 25"
-                  className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
               </div>
 
               {/* Location */}
@@ -5135,7 +5898,118 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
           </section>
         )}
 
-        {/* Section: ตัวเลือกสินค้า */}
+        {/* Section: ตั้งราคา (Herbal Market — tiered pricing) */}
+        {isMarket && (
+        <section id="addprod-variants" onMouseEnter={() => { setActiveStep(2); setMaxVisitedStep((p) => Math.max(p, 2)); }}
+          className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)] flex flex-col gap-4">
+          <div className="flex items-start gap-3">
+            <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <Banknote className="size-5 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>ตั้งราคา (ราคาฐาน + ส่วนลดตามปริมาณ)</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <AlertCircle className="size-3.5 text-gray-400" />
+                <span className={`${font} text-[12px] text-[#8e8e93]`}>ตั้งราคาฐานต่อ กก. + MOQ — ถ้าซื้อปริมาณมากขึ้น ให้ราคาต่อ กก. ลดลงได้</span>
+              </div>
+            </div>
+          </div>
+          <div className="h-px bg-gray-100" />
+
+          {/* Base price + MOQ + stock */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex flex-col gap-2">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ราคาฐาน / กก. (บาท) <span className="text-[#ff3b30]">*</span></label>
+              <div className={`${font} bg-[#fafafa] h-12 rounded-full pl-5 pr-2 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow`}>
+                <span className={`${font} text-[14px] text-[#8e8e93] shrink-0`}>฿</span>
+                <input type="number" value={pricePerKg} onChange={(e) => setPricePerKg(e.target.value)} placeholder="เช่น: 200"
+                  className={`${font} flex-1 min-w-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#a3a3a3] tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                <span className={`${font} text-[12px] text-[#8e8e93] shrink-0 pr-1`}>/ กก.</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>MOQ ขั้นต่ำ (กก.) <span className="text-[#ff3b30]">*</span></label>
+              <div className={`${font} bg-[#fafafa] h-12 rounded-full pl-5 pr-2 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow`}>
+                <input type="number" value={moq} onChange={(e) => setMoq(e.target.value)} placeholder="เช่น: 1"
+                  className={`${font} flex-1 min-w-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#a3a3a3] tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                <span className={`${font} text-[12px] text-[#8e8e93] shrink-0 pr-1`}>กก.</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>คงเหลือ (กก.) <span className="text-[#ff3b30]">*</span></label>
+              <div className={`${font} bg-[#fafafa] h-12 rounded-full pl-5 pr-2 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#319754]/30 transition-shadow`}>
+                <input type="number" value={stock === 0 ? "" : stock} onChange={(e) => setStock(Math.max(0, Number(e.target.value) || 0))} placeholder="0"
+                  className={`${font} flex-1 min-w-0 bg-transparent text-[14px] text-black outline-none placeholder:text-[#a3a3a3] tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                <span className={`${font} text-[12px] text-[#8e8e93] shrink-0 pr-1`}>กก.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Tier list */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ราคาขายส่ง (ส่วนลดตามปริมาณ)</label>
+              <span className={`${font} text-[11px] text-[#8e8e93]`}>เช่น ซื้อ 5 กก.+ ราคา 150/กก.</span>
+            </div>
+            <div className="flex flex-col gap-2">
+              {priceTiers.map((tier, i) => (
+                <div key={tier.id} className="bg-[#fafafa] rounded-2xl p-3 flex items-center gap-3 flex-wrap">
+                  <span className={`${font} size-7 rounded-full bg-[#319754]/10 text-[#319754] text-[12px] inline-flex items-center justify-center shrink-0`} style={{ fontWeight: 700 }}>{i + 1}</span>
+                  <span className={`${font} text-[13px] text-[#8e8e93] shrink-0`}>ตั้งแต่</span>
+                  <div className="flex items-center bg-white rounded-full h-10 px-4 gap-2">
+                    <input type="number" value={tier.minQty === 0 ? "" : tier.minQty}
+                      onChange={(e) => updateTier(tier.id, { minQty: Math.max(0, Number(e.target.value) || 0) })}
+                      placeholder="0"
+                      className={`${font} w-16 bg-transparent text-[14px] outline-none tabular-nums text-right placeholder:text-[#a3a3a3] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                    <span className={`${font} text-[12px] text-[#8e8e93]`}>กก. ขึ้นไป</span>
+                  </div>
+                  <span className={`${font} text-[13px] text-[#8e8e93] shrink-0`}>ราคา</span>
+                  <div className="flex items-center bg-white rounded-full h-10 px-4 gap-2">
+                    <span className={`${font} text-[13px] text-[#8e8e93]`}>฿</span>
+                    <input type="number" value={tier.pricePerKg === 0 ? "" : tier.pricePerKg}
+                      onChange={(e) => updateTier(tier.id, { pricePerKg: Math.max(0, Number(e.target.value) || 0) })}
+                      placeholder="0"
+                      className={`${font} w-20 bg-transparent text-[14px] outline-none tabular-nums text-right placeholder:text-[#a3a3a3] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`} />
+                    <span className={`${font} text-[12px] text-[#8e8e93]`}>/ กก.</span>
+                  </div>
+                  <button type="button" onClick={() => removeTier(tier.id)}
+                    disabled={priceTiers.length === 1}
+                    className={`ml-auto size-8 rounded-full inline-flex items-center justify-center transition-colors ${
+                      priceTiers.length === 1
+                        ? "text-gray-300 cursor-not-allowed"
+                        : "text-gray-500 hover:text-[#ff3b30] hover:bg-[#ff3b30]/5 cursor-pointer"
+                    }`}
+                    title="ลบขั้นราคา">
+                    <Trash2 className="size-3.5" strokeWidth={2.2} />
+                  </button>
+                </div>
+              ))}
+              <button type="button" onClick={addTier}
+                className={`${font} flex items-center justify-center gap-2 h-11 rounded-2xl border-2 border-dashed border-gray-300 hover:border-[#319754] hover:bg-[#319754]/5 text-gray-600 hover:text-[#319754] cursor-pointer transition-colors text-[13px]`}
+                style={{ fontWeight: 500 }}>
+                <Plus className="size-4" strokeWidth={2.4} />
+                เพิ่มขั้นราคา
+              </button>
+            </div>
+          </div>
+
+          {/* Preview */}
+          {(pricePerKg && Number(pricePerKg) > 0) && (
+            <div className="bg-[#319754]/5 rounded-xl p-3 border border-[#319754]/15">
+              <p className={`${font} text-[12px] text-[#287745] mb-1`} style={{ fontWeight: 600 }}>ตัวอย่างการแสดงราคา</p>
+              <p className={`${font} text-[12px] text-gray-700`}>
+                ราคา <span className="tabular-nums" style={{ fontWeight: 600 }}>฿{Number(pricePerKg).toLocaleString()}/กก.</span> MOQ {moq || "1"} กก.
+                {priceTiers.filter((t) => t.minQty > 0 && t.pricePerKg > 0).map((t) => (
+                  <span key={t.id}> · ตั้งแต่ <span className="tabular-nums" style={{ fontWeight: 600 }}>{t.minQty} กก.</span> = <span className="tabular-nums" style={{ fontWeight: 600 }}>฿{t.pricePerKg.toLocaleString()}/กก.</span></span>
+                ))}
+              </p>
+            </div>
+          )}
+        </section>
+        )}
+
+        {/* Section: ตัวเลือกสินค้า — regular mode only */}
+        {!isMarket && (
         <section id="addprod-variants" onMouseEnter={() => { setActiveStep(2); setMaxVisitedStep((p) => Math.max(p, 2)); }}
           className="rounded-2xl overflow-hidden border border-[#319754]/10 shadow-[0_1px_4px_rgba(49,151,84,0.06)]"
           style={{ background: "linear-gradient(135deg, rgba(49,151,84,0.08) 0%, rgba(49,151,84,0.04) 100%)" }}>
@@ -5312,6 +6186,7 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
             </div>
           )}
         </section>
+        )}
 
         {/* Section: ตั้งค่า SEO */}
         <section id="addprod-seo" onMouseEnter={() => { setActiveStep(3); setMaxVisitedStep((p) => Math.max(p, 3)); }}
@@ -5502,12 +6377,14 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
             <button onClick={() => {
               if (!productName.trim()) { toast.error("กรุณาระบุชื่อสินค้า"); return; }
               if (!category.trim())    { toast.error("กรุณาเลือกหมวดหมู่"); return; }
-              const finalPrice  = hasVariants ? Math.min(...variantRows.map((r) => r.price)) : price;
-              const finalStock  = hasVariants ? variantRows.reduce((s, r) => s + r.stock, 0)  : stock;
-              const finalWeight = hasVariants ? variantRows[0]?.weight ?? 0                    : weight;
-              if (!(finalPrice > 0)) { toast.error("กรุณาระบุราคาสินค้า"); return; }
+              if (isMarket && !scientificName.trim()) { toast.error("กรุณาระบุชื่อวิทยาศาสตร์"); return; }
+              const finalPrice  = isMarket ? Number(pricePerKg) : hasVariants ? Math.min(...variantRows.map((r) => r.price)) : price;
+              const finalStock  = isMarket ? stock : hasVariants ? variantRows.reduce((s, r) => s + r.stock, 0) : stock;
+              const finalWeight = isMarket ? 1000 : hasVariants ? variantRows[0]?.weight ?? 0 : weight;
+              if (!(finalPrice > 0)) { toast.error(isMarket ? "กรุณาระบุราคาฐาน/กก." : "กรุณาระบุราคาสินค้า"); return; }
               if (!(finalStock > 0)) { toast.error("กรุณาระบุจำนวนสต๊อก"); return; }
-              const options = hasVariants && variantRows.length > 1
+              if (isMarket && !(Number(moq) > 0)) { toast.error("กรุณาระบุ MOQ ขั้นต่ำ"); return; }
+              const options = !isMarket && hasVariants && variantRows.length > 1
                 ? variantRows.map((r) => r.name).filter(Boolean)
                 : [];
               addProduct({
@@ -5519,7 +6396,7 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
                 category: category.trim(),
                 description: "",
                 weight: `${finalWeight} g`,
-                type: hasVariants ? "หลายตัวเลือก" : "ราคาเดียว",
+                type: isMarket ? `วัตถุดิบ · ${materialGrade}` : hasVariants ? "หลายตัวเลือก" : "ราคาเดียว",
                 sku: sku.trim(),
                 format: "",
                 shopName: user?.shopName ?? "METAHERB Store",
@@ -5547,7 +6424,7 @@ function AddProductTab({ onBack }: { onBack: () => void }) {
 }
 
 /* ========== OVERVIEW ========== */
-function OverviewTab({ orders, onViewOrders }: { orders: Order[]; onViewOrders?: (filter?: OrderFilterTab) => void }) {
+function OverviewTab({ orders, onViewOrders, onNavigate }: { orders: Order[]; onViewOrders?: (filter?: OrderFilterTab) => void; onNavigate?: (tab: OwnerTab) => void }) {
   const { t } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(16);
   const [currentMonth, setCurrentMonth] = useState(0);
@@ -5852,6 +6729,92 @@ function OverviewTab({ orders, onViewOrders }: { orders: Order[]; onViewOrders?:
           ))}
         </div>
       </div>
+      </div>
+
+      {/* Row 2: Quotation status + Trial status — same card style as Order tracking */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5 items-stretch">
+        {/* Quotation status */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-[0px_1px_4px_rgba(0,0,0,0.04)] flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h3 className={`${font} text-[14px] text-[#101828]`} style={{ fontWeight: 700 }}>สถานะใบเสนอราคา</h3>
+              <span className={`${font} text-[11px] text-gray-400`}>ทั้งหมด {MOCK_ISSUED_QTS.length}</span>
+            </div>
+            <button onClick={() => onNavigate?.("quotations_issued")}
+              className={`${font} text-[11px] inline-flex items-center gap-0.5 text-[#319754] hover:text-[#287745] cursor-pointer transition-colors`}
+              style={{ fontWeight: 600 }}>
+              {t("common_view_all")}
+              <ChevronRight className="size-3" />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-2 flex-1">
+            {[
+              { id: "sent" as IssuedQuotationStatus,     label: "รอตอบกลับ", accent: "#f59e0b", Icon: Send },
+              { id: "accepted" as IssuedQuotationStatus, label: "ตอบรับแล้ว", accent: "#10b981", Icon: Check },
+              { id: "expired" as IssuedQuotationStatus,  label: "หมดอายุ",    accent: "#9ca3af", Icon: AlertCircle },
+            ].map((s) => {
+              const count = MOCK_ISSUED_QTS.filter((q) => q.status === s.id).length;
+              return (
+                <button key={s.id} onClick={() => onNavigate?.("quotations_issued")}
+                  className="group bg-[#fafbfc] hover:bg-[#e8f7ed] border border-transparent hover:border-[#319754] rounded-2xl p-4 text-left transition-all cursor-pointer flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <p className={`${font} text-[10px] text-[#101828] truncate`}>{s.label}</p>
+                    <div className="size-[25px] rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shrink-0" style={{ backgroundColor: `${s.accent}1a` }}>
+                      <s.Icon className="size-3.5" style={{ color: s.accent }} />
+                    </div>
+                  </div>
+                  <p className={`${font} text-[22px] text-[#101828] tabular-nums leading-none`} style={{ fontWeight: 700 }}>
+                    <AnimatedValue value={String(count)} />
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Trial product status */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-[0px_1px_4px_rgba(0,0,0,0.04)] flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h3 className={`${font} text-[14px] text-[#101828]`} style={{ fontWeight: 700 }}>สถานะสินค้าทดลอง</h3>
+              <span className={`${font} text-[11px] text-gray-400`}>ทั้งหมด {(() => { try { return loadRegistrations().length; } catch { return 0; } })()}</span>
+            </div>
+            <button onClick={() => onNavigate?.("trials_tracking")}
+              className={`${font} text-[11px] inline-flex items-center gap-0.5 text-[#319754] hover:text-[#287745] cursor-pointer transition-colors`}
+              style={{ fontWeight: 600 }}>
+              {t("common_view_all")}
+              <ChevronRight className="size-3" />
+            </button>
+          </div>
+          {(() => {
+            let regs: ReturnType<typeof loadRegistrations> = [];
+            try { regs = loadRegistrations(); } catch { regs = []; }
+            const countStatus = (s: string) => regs.filter((r) => getRegistrationStatus(r) === s).length;
+            const cards = [
+              { id: "pending_approval", label: "รออนุมัติ",   accent: "#f59e0b", Icon: Clock,        count: countStatus("pending_approval") },
+              { id: "approved",         label: "อนุมัติแล้ว", accent: "#3b82f6", Icon: Check,        count: countStatus("approved") },
+              { id: "evaluated",        label: "ประเมินแล้ว", accent: "#10b981", Icon: PackageCheck, count: countStatus("evaluated") },
+            ];
+            return (
+              <div className="grid grid-cols-3 gap-2 flex-1">
+                {cards.map((s) => (
+                  <button key={s.id} onClick={() => onNavigate?.("trials_tracking")}
+                    className="group bg-[#fafbfc] hover:bg-[#e8f7ed] border border-transparent hover:border-[#319754] rounded-2xl p-4 text-left transition-all cursor-pointer flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <p className={`${font} text-[10px] text-[#101828] truncate`}>{s.label}</p>
+                      <div className="size-[25px] rounded-full flex items-center justify-center transition-transform group-hover:scale-110 shrink-0" style={{ backgroundColor: `${s.accent}1a` }}>
+                        <s.Icon className="size-3.5" style={{ color: s.accent }} />
+                      </div>
+                    </div>
+                    <p className={`${font} text-[22px] text-[#101828] tabular-nums leading-none`} style={{ fontWeight: 700 }}>
+                      <AnimatedValue value={String(s.count)} />
+                    </p>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
       {/* Top section: Calendar + Stats */}
@@ -8337,6 +9300,9 @@ function ReportSalesTab() {
   const [productSort, setProductSort] = useState<"sales_desc" | "sales_asc" | "qty_desc" | "margin_desc" | "stock_asc">("sales_desc");
   const [productPage, setProductPage] = useState(1);
   const [productPerPage, setProductPerPage] = useState(10);
+  // Toggle between B2C retail products and Herbal Market raw materials. Different
+  // units (ชิ้น vs กก.) and very different price/volume scales.
+  const [productCategory, setProductCategory] = useState<"regular" | "market">("regular");
   const today = new Date();
   const [range, setRange] = useState<DateRange | undefined>({ from: today, to: today });
   const [selectedDate, setSelectedDate] = useState<Date>(today);
@@ -9131,8 +10097,8 @@ function ReportSalesTab() {
 
       {/* Product Sales Report */}
       {(() => {
-        const allProducts = [
-          { name: "ขมิ้นชันแคปซูล 60 แคป", sku: "HRB-001", initial: "ขม", bg: "#fef3c7", fg: "#b45309", category: "สมุนไพรแคปซูล", qty: 8, sales: 1420, cost: 640, trend: [4,5,6,5,7,8], stock: 42 },
+        const REGULAR_PRODUCTS = [
+          { name: "ขมิ้นชันแคปซูล 60 แคป", sku: "HRB-001", initial: "ขม", bg: "#fef3c7", fg: "#b45309", category: "สมุนไพรแคปซูล", qty: 8, sales: 1420, cost: 640, trend: [4,5,6,5,7,8], stock: 42, unit: "ชิ้น" },
           { name: "ฟ้าทะลายโจรผง 100 g", sku: "HRB-014", initial: "ฟท", bg: "#dcfce7", fg: "#15803d", category: "ผงสมุนไพร", qty: 5, sales: 1150, cost: 480, trend: [3,4,3,4,5,5], stock: 28 },
           { name: "น้ำมันมะพร้าวสกัดเย็น", sku: "OIL-003", initial: "นม", bg: "#fef9c3", fg: "#a16207", category: "น้ำมันสมุนไพร", qty: 3, sales: 870, cost: 420, trend: [4,3,4,3,3,3], stock: 9 },
           { name: "ชาตะไคร้ใบเตย 30 ซอง", sku: "TEA-007", initial: "ชต", bg: "#ecfccb", fg: "#4d7c0f", category: "ชาสมุนไพร", qty: 2, sales: 580, cost: 240, trend: [4,3,3,2,2,2], stock: 56 },
@@ -9156,7 +10122,30 @@ function ReportSalesTab() {
           { name: "พริกไทยดำบด 100 g", sku: "PWR-015", initial: "พท", bg: "#f3f4f6", fg: "#525252", category: "ผงสมุนไพร", qty: 5, sales: 320, cost: 140, trend: [3,3,4,4,5,5], stock: 45 },
           { name: "เปลือกมังคุดผง 50 g", sku: "PWR-020", initial: "มค", bg: "#fce7f3", fg: "#9d174d", category: "ผงสมุนไพร", qty: 3, sales: 285, cost: 125, trend: [2,2,2,3,3,3], stock: 21 },
           { name: "ดอกคำฝอย 30 g", sku: "HRB-055", initial: "คฝ", bg: "#fed7aa", fg: "#9a3412", category: "สมุนไพร", qty: 4, sales: 360, cost: 160, trend: [2,3,3,4,4,4], stock: 29 },
+        ].map((p) => ({ ...p, unit: "ชิ้น" }));
+
+        // Herbal Market raw materials — quoted per kg in bulk. Quantities run
+        // 50–1000 kg per transaction so totals are 1–2 orders of magnitude larger
+        // than retail. Costs are typically 55–70% of sales price.
+        const MARKET_PRODUCTS = [
+          { name: "ขมิ้นชันแห้ง (ผง) — พรีเมียม",     sku: "MKT-001", initial: "ขม", bg: "#fef3c7", fg: "#b45309", category: "ผงสมุนไพร",    qty: 200,  sales: 64000,  cost: 38000,  trend: [80,120,160,140,180,200],  stock: 1200, unit: "กก." },
+          { name: "ฟ้าทะลายโจร (ผง) — พรีเมียม",     sku: "MKT-002", initial: "ฟท", bg: "#dcfce7", fg: "#15803d", category: "ผงสมุนไพร",    qty: 500,  sales: 120000, cost: 78000,  trend: [200,300,350,400,450,500], stock: 2400, unit: "กก." },
+          { name: "ใบบัวบกแห้ง — คัดสรร",              sku: "MKT-003", initial: "บก", bg: "#dcfce7", fg: "#15803d", category: "สมุนไพรอบแห้ง", qty: 150,  sales: 27000,  cost: 16500,  trend: [60,90,110,120,140,150],   stock: 480,  unit: "กก." },
+          { name: "เห็ดหลินจือสกัด — พรีเมียม",       sku: "MKT-004", initial: "หล", bg: "#fef3c7", fg: "#92400e", category: "สมุนไพรสกัด",   qty: 50,   sales: 120000, cost: 78000,  trend: [20,30,35,40,45,50],       stock: 180,  unit: "กก." },
+          { name: "เก๊กฮวยแห้ง — คัดสรร",              sku: "MKT-005", initial: "กฮ", bg: "#fef9c3", fg: "#854d0e", category: "ดอกอบแห้ง",     qty: 80,   sales: 33600,  cost: 20500,  trend: [40,50,60,65,75,80],       stock: 320,  unit: "กก." },
+          { name: "ขิงผงออร์แกนิก — พรีเมียม",         sku: "MKT-006", initial: "ขผ", bg: "#fef9c3", fg: "#854d0e", category: "ผงสมุนไพร",    qty: 300,  sales: 84000,  cost: 51000,  trend: [120,180,200,250,280,300], stock: 950,  unit: "กก." },
+          { name: "ดอกอัญชันแห้ง — พรีเมียม",          sku: "MKT-007", initial: "อช", bg: "#ede9fe", fg: "#6d28d9", category: "ดอกอบแห้ง",     qty: 100,  sales: 52000,  cost: 32000,  trend: [40,60,70,80,90,100],      stock: 380,  unit: "กก." },
+          { name: "ใบมะรุมแห้ง (ผง) — มาตรฐาน",       sku: "MKT-008", initial: "มร", bg: "#dcfce7", fg: "#15803d", category: "ผงสมุนไพร",    qty: 80,   sales: 43200,  cost: 26500,  trend: [30,50,55,65,75,80],       stock: 240,  unit: "กก." },
+          { name: "อบเชยเทศ (แท่ง) — คัดสรร",          sku: "MKT-009", initial: "อบ", bg: "#fed7aa", fg: "#9a3412", category: "เครื่องเทศ",   qty: 100,  sales: 78000,  cost: 48000,  trend: [40,60,70,80,90,100],      stock: 360,  unit: "กก." },
+          { name: "ใบเตยแห้ง — มาตรฐาน",                sku: "MKT-010", initial: "บต", bg: "#dcfce7", fg: "#15803d", category: "สมุนไพรอบแห้ง", qty: 50,   sales: 8000,   cost: 4800,   trend: [20,30,35,40,45,50],       stock: 220,  unit: "กก." },
+          { name: "ตะไคร้แห้ง — คัดสรร",                sku: "MKT-011", initial: "ตค", bg: "#ecfccb", fg: "#4d7c0f", category: "สมุนไพรอบแห้ง", qty: 200,  sales: 30000,  cost: 18000,  trend: [80,120,140,160,180,200],  stock: 680,  unit: "กก." },
+          { name: "ฟ้าทะลายโจรสกัดเข้มข้น — พรีเมียม", sku: "MKT-012", initial: "ฟส", bg: "#fef9c3", fg: "#a16207", category: "สมุนไพรสกัด",   qty: 400,  sales: 208000, cost: 130000, trend: [160,240,280,320,360,400], stock: 1500, unit: "กก." },
+          { name: "พริกไทยดำเม็ด — มาตรฐาน",            sku: "MKT-013", initial: "พท", bg: "#f3f4f6", fg: "#525252", category: "เครื่องเทศ",   qty: 150,  sales: 67500,  cost: 41000,  trend: [60,90,105,120,135,150],   stock: 450,  unit: "กก." },
+          { name: "มะตูมแห้ง — มาตรฐาน",                sku: "MKT-014", initial: "มต", bg: "#fed7aa", fg: "#9a3412", category: "ผลไม้อบแห้ง",  qty: 80,   sales: 22400,  cost: 13500,  trend: [30,50,60,65,75,80],       stock: 280,  unit: "กก." },
+          { name: "ใบโหระพาแห้ง — มาตรฐาน",            sku: "MKT-015", initial: "หพ", bg: "#dcfce7", fg: "#15803d", category: "สมุนไพรอบแห้ง", qty: 50,   sales: 6500,   cost: 4000,   trend: [20,30,35,40,45,50],       stock: 180,  unit: "กก." },
         ];
+
+        const allProducts = productCategory === "market" ? MARKET_PRODUCTS : REGULAR_PRODUCTS;
 
         // Filter products by chart period — base list is "monthly", scale + drop to simulate other periods
         const periodHash = period.length * 13 + (range?.from?.getMonth() ?? new Date().getMonth()) * 5;
@@ -9241,7 +10230,7 @@ function ReportSalesTab() {
         const dateGroups = tableBuckets.map((bucket, bucketIdx) => {
           const seed = ((bucketIdx * 37 + 1234) >>> 0);
           const numItems = 3 + (seed % 3); // 3..5 products
-          const items: { name: string; sku: string; qty: number; sales: number; cost: number; gp: number; discount: number; net: number }[] = [];
+          const items: { name: string; sku: string; unit: string; qty: number; sales: number; cost: number; gp: number; discount: number; net: number }[] = [];
           for (let i = 0; i < numItems && sorted.length > 0; i++) {
             const productIdx = (seed + i * 13) % sorted.length;
             const p = sorted[productIdx];
@@ -9256,7 +10245,7 @@ function ReportSalesTab() {
             const discountPct = (itemSeed % 4 === 0) ? 0 : ((itemSeed % 16) / 100);
             const discount = Math.round(salesAmt * discountPct);
             const net = salesAmt - gp;
-            items.push({ name: p.name, sku: p.sku, qty, sales: salesAmt, cost: costAmt, gp, discount, net });
+            items.push({ name: p.name, sku: p.sku, unit: p.unit, qty, sales: salesAmt, cost: costAmt, gp, discount, net });
           }
           // Sort items within group using same productSort key
           items.sort((a, b) => {
@@ -9335,6 +10324,27 @@ function ReportSalesTab() {
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
+                {/* Category toggle — switch between B2C retail and B2B Herbal Market */}
+                <div className="bg-white flex items-center overflow-clip p-[3px] rounded-full border border-gray-200">
+                  {([
+                    { id: "regular" as const, label: "สินค้าปกติ",   Icon: ShoppingBag },
+                    { id: "market"  as const, label: "Herbal Market", Icon: Beaker },
+                  ]).map((c) => {
+                    const active = productCategory === c.id;
+                    return (
+                      <button key={c.id} onClick={() => { setProductCategory(c.id); setProductPage(1); }}
+                        className={`${font} text-[12px] cursor-pointer px-3 h-7 rounded-full relative transition-colors inline-flex items-center gap-1.5`}
+                        style={{ color: active ? "#fff" : "#374151", fontWeight: active ? 600 : 500 }}>
+                        {active && (
+                          <motion.div layoutId="report-cat-bg" className="absolute inset-0 bg-[#319754] rounded-full"
+                            transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                        )}
+                        <c.Icon className="size-3 relative z-10" strokeWidth={2.2} />
+                        <span className="relative z-10">{c.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
                 <div className="relative">
                   <select value={productSort} onChange={(e) => setProductSort(e.target.value as any)}
                     className={`${font} text-[12px] appearance-none border border-gray-200 rounded-full pl-4 pr-8 py-1.5 bg-white cursor-pointer focus:outline-none focus:border-[#319754]`}>
@@ -9380,7 +10390,7 @@ function ReportSalesTab() {
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <p className={`${font} text-[13.5px] text-[#1a1a1a] leading-tight line-clamp-2`} style={{ fontWeight: 600 }}>{p.name}</p>
-                                <p className={`${font} text-[10.5px] text-gray-400 tabular-nums`}>SKU: {p.sku} · {p.qty} ชิ้น</p>
+                                <p className={`${font} text-[10.5px] text-gray-400 tabular-nums`}>SKU: {p.sku} · {p.qty} {p.unit}</p>
                               </div>
                               <div className="text-right shrink-0">
                                 <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: profitColor }}>฿{profit.toLocaleString()}</p>
@@ -9454,7 +10464,7 @@ function ReportSalesTab() {
                                       <span className={`${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 600 }}>{group.label}</span>
                                     </div>
                                     <div className={`${font} text-[10px] text-gray-500 flex flex-col gap-0.5 pl-5`}>
-                                      <span>{group.items.length} รายการ · {group.totalQty} ชิ้น</span>
+                                      <span>{group.items.length} รายการ · {group.totalQty} {group.items[0]?.unit ?? "ชิ้น"}</span>
                                       <span className="text-[#1a1a1a] tabular-nums" style={{ fontWeight: 600 }}>ยอดขาย ฿{group.totalSales.toLocaleString()}</span>
                                       <span className="text-[#c2410c] tabular-nums" style={{ fontWeight: 500 }}>GP −฿{group.totalGp.toLocaleString()}</span>
                                       <span className="text-[#319754] tabular-nums" style={{ fontWeight: 600 }}>สุทธิ ฿{group.totalNet.toLocaleString()}</span>
@@ -9468,7 +10478,7 @@ function ReportSalesTab() {
                                 <p className={`${font} text-[11px] text-gray-400 truncate`}>SKU: {p.sku}</p>
                               </td>
                               <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#1a1a1a]`} style={{ fontWeight: 500 }}>
-                                {p.qty} <span className="text-gray-400 text-[11px]">ชิ้น</span>
+                                {p.qty} <span className="text-gray-400 text-[11px]">{p.unit}</span>
                               </td>
                               <td className={`py-3 pr-3 text-right ${font} text-[13px] text-gray-600 tabular-nums`}>฿{(p.sales + p.discount).toLocaleString()}</td>
                               <td className={`py-3 pr-3 text-right ${font} text-[13px] text-[#a16207] tabular-nums`} style={{ fontWeight: 500 }}>
@@ -9501,7 +10511,7 @@ function ReportSalesTab() {
                     <tr className="border-t-2 border-gray-100 bg-gray-50/40">
                       <td className={`pt-3 pr-3 ${font} text-[12px]`} style={{ fontWeight: 600 }}>{pageGroups.length} กลุ่ม</td>
                       <td className={`pt-3 pr-3 pl-5 ${font} text-[12px]`} style={{ fontWeight: 600 }}>รวม {totalRows} รายการ</td>
-                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] tabular-nums`} style={{ fontWeight: 700 }}>{pageTotalQty} <span className="text-gray-400 text-[11px]">ชิ้น</span></td>
+                      <td className={`pt-3 pr-3 text-right ${font} text-[13px] tabular-nums`} style={{ fontWeight: 700 }}>{pageTotalQty} <span className="text-gray-400 text-[11px]">{productCategory === "market" ? "กก." : "ชิ้น"}</span></td>
                       <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-gray-600 tabular-nums`} style={{ fontWeight: 600 }}>฿{(pageTotalSales + pageTotalDiscount).toLocaleString()}</td>
                       <td className={`pt-3 pr-3 text-right ${font} text-[13px] text-[#a16207] tabular-nums`} style={{ fontWeight: 600 }}>
                         {pageTotalDiscount > 0 ? `−฿${pageTotalDiscount.toLocaleString()}` : <span className="text-gray-300">−</span>}
@@ -13734,6 +14744,8 @@ function OwnerMobileDrawer({ active, currentTab, onSelect, onClose }: {
   onClose: () => void;
 }) {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const sidebarItems = buildSidebarItems(!!user?.isSupplier);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ products: true, reports: false });
   const toggle = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
 
@@ -13864,6 +14876,9 @@ export function OwnerDashboard() {
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, ...patch } : o)));
   };
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(MOCK_PURCHASE_ORDERS);
+  const [selectedPoId, setSelectedPoId] = useState<string | null>(null);
+  const [addProductMode, setAddProductMode] = useState<"regular" | "material">("regular");
   const mainRef = React.useRef<HTMLElement>(null);
 
   // Reset scroll to top when switching tabs (also handles sidebar nav, openOrderDetail, etc)
@@ -13879,6 +14894,7 @@ export function OwnerDashboard() {
   // Map subpages to their parent menu so the sidebar stays highlighted on detail/sub-views
   const subpageToParent: Partial<Record<OwnerTab, OwnerTab>> = {
     order_detail:     "orders",
+    po_detail:        "po_list",
     complaint_detail: "complaints",
     add_product:      "products",
     flash_event:      "flash_sale",
@@ -13896,6 +14912,15 @@ export function OwnerDashboard() {
   const openOrderDetail = (id: string) => {
     setSelectedOrderId(id);
     setActiveTab("order_detail");
+  };
+
+  const updatePO = (id: string, patch: Partial<PurchaseOrder>) => {
+    setPurchaseOrders((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  };
+
+  const openPODetail = (id: string) => {
+    setSelectedPoId(id);
+    setActiveTab("po_detail");
   };
 
   return (
@@ -13930,13 +14955,16 @@ export function OwnerDashboard() {
 
       {/* Content — only this area scrolls, sidebar stays fixed */}
       <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">
-        {activeTab === "overview" && <OverviewTab orders={orders} onViewOrders={openOrders} />}
+        {activeTab === "overview" && <OverviewTab orders={orders} onViewOrders={openOrders} onNavigate={setActiveTab} />}
         {activeTab === "orders" && <OrdersTab initialFilter={ordersInitialFilter} orders={orders} onUpdate={updateOrder} onOpenDetail={openOrderDetail} />}
         {activeTab === "order_detail" && <OrderDetailTab order={orders.find((o) => o.id === selectedOrderId) || null} onBack={() => setActiveTab("orders")} onUpdate={updateOrder} />}
-        {activeTab === "products" && <ProductsTab onAddProduct={() => setActiveTab("add_product")} />}
+        {activeTab === "po_list" && <POListTab purchaseOrders={purchaseOrders} onUpdate={updatePO} onOpenDetail={openPODetail} />}
+        {activeTab === "po_detail" && <POOrderDetailTab po={purchaseOrders.find((p) => p.id === selectedPoId) || null} onBack={() => setActiveTab("po_list")} onUpdate={updatePO} />}
+        {activeTab === "herbal_market_intro" && <HerbalMarketIntroTab />}
+        {activeTab === "products" && <ProductsTab onAddProduct={(mode) => { setAddProductMode(mode); setActiveTab("add_product"); }} />}
         {activeTab === "flash_sale" && <FlashSaleTab onViewEvent={(event, opts) => { setSelectedFlashEvent(event); setFlashEventIsNewJoin(!!opts?.isNewJoin); setActiveTab("flash_event"); }} />}
         {activeTab === "flash_event" && <FlashEventDetail event={selectedFlashEvent} isNewJoin={flashEventIsNewJoin} onBack={() => setActiveTab("flash_sale")} />}
-        {activeTab === "add_product" && <AddProductTab onBack={() => setActiveTab("products")} />}
+        {activeTab === "add_product" && <AddProductTab mode={addProductMode} onBack={() => setActiveTab("products")} />}
         {activeTab === "promotions" && <PromotionsTab />}
         {activeTab === "coupons" && <CouponsTab />}
         {activeTab === "complaints" && <ComplaintsTab onViewDetail={(id: string) => { setSelectedComplaintId(id); setActiveTab("complaint_detail"); }} />}
@@ -13948,6 +14976,7 @@ export function OwnerDashboard() {
         {activeTab === "report_customers" && <ReportCustomersTab />}
         {activeTab === "report_products" && <ReportProductsTab />}
         {activeTab === "report_market" && <ReportMarketTab />}
+        {activeTab === "quotations_issued" && <QuotationsIssuedTab />}
         {activeTab === "trials_overview" && <OwnerTrialsOverview onGoTracking={() => setActiveTab("trials_tracking")} />}
         {activeTab === "trials_tracking" && <OwnerTrialsTracking />}
         {activeTab === "trials_products" && <OwnerTrialsProducts onAddProduct={() => setActiveTab("trials_add_product")} />}
@@ -13955,6 +14984,421 @@ export function OwnerDashboard() {
 
 
       </main>
+    </div>
+  );
+}
+
+/* ========== QUOTATIONS ISSUED (Supplier-only) ========== */
+type IssuedQuotationStatus = "sent" | "accepted" | "expired" | "rejected";
+
+interface IssuedQuotationItem { name: string; qty: number; unit: string; price: number; image?: string }
+interface IssuedQuotation {
+  id: string;
+  date: string;
+  buyer: string;
+  buyerEmail?: string;
+  buyerPhone?: string;
+  items: IssuedQuotationItem[];
+  totalAmount: number;
+  validUntil: string;
+  daysRemaining: number;   // negative = expired
+  status: IssuedQuotationStatus;
+  poNumber?: string;
+  note?: string;
+}
+
+// Auto-fill product images by matching name against MATERIALS (e.g. "ขมิ้นชันแห้ง (ผง) — Premium" → MATERIALS m-1)
+const qtImg = (name: string): string | undefined => {
+  const base = name.split(/\s*—\s*/)[0].trim();
+  return MATERIALS.find((m) => m.name === base)?.image;
+};
+
+const RAW_QTS: IssuedQuotation[] = [
+  {
+    id: "QT-2569-0142", date: "12 มี.ค. 2569", buyer: "บริษัท บางกอก เมดิคอล ซอฟต์แวร์ จำกัด",
+    buyerEmail: "purchasing@bms.co.th", buyerPhone: "02-XXX-XXXX",
+    items: [
+      { name: "ขมิ้นชันแห้ง (ผง) — Premium", qty: 50, unit: "กก.", price: 320 },
+      { name: "ตะไคร้แห้ง (สับ) — A",         qty: 80, unit: "กก.", price: 180 },
+      { name: "ใบบัวบกแห้ง — Premium",        qty: 30, unit: "กก.", price: 450 },
+      { name: "ดอกอัญชันแห้ง — Premium",      qty: 8,  unit: "กก.", price: 520 },
+    ],
+    totalAmount: 42500, validUntil: "11 เม.ย. 2569", daysRemaining: 28, status: "sent",
+  },
+  {
+    id: "QT-2569-0139", date: "10 มี.ค. 2569", buyer: "บริษัท เฮอร์บาแบรนด์ จำกัด",
+    buyerEmail: "buy@herbabrand.co.th",
+    items: [
+      { name: "ขิงแก่แห้ง (ฝาน)", qty: 150, unit: "กก.", price: 280 },
+      { name: "กระชายแห้ง",        qty: 80,  unit: "กก.", price: 420 },
+      { name: "อบเชยเทศ (แท่ง)",   qty: 20,  unit: "กก.", price: 780 },
+      { name: "ดอกคำฝอย",           qty: 15,  unit: "กก.", price: 380 },
+      { name: "เมล็ดเทียนสัตตบุษย์", qty: 10, unit: "กก.", price: 620 },
+      { name: "ใบมะรุมแห้ง (ผง)",   qty: 12,  unit: "กก.", price: 540 },
+    ],
+    totalAmount: 86200, validUntil: "09 เม.ย. 2569", daysRemaining: 22, status: "accepted", poNumber: "PO-2569-3041",
+  },
+  {
+    id: "QT-2569-0135", date: "08 มี.ค. 2569", buyer: "ร้านชาสมุนไพรลานนา", buyerEmail: "lanna.tea@gmail.com",
+    items: [
+      { name: "สมุนไพรชา 7 ชนิดผสม", qty: 8, unit: "กก.", price: 950 },
+      { name: "ใบบัวบกแห้ง — Premium", qty: 10, unit: "กก.", price: 450 },
+    ],
+    totalAmount: 12400, validUntil: "07 เม.ย. 2569", daysRemaining: 5, status: "sent",
+  },
+  {
+    id: "QT-2569-0128", date: "01 มี.ค. 2569", buyer: "Organic Plus Co., Ltd.",
+    items: [
+      { name: "ขมิ้นชันแห้ง (ผง) — Premium", qty: 40, unit: "กก.", price: 320 },
+      { name: "ตะไคร้หอม (สับ)", qty: 30, unit: "กก.", price: 220 },
+      { name: "เปลือกมะกรูดแห้ง", qty: 50, unit: "กก.", price: 180 },
+    ],
+    totalAmount: 28900, validUntil: "31 มี.ค. 2569", daysRemaining: -3, status: "expired",
+  },
+  {
+    id: "QT-2569-0122", date: "25 ก.พ. 2569", buyer: "บริษัท สมุนไพรไทย จำกัด",
+    buyerEmail: "purchase@smunpaithai.co.th",
+    items: [
+      { name: "สมุนไพรชา 7 ชนิดผสม", qty: 80, unit: "กก.", price: 950 },
+      { name: "ขมิ้นชันแห้ง (ผง)",   qty: 100, unit: "กก.", price: 320 },
+      { name: "อบเชยเทศ (แท่ง)",      qty: 50, unit: "กก.", price: 780 },
+      { name: "ดอกอัญชันแห้ง",        qty: 20, unit: "กก.", price: 520 },
+      { name: "ใบมะรุมแห้ง (ผง)",    qty: 30, unit: "กก.", price: 540 },
+    ],
+    totalAmount: 156000, validUntil: "27 มี.ค. 2569", daysRemaining: 13, status: "accepted", poNumber: "PO-2569-2987",
+  },
+  {
+    id: "QT-2569-0118", date: "20 ก.พ. 2569", buyer: "Wellness Brand Studio",
+    items: [{ name: "ดอกอัญชันแห้ง — Premium", qty: 16, unit: "กก.", price: 520 }],
+    totalAmount: 8200, validUntil: "22 มี.ค. 2569", daysRemaining: 8, status: "rejected",
+    note: "ลูกค้าแจ้งว่าไปสั่งกับ Supplier อื่นเรียบร้อยแล้ว",
+  },
+];
+
+const MOCK_ISSUED_QTS: IssuedQuotation[] = RAW_QTS.map((qt) => ({
+  ...qt,
+  items: qt.items.map((it) => ({ ...it, image: it.image || qtImg(it.name) })),
+}));
+
+const QT_STATUS_STYLE: Record<IssuedQuotationStatus, { bg: string; label: string }> = {
+  sent:     { bg: "bg-[#f59e0b]", label: "รอตอบกลับ" },
+  accepted: { bg: "bg-[#10b981]", label: "ตอบรับแล้ว" },
+  expired:  { bg: "bg-gray-500",  label: "หมดอายุ" },
+  rejected: { bg: "bg-[#ef4444]", label: "ปฏิเสธ" },
+};
+
+/** Days remaining display: ≤ 0 = expired (red badge), 1-7 = red urgent, 8-30 = orange, > 30 = green */
+function DaysRemaining({ days }: { days: number }) {
+  if (days <= 0) {
+    return (
+      <span className={`${font} inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] bg-[#ef4444]/10 text-[#dc2626]`} style={{ fontWeight: 700 }}>
+        <AlertCircle className="size-2.5" strokeWidth={2.8} />
+        หมดอายุ
+      </span>
+    );
+  }
+  const color = days <= 7 ? "#dc2626" : days <= 30 ? "#d97706" : "#319754";
+  const bg    = days <= 7 ? "rgba(239,68,68,0.1)" : days <= 30 ? "rgba(217,119,6,0.08)" : "rgba(49,151,84,0.1)";
+  return (
+    <span className={`${font} inline-flex items-baseline gap-1 px-2.5 py-1 rounded-full text-[12px] tabular-nums`}
+      style={{ backgroundColor: bg, color, fontWeight: 700 }}>
+      {days}
+      <span className="text-[10px] opacity-70" style={{ fontWeight: 500 }}>วัน</span>
+    </span>
+  );
+}
+
+/* ========== HERBAL MARKET INTRO — CTA shown to owners who aren't suppliers yet ========== */
+function HerbalMarketIntroTab() {
+  const navigate = useNavigate();
+
+  const benefits = [
+    { Icon: ClipboardList, title: "รับใบเสนอราคา (RFQ)", desc: "ลูกค้า B2B ส่งคำขอใบเสนอราคาเข้ามาตรง — จัดการได้ในที่เดียว" },
+    { Icon: FileText,       title: "รับใบ PO อัตโนมัติ",  desc: "ใบสั่งซื้อจากโรงงานผ่าน Herbal ERP เข้าระบบเป็นคำสั่งซื้อทันที" },
+    { Icon: Beaker,         title: "ลงสินค้าวัตถุดิบ B2B", desc: "ขายเป็นกิโล/ตัน ตั้งราคาขายส่ง + MOQ ได้อย่างยืดหยุ่น" },
+    { Icon: TrendingUp,     title: "เพิ่มช่องทางรายได้",   desc: "เข้าถึงผู้ผลิตและโรงงานทั่วประเทศ ขยายฐานลูกค้านอกเหนือจาก B2C" },
+  ];
+
+  return (
+    <div>
+      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>Herbal Market</h2>
+
+      {/* Hero invitation card */}
+      <div className="bg-gradient-to-br from-[#319754] to-[#287745] rounded-2xl p-8 mb-6 text-white relative overflow-hidden">
+        <div className="absolute -bottom-16 -left-10 size-[240px] rounded-full bg-white/5" />
+        <img src={imgRegisSupplier} alt=""
+          className="hidden md:block absolute right-6 -bottom-2 h-[85%] object-contain pointer-events-none select-none"
+          aria-hidden />
+        <div className="relative z-10 max-w-[600px]">
+          <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur px-3 py-1 rounded-full mb-4">
+            <Beaker className="size-3.5" strokeWidth={2.4} />
+            <span className={`${font} text-[12px]`} style={{ fontWeight: 600 }}>B2B Marketplace</span>
+          </div>
+          <h3 className={`${font} text-[28px] leading-tight mb-3`} style={{ fontWeight: 700 }}>
+            ขยายร้านของคุณสู่ตลาดวัตถุดิบ B2B
+          </h3>
+          <p className={`${font} text-[14px] text-white/90 leading-relaxed mb-6`}>
+            สมัครเป็น Supplier เพื่อปลดล็อกการขายวัตถุดิบสมุนไพรให้กับโรงงานและผู้ผลิต รับใบเสนอราคาและใบ PO จากระบบ Herbal ERP โดยตรง
+          </p>
+          <button onClick={() => navigate("/supplier/register")}
+            className={`${font} bg-white text-[#319754] hover:bg-gray-50 h-11 px-6 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center gap-2 shadow-[0_4px_14px_rgba(0,0,0,0.15)]`}
+            style={{ fontWeight: 600 }}>
+            สมัครเป็น Supplier
+            <ArrowRightCircle className="size-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Benefits grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {benefits.map((b) => (
+          <div key={b.title} className="bg-white rounded-2xl border border-gray-100 p-5 flex gap-3">
+            <div className="size-11 rounded-2xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <b.Icon className="size-5 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className={`${font} text-[15px] text-black mb-1`} style={{ fontWeight: 600 }}>{b.title}</h4>
+              <p className={`${font} text-[12px] text-gray-600 leading-relaxed`}>{b.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+    </div>
+  );
+}
+
+/* ========== PO LIST — supplier-only page that mirrors the PO toggle inside OrdersTab ========== */
+function POListTab({ purchaseOrders, onUpdate, onOpenDetail }: {
+  purchaseOrders: PurchaseOrder[];
+  onUpdate: (id: string, patch: Partial<PurchaseOrder>) => void;
+  onOpenDetail: (id: string) => void;
+}) {
+  const [activeFilter, setActiveFilter] = useState<"all" | POStatus>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const poIcons: Record<string, any> = {
+    all: ClipboardList, received: ScanSearch,
+    preparing: Package, shipped: Truck, delivered: PackageCheck, cancelled: PackageX,
+  };
+  const poTabs: { id: "all" | POStatus; label: string; count: number; Icon: any }[] = [
+    { id: "all",       label: "ทั้งหมด",     count: purchaseOrders.length, Icon: poIcons.all },
+    { id: "received",  label: "PO ใหม่",     count: purchaseOrders.filter((p) => p.status === "received").length, Icon: poIcons.received },
+    { id: "preparing", label: "พร้อมจัดส่ง", count: purchaseOrders.filter((p) => p.status === "preparing").length, Icon: poIcons.preparing },
+    { id: "shipped",   label: "กำลังจัดส่ง", count: purchaseOrders.filter((p) => p.status === "shipped").length,   Icon: poIcons.shipped },
+    { id: "delivered", label: "ส่งสำเร็จ",    count: purchaseOrders.filter((p) => p.status === "delivered").length, Icon: poIcons.delivered },
+    { id: "cancelled", label: "ยกเลิก",       count: purchaseOrders.filter((p) => p.status === "cancelled").length, Icon: poIcons.cancelled },
+  ];
+
+  const q = searchQuery.trim().toLowerCase();
+  const visible = purchaseOrders.filter((p) => {
+    if (activeFilter !== "all" && p.status !== activeFilter) return false;
+    if (!q) return true;
+    return (
+      p.id.toLowerCase().includes(q) ||
+      p.company.name.toLowerCase().includes(q) ||
+      p.items.some((it) => it.name.toLowerCase().includes(q))
+    );
+  });
+
+  return (
+    <div>
+      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>ใบ PO</h2>
+
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
+        <FilterTabPills tabs={poTabs} active={activeFilter} onChange={setActiveFilter} pillId="poListTabActivePill" />
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
+          <input
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
+            placeholder="ค้นหา PO, ชื่อบริษัท หรือสินค้า"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {visible.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-100 py-16 flex flex-col items-center justify-center gap-2">
+          <Beaker className="size-10 text-gray-300" strokeWidth={1.5} />
+          <p className={`${font} text-[14px] text-gray-400`}>ยังไม่มี PO ในสถานะนี้</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {visible.map((po) => (
+            <POCard key={po.id} po={po} onShowDetail={onOpenDetail} onUpdate={onUpdate} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuotationsIssuedTab() {
+  const [filter, setFilter] = useState<"all" | IssuedQuotationStatus>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const qtIcons: Record<string, any> = {
+    all: ClipboardList, sent: Send, accepted: Check, expired: AlertCircle, rejected: X,
+  };
+  const qtTabs: { id: "all" | IssuedQuotationStatus; label: string; count: number; Icon: any }[] = [
+    { id: "all",      label: "ทั้งหมด",     count: MOCK_ISSUED_QTS.length, Icon: qtIcons.all },
+    { id: "sent",     label: "รอตอบกลับ",  count: MOCK_ISSUED_QTS.filter((q) => q.status === "sent").length,     Icon: qtIcons.sent },
+    { id: "accepted", label: "ตอบรับแล้ว", count: MOCK_ISSUED_QTS.filter((q) => q.status === "accepted").length, Icon: qtIcons.accepted },
+    { id: "expired",  label: "หมดอายุ",    count: MOCK_ISSUED_QTS.filter((q) => q.status === "expired").length,  Icon: qtIcons.expired },
+    { id: "rejected", label: "ปฏิเสธ",      count: MOCK_ISSUED_QTS.filter((q) => q.status === "rejected").length, Icon: qtIcons.rejected },
+  ];
+
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = MOCK_ISSUED_QTS.filter((qt) => {
+    if (filter !== "all" && qt.status !== filter) return false;
+    if (!q) return true;
+    return (
+      qt.id.toLowerCase().includes(q) ||
+      qt.buyer.toLowerCase().includes(q) ||
+      qt.items.some((it) => it.name.toLowerCase().includes(q))
+    );
+  });
+
+  return (
+    <div>
+      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>ใบเสนอราคาที่ออก</h2>
+
+      <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-6 flex items-center gap-2">
+        <FilterTabPills tabs={qtTabs} active={filter} onChange={setFilter} pillId="qtTabActivePill" />
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
+          <input
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`}
+            placeholder="ค้นหาเลขใบเสนอ ชื่อลูกค้า หรือสินค้า"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Quotation cards — same visual language as OrderCard */}
+      {filtered.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-100 py-16 flex flex-col items-center justify-center gap-2">
+          <ClipboardList className="size-10 text-gray-300" strokeWidth={1.5} />
+          <p className={`${font} text-[14px] text-gray-400`}>ไม่มีใบเสนอราคาในสถานะนี้</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((q) => (
+            <QuotationCard key={q.id} quotation={q} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---- QuotationCard — mirrors PR-card visual structure from OrdersPage ---- */
+function QuotationCard({ quotation }: { quotation: IssuedQuotation }) {
+  const q = quotation;
+  const sStyle = QT_STATUS_STYLE[q.status];
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden p-4 sm:p-5 shadow-[0_4px_12px_-4px_rgba(16,24,40,0.08)] border border-gray-100 hover:shadow-[0_12px_28px_-8px_rgba(16,24,40,0.12)] transition-shadow duration-300">
+      {/* Top: Issuer label */}
+      <div className="flex items-center gap-2 mb-1.5">
+        <div className="size-[24px] rounded-full bg-gradient-to-br from-[#46c474] to-[#319754] flex items-center justify-center text-white shadow-[0_2px_6px_-1px_rgba(49,151,84,0.4)]">
+          <ClipboardList className="size-3" strokeWidth={2.4} />
+        </div>
+        <span className={`${font} text-[14px]`} style={{ fontWeight: 600 }}>ใบเสนอราคา (Quotation)</span>
+      </div>
+
+      {/* QT ID + Status + Days + Date */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <span className={`${font} text-[12.5px] text-gray-500 tabular-nums`}>{q.id}</span>
+          <span className={`${font} text-[11px] px-3 py-1 rounded-full text-white ${sStyle.bg}`} style={{ fontWeight: 600 }}>
+            {sStyle.label}
+          </span>
+          <DaysRemaining days={q.daysRemaining} />
+        </div>
+        <span className={`${font} text-[11.5px] text-gray-400`}>{q.date}</span>
+      </div>
+
+      {/* Divider */}
+      <div className="w-full h-px bg-[#D4D4D8] mb-3" />
+
+      {/* Buyer row — like recipient in OrderCard */}
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="size-[36px] rounded-full bg-[#319754]/10 flex items-center justify-center shrink-0">
+          <UserIcon className="size-4 text-[#319754]" strokeWidth={2.2} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }}>{q.buyer}</p>
+          <p className={`${font} text-[11px] text-gray-500 truncate`}>
+            มีผลถึง {q.validUntil}{q.buyerEmail ? ` · ${q.buyerEmail}` : ""}
+          </p>
+        </div>
+      </div>
+
+      {/* PO conversion banner */}
+      {q.poNumber && (
+        <div className="bg-purple-50 rounded-2xl px-4 py-3 border border-purple-100 mb-3">
+          <p className={`${font} text-[13px] text-purple-700`}>
+            <span style={{ fontWeight: 500 }}>ใบเสนอราคานี้ลูกค้ารับและสร้าง PO แล้ว — เลข </span>
+            <span style={{ fontWeight: 700 }}>{q.poNumber}</span>
+          </p>
+        </div>
+      )}
+
+      {/* Reject note */}
+      {q.note && (
+        <div className="flex items-start gap-2 bg-red-50 rounded-2xl px-4 py-3 border border-red-100 mb-3">
+          <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" strokeWidth={2.4} />
+          <div>
+            <p className={`${font} text-[12px] text-red-600`} style={{ fontWeight: 600 }}>หมายเหตุจากลูกค้า</p>
+            <p className={`${font} text-[13px] text-red-700 mt-0.5`}>{q.note}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Items list */}
+      <div className="space-y-3 mb-3">
+        {q.items.map((item, i) => (
+          <div key={i} className="flex gap-2.5 items-start">
+            <div className="size-[60px] rounded-2xl overflow-hidden shrink-0 bg-[#319754]/10 flex items-center justify-center">
+              {item.image ? (
+                <ImageWithFallback src={item.image} alt={item.name} className="w-full h-full object-cover" />
+              ) : (
+                <Package className="size-6 text-[#319754]" strokeWidth={1.8} />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+              <span className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{item.name}</span>
+              <span className={`${font} text-[10px] text-gray-500 tabular-nums`}>ราคา/หน่วย: ฿{item.price.toLocaleString()} / {item.unit}</span>
+              <div className="flex items-center justify-between">
+                <span className={`${font} text-[10px] text-[#999]`}>จำนวน {item.qty.toLocaleString()} {item.unit}</span>
+                <span className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 600 }}>฿{(item.price * item.qty).toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Divider */}
+      <div className="w-full h-px bg-[#D4D4D8] mb-3" />
+
+      {/* Footer: Total + action button */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-baseline gap-2">
+          <span className={`${font} text-[13px] text-gray-500`} style={{ fontWeight: 500 }}>ยอดรวม:</span>
+          <span className={`${font} text-[22px] text-[#319754] tabular-nums`} style={{ fontWeight: 700 }}>฿{q.totalAmount.toLocaleString()}</span>
+        </div>
+        <button onClick={() => toast.success(`เริ่มดาวน์โหลด ${q.id}.pdf`)}
+          className={`min-w-[120px] h-[40px] px-4 rounded-full text-white text-[13.5px] ${font} cursor-pointer hover:shadow-[0_8px_20px_-4px_rgba(49,151,84,0.5)] hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.97] transition-all shadow-[0_4px_12px_-2px_rgba(49,151,84,0.4)] flex items-center justify-center gap-1.5`}
+          style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 55%, #267a43 100%)", fontWeight: 600 }}>
+          <Download className="size-4" strokeWidth={2.2} /> โหลดเอกสาร
+        </button>
+      </div>
     </div>
   );
 }

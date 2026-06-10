@@ -11,6 +11,9 @@ export interface User {
   role: UserRole;
   avatar?: string;
   shopName?: string;
+  /** True when the owner has gone through the Supplier registration flow.
+   * Unlocks B2B-only sections of the owner dashboard (e.g. quotations). */
+  isSupplier?: boolean;
 }
 
 /** Admin-facing display role — admin UI says "ลูกค้า" instead of "user". */
@@ -34,6 +37,7 @@ export interface RegistryUser {
   status: RegistryStatus;
   avatar?: string;
   shopName?: string;
+  isSupplier?: boolean;
 }
 
 interface AuthContextType {
@@ -44,6 +48,9 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   switchRole: (role: UserRole) => void;
+  /** Toggle the current user's supplier flag (called after successful
+   * supplier registration). */
+  setSupplierStatus: (isSupplier: boolean) => void;
 
   // Admin-facing mutations
   updateUserRole: (id: string, role: DisplayRole) => void;
@@ -59,7 +66,7 @@ const toDisplayRole = (r: UserRole): DisplayRole => (r === "user" ? "customer" :
 /** Seed registry — login mocks plus the rows admin's Users page used to hard-code. */
 const INITIAL_USERS: RegistryUser[] = [
   { id: "u1",   username: "user01",         email: "user@test.com",             phone: "090-000-0001", password: "12345678", role: "customer", name: "user01",                 status: "active" },
-  { id: "o1",   username: "metaherb_store", email: "owner@test.com",            phone: "090-000-0002", password: "12345678", role: "owner",    name: "METAHERB Store",         status: "active", shopName: "METAHERB Store" },
+  { id: "o1",   username: "metaherb_store", email: "owner@test.com",            phone: "090-000-0002", password: "12345678", role: "owner",    name: "METAHERB Store",         status: "active", shopName: "METAHERB Store", isSupplier: true },
   { id: "a1",   username: "admin01",        email: "admin@test.com",            phone: "090-000-0003", password: "12345678", role: "admin",    name: "admin01",                status: "active" },
   { id: "u-1",  username: "admin0001",      email: "test0001@gmail.com",        phone: "",             password: "12345678", role: "admin",    name: "Admin TestKUB",          status: "active" },
   { id: "u-2",  username: "customertest",   email: "customer@test.com",         phone: "",             password: "12345678", role: "customer", name: "customer test",          status: "active" },
@@ -82,6 +89,7 @@ const toUser = (r: RegistryUser): User => ({
   role: toAuthRole(r.role),
   avatar: r.avatar,
   shopName: r.shopName,
+  isSupplier: r.isSupplier,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -140,12 +148,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsers((prev) => prev.filter((u) => u.id !== id));
   }, [setUsers]);
 
+  const setSupplierStatus = useCallback((isSupplier: boolean) => {
+    if (!user) return;
+    setUser({ ...user, isSupplier });
+    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, isSupplier } : u)));
+  }, [user, setUser, setUsers]);
+
   const value = useMemo<AuthContextType>(() => ({
     user, users,
-    login, register, logout, switchRole,
+    login, register, logout, switchRole, setSupplierStatus,
     isAuthenticated: !!user,
     updateUserRole, updateUserStatus, removeUser,
-  }), [user, users, login, register, logout, switchRole, updateUserRole, updateUserStatus, removeUser]);
+  }), [user, users, login, register, logout, switchRole, setSupplierStatus, updateUserRole, updateUserStatus, removeUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
