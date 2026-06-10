@@ -462,6 +462,7 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
             { icon: Store, label: "หน้าร้านค้า", path: "/shop/metaherb" },
             { icon: Ticket, label: "คูปองและโปรโมชั่น", path: "/owner" },
             { icon: Monitor, label: "ตั้งค่าร้านค้า", path: "/owner" },
+            { icon: FlaskConical, label: "สมัครแบรนด์ทดสอบ", path: "/brand/register" },
           ].map((item) => (
             <button key={item.label} onClick={() => go(item.path)}
               className="group/menu w-full flex items-center gap-3 px-3 py-2 rounded-[10px] hover:bg-[#319754]/[0.06] cursor-pointer transition-colors">

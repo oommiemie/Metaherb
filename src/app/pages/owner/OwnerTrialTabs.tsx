@@ -5,6 +5,7 @@ import {
   FlaskConical, Users, Coins, Check, Clock, ChevronLeft, ChevronRight, Search, Plus, X,
   ArrowUpRight, Calendar, Sparkles, Trash2, Edit3, MapPin, AlertCircle, Phone, MessageCircle, Ban,
   MoreHorizontal, Pencil, EyeOff, Eye, Star, FileText, ThumbsUp, ThumbsDown, Package, ChevronDown,
+  Beaker, ShieldCheck, Upload,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { EvaluationView } from "../../components/EvaluationModal";
@@ -869,6 +870,85 @@ function AddTrialProductForm({ onBack, onSave }: { onBack: () => void; onSave: (
   );
   const [selectedTemplate, setSelectedTemplate] = useState<string>(initialTplKey);
 
+  // ===== Product info fields (ส่วนประกอบ & วิธีใช้) =====
+  const [ingredients, setIngredients] = useState("");
+  const [warnings, setWarnings] = useState("");
+  const [howToUse, setHowToUse] = useState("");
+
+  // ===== Target audience (5 multi-select groups) + Feedback + sample count =====
+  const [targetAge, setTargetAge] = useState<string[]>(["25-34"]);
+  const [targetGender, setTargetGender] = useState<string[]>(["ชาย", "หญิง"]);
+  const [targetLifestyle, setTargetLifestyle] = useState<string[]>([]);
+  const [targetHealth, setTargetHealth] = useState<string[]>([]);
+  const [targetBehavior, setTargetBehavior] = useState<string[]>([]);
+  const [feedbackTypes, setFeedbackTypes] = useState<string[]>(["แบบสอบถาม"]);
+
+  const AGE_OPTIONS       = ["15-24", "25-34", "35-44", "45-54", "55+"];
+  const GENDER_OPTIONS    = ["ชาย", "หญิง", "LGBTQ+"];
+  const LIFESTYLE_OPTIONS = [
+    { emoji: "🙂", label: "ผู้บริโภคทั่วไป" },
+    { emoji: "💚", label: "สายสุขภาพ" },
+    { emoji: "🧓", label: "ผู้สูงอายุ" },
+    { emoji: "💪", label: "นักกีฬา/ออกกำลัง" },
+    { emoji: "☕", label: "คนดื่มกาแฟ" },
+    { emoji: "🌙", label: "มีปัญหาการนอน" },
+    { emoji: "✨", label: "สาย skincare" },
+  ];
+  const HEALTH_OPTIONS = [
+    { emoji: "😴", label: "นอนหลับยาก" },
+    { emoji: "😰", label: "เครียด" },
+    { emoji: "😩", label: "อ่อนเพลีย" },
+    { emoji: "🌸", label: "ปัญหาผิว" },
+    { emoji: "🍽", label: "ระบบย่อย" },
+    { emoji: "🦴", label: "ปวดข้อ" },
+    { emoji: "🧠", label: "สมาธิ" },
+  ];
+  const BEHAVIOR_OPTIONS = [
+    { emoji: "🍵", label: "ชาสมุนไพร" },
+    { emoji: "💊", label: "แคปซูล" },
+    { emoji: "🥤", label: "ผง" },
+    { emoji: "💧", label: "น้ำมัน" },
+    { emoji: "🧴", label: "ครีม/เซรั่ม" },
+  ];
+  const FEEDBACK_OPTIONS = ["แบบสอบถาม", "สัมภาษณ์ออนไลน์", "รีวิวยาว", "รูปก่อน-หลัง", "วิดีโอรีวิว"];
+
+  const toggle = (setter: React.Dispatch<React.SetStateAction<string[]>>) => (k: string) =>
+    setter((prev) => prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]);
+  const toggleAge       = toggle(setTargetAge);
+  const toggleGender    = toggle(setTargetGender);
+  const toggleLifestyle = toggle(setTargetLifestyle);
+  const toggleHealth    = toggle(setTargetHealth);
+  const toggleBehavior  = toggle(setTargetBehavior);
+  const toggleFeedback  = toggle(setFeedbackTypes);
+
+  // ===== Quality & Documents (คุณภาพ & เอกสาร) — file names + key fields =====
+  const [docs, setDocs] = useState({
+    labResult: "",            // ผลทดสอบจากห้องแล็บ (file name)
+    labNote: "",              // สรุปผลทดสอบสั้นๆ
+    fdaNumber: "",            // เลข อย.
+    fdaDoc: "",               // ใบ อย. (file)
+    factoryName: "",          // ชื่อโรงงาน
+    factoryAddress: "",       // ที่อยู่โรงงาน
+    factoryGmpDoc: "",        // ใบ GMP (file)
+    sdsDoc: "",               // Safety Data Sheet (file)
+    insuranceDoc: "",         // ประกันความรับผิด (file)
+    insuranceProvider: "",    // ผู้รับประกัน
+  });
+  const updDoc = <K extends keyof typeof docs>(k: K, v: typeof docs[K]) => setDocs((p) => ({ ...p, [k]: v }));
+  const docRefs = {
+    labResult: useRef<HTMLInputElement>(null),
+    fdaDoc: useRef<HTMLInputElement>(null),
+    factoryGmpDoc: useRef<HTMLInputElement>(null),
+    sdsDoc: useRef<HTMLInputElement>(null),
+    insuranceDoc: useRef<HTMLInputElement>(null),
+  };
+  const onDocFile = (k: keyof typeof docs) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]; e.target.value = "";
+    if (!f) return;
+    updDoc(k, f.name as any);
+    toast.success("แนบเอกสารแล้ว", { description: f.name });
+  };
+
   // When category changes, auto-apply the matching template (overrides current selection)
   useEffect(() => {
     const suggested = CATEGORY_TO_TEMPLATE[category];
@@ -890,16 +970,24 @@ function AddTrialProductForm({ onBack, onSave }: { onBack: () => void; onSave: (
   // Per-section validation
   const infoValid = name.trim().length >= 3 && tagline.trim().length >= 5 && rewardPoints > 0;
   const imageValid = image.trim().length > 0;
+  const usageValid = ingredients.trim().length > 0 && howToUse.trim().length > 0;
   const conditionsValid = spotsTotal > 0 && endsInDays > 0;
-  const criteriaValid = whatToTestText.split("\n").map((s) => s.trim()).filter(Boolean).length > 0;
+  const targetValid = targetAge.length > 0 && targetGender.length > 0;
+  const qualityValid = !!(docs.labResult && docs.fdaNumber && docs.factoryName);
+  const criteriaValid =
+    whatToTestText.split("\n").map((s) => s.trim()).filter(Boolean).length > 0 &&
+    feedbackTypes.length > 0;
   const canSave = infoValid && conditionsValid && criteriaValid;
 
-  // Sections for the step-progress sidebar (รูปภาพสินค้าอยู่บนสุด — เหมือนหน้าเพิ่มสินค้า)
+  // Sections for the step-progress sidebar
   const sections: { id: string; label: string; required: boolean; valid: boolean }[] = [
-    { id: "image",      label: "รูปภาพสินค้า",      required: false, valid: imageValid },
-    { id: "info",       label: "ข้อมูลพื้นฐาน",     required: true,  valid: infoValid },
-    { id: "conditions", label: "เงื่อนไขการทดสอบ",  required: true,  valid: conditionsValid },
-    { id: "criteria",   label: "สิ่งที่ต้องประเมิน",  required: true,  valid: criteriaValid },
+    { id: "image",      label: "รูปภาพสินค้า",       required: false, valid: imageValid },
+    { id: "info",       label: "ข้อมูลพื้นฐาน",      required: true,  valid: infoValid },
+    { id: "usage",      label: "ส่วนประกอบ & วิธีใช้",  required: false, valid: usageValid },
+    { id: "conditions", label: "เงื่อนไขการทดสอบ",    required: true,  valid: conditionsValid },
+    { id: "target",     label: "กลุ่มเป้าหมาย",       required: false, valid: targetValid },
+    { id: "quality",    label: "คุณภาพ & เอกสาร",     required: false, valid: qualityValid },
+    { id: "criteria",   label: "สิ่งที่ต้องประเมิน",    required: true,  valid: criteriaValid },
   ];
   const [activeStep, setActiveStep] = useState(0);
   const [maxVisitedStep, setMaxVisitedStep] = useState(0);
@@ -1085,8 +1173,34 @@ function AddTrialProductForm({ onBack, onSave }: { onBack: () => void; onSave: (
           </div>
         </section>
 
+        {/* Section: ส่วนประกอบ & วิธีใช้ */}
+        <section id="trialprod-usage" onMouseEnter={() => { setActiveStep(2); setMaxVisitedStep((p) => Math.max(p, 2)); }}
+          className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <Beaker className="size-5 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1">
+              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>ส่วนประกอบ &amp; วิธีใช้</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <AlertCircle className="size-3.5 text-gray-400" />
+                <span className={`${font} text-[12px] text-[#8e8e93]`}>Ingredient list, วิธีการใช้, และคำเตือนสำหรับผู้ทดสอบ</span>
+              </div>
+            </div>
+          </div>
+          <div className="h-px bg-gray-100 mb-4" />
+          <div className="space-y-3.5">
+            <Textarea label="ส่วนประกอบ (Ingredients)" value={ingredients} onChange={setIngredients} rows={4}
+              placeholder="เช่น Curcumin 5%&#10;Niacinamide 3%&#10;Hyaluronic Acid&#10;Glycerin&#10;Aqua" />
+            <Textarea label="วิธีการใช้" value={howToUse} onChange={setHowToUse} rows={4}
+              placeholder="ขั้นตอนการใช้ — 1 ขั้นตอน ต่อ 1 บรรทัด&#10;เช่น ล้างหน้าให้สะอาด&#10;หยด 2-3 หยดลงฝ่ามือ&#10;ทาบนใบหน้า เน้นจุดที่ต้องการบำรุง" />
+            <Textarea label="คำเตือน" value={warnings} onChange={setWarnings} rows={3}
+              placeholder="เช่น หยุดใช้ทันทีหากเกิดการระคายเคือง&#10;หลีกเลี่ยงรอบดวงตา&#10;ไม่เหมาะกับผู้แพ้ขมิ้น" />
+          </div>
+        </section>
+
         {/* Section: เงื่อนไขการทดสอบ */}
-        <section id="trialprod-conditions" onMouseEnter={() => { setActiveStep(2); setMaxVisitedStep((p) => Math.max(p, 2)); }}
+        <section id="trialprod-conditions" onMouseEnter={() => { setActiveStep(3); setMaxVisitedStep((p) => Math.max(p, 3)); }}
           className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
           <div className="flex items-start gap-3 mb-4">
             <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
@@ -1102,13 +1216,119 @@ function AddTrialProductForm({ onBack, onSave }: { onBack: () => void; onSave: (
           </div>
           <div className="h-px bg-gray-100 mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input label="จำนวนที่นั่ง *" type="number" value={String(spotsTotal)} onChange={(v) => setSpotsTotal(Number(v) || 0)} placeholder="50" />
-            <Input label="ระยะเวลาเปิดรับสมัคร (วัน) *" type="number" value={String(endsInDays)} onChange={(v) => setEndsInDays(Number(v) || 0)} placeholder="14" />
+            <Select label="จำนวนที่นั่ง *" value={String(spotsTotal)} onChange={(v) => setSpotsTotal(Number(v) || 0)}
+              options={["10", "25", "50", "100", "200", "500"]} />
+            <Select label="ระยะเวลาเปิดรับสมัคร (วัน) *" value={String(endsInDays)} onChange={(v) => setEndsInDays(Number(v) || 0)}
+              options={["7", "14", "21", "30"]} />
+          </div>
+        </section>
+
+        {/* Section: กลุ่มเป้าหมาย & Feedback */}
+        <section id="trialprod-target" onMouseEnter={() => { setActiveStep(4); setMaxVisitedStep((p) => Math.max(p, 4)); }}
+          className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <Users className="size-5 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1">
+              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>กลุ่มเป้าหมาย</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <AlertCircle className="size-3.5 text-gray-400" />
+                <span className={`${font} text-[12px] text-[#8e8e93]`}>คุณสมบัติของ Tester ที่ต้องการ</span>
+              </div>
+            </div>
+          </div>
+          <div className="h-px bg-gray-100 mb-4" />
+          <div className="space-y-5">
+            {/* อายุ */}
+            <ChipGroup label="ช่วงอายุ" required selected={targetAge} onToggle={toggleAge}
+              options={AGE_OPTIONS.map((a) => ({ label: a }))} />
+
+            {/* เพศ */}
+            <ChipGroup label="เพศ" required selected={targetGender} onToggle={toggleGender}
+              options={GENDER_OPTIONS.map((g) => ({ label: g }))} />
+
+            {/* รูปแบบชีวิต */}
+            <ChipGroup label="รูปแบบชีวิต" selected={targetLifestyle} onToggle={toggleLifestyle}
+              options={LIFESTYLE_OPTIONS} />
+
+            {/* สุขภาพ */}
+            <ChipGroup label="สุขภาพ" selected={targetHealth} onToggle={toggleHealth}
+              options={HEALTH_OPTIONS} />
+
+            {/* พฤติกรรม */}
+            <ChipGroup label="พฤติกรรมการบริโภค" selected={targetBehavior} onToggle={toggleBehavior}
+              options={BEHAVIOR_OPTIONS} />
+          </div>
+        </section>
+
+        {/* Section: คุณภาพ & เอกสาร */}
+        <section id="trialprod-quality" onMouseEnter={() => { setActiveStep(5); setMaxVisitedStep((p) => Math.max(p, 5)); }}
+          className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <ShieldCheck className="size-5 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1">
+              <h3 className={`${font} text-[18px] text-black leading-tight`} style={{ fontWeight: 600 }}>คุณภาพ &amp; เอกสารรับรอง</h3>
+              <div className="flex items-center gap-1.5 mt-1">
+                <AlertCircle className="size-3.5 text-gray-400" />
+                <span className={`${font} text-[12px] text-[#8e8e93]`}>ผลแล็บ, อย., โรงงาน GMP, SDS, ประกันความรับผิด</span>
+              </div>
+            </div>
+          </div>
+          <div className="h-px bg-gray-100 mb-4" />
+          <div className="space-y-4">
+            {/* Row 1: Lab result (DocUpload) + Lab summary (Input) — 50/50 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <DocUpload label="ผลทดสอบจากห้องแล็บ (ISO/GMP)" fileName={docs.labResult}
+                  onPick={() => docRefs.labResult.current?.click()} onClear={() => updDoc("labResult", "")} />
+                <input ref={docRefs.labResult} type="file" accept=".pdf,image/*" className="hidden" onChange={onDocFile("labResult")} />
+              </div>
+              <Input label="สรุปผลทดสอบสั้น ๆ (ทางเลือก)" value={docs.labNote} onChange={(v) => updDoc("labNote", v)} placeholder="เช่น ผ่าน Patch Test 99%" />
+            </div>
+
+            {/* Row 2: FDA — Input (with hint slot) + DocUpload (with hint) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Input label="เลข อย. *" value={docs.fdaNumber} onChange={(v) => updDoc("fdaNumber", v)} placeholder="10-1-6200xxxxx" />
+              <div>
+                <DocUpload label="ใบอนุญาต อย." fileName={docs.fdaDoc}
+                  onPick={() => docRefs.fdaDoc.current?.click()} onClear={() => updDoc("fdaDoc", "")} />
+                <input ref={docRefs.fdaDoc} type="file" accept=".pdf,image/*" className="hidden" onChange={onDocFile("fdaDoc")} />
+              </div>
+            </div>
+
+            {/* Row 3: Factory name + GMP cert */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Input label="ชื่อโรงงานผลิต *" value={docs.factoryName} onChange={(v) => updDoc("factoryName", v)} placeholder="เช่น โรงงาน ABC Pharma" />
+              <div>
+                <DocUpload label="ใบรับรอง GMP โรงงาน" fileName={docs.factoryGmpDoc}
+                  onPick={() => docRefs.factoryGmpDoc.current?.click()} onClear={() => updDoc("factoryGmpDoc", "")} />
+                <input ref={docRefs.factoryGmpDoc} type="file" accept=".pdf,image/*" className="hidden" onChange={onDocFile("factoryGmpDoc")} />
+              </div>
+            </div>
+            <Textarea label="ที่อยู่โรงงาน" value={docs.factoryAddress} onChange={(v) => updDoc("factoryAddress", v)} rows={2} placeholder="เลขที่ ถนน แขวง/ตำบล จังหวัด รหัสไปรษณีย์" />
+
+            {/* Row 5: SDS + Insurance — both DocUpload (both already have hints) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <DocUpload label="Safety Data Sheet (SDS)" fileName={docs.sdsDoc}
+                  onPick={() => docRefs.sdsDoc.current?.click()} onClear={() => updDoc("sdsDoc", "")} />
+                <input ref={docRefs.sdsDoc} type="file" accept=".pdf,image/*" className="hidden" onChange={onDocFile("sdsDoc")} />
+              </div>
+              <div>
+                <DocUpload label="ประกันความรับผิดต่อผลิตภัณฑ์" fileName={docs.insuranceDoc}
+                  onPick={() => docRefs.insuranceDoc.current?.click()} onClear={() => updDoc("insuranceDoc", "")} />
+                <input ref={docRefs.insuranceDoc} type="file" accept=".pdf,image/*" className="hidden" onChange={onDocFile("insuranceDoc")} />
+              </div>
+            </div>
+            <Input label="ผู้รับประกัน (Insurance provider)" value={docs.insuranceProvider} onChange={(v) => updDoc("insuranceProvider", v)} placeholder="เช่น บริษัทประกันภัย XYZ" />
           </div>
         </section>
 
         {/* Section: สิ่งที่ต้องประเมิน */}
-        <section id="trialprod-criteria" onMouseEnter={() => { setActiveStep(3); setMaxVisitedStep((p) => Math.max(p, 3)); }}
+        <section id="trialprod-criteria" onMouseEnter={() => { setActiveStep(6); setMaxVisitedStep((p) => Math.max(p, 6)); }}
           className="bg-white rounded-2xl p-5 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
           <div className="flex items-start gap-3 mb-4">
             <div className="size-10 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
@@ -1184,6 +1404,11 @@ function AddTrialProductForm({ onBack, onSave }: { onBack: () => void; onSave: (
             <p className={`${font} text-[12px] text-gray-500 mt-2.5`}>เลือกฟอร์มที่ตรงกับสินค้า แล้วปรับข้อประเมินด้านล่างได้</p>
           </div>
           <Textarea label="เกณฑ์ทั้งหมด (1 บรรทัด = 1 ข้อ)" value={whatToTestText} onChange={(v) => { setWhatToTestText(v); setSelectedTemplate("custom"); }} rows={6} placeholder="กลิ่นและเนื้อสัมผัส&#10;ผลลัพธ์ใน 14 วัน&#10;การระคายเคือง" />
+
+          <div className="h-px bg-gray-100 my-5" />
+
+          <ChipGroup label="รูปแบบ Feedback ที่ต้องการ" required selected={feedbackTypes} onToggle={toggleFeedback}
+            options={FEEDBACK_OPTIONS.map((f) => ({ label: f }))} />
         </section>
 
         </div>
@@ -1265,12 +1490,14 @@ function AddTrialProductForm({ onBack, onSave }: { onBack: () => void; onSave: (
 }
 
 /** Pill input — matches AddProductTab style */
-function Input({ label, value, onChange, placeholder, type = "text", required = false }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; required?: boolean }) {
+function Input({ label, value, onChange, placeholder, type = "text", required = false, hint }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; required?: boolean; hint?: string }) {
   return (
     <div className="flex flex-col gap-2">
       <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>
         {label} {required && <span className="text-[#ff3b30]">*</span>}
       </label>
+      {/* min-h forces empty hint to occupy the same vertical space as a populated one */}
+      {hint !== undefined && <p className={`${font} text-[11.5px] text-gray-500 -mt-1 min-h-[17px]`}>{hint || " "}</p>}
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
         className={`${font} bg-[#fafafa] h-12 rounded-full px-6 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3]`} />
     </div>
@@ -1302,6 +1529,68 @@ function Textarea({ label, value, onChange, rows = 3, placeholder, required = fa
       )}
       <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} placeholder={placeholder}
         className={`${font} bg-[#fafafa] w-full rounded-2xl px-6 py-3 text-[14px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow placeholder:text-[#a3a3a3] resize-none leading-relaxed`} />
+    </div>
+  );
+}
+
+/** Multi-select chip group — used by the target audience section.
+ *  Selected chips are filled green with a check; unselected are bordered + emoji + label. */
+function ChipGroup({ label, required, selected, onToggle, options }: {
+  label: string;
+  required?: boolean;
+  selected: string[];
+  onToggle: (k: string) => void;
+  options: { label: string; emoji?: string }[];
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-2">
+        <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>
+          {label} {required && <span className="text-[#ff3b30]">*</span>}
+        </label>
+        {selected.length > 0 && (
+          <span className={`${font} text-[11.5px] text-gray-500 tabular-nums`}>{selected.length} เลือก</span>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const active = selected.includes(opt.label);
+          return (
+            <button key={opt.label} type="button" onClick={() => onToggle(opt.label)}
+              className={`${font} text-[13px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border-2 cursor-pointer transition-all ${
+                active ? "bg-[#319754] border-[#319754] text-white" : "bg-white border-gray-200 text-gray-700 hover:border-[#319754]/40"
+              }`}
+              style={{ fontWeight: active ? 600 : 500 }}>
+              {opt.emoji && <span className="text-[14px] leading-none">{opt.emoji}</span>}
+              <span>{opt.label}</span>
+              {active && <Check className="size-3" strokeWidth={2.8} />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Inline file-upload button used for Quality & Document fields. */
+function DocUpload({ label, hint, fileName, onPick, onClear }: { label: string; hint?: string; fileName: string; onPick: () => void; onClear: () => void }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>{label}</label>
+      {hint && <p className={`${font} text-[11.5px] text-gray-500 -mt-1`}>{hint}</p>}
+      <button type="button" onClick={onPick}
+        className={`flex items-center gap-3 h-12 px-5 rounded-full border-2 border-dashed cursor-pointer transition-colors text-left ${fileName ? "border-[#319754] bg-[#319754]/5" : "border-gray-300 hover:border-[#319754]/60 bg-[#fafafa]"}`}>
+        {fileName ? <FileText className="size-4 text-[#319754] shrink-0" strokeWidth={2} /> : <Upload className="size-4 text-gray-400 shrink-0" strokeWidth={2} />}
+        <span className={`${font} text-[13px] flex-1 truncate ${fileName ? "text-[#1d5b32]" : "text-gray-500"}`} style={{ fontWeight: fileName ? 600 : 500 }}>
+          {fileName || "คลิกเพื่อแนบเอกสาร"}
+        </span>
+        {fileName && (
+          <span onClick={(e) => { e.stopPropagation(); onClear(); }}
+            role="button" className="size-6 rounded-full hover:bg-gray-100 flex items-center justify-center shrink-0">
+            <X className="size-3.5 text-gray-500" strokeWidth={2.4} />
+          </span>
+        )}
+      </button>
     </div>
   );
 }

@@ -1,3 +1,8 @@
+import imgTrialCream1   from "../../assets/trial-images/trial-cream-1.png";
+import imgTrialCream2   from "../../assets/trial-images/trial-cream-2.png";
+import imgTrialCapsule1 from "../../assets/trial-images/trial-capsule-1.png";
+import imgTrialCapsule2 from "../../assets/trial-images/trial-capsule-2.png";
+
 export type TrialProduct = {
   id: string;
   name: string;
@@ -191,7 +196,8 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     name: "เซรั่มขมิ้นชัน Brightening v2",
     tagline: "เพิ่มความกระจ่างใส ลดรอยด่างดำ สูตรสารสกัดขมิ้นชัน 5% เหมาะสำหรับทุกสภาพผิว",
     category: "บำรุงผิว",
-    image: "https://images.unsplash.com/photo-1740592754365-2117f5977528?w=800&q=80",
+    image: imgTrialCream1,
+    images: [imgTrialCream1, imgTrialCream2],
     spotsTotal: 50, spotsTaken: 32, endsInDays: 12, rewardPoints: 200,
     whatToTest: ["กลิ่นและเนื้อสัมผัส", "ผลลัพธ์ใน 14 วัน", "การระคายเคือง"],
     concerns: ["skin"],
@@ -292,7 +298,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     name: "ครีมว่านหางจระเข้ x ไพล",
     tagline: "ลดอาการปวดเมื่อย — กำลังหา tester ผู้สูงวัย 60+",
     category: "ดูแลร่างกาย",
-    image: "https://images.unsplash.com/photo-1748390359572-8e7a47bf5cb5?w=800&q=80",
+    image: imgTrialCream2,
     spotsTotal: 30, spotsTaken: 11, endsInDays: 18, rewardPoints: 300,
     whatToTest: ["บรรเทาปวดข้อ", "ความเหนียวเหนอะ", "กลิ่น"],
     concerns: ["elder", "fitness"],
@@ -303,7 +309,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     name: "แคปซูลฟ้าทะลายโจร Daily",
     tagline: "ปริมาณ andrographolide สูง — รับสมัครเฉพาะคนเป็นหวัดบ่อย",
     category: "อาหารเสริม",
-    image: "https://images.unsplash.com/photo-1599639932525-213272ff954b?w=800&q=80",
+    image: imgTrialCapsule1,
     spotsTotal: 40, spotsTaken: 40, endsInDays: 0, rewardPoints: 250,
     whatToTest: ["ความถี่ของอาการ", "ผลข้างเคียง"],
     concerns: ["general"],
@@ -336,7 +342,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     name: "สครับน้ำตาลมะรุม Glow",
     tagline: "เม็ดสครับธรรมชาติ — ขอ tester ผิวบอบบาง",
     category: "บำรุงผิว",
-    image: "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&q=80",
+    image: imgTrialCapsule2,
     spotsTotal: 40, spotsTaken: 18, endsInDays: 21, rewardPoints: 200,
     whatToTest: ["ความหยาบของเม็ดสครับ", "ความนุ่มของผิวหลังใช้"],
     concerns: ["skin"],

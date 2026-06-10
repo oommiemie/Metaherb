@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { Sparkles, Users, Clock, Check, FlaskConical, ShieldCheck, Coins, Pencil, ArrowRight, Ban, RotateCcw } from "lucide-react";
+import { Sparkles, Users, Clock, Check, FlaskConical, ShieldCheck, Coins, Pencil, ArrowRight, RotateCcw } from "lucide-react";
+import { TrialCard } from "../components/TrialCard";
 import { TRIAL_PRODUCTS, TRIAL_CONCERNS, loadRegistrations, loadTesterProfile, REGISTRATIONS_STORAGE_KEY, TESTER_PROFILE_STORAGE_KEY, getRegistrationStatus, type ConcernKey } from "../data/trialProducts";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
@@ -152,22 +153,37 @@ export function TrialProductsPage() {
               </div>
               <div className="w-full h-px bg-[#a3a3a3]" />
 
-              {/* หมวดหมู่ — dropdown */}
+              {/* หมวดหมู่ — vertical button list (emoji + count) */}
               <div className="flex flex-col gap-2">
                 <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>หมวดหมู่</span>
-                <div className="relative w-full">
-                  <select value={concernFilter} onChange={(e) => setConcernFilter(e.target.value as ConcernKey | "all")}
-                    className={`w-full bg-[#fafafa] h-[40px] rounded-full px-4 text-[13px] ${font} outline-none appearance-none cursor-pointer pr-10`}>
-                    <option value="all">ทั้งหมด</option>
-                    {TRIAL_CONCERNS.map((c) => (
-                      <option key={c.key} value={c.key}>{c.emoji} {c.label}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg width="16" height="9" viewBox="0 0 16 9" fill="none">
-                      <path d="M7.83767 9C8.06314 9 8.28862 8.91545 8.44194 8.75493L15.4228 2.05352C15.5761 1.90986 15.6663 1.72394 15.6663 1.51268C15.6663 1.07323 15.3145 0.73521 14.8455 0.73521C14.6201 0.73521 14.4127 0.819718 14.2594 0.954933L7.35062 7.57182H8.31568L1.40699 0.954933C1.26269 0.819718 1.05525 0.73521 0.820745 0.73521C0.351748 0.73521 0 1.07323 0 1.51268C0 1.72394 0.0901917 1.90986 0.243518 2.06197L7.22436 8.75493C7.39572 8.91545 7.60316 9 7.83767 9Z" fill="black" fillOpacity="0.85" />
-                    </svg>
-                  </div>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => setConcernFilter("all")}
+                    className={`${font} flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-left text-[13px] transition-colors cursor-pointer ${
+                      concernFilter === "all" ? "bg-[#319754]/10 text-[#1d5b32]" : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                    style={{ fontWeight: concernFilter === "all" ? 600 : 500 }}
+                  >
+                    <span className="text-[14px]">📋</span> ทั้งหมด
+                    <span className={`${font} ml-auto text-[11px] text-gray-500 tabular-nums`}>{TRIAL_PRODUCTS.length}</span>
+                  </button>
+                  {TRIAL_CONCERNS.map((c) => {
+                    const count = TRIAL_PRODUCTS.filter((p) => p.concerns?.includes(c.key)).length;
+                    const active = concernFilter === c.key;
+                    return (
+                      <button
+                        key={c.key}
+                        onClick={() => setConcernFilter(c.key)}
+                        className={`${font} flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-left text-[13px] transition-colors cursor-pointer ${
+                          active ? "bg-[#319754]/10 text-[#1d5b32]" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                        style={{ fontWeight: active ? 600 : 500 }}
+                      >
+                        <span className="text-[14px]">{c.emoji}</span> {c.label}
+                        <span className={`${font} ml-auto text-[11px] text-gray-500 tabular-nums`}>{count}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -225,162 +241,9 @@ export function TrialProductsPage() {
               </div>
             ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-[16px]">
-              {filteredTrials.map((p, i) => {
-              const spotsLeft = p.spotsTotal - p.spotsTaken;
-              const seatsTakenPct = (p.spotsTaken / p.spotsTotal) * 100;
-              const seatsFreePct = 100 - seatsTakenPct;
-              const isClosed = spotsLeft <= 0 || p.endsInDays <= 0;
-              const isRegistered = registeredIds.has(p.id);
-              const isUrgent = !isClosed && spotsLeft > 0 && spotsLeft <= 5;
-              const isFirstBatch = p.prevAvgRating == null;
-              // Rating tier → colour palette + label for both badge + bar
-              const rating = p.prevAvgRating ?? 0;
-              const tier =
-                isFirstBatch ? "new" :
-                rating >= 4.0 ? "high" :
-                rating >= 3.0 ? "mid"  : "low";
-              const palette = {
-                high: { bg: "#e6f5ec", bar: "#319754", text: "#1d5b32", chip: "bg-[#319754]/12 text-[#1d5b32]" },
-                mid:  { bg: "#fff0db", bar: "#f59e0b", text: "#92400e", chip: "bg-[#f59e0b]/15 text-[#92400e]" },
-                low:  { bg: "#ffe0e0", bar: "#dc2626", text: "#991b1b", chip: "bg-[#dc2626]/15 text-[#991b1b]" },
-                new:  { bg: "#e0eaf5", bar: "#6b7280", text: "#1e3a5f", chip: "bg-[#3b82f6]/15 text-[#1e3a5f]" },
-              }[tier];
-              const satisfactionPct = isFirstBatch ? 0 : Math.round((rating / 5) * 100);
-              // Top-left badge
-              const statusBadge = isClosed
-                ? { label: "ปิดรับสมัคร", bg: "bg-gray-600 text-white" }
-                : isRegistered
-                ? { label: "เข้าร่วมแล้ว", bg: "bg-[#319754] text-white" }
-                : isUrgent
-                ? { label: `เหลือ ${spotsLeft} ที่!`, bg: `bg-[${palette.bar}] text-white`, inlineBg: palette.bar }
-                : isFirstBatch
-                ? { label: "รุ่นแรก", bg: `text-[${palette.text}]`, inlineBg: palette.chip }
-                : { label: "Beta", bg: "bg-white/80 text-[#1a1a1a] backdrop-blur-sm" };
-
-              return (
-                <motion.div
-                  key={p.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.03, ease: [0.22, 1, 0.36, 1] }}
-                  onClick={() => navigate(`/trials/${p.id}`)}
-                  className={`bg-white rounded-[18px] border overflow-hidden flex flex-col group/card transition-all duration-300 cursor-pointer ${
-                    isClosed
-                      ? "border-[#d4d4d4] opacity-70"
-                      : "border-[#d4d4d4] hover:border-[#319754]/40 hover:shadow-lg hover:-translate-y-1"
-                  }`}
-                >
-                  {/* Hero block — product image + tier accent border */}
-                  <div className="relative h-[160px] overflow-hidden" style={{ background: palette.bg }}>
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className="absolute inset-0 w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-500"
-                    />
-                    {/* Tier accent bar at bottom of image */}
-                    <div className="absolute bottom-0 inset-x-0 h-[4px]" style={{ background: palette.bar }} />
-                    {/* Top-left status badge */}
-                    <div className="absolute top-3 left-3">
-                      {isClosed ? (
-                        <span className={`${font} text-[11px] bg-gray-800/85 text-white px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 backdrop-blur-sm`} style={{ fontWeight: 600 }}>
-                          <Ban className="size-3" strokeWidth={2.4} /> {statusBadge.label}
-                        </span>
-                      ) : isRegistered ? (
-                        <span className={`${font} text-[11px] bg-[#319754] text-white px-2.5 py-0.5 rounded-full inline-flex items-center gap-1`} style={{ fontWeight: 600 }}>
-                          <Check className="size-3" strokeWidth={3} /> {statusBadge.label}
-                        </span>
-                      ) : isUrgent ? (
-                        <span className={`${font} text-[11px] text-white px-2.5 py-0.5 rounded-full inline-flex items-center gap-1`} style={{ background: palette.bar, fontWeight: 600 }}>
-                          <Sparkles className="size-3" strokeWidth={2.4} /> {statusBadge.label}
-                        </span>
-                      ) : isFirstBatch ? (
-                        <span className={`${font} text-[11px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 backdrop-blur-sm`} style={{ background: "rgba(255,255,255,0.85)", color: palette.text, fontWeight: 600 }}>
-                          <Sparkles className="size-3" strokeWidth={2.4} /> {statusBadge.label}
-                        </span>
-                      ) : (
-                        <span className={`${font} text-[11px] bg-white/85 backdrop-blur-sm text-[#1a1a1a] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1`} style={{ fontWeight: 600 }}>
-                          <Sparkles className="size-3" strokeWidth={2.4} /> {statusBadge.label}
-                        </span>
-                      )}
-                    </div>
-                    {/* Top-right days badge */}
-                    {!isClosed && (
-                      <div className="absolute top-3 right-3 inline-flex items-center gap-1 bg-white/85 backdrop-blur-sm px-2.5 py-0.5 rounded-full">
-                        <Clock className="size-3" strokeWidth={2.4} style={{ color: palette.text }} />
-                        <span className={`${font} text-[11px] tabular-nums`} style={{ color: palette.text, fontWeight: 600 }}>{p.endsInDays} วัน</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4 flex flex-col gap-2.5 flex-1">
-                    {/* Category chip */}
-                    <span className={`${font} self-start text-[11px] px-2.5 py-0.5 rounded-full ${palette.chip}`} style={{ fontWeight: 600 }}>{p.category}</span>
-
-                    {/* Name + studio */}
-                    <div>
-                      <h3 className={`${font} text-[15px] text-[#1a1a1a] leading-tight`} style={{ fontWeight: 700 }}>{p.name}</h3>
-                      {p.studioName && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="size-1.5 rounded-full bg-[#319754]" />
-                          <span className={`${font} text-[12px] text-gray-500`}>{p.studioName}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Description */}
-                    <p className={`${font} text-[12px] text-gray-600 leading-relaxed line-clamp-2`}>{p.tagline}</p>
-
-                    {/* Rating block */}
-                    <div className="mt-1">
-                      {isFirstBatch ? (
-                        <div>
-                          <p className={`${font} text-[15px]`} style={{ color: palette.text, fontWeight: 700 }}>ยังไม่มีข้อมูล</p>
-                          <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>เป็นรุ่นแรกที่เปิดทดสอบ</p>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-end justify-between gap-2">
-                            <div className="flex items-baseline gap-2">
-                              <span className={`${font} text-[24px] tabular-nums leading-none`} style={{ fontWeight: 700, color: palette.text }}>{p.prevAvgRating!.toFixed(1)}</span>
-                              <span className={`${font} text-[11px] text-gray-500`}>พึงพอใจ จาก {p.prevRatingCount} คน</span>
-                            </div>
-                            <span className={`${font} text-[11px] tabular-nums`} style={{ color: palette.text, fontWeight: 600 }}>{satisfactionPct}%</span>
-                          </div>
-                          <div className="h-[5px] rounded-full bg-gray-100 overflow-hidden mt-1.5">
-                            <div className="h-full rounded-full transition-all" style={{ width: `${satisfactionPct}%`, background: palette.bar }} />
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Seats block */}
-                    <div className="mt-1">
-                      <div className="flex items-center justify-between">
-                        <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>ที่นั่ง {p.spotsTaken}/{p.spotsTotal}</span>
-                        {isUrgent ? (
-                          <span className={`${font} text-[11px] tabular-nums`} style={{ color: palette.bar, fontWeight: 600 }}>เหลือ {spotsLeft} ที่นั่ง</span>
-                        ) : (
-                          <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>{Math.round(seatsFreePct)}% ว่าง</span>
-                        )}
-                      </div>
-                      <div className="h-[5px] rounded-full bg-gray-100 overflow-hidden mt-1.5">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${seatsTakenPct}%`, background: isUrgent ? palette.bar : "#9ca3af" }} />
-                      </div>
-                    </div>
-
-                    {/* CTA */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); navigate(`/trials/${p.id}`); }}
-                      disabled={isClosed}
-                      className={`${font} mt-2 h-[40px] rounded-[10px] text-white text-[13px] transition-all ${isClosed ? "bg-gray-300 cursor-not-allowed" : "cursor-pointer hover:brightness-105 active:scale-[0.99]"}`}
-                      style={{ background: isClosed ? undefined : isUrgent ? palette.bar : "#319754", fontWeight: 600 }}
-                    >
-                      {isClosed ? "ปิดรับสมัครแล้ว" : isRegistered ? "เข้าร่วมแล้ว ✓" : isUrgent ? `รับด่วน — เหลือ ${spotsLeft} ที่นั่ง!` : "ขอเข้าร่วมทดสอบ"}
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })}
+              {filteredTrials.map((p, i) => (
+                <TrialCard key={p.id} p={p} isRegistered={registeredIds.has(p.id)} onOpen={() => navigate(`/trials/${p.id}`)} index={i} />
+              ))}
           </div>
           )}
           </div>

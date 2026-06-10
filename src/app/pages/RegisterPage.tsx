@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useAuth, type UserRole } from "../store/AuthContext";
+import { useAuth } from "../store/AuthContext";
 import { useLanguage } from "../store/LanguageContext";
-import { ChevronLeft, EyeOff, Eye, ShoppingBag, Store } from "lucide-react";
+import { ChevronLeft, EyeOff, Eye, Store, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 import imgLogo from "../../assets/logo.png";
 import imgGoogle from "../../assets/google.png";
 import imgFacebook from "../../assets/facebook.png";
@@ -10,11 +11,12 @@ import imgLine from "../../assets/line.png";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
+/** Customer registration only. Sellers register at /seller/register. */
 export function RegisterPage() {
   const navigate = useNavigate();
   const { register } = useAuth();
   const { t } = useLanguage();
-  const [form, setForm] = useState({ username: "", password: "", email: "", phone: "", role: "user" as UserRole });
+  const [form, setForm] = useState({ username: "", password: "", email: "", phone: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState("");
@@ -23,11 +25,12 @@ export function RegisterPage() {
     if (!form.username || !form.password || !form.email || !form.phone) { setError(t("common_required")); return; }
     if (form.password.length < 8) { setError(t("register_password_min")); return; }
     if (!accepted) { setError(t("register_accept_terms")); return; }
-    register(form);
+    register({ ...form, role: "user", name: form.username });
+    toast.success("สมัครสมาชิกสำเร็จ");
     navigate("/");
   };
 
-  const update = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+  const update = (k: keyof typeof form, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   return (
     <div className="bg-[#fafafa] min-h-[calc(100vh-200px)] flex items-center justify-center py-8 px-4">
@@ -42,7 +45,6 @@ export function RegisterPage() {
           </button>
         </div>
 
-        {/* Content section: logo + title + form + buttons */}
         <div className="flex flex-col gap-4 items-center px-4 sm:px-[60px] py-4 w-full">
           <img src={imgLogo} className="size-[58px]" alt="MetaHerb" />
           <div className="flex flex-col gap-2 items-center text-center">
@@ -55,33 +57,7 @@ export function RegisterPage() {
 
           {error && <p className={`${font} text-[13px] text-red-500`}>{error}</p>}
 
-          {/* Form fields */}
           <div className="flex flex-col gap-4 items-stretch w-full max-w-[350px] py-2.5">
-            {/* Role selection — themed pills */}
-            <div className="flex flex-col gap-2">
-              <label className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("register_role_label")}</label>
-              <div className="flex gap-2">
-                {([
-                  ["user",  t("register_role_user"),  ShoppingBag],
-                  ["owner", t("register_role_owner"), Store],
-                ] as [UserRole, string, any][]).map(([role, label, Icon]) => {
-                  const active = form.role === role;
-                  return (
-                    <button key={role} onClick={() => update("role", role)}
-                      className={`flex-1 h-[44px] rounded-full inline-flex items-center justify-center gap-2 text-[13px] ${font} cursor-pointer transition-all ${
-                        active
-                          ? "bg-[#319754] text-white shadow-[0_2px_8px_-2px_rgba(49,151,84,0.45)]"
-                          : "bg-[#fafafa] text-gray-600 border border-gray-200 hover:border-[#319754]/40"
-                      }`}
-                      style={{ fontWeight: active ? 600 : 500 }}>
-                      <Icon className="size-4" strokeWidth={2.2} />
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             <div className="flex flex-col gap-2">
               <label className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>{t("register_username_label")}</label>
               <input value={form.username} onChange={(e) => update("username", e.target.value)} placeholder={t("register_username_ph")}
@@ -111,7 +87,6 @@ export function RegisterPage() {
                 className={`bg-[#fafafa] h-[48px] rounded-full px-6 text-[14px] ${font} outline-none text-gray-700 placeholder:text-[#a3a3a3] focus:ring-2 focus:ring-[#319754]/30 transition-shadow`} />
             </div>
 
-            {/* Terms checkbox */}
             <label className="flex gap-2.5 items-start cursor-pointer">
               <input type="checkbox" checked={accepted} onChange={() => setAccepted(!accepted)}
                 className="mt-1 size-3.5 cursor-pointer accent-[#319754]" />
@@ -121,20 +96,30 @@ export function RegisterPage() {
             </label>
           </div>
 
-          {/* Submit button — full width of content section */}
           <button onClick={handleRegister}
             className={`bg-[#008c45] hover:bg-[#007a3b] h-[49px] w-full rounded-full text-white text-[14px] ${font} cursor-pointer transition-colors`}>
             {t("register_button")}
           </button>
 
-          {/* Divider */}
+          {/* Seller cross-link card */}
+          <button onClick={() => navigate("/seller/register")}
+            className={`group/sell w-full flex items-center gap-3 bg-[#319754]/8 hover:bg-[#319754]/12 border border-[#319754]/20 rounded-2xl px-4 py-3 cursor-pointer transition-colors text-left`}>
+            <div className="size-9 rounded-xl bg-white flex items-center justify-center shrink-0">
+              <Store className="size-4 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`${font} text-[13px] text-[#1d5b32]`} style={{ fontWeight: 600 }}>อยากเปิดร้านค้าบน MetaHerb?</p>
+              <p className={`${font} text-[11.5px] text-gray-600 mt-0.5`}>สมัครเป็นร้านค้า แล้วลงขายสินค้าได้ทันที</p>
+            </div>
+            <ArrowRight className="size-4 text-[#319754] group-hover/sell:translate-x-0.5 transition-transform" strokeWidth={2.2} />
+          </button>
+
           <div className="flex items-center w-full gap-4">
             <div className="flex-1 h-px bg-gray-200" />
             <span className={`${font} text-[12px] text-black`}>{t("common_or")}</span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          {/* Social buttons — horizontal row of 3 */}
           <div className="flex gap-2 sm:gap-4 items-stretch w-full">
             {[
               { img: imgGoogle, label: "Google" },
@@ -151,7 +136,6 @@ export function RegisterPage() {
           </div>
         </div>
 
-        {/* Bottom: login link */}
         <div className={`flex gap-2.5 items-center justify-center p-4 w-full max-w-[350px] ${font} text-[14px] text-center`}>
           <span className="text-[#0a0a0a]">{t("register_has_account")}</span>
           <span onClick={() => navigate("/login")} className="text-[#297a4e] underline cursor-pointer">{t("register_login_link")}</span>
