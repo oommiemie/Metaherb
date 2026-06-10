@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { ChevronLeft, Plus, MoreHorizontal, X, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "../store/LanguageContext";
+import { AccountSidebar } from "../components/AccountSidebar";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]"; // v2
 
@@ -482,23 +483,15 @@ export function AddressPage() {
   };
 
   return (
-    <div className="bg-[#fafafa] min-h-screen">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
-          <div className="flex gap-2 sm:gap-4 items-center min-w-0">
-            <button
-              onClick={() => navigate(-1)}
-              className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-white text-[12px] ${font} cursor-pointer hover:bg-[#f0f0f0]`}
-            >
-              <ChevronLeft className="size-3" /> {t("common_back")}
-            </button>
-            <p className={`${font} text-[16px] sm:text-[20px] text-black truncate`} style={{ fontWeight: 500 }}>{t("address_title")}</p>
-          </div>
-          <button
-            onClick={handleAdd}
-            className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full bg-[#319754] text-white text-[12px] sm:text-[13px] ${font} cursor-pointer hover:bg-[#267a43] transition-colors shrink-0`}
-          >
+    <div>
+      <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+        <AccountSidebar />
+        <div className="flex-1 min-w-0">
+        {/* Header — match other account pages (h2 + right-aligned add button) */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+          <h2 className={`${font} text-[24px]`} style={{ fontWeight: 500 }}>{t("address_title")}</h2>
+          <button onClick={handleAdd}
+            className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full bg-[#319754] text-white text-[12px] sm:text-[13px] ${font} cursor-pointer hover:bg-[#267a43] transition-colors shrink-0`}>
             <Plus className="size-4" /> {t("address_add_new")}
           </button>
         </div>
@@ -514,6 +507,7 @@ export function AddressPage() {
               onDelete={() => handleDelete(addr.id)}
             />
           ))}
+        </div>
         </div>
       </div>
 

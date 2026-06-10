@@ -69,47 +69,6 @@ export function TrialProductsPage() {
           >
             ผลิตภัณฑ์เพื่อการทดสอบ
           </motion.h1>
-          <div className="mt-3 flex flex-col items-center gap-3">
-          {testerProfile ? (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1"
-            >
-              <span className="inline-flex items-center gap-2">
-                <Check className="size-[16px] text-[#319754]" strokeWidth={2.6} />
-                <span className={`${font} text-[14px] text-[#1d5b32]`} style={{ fontWeight: 600 }}>
-                  ลงทะเบียนเป็นผู้ทดสอบแล้ว{testerProfile.displayName ? ` · ${testerProfile.displayName}` : ""}
-                </span>
-              </span>
-              <button
-                onClick={() => navigate("/trials/register")}
-                aria-label="แก้ไขโปรไฟล์ผู้ทดสอบ"
-                title="แก้ไขโปรไฟล์ผู้ทดสอบ"
-                className="size-[28px] rounded-full flex items-center justify-center text-gray-500 hover:text-[#319754] hover:bg-[#319754]/10 cursor-pointer transition-colors"
-              >
-                <Pencil className="size-[14px]" strokeWidth={2.2} />
-              </button>
-            </motion.div>
-          ) : (
-            <motion.button
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              onClick={() => navigate("/trials/register")}
-              className={`${font} group mt-3 inline-flex items-center gap-2 h-11 pl-2 pr-5 rounded-full bg-white border border-[#319754]/30 text-[#287745] hover:bg-[#319754] hover:text-white hover:border-[#319754] text-[14px] cursor-pointer transition-all shadow-[0_2px_8px_rgba(49,151,84,0.12)]`}
-              style={{ fontWeight: 600 }}
-            >
-              <span className="size-7 rounded-full bg-[#319754]/15 group-hover:bg-white/20 flex items-center justify-center transition-colors">
-                <FlaskConical className="size-3.5" strokeWidth={2.4} />
-              </span>
-              ลงทะเบียนเข้าร่วมทดสอบ
-              <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" strokeWidth={2.4} />
-            </motion.button>
-          )}
-
-          </div>
 
           {/* KPI strip — platform-level trial stats (inside the green header) */}
           {(() => {
@@ -124,11 +83,20 @@ export function TrialProductsPage() {
               { label: "คะแนนสะสมรวม",    value: `${pointsTotal.toLocaleString()} pts`, color: "#d97706" },
             ];
             return (
-              <div className="max-w-[900px] mx-auto mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="max-w-[720px] mx-auto mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
                 {kpis.map((k) => (
-                  <div key={k.label} className="bg-white/85 backdrop-blur-sm rounded-[14px] border border-white/60 px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-left">
-                    <p className={`${font} text-[12px] text-gray-500`}>{k.label}</p>
-                    <p className={`${font} text-[22px] tabular-nums mt-1`} style={{ fontWeight: 700, color: k.color }}>{k.value}</p>
+                  <div key={k.label}
+                    className="relative rounded-[14px] overflow-hidden bg-white/55 backdrop-blur-2xl backdrop-saturate-150 border border-white/70 px-3 py-2.5 text-left
+                      shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_0_rgba(49,151,84,0.06),0_8px_24px_-6px_rgba(49,151,84,0.12)]">
+                    {/* Glass highlight overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/45 via-white/10 to-transparent pointer-events-none" />
+                    <div className="relative z-10">
+                      <p className={`${font} text-[10.5px] text-gray-600 leading-tight`}>{k.label}</p>
+                      <p className={`${font} text-[14px] tabular-nums mt-[10px] leading-none`}
+                        style={{ fontWeight: 700, color: k.color }}>
+                        {k.value}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -159,12 +127,12 @@ export function TrialProductsPage() {
                 <div className="flex flex-col gap-1">
                   <button
                     onClick={() => setConcernFilter("all")}
-                    className={`${font} flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-left text-[13px] transition-colors cursor-pointer ${
+                    className={`${font} flex items-center gap-2.5 px-3 py-2 rounded-full text-left text-[13px] transition-colors cursor-pointer ${
                       concernFilter === "all" ? "bg-[#319754]/10 text-[#1d5b32]" : "text-gray-700 hover:bg-gray-50"
                     }`}
                     style={{ fontWeight: concernFilter === "all" ? 600 : 500 }}
                   >
-                    <span className="text-[14px]">📋</span> ทั้งหมด
+                    ทั้งหมด
                     <span className={`${font} ml-auto text-[11px] text-gray-500 tabular-nums`}>{TRIAL_PRODUCTS.length}</span>
                   </button>
                   {TRIAL_CONCERNS.map((c) => {
@@ -174,12 +142,12 @@ export function TrialProductsPage() {
                       <button
                         key={c.key}
                         onClick={() => setConcernFilter(c.key)}
-                        className={`${font} flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-left text-[13px] transition-colors cursor-pointer ${
+                        className={`${font} flex items-center gap-2.5 px-3 py-2 rounded-full text-left text-[13px] transition-colors cursor-pointer ${
                           active ? "bg-[#319754]/10 text-[#1d5b32]" : "text-gray-700 hover:bg-gray-50"
                         }`}
                         style={{ fontWeight: active ? 600 : 500 }}
                       >
-                        <span className="text-[14px]">{c.emoji}</span> {c.label}
+                        {c.label}
                         <span className={`${font} ml-auto text-[11px] text-gray-500 tabular-nums`}>{count}</span>
                       </button>
                     );
@@ -187,7 +155,6 @@ export function TrialProductsPage() {
                 </div>
               </div>
 
-              {/* ประเภทสินค้า — radio buttons */}
               <div className="flex flex-col gap-2">
                 <span className={`${font} text-[14px] text-black`} style={{ fontWeight: 500 }}>ประเภทสินค้า</span>
                 {[
@@ -207,6 +174,34 @@ export function TrialProductsPage() {
                   );
                 })}
               </div>
+
+              {/* Tester registration — at the bottom */}
+              <div className="w-full h-px bg-gray-200" />
+              {testerProfile ? (
+                <div className="bg-[#319754]/8 border border-[#319754]/20 rounded-xl p-3 flex items-start gap-2">
+                  <Check className="size-4 text-[#319754] shrink-0 mt-0.5" strokeWidth={2.6} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`${font} text-[12px] text-[#1d5b32] truncate`} style={{ fontWeight: 600 }}>
+                      ลงทะเบียนแล้ว{testerProfile.displayName ? ` · ${testerProfile.displayName}` : ""}
+                    </p>
+                    <button onClick={() => navigate("/trials/register")}
+                      className={`${font} text-[11px] text-[#319754] hover:underline mt-0.5 cursor-pointer flex items-center gap-1`}>
+                      <Pencil className="size-3" strokeWidth={2.2} />
+                      แก้ไขโปรไฟล์
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => navigate("/trials/register")}
+                  className={`${font} group w-full inline-flex items-center gap-2 h-11 pl-2 pr-3 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-all shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+                  style={{ fontWeight: 600 }}>
+                  <span className="size-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <FlaskConical className="size-3.5" strokeWidth={2.4} />
+                  </span>
+                  <span className="flex-1 text-left whitespace-nowrap">ลงทะเบียนเข้าร่วม</span>
+                  <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" strokeWidth={2.4} />
+                </button>
+              )}
             </div>
           </aside>
 
@@ -216,13 +211,13 @@ export function TrialProductsPage() {
             <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-3">
               <button onClick={() => setConcernFilter("all")}
                 className={`${font} shrink-0 text-[13px] px-3.5 py-1.5 rounded-full border transition-colors ${concernFilter === "all" ? "bg-[#319754] border-[#319754] text-white" : "bg-white border-gray-200 text-gray-700"}`}
-                style={{ fontWeight: 600 }}>📋 ทั้งหมด</button>
+                style={{ fontWeight: 600 }}>ทั้งหมด</button>
               {TRIAL_CONCERNS.map((c) => {
                 const active = concernFilter === c.key;
                 return (
                   <button key={c.key} onClick={() => setConcernFilter(c.key)}
                     className={`${font} shrink-0 text-[13px] px-3.5 py-1.5 rounded-full border transition-colors ${active ? "bg-[#319754] border-[#319754] text-white" : "bg-white border-gray-200 text-gray-700"}`}
-                    style={{ fontWeight: 600 }}>{c.emoji} {c.label}</button>
+                    style={{ fontWeight: 600 }}>{c.label}</button>
                 );
               })}
             </div>

@@ -28,6 +28,10 @@ import imgBanner from "figma:asset/8733913171c15098e7d05ed46e3984edcb6d5ed1.png"
 import imgPromoSongkran from "../../assets/sec-banner-pro-songkran.jpg";
 import imgFlashSale2 from "../../assets/flashsale-2.jpg";
 import { productImages, getProductImage } from "../data/productImages";
+import { MATERIALS } from "../data/herbalMaterials";
+import { TRIAL_PRODUCTS } from "../data/trialProducts";
+import { TrialCard } from "../components/TrialCard";
+import { Store, BadgeCheck } from "lucide-react";
 
 // Category icons from Figma
 import imgHerb from "figma:asset/73e2cbf5354624aa57506e53de4958d0acf61e55.png";
@@ -872,6 +876,107 @@ export function HomePage() {
           </div>
             );
           })()}
+        </div>
+      </section>
+
+      {/* === Herbal Market (B2B) === */}
+      <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
+        <div className="bg-white rounded-[16px] p-[16px]">
+          <div className="flex items-center justify-between mb-[16px]">
+            <div className="flex items-center gap-2.5">
+              <div className="size-9 rounded-xl bg-[#319754]/10 flex items-center justify-center">
+                <Store className="size-4.5 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[20px] text-black leading-tight`} style={{ fontWeight: 500 }}>ตลาดสมุนไพร</p>
+                <p className={`${font} text-[11px] text-gray-500`}>วัตถุดิบสมุนไพรคุณภาพสำหรับผู้ผลิต B2B</p>
+              </div>
+            </div>
+            <button onClick={() => navigate("/market")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
+              <span className={`${font} text-[12px]`}>{t("common_view_all")}</span>
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]">
+            {MATERIALS.slice(0, 6).map((m) => (
+              <div key={m.id} onClick={() => navigate(`/market/${m.id}`)}
+                className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 group cursor-pointer">
+                {/* Image */}
+                <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+                  <ImageWithFallback src={m.image} alt={m.name}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                  {m.supplierVerified && (
+                    <div className="absolute top-2.5 right-2.5 bg-white rounded-full p-1 shadow-sm" title="Verified Supplier">
+                      <BadgeCheck className="size-4 text-[#319754]" fill="#319754" stroke="#fff" strokeWidth={2.5} />
+                    </div>
+                  )}
+                  <div className="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-sm rounded-full px-2 py-0.5">
+                    <span className={`${font} text-[10px] text-white`}>คงเหลือ {m.stock.toLocaleString()} กก.</span>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="flex-1 p-3 flex flex-col gap-2">
+                  <div>
+                    <h3 className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>{m.name}</h3>
+                    {/* Supplier (replaces scientific name) — trial-card studio dot style */}
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="size-1.5 rounded-full bg-[#319754] shrink-0" />
+                      <span className={`${font} text-[12px] text-gray-500 truncate`}>{m.supplier}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-end justify-between bg-[#fafafa] rounded-lg px-2.5 py-1.5">
+                    <div>
+                      <p className={`${font} text-[10px] text-gray-500`}>ราคา/กก.</p>
+                      <p className={`${font} text-[18px] text-[#319754]`} style={{ fontWeight: 700 }}>฿{m.pricePerKg.toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`${font} text-[10px] text-gray-500`}>MOQ</p>
+                      <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 600 }}>{m.moq} กก.</p>
+                    </div>
+                  </div>
+
+                  {/* Rating + sold row — standard product-card layout */}
+                  <div className="flex items-center justify-between mt-auto pt-1">
+                    <div className="flex items-center gap-1">
+                      <Star className="size-3.5" fill="#f59e0b" strokeWidth={0} />
+                      <span className={`${font} text-[11px] text-black tabular-nums`} style={{ fontWeight: 500 }}>{m.rating}/5</span>
+                    </div>
+                    <span className={`${font} text-[10px] text-gray-500`}>
+                      ขายแล้ว {Math.floor(m.stock * (m.rating / 5) * 0.45).toLocaleString()} กก.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* === Trial Products === */}
+      <section className="px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8">
+        <div className="bg-white rounded-[16px] p-[16px]">
+          <div className="flex items-center justify-between mb-[16px]">
+            <div className="flex items-center gap-2.5">
+              <div className="size-9 rounded-xl bg-[#319754]/10 flex items-center justify-center">
+                <FlaskConical className="size-4.5 text-[#319754]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <p className={`${font} text-[20px] text-black leading-tight`} style={{ fontWeight: 500 }}>ผลิตภัณฑ์ทดสอบ</p>
+                <p className={`${font} text-[11px] text-gray-500`}>ทดลองสินค้าฟรี — แลกรีวิวสะสมแต้ม</p>
+              </div>
+            </div>
+            <button onClick={() => navigate("/trials")} className="flex items-center gap-1.5 cursor-pointer text-gray-500 hover:text-[#319754] transition-colors">
+              <span className={`${font} text-[12px]`}>{t("common_view_all")}</span>
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-[16px]">
+            {TRIAL_PRODUCTS.slice(0, 6).map((p, i) => (
+              <TrialCard key={p.id} p={p} index={i} onOpen={() => navigate(`/trials/${p.id}`)} />
+            ))}
+          </div>
         </div>
       </section>
 

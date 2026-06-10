@@ -80,21 +80,39 @@ export function TrialApplyPage() {
   const spotsLeft = product.spotsTotal - product.spotsTaken;
   const isClosed = spotsLeft <= 0 || product.endsInDays <= 0;
   const selectedAddress = SAVED_ADDRESSES.find((a) => a.id === selectedAddressId);
-  const canSubmit = !!selectedAddress && reason.trim().length >= 10 && acceptTerms && !activeOther && !isClosed;
+  /** Tester's display name — required so the owner can see who applied */
+  const applicantName = (user?.name || user?.username || testerProfile?.displayName || "").trim();
+  const applicantPhone = (selectedAddress?.phone || "").trim();
+  const hasName = applicantName.length > 0;
+  const hasPhone = applicantPhone.length > 0;
+  const canSubmit = !!selectedAddress && hasName && hasPhone && reason.trim().length >= 10 && acceptTerms && !activeOther && !isClosed;
 
   const handleSubmit = () => {
-    if (!canSubmit || !product || !selectedAddress) return;
+    if (!product || !selectedAddress) return;
+    if (!hasName) {
+      toast.error("กรุณาตั้งชื่อโปรไฟล์ก่อนสมัคร", {
+        description: "ไปที่หน้าโปรไฟล์หรือบัญชี เพื่อกรอกชื่อ-นามสกุลให้เจ้าของร้านติดต่อได้",
+      });
+      return;
+    }
+    if (!hasPhone) {
+      toast.error("กรุณาเพิ่มเบอร์โทรที่อยู่จัดส่ง", {
+        description: "ที่อยู่ที่เลือกไม่มีเบอร์โทร — แก้ไขที่หน้าจัดการที่อยู่",
+      });
+      return;
+    }
+    if (!canSubmit) return;
     const reg: Registration = {
       trialId: product.id,
-      name: user?.name || user?.username || testerProfile?.displayName || "",
-      phone: selectedAddress.phone,
+      name: applicantName,
+      phone: applicantPhone,
       address: selectedAddress.fullAddress,
       motivation: reason.trim(),
       submittedAt: Date.now(),
     };
     saveRegistrations([...registrations, reg]);
     toast.success("ส่งใบสมัครเรียบร้อย", {
-      description: `METAHERB จะตรวจสอบและติดต่อกลับทาง ${selectedAddress.phone} ภายใน 2 วันทำการ`,
+      description: `METAHERB จะตรวจสอบและติดต่อกลับทาง ${applicantPhone} ภายใน 2 วันทำการ`,
     });
     navigate(`/trials/${product.id}`);
   };

@@ -68,22 +68,19 @@ export function TrialCard({
             )}
           </div>
         )}
-        {/* Top-right days badge */}
+        {/* Bottom-left days badge (blog-card style) */}
         {!isClosed && (
-          <div className="absolute top-3 right-3 inline-flex items-center gap-1 bg-white/85 backdrop-blur-sm px-2.5 py-0.5 rounded-full">
-            <Clock className="size-3" strokeWidth={2.4} style={{ color: palette.text }} />
-            <span className={`${font} text-[11px] tabular-nums`} style={{ color: palette.text, fontWeight: 600 }}>{p.endsInDays} วัน</span>
+          <div className="absolute bottom-3 left-3 inline-flex items-center gap-1 bg-black/65 backdrop-blur-sm px-2.5 py-1 rounded-full">
+            <Clock className="size-3 text-white" strokeWidth={2.4} />
+            <span className={`${font} text-[11px] text-white tabular-nums`} style={{ fontWeight: 600 }}>เหลือ {p.endsInDays} วัน</span>
           </div>
         )}
       </div>
 
       <div className="p-4 flex flex-col gap-2.5 flex-1">
-        {/* Category chip */}
-        <span className={`${font} self-start text-[11px] px-2.5 py-0.5 rounded-full ${palette.chip}`} style={{ fontWeight: 600 }}>{p.category}</span>
-
         {/* Name + studio */}
         <div>
-          <h3 className={`${font} text-[15px] text-[#1a1a1a] leading-tight`} style={{ fontWeight: 700 }}>{p.name}</h3>
+          <h3 className={`${font} text-[14px] text-[#1a1a1a] leading-tight truncate`} style={{ fontWeight: 700 }}>{p.name}</h3>
           {p.studioName && (
             <div className="flex items-center gap-1.5 mt-1">
               <span className="size-1.5 rounded-full bg-[#319754]" />
@@ -96,27 +93,17 @@ export function TrialCard({
         <p className={`${font} text-[12px] text-gray-600 leading-relaxed line-clamp-2`}>{p.tagline}</p>
 
         {/* Rating block */}
-        <div className="mt-1">
-          {isFirstBatch ? (
-            <div>
-              <p className={`${font} text-[15px]`} style={{ color: palette.text, fontWeight: 700 }}>ยังไม่มีข้อมูล</p>
-              <p className={`${font} text-[11px] text-gray-500 mt-0.5`}>เป็นรุ่นแรกที่เปิดทดสอบ</p>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-end justify-between gap-2">
-                <div className="flex items-baseline gap-2">
-                  <span className={`${font} text-[24px] tabular-nums leading-none`} style={{ fontWeight: 700, color: palette.text }}>{p.prevAvgRating!.toFixed(1)}</span>
-                  <span className={`${font} text-[11px] text-gray-500`}>พึงพอใจ จาก {p.prevRatingCount} คน</span>
-                </div>
-                <span className={`${font} text-[11px] tabular-nums`} style={{ color: palette.text, fontWeight: 600 }}>{satisfactionPct}%</span>
-              </div>
-              <div className="h-[5px] rounded-full bg-gray-100 overflow-hidden mt-1.5">
-                <div className="h-full rounded-full transition-all" style={{ width: `${satisfactionPct}%`, background: palette.bar }} />
-              </div>
-            </>
-          )}
-        </div>
+        {isFirstBatch ? (
+          <p className={`${font} text-[11px] text-gray-500`}>
+            <span style={{ color: palette.text, fontWeight: 700 }}>รุ่นแรก</span> · ยังไม่มีคะแนน
+          </p>
+        ) : (
+          <div className="flex items-center gap-1.5 text-[11.5px]">
+            <span className={`${font} tabular-nums`} style={{ color: "#f59e0b", fontWeight: 700 }}>★ {p.prevAvgRating!.toFixed(1)}</span>
+            <span className={`${font} text-gray-500`}>· {satisfactionPct}% พึงพอใจ</span>
+            <span className={`${font} text-gray-400 ml-auto`}>({p.prevRatingCount})</span>
+          </div>
+        )}
 
         {/* Seats block */}
         <div className="mt-1">
@@ -137,7 +124,7 @@ export function TrialCard({
         <button
           onClick={(e) => { e.stopPropagation(); onOpen(); }}
           disabled={isClosed}
-          className={`${font} mt-2 h-[40px] rounded-[10px] text-white text-[13px] transition-all ${isClosed ? "bg-gray-300 cursor-not-allowed" : "cursor-pointer hover:brightness-105 active:scale-[0.99]"}`}
+          className={`${font} mt-2 h-[40px] rounded-full text-white text-[13px] transition-all ${isClosed ? "bg-gray-300 cursor-not-allowed" : "cursor-pointer hover:brightness-105 active:scale-[0.99]"}`}
           style={{ background: isClosed ? undefined : isUrgent ? palette.bar : "#319754", fontWeight: 600 }}
         >
           {isClosed ? "ปิดรับสมัครแล้ว" : isRegistered ? "เข้าร่วมแล้ว ✓" : isUrgent ? `รับด่วน — เหลือ ${spotsLeft} ที่นั่ง!` : "ขอเข้าร่วมทดสอบ"}

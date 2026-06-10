@@ -162,55 +162,138 @@ function ratingLabel(r: number): string {
   return "ควรปรับปรุงมาก";
 }
 
-/** ===== Read-only display for owner side ===== */
+/** ===== Read-only display for owner side — mirrors the form preview from AddTrialProduct generator ===== */
 export function EvaluationView({ evaluation, product }: { evaluation: Evaluation; product: TrialProduct }) {
-  return (
-    <div className="space-y-3.5">
-      {/* Overall */}
-      <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-[12px] p-3.5">
-        <div className="flex flex-col items-center shrink-0">
-          <p className={`${font} text-[22px] text-amber-700 tabular-nums leading-none`} style={{ fontWeight: 700 }}>{evaluation.overall}<span className="text-[12px] text-amber-600">/5</span></p>
-          <div className="flex mt-1">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <Star key={n} className={`size-3.5 ${n <= evaluation.overall ? "fill-amber-400 text-amber-400" : "fill-transparent text-amber-200"}`} strokeWidth={2} />
-            ))}
-          </div>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className={`${font} text-[12px] text-amber-700`} style={{ fontWeight: 600 }}>คะแนนรวม — {ratingLabel(evaluation.overall)}</p>
-          <p className={`${font} text-[11.5px] text-amber-700/85 inline-flex items-center gap-1 mt-0.5`}>
-            {evaluation.wouldRecommend ? <><ThumbsUp className="size-3" /> แนะนำให้เพื่อน</> : <><ThumbsDown className="size-3" /> ไม่แนะนำ</>}
-          </p>
-        </div>
-      </div>
+  // Group questions to mirror the form preview structure:
+  // - "ภาพรวมการประเมิน" phase = product.whatToTest items (Scale 1-5)
+  // - "ทุกแบบประเมินรวมเสมอ" phase = overall (Stars) + recommend (Yes/No)
+  const ALWAYS_COLOR = "#1a1a1a"; // matches PHASE_META.always.color from generator
+  const SCALE_COLOR = "#319754"; // green tier for the per-criterion phase
 
-      {/* Per-criterion */}
+  return (
+    <div className="space-y-5">
+      {/* ================== Phase 1: per-criterion (Scale 1-5) ================== */}
       <div>
-        <p className={`${font} text-[12px] text-gray-700 mb-2`} style={{ fontWeight: 600 }}>คะแนนรายข้อ</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {product.whatToTest.map((w) => {
+        {/* Phase header pill (same style as form preview generator) */}
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`${font} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px]`}
+            style={{ background: `${SCALE_COLOR}15`, color: SCALE_COLOR, fontWeight: 700 }}>
+            ภาพรวมการประเมิน
+          </span>
+          <span className={`${font} text-[10.5px] text-gray-400 tabular-nums`}>{product.whatToTest.length} คำถาม</span>
+        </div>
+
+        <div className="space-y-3">
+          {product.whatToTest.map((w, idx) => {
             const r = evaluation.criteria[w] || 0;
             return (
-              <div key={w} className="flex items-center justify-between gap-2 p-2.5 rounded-[10px] bg-gray-50">
-                <span className={`${font} text-[12px] text-gray-700 flex-1 truncate`}>{w}</span>
-                <div className="flex shrink-0">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <Star key={n} className={`size-3 ${n <= r ? "fill-amber-400 text-amber-400" : "fill-transparent text-gray-300"}`} strokeWidth={2} />
-                  ))}
+              <div key={w} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+                <p className={`${font} text-[13.5px] text-[#1a1a1a] mb-3`} style={{ fontWeight: 500 }}>
+                  <span className="inline-flex items-center justify-center size-5 rounded-full text-[10.5px] mr-2 tabular-nums"
+                    style={{ background: `${SCALE_COLOR}15`, color: SCALE_COLOR, fontWeight: 700 }}>{idx + 1}</span>
+                  {w}
+                </p>
+                {/* Scale 1-5 — same shape as FormFieldPreview but with the chosen answer highlighted */}
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((n) => {
+                    const isAnswer = n === r;
+                    return (
+                      <button key={n} type="button" disabled
+                        className={`${font} size-10 rounded-full border-2 text-[13px] cursor-not-allowed transition-colors ${
+                          isAnswer
+                            ? "bg-[#319754] border-[#319754] text-white shadow-[0_2px_8px_rgba(49,151,84,0.35)]"
+                            : "bg-white border-gray-200 text-gray-400"
+                        }`}
+                        style={{ fontWeight: isAnswer ? 700 : 600 }}>
+                        {n}
+                      </button>
+                    );
+                  })}
+                  <span className={`${font} text-[11px] text-gray-400 ml-2`}>(1 = น้อย, 5 = มาก)</span>
                 </div>
+                {r === 0 && <p className={`${font} text-[10.5px] text-gray-400 mt-2 italic`}>ยังไม่ได้ตอบ</p>}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Comment */}
+      {/* ================== Phase 2: ทุกแบบประเมินรวมเสมอ ================== */}
       <div>
-        <p className={`${font} text-[12px] text-gray-700 mb-1.5`} style={{ fontWeight: 600 }}>ความคิดเห็น</p>
-        <div className="bg-gray-50 rounded-[10px] p-3 border border-gray-100">
-          <p className={`${font} text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap`}>{evaluation.comment}</p>
+        <div className="flex items-center gap-2 mb-3">
+          <span className={`${font} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px]`}
+            style={{ background: `${ALWAYS_COLOR}15`, color: ALWAYS_COLOR, fontWeight: 700 }}>
+            ทุกแบบประเมินรวมเสมอ
+          </span>
+          <span className={`${font} text-[10.5px] text-gray-400 tabular-nums`}>2 คำถาม</span>
+        </div>
+
+        <div className="space-y-3">
+          {/* Overall = stars_1_5 in the generator */}
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+            <p className={`${font} text-[13.5px] text-[#1a1a1a] mb-3`} style={{ fontWeight: 500 }}>
+              <span className="inline-flex items-center justify-center size-5 rounded-full text-[10.5px] mr-2 tabular-nums"
+                style={{ background: `${ALWAYS_COLOR}15`, color: ALWAYS_COLOR, fontWeight: 700 }}>1</span>
+              ความพึงพอใจโดยรวม
+            </p>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <span key={n} className="size-7 inline-flex items-center justify-center text-[22px]"
+                  style={{ color: n <= evaluation.overall ? "#f59e0b" : "#e5e7eb" }}>★</span>
+              ))}
+              <span className={`${font} text-[12px] text-amber-700 ml-2`} style={{ fontWeight: 700 }}>
+                {evaluation.overall}/5 · {ratingLabel(evaluation.overall)}
+              </span>
+            </div>
+          </div>
+
+          {/* Recommend = ab_choice in the generator */}
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+            <p className={`${font} text-[13.5px] text-[#1a1a1a] mb-3`} style={{ fontWeight: 500 }}>
+              <span className="inline-flex items-center justify-center size-5 rounded-full text-[10.5px] mr-2 tabular-nums"
+                style={{ background: `${ALWAYS_COLOR}15`, color: ALWAYS_COLOR, fontWeight: 700 }}>2</span>
+              จะแนะนำให้คนอื่นใช้หรือไม่
+            </p>
+            <div className="flex gap-2">
+              {([
+                { val: true,  label: "แนะนำ",     Icon: ThumbsUp,   color: "#319754" },
+                { val: false, label: "ไม่แนะนำ",   Icon: ThumbsDown, color: "#ef4444" },
+              ]).map((opt) => {
+                const isAnswer = evaluation.wouldRecommend === opt.val;
+                return (
+                  <div key={String(opt.val)}
+                    className={`${font} flex-1 h-11 rounded-full border-2 inline-flex items-center justify-center gap-1.5 text-[13px] cursor-not-allowed transition-colors`}
+                    style={{
+                      borderColor: isAnswer ? opt.color : "#e5e7eb",
+                      background: isAnswer ? opt.color : "#fff",
+                      color: isAnswer ? "#fff" : "#9ca3af",
+                      fontWeight: isAnswer ? 700 : 500,
+                      boxShadow: isAnswer ? `0 2px 8px ${opt.color}40` : "none",
+                    }}>
+                    <opt.Icon className="size-4" strokeWidth={2.4} />
+                    {opt.label}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* ================== Comment ================== */}
+      {evaluation.comment && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className={`${font} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] bg-gray-100 text-gray-600`}
+              style={{ fontWeight: 700 }}>
+              ความคิดเห็นเพิ่มเติม
+            </span>
+          </div>
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+            <p className={`${font} text-[13px] text-gray-700 leading-relaxed whitespace-pre-wrap`}>"{evaluation.comment}"</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

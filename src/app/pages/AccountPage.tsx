@@ -4,6 +4,7 @@ import { useAuth } from "../store/AuthContext";
 import { useLanguage } from "../store/LanguageContext";
 import { ChevronLeft, Pencil, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { AccountSidebar } from "../components/AccountSidebar";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
@@ -74,15 +75,11 @@ export function AccountPage() {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4">
-      {/* Header */}
-      <div className="flex gap-4 items-center mb-4">
-        <button onClick={() => navigate(-1)}
-          className={`flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#d4d4d4] text-[12px] ${font} cursor-pointer hover:bg-[#c4c4c4]`}>
-          <ChevronLeft className="size-3" /> {t("common_back")}
-        </button>
-        <p className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>{t("account_title")}</p>
-      </div>
+    <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+      <AccountSidebar />
+      <div className="flex-1 min-w-0">
+      {/* Header — h2 only (back button removed; sidebar nav handles navigation) */}
+      <h2 className={`${font} text-[24px] mb-6`} style={{ fontWeight: 500 }}>{t("account_title")}</h2>
 
       <div className="flex gap-4 items-start flex-col lg:flex-row">
         {/* Left sidebar */}
@@ -283,6 +280,7 @@ export function AccountPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

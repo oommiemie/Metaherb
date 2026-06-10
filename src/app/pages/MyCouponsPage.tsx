@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Clock, ChevronRight, ChevronLeft, ShoppingBag } from "lucide-react";
+import { AccountSidebar } from "../components/AccountSidebar";
+import { motion } from "motion/react";
 import { toast } from "sonner";
 import { useLanguage } from "../store/LanguageContext";
 
@@ -160,61 +162,67 @@ export function MyCouponsPage() {
   ];
 
   return (
-    <div className="bg-[rgba(214,234,221,0.5)] min-h-screen">
-      {/* Top section */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 space-y-4">
-        {/* Back + Title */}
-        <div className="flex gap-2 sm:gap-4 items-center min-w-0">
-          <button
-            onClick={() => navigate(-1)}
-            className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-white text-[12px] ${font} cursor-pointer hover:bg-[#f0f0f0] shrink-0`}
-          >
-            <ChevronLeft className="size-3" /> {t("common_back")}
-          </button>
-          <p className={`${font} text-[16px] sm:text-[20px] text-black truncate`} style={{ fontWeight: 500 }}>{t("my_coupons_title")}</p>
-        </div>
+    <div>
+      <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+        <AccountSidebar />
+        <div className="flex-1 min-w-0 space-y-4">
+          {/* Header — h2 title (back button removed; sidebar handles navigation) */}
+          <h2 className={`${font} text-[24px] mb-2`} style={{ fontWeight: 500 }}>{t("my_coupons_title")}</h2>
 
-        {/* Collect more coupons banner */}
-        <button
-          onClick={() => navigate("/coupons")}
-          className="w-full bg-[#319754] rounded-[10px] border border-dashed border-white px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-[#2d8a4c] transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="size-9 bg-[#e8f5e2] rounded-full flex items-center justify-center">
-              <TicketIcon />
+          {/* Collect more coupons banner */}
+          <button onClick={() => navigate("/coupons")}
+            className="w-full bg-[#319754] rounded-2xl border border-dashed border-white/40 px-4 py-3.5 flex items-center justify-between cursor-pointer hover:bg-[#2d8a4c] transition-colors shadow-[0_4px_12px_-2px_rgba(49,151,84,0.25)]">
+            <div className="flex items-center gap-3">
+              <div className="size-9 bg-[#e8f5e2] rounded-full flex items-center justify-center">
+                <TicketIcon />
+              </div>
+              <span className={`${font} text-[14px] text-white`} style={{ fontWeight: 500 }}>{t("my_coupons_collect_more")}</span>
             </div>
-            <span className={`${font} text-[14px] text-white`} style={{ fontWeight: 500 }}>{t("my_coupons_collect_more")}</span>
+            <ChevronRight className="size-5 text-white" />
+          </button>
+
+          {/* Tabs — frosted glass pill with gradient active state (match OrdersPage) */}
+          <div className="flex justify-start relative z-10">
+            <div className="backdrop-blur-[14px] rounded-full p-[6px] flex gap-1 overflow-x-auto max-w-full scrollbar-hide ring-1 ring-white/60"
+              style={{
+                background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)",
+                boxShadow: "0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(255,255,255,0.5) inset, 0 2px 6px rgba(0,0,0,0.06), 0 12px 28px -8px rgba(20,63,36,0.18)"
+              }}>
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.key;
+                return (
+                  <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                    className={`group/tab relative flex items-center gap-1.5 px-3 h-[34px] rounded-full text-[13px] ${font} cursor-pointer whitespace-nowrap transition-all duration-200 active:scale-[0.97] ${
+                      isActive ? "text-white" : "text-[#1d5b32] hover:text-[#287745]"
+                    }`}
+                    style={{ fontWeight: 500 }}>
+                    {!isActive && (
+                      <span className="absolute inset-0 rounded-full bg-[#319754]/0 group-hover/tab:bg-[#319754]/10 transition-colors duration-200" />
+                    )}
+                    {isActive && (
+                      <motion.div layoutId="coupons-tab"
+                        className="absolute inset-0 rounded-full shadow-[0_4px_14px_-2px_rgba(49,151,84,0.55),inset_0_1px_0_rgba(255,255,255,0.25)]"
+                        style={{ background: "linear-gradient(135deg, #3fb56b 0%, #319754 50%, #267a43 100%)" }}
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                    )}
+                    <span className="relative z-10 leading-none">{tab.label}</span>
+                    {tab.count > 0 && (
+                      <span className={`relative z-10 min-w-[18px] h-[18px] px-1.5 inline-flex items-center justify-center rounded-full text-[10px] tabular-nums ring-[1.5px] ${
+                        isActive
+                          ? "bg-white text-[#ef4444] ring-white/40 shadow-[0_2px_4px_rgba(0,0,0,0.15)]"
+                          : "text-white ring-white shadow-[0_2px_6px_rgba(239,56,60,0.5)]"
+                      }`}
+                      style={isActive ? { fontWeight: 700 } : { background: "linear-gradient(135deg, #ff8a8a, #ef4444)", fontWeight: 700 }}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <ChevronRight className="size-5 text-white" />
-        </button>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.1)] p-2 flex gap-2 overflow-x-auto scrollbar-hide">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 pl-3 pr-2 py-1 rounded-full text-[14px] ${font} cursor-pointer transition-colors whitespace-nowrap shrink-0 ${
-                activeTab === tab.key
-                  ? "bg-[#319754] text-white"
-                  : "text-black hover:bg-[#f5f5f5]"
-              }`}
-            >
-              {tab.label}
-              <span
-                className={`text-[8px] px-2 py-0.5 rounded-full shadow-[0px_2px_4px_0px_rgba(0,0,0,0.15)] ${
-                  activeTab === tab.key
-                    ? "bg-white text-[#ff383c]"
-                    : "bg-[#ff383c] text-white"
-                }`}
-              >
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Coupon grid */}
+          {/* Coupon grid */}
         {filtered.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {filtered.map((coupon) => (
@@ -238,6 +246,7 @@ export function MyCouponsPage() {
             </button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { Star, RotateCcw, BadgeCheck, MapPin, Package, Beaker, ShieldCheck, Store, ArrowRight } from "lucide-react";
+import { Star, RotateCcw, BadgeCheck, MapPin, Package, Beaker, ShieldCheck, Store, ArrowRight, ChevronDown } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useLanguage } from "../store/LanguageContext";
 import { useAuth } from "../store/AuthContext";
@@ -66,28 +66,14 @@ export function HerbalMarketPage() {
   return (
     <div>
       {/* Hero banner */}
-      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-8 md:pb-10">
+      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 flex flex-col items-center text-center gap-2">
-          <h1 className={`${font} text-[28px] md:text-[34px] text-[#319754]`} style={{ fontWeight: 600 }}>
+          <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>
             {searchQuery ? `${t("common_search_results")} "${searchQuery}"` : "ตลาดวัตถุดิบสมุนไพร"}
           </h1>
-          <p className={`${font} text-[14px] md:text-[15px] text-gray-600 max-w-[600px]`}>
-            เลือกซื้อวัตถุดิบจากเกษตรกรและ supplier จริง — มีใบรับรอง อย. / Organic / GMP — ขอใบเสนอราคาและตัวอย่างได้ทันที
-          </p>
           {searchQuery && (
             <p className={`${font} text-[13px] text-gray-500`}>{t("common_results_found")} {filtered.length} รายการ</p>
           )}
-
-          {/* Supplier CTA */}
-          <button onClick={handleBecomeSupplier}
-            className={`${font} group mt-3 inline-flex items-center gap-2 h-11 pl-2 pr-5 rounded-full bg-white border border-[#319754]/30 text-[#287745] hover:bg-[#319754] hover:text-white hover:border-[#319754] text-[14px] cursor-pointer transition-all shadow-[0_2px_8px_rgba(49,151,84,0.12)]`}
-            style={{ fontWeight: 600 }}>
-            <span className="size-7 rounded-full bg-[#319754]/15 group-hover:bg-white/20 flex items-center justify-center transition-colors">
-              <Store className="size-3.5" strokeWidth={2.4} />
-            </span>
-            {supplierBtnLabel}
-            <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" strokeWidth={2.4} />
-          </button>
         </div>
       </div>
 
@@ -128,26 +114,6 @@ export function HerbalMarketPage() {
 
             <div className="w-full h-px bg-[#e5e5e5]" />
 
-            {/* Grade */}
-            <div className="flex flex-col gap-2">
-              <span className={`${font} text-[13px] text-gray-600`} style={{ fontWeight: 500 }}>เกรดวัตถุดิบ</span>
-              <div className="flex flex-wrap gap-1.5">
-                {GRADES.map((g) => {
-                  const active = selectedGrade === g;
-                  return (
-                    <button key={g} onClick={() => setSelectedGrade(g)}
-                      className={`${font} text-[12px] px-3 py-1 rounded-full transition-all cursor-pointer ${
-                        active ? "bg-[#319754] text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`} style={{ fontWeight: 500 }}>
-                      {g}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="w-full h-px bg-[#e5e5e5]" />
-
             {/* Price per kg */}
             <div className="flex flex-col gap-3">
               <span className={`${font} text-[13px] text-gray-600`} style={{ fontWeight: 500 }}>ราคา / กก. (บาท)</span>
@@ -175,14 +141,29 @@ export function HerbalMarketPage() {
             {/* Sort */}
             <div className="flex flex-col gap-2">
               <span className={`${font} text-[13px] text-gray-600`} style={{ fontWeight: 500 }}>{t("common_sort")}</span>
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
-                className={`w-full bg-[#fafafa] h-[40px] rounded-full px-4 text-[13px] ${font} outline-none cursor-pointer`}>
-                <option value="popular">ยอดนิยม</option>
-                <option value="price_asc">ราคา: น้อย → มาก</option>
-                <option value="price_desc">ราคา: มาก → น้อย</option>
-                <option value="moq_asc">MOQ น้อยสุด</option>
-              </select>
+              <div className="relative">
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+                  className={`w-full bg-[#fafafa] h-[40px] rounded-full pl-4 pr-10 text-[13px] ${font} outline-none cursor-pointer appearance-none`}>
+                  <option value="popular">ยอดนิยม</option>
+                  <option value="price_asc">ราคา: น้อย → มาก</option>
+                  <option value="price_desc">ราคา: มาก → น้อย</option>
+                  <option value="moq_asc">MOQ น้อยสุด</option>
+                </select>
+                <ChevronDown className="size-4 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2.2} />
+              </div>
             </div>
+
+            {/* Supplier CTA — at the bottom */}
+            <div className="w-full h-px bg-gray-200" />
+            <button onClick={handleBecomeSupplier}
+              className={`${font} group w-full inline-flex items-center gap-2 h-11 pl-2 pr-3 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-all shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+              style={{ fontWeight: 600 }}>
+              <span className="size-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <Store className="size-3.5" strokeWidth={2.4} />
+              </span>
+              <span className="flex-1 text-left whitespace-nowrap truncate">{supplierBtnLabel}</span>
+              <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform shrink-0" strokeWidth={2.4} />
+            </button>
           </div>
         </aside>
 
@@ -223,7 +204,6 @@ export function HerbalMarketPage() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[16px]">
               {paginatedItems.map((m) => {
-                const gradeStyle = GRADE_STYLE[m.grade];
                 return (
                   <div key={m.id} onClick={() => navigate(`/market/${m.id}`)}
                     className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-1 hover:border-[#319754]/40 transition-all duration-300 group cursor-pointer">
@@ -231,13 +211,6 @@ export function HerbalMarketPage() {
                     <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                       <ImageWithFallback src={m.image} alt={m.name}
                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                      {/* Grade pill */}
-                      <div className="absolute top-2.5 left-2.5">
-                        <span className={`${font} text-[10px] px-2 py-1 rounded-full shadow-sm`}
-                          style={{ background: gradeStyle.bg, color: gradeStyle.color, fontWeight: 700, boxShadow: gradeStyle.shadow, textShadow: gradeStyle.textShadow, letterSpacing: "0.02em" }}>
-                          {m.grade}
-                        </span>
-                      </div>
                       {/* Verified supplier */}
                       {m.supplierVerified && (
                         <div className="absolute top-2.5 right-2.5 bg-white rounded-full p-1 shadow-sm" title="Verified Supplier">
@@ -252,15 +225,13 @@ export function HerbalMarketPage() {
 
                     {/* Body */}
                     <div className="flex-1 p-3 flex flex-col gap-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <h3 className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>{m.name}</h3>
-                          <p className={`${font} text-[11px] text-gray-500 italic truncate`}>{m.scientificName}</p>
+                      <div>
+                        <h3 className={`${font} text-[14px] text-black truncate`} style={{ fontWeight: 600 }}>{m.name}</h3>
+                        {/* Supplier (replaces scientific name) — trial-card studio dot style */}
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="size-1.5 rounded-full bg-[#319754] shrink-0" />
+                          <span className={`${font} text-[12px] text-gray-500 truncate`}>{m.supplier}</span>
                         </div>
-                        <span className={`${font} inline-flex items-center gap-0.5 text-[12px] text-[#f59e0b] shrink-0`} style={{ fontWeight: 600 }}>
-                          <Star className="size-3" fill="#f59e0b" strokeWidth={0} />
-                          {m.rating}
-                        </span>
                       </div>
 
                       {/* Price + MOQ */}
@@ -275,15 +246,17 @@ export function HerbalMarketPage() {
                         </div>
                       </div>
 
-                      {/* Supplier + Location */}
-                      <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                        <Package className="size-3 shrink-0" strokeWidth={2.4} />
-                        <span className="truncate">{m.supplier}</span>
-                        <span className="text-gray-300">·</span>
-                        <MapPin className="size-3 shrink-0" strokeWidth={2.4} />
-                        <span className="truncate">{m.location}</span>
+                      {/* Rating row — same look as standard product card */}
+                      <div className="flex items-center justify-between mt-auto pt-1">
+                        <div className="flex items-center gap-1">
+                          <Star className="size-3.5" fill="#f59e0b" strokeWidth={0} />
+                          <span className={`${font} text-[11px] text-black tabular-nums`} style={{ fontWeight: 500 }}>{m.rating}/5</span>
+                        </div>
+                        {/* Synthetic sold count — derived from stock × rating for a realistic-looking volume. */}
+                        <span className={`${font} text-[10px] text-gray-500`}>
+                          ขายแล้ว {Math.floor(m.stock * (m.rating / 5) * 0.45).toLocaleString()} กก.
+                        </span>
                       </div>
-
                     </div>
                   </div>
                 );

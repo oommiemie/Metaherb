@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { FlaskConical, Sparkles, Clock, Coins, Check, MapPin, ChevronRight, FileText, Calendar } from "lucide-react";
+import { AccountSidebar } from "../components/AccountSidebar";
 import { toast } from "sonner";
 import {
   TRIAL_PRODUCTS, loadRegistrations, saveRegistrations, getTrialImages,
@@ -59,18 +60,12 @@ export function MyTrialsPage() {
 
   return (
     <div>
-      {/* ===== Header — extends up behind the appbar, matches OrdersPage ===== */}
-      <div className="bg-[#eaf3ee] relative overflow-hidden -mt-[64px] md:-mt-[116px] pt-[64px] md:pt-[116px]">
-        <div className="relative py-6 text-center px-4">
-          <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>
-            ผลิตภัณฑ์ทดสอบของฉัน
-          </h1>
-        </div>
-      </div>
-
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+      <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+        <AccountSidebar />
+        <div className="flex-1 min-w-0">
+          <h2 className={`${font} text-[24px] mb-6`} style={{ fontWeight: 500 }}>ผลิตภัณฑ์ทดสอบของฉัน</h2>
         {/* Tabs — overlap header band with -mt-10 (matches OrdersPage) */}
-        <div className="flex justify-center -mt-10 mb-5 sm:mb-7 relative z-10 -mx-4 sm:mx-0">
+        <div className="flex justify-start mb-5 sm:mb-7 relative z-10">
           <div className="backdrop-blur-[14px] rounded-full p-[6px] flex gap-1 overflow-x-auto max-w-full scrollbar-hide ring-1 ring-white/60"
             style={{
               background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)",
@@ -145,6 +140,7 @@ export function MyTrialsPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       <AnimatePresence>

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { useOrders, type OrderStatus } from "../store/OrderContext";
 import { useChat } from "../store/ChatContext";
 import { useLanguage } from "../store/LanguageContext";
 import { Package, Truck, CheckCircle, Clock, XCircle, ChevronRight, Star, Eye, MessageCircle, RotateCcw, Copy, ChevronDown, ClipboardList, Hourglass, Search, Ban, ArrowRightCircle, FileText, AlertCircle } from "lucide-react";
 import { OrderTimeline } from "../components/OrderTimeline";
+import { AccountSidebar } from "../components/AccountSidebar";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import svgPaths from "../../imports/svg-msiytpo2yd";
@@ -126,7 +127,13 @@ export function OrdersPage() {
   const { openChat } = useChat();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<OrderStatus | "all" | "pending_group">("all");
-  const [viewMode, setViewMode] = useState<"orders" | "pr">("orders");
+  // viewMode is determined by URL — sidebar menu switches between distinct doc views.
+  const location = useLocation();
+  const viewMode: "orders" | "pr" | "quote" | "po" =
+    location.pathname.startsWith("/pr-history")    ? "pr" :
+    location.pathname.startsWith("/quote-history") ? "quote" :
+    location.pathname.startsWith("/po-history")    ? "po" :
+    "orders";
   const [prFilter, setPrFilter] = useState<"all" | PRStatus>("all");
   const [prDetailModal, setPrDetailModal] = useState<PRRecord | null>(null);
 
@@ -200,40 +207,21 @@ export function OrdersPage() {
 
   return (
     <div>
-      {/* Header with shipping box pattern — extends up behind the appbar */}
-      <div className="bg-[#eaf3ee] relative overflow-hidden -mt-[64px] md:-mt-[116px] pt-[64px] md:pt-[116px]">
-        <div className="relative py-6 text-center px-4">
-          <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>{t("orders_title")}</h1>
-        </div>
-      </div>
-
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
-        {/* View mode toggle — Orders vs PR History */}
-        <div className="flex justify-center mb-4 sm:mb-5">
-          <div className="inline-flex items-center gap-1 bg-white rounded-full shadow-[0_2px_8px_rgba(16,24,40,0.06)] p-1">
-            {[
-              { id: "orders" as const, label: "ประวัติคำสั่งซื้อ", Icon: Package },
-              { id: "pr"     as const, label: "ประวัติใบขอสั่งซื้อ (PR)", Icon: FileText },
-            ].map((tab) => {
-              const active = viewMode === tab.id;
-              return (
-                <button key={tab.id} onClick={() => setViewMode(tab.id)}
-                  className={`${font} inline-flex items-center gap-2 px-5 h-10 rounded-full text-[13px] cursor-pointer transition-all ${
-                    active ? "bg-[#319754] text-white shadow-[0_2px_8px_rgba(49,151,84,0.25)]" : "text-gray-600 hover:bg-gray-50"
-                  }`} style={{ fontWeight: 600 }}>
-                  <tab.Icon className="size-4" strokeWidth={2.2} />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+        <AccountSidebar />
+        <div className="flex-1 min-w-0">
+          <h2 className={`${font} text-[24px] mb-6`} style={{ fontWeight: 500 }}>
+            {viewMode === "pr"    ? "ประวัติใบขอสั่งซื้อ (PR)" :
+             viewMode === "quote" ? "ประวัติใบเสนอราคา (RFQ)" :
+             viewMode === "po"    ? "ประวัติใบสั่งซื้อ (PO)" :
+             t("orders_title")}
+          </h2>
 
         {/* ======== PR view ======== */}
         {viewMode === "pr" && (
           <div className="space-y-5">
             {/* PR Tabs — frosted glass pill matching the orders style */}
-            <div className="flex justify-center mb-5 sm:mb-7 relative z-10 -mx-4 sm:mx-0">
+            <div className="flex justify-start mb-5 sm:mb-7 relative z-10">
               <div className="backdrop-blur-[14px] rounded-full p-[6px] flex gap-1 overflow-x-auto max-w-full scrollbar-hide ring-1 ring-white/60"
                 style={{
                   background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)",
@@ -382,11 +370,31 @@ export function OrdersPage() {
           </div>
         )}
 
+        {/* ======== Quote (RFQ) / PO empty state placeholder ======== */}
+        {(viewMode === "quote" || viewMode === "po") && (
+          <div className="bg-white rounded-2xl border border-gray-100 py-16 flex flex-col items-center justify-center gap-3">
+            <FileText className="size-12 text-gray-200" strokeWidth={1.5} />
+            <p className={`${font} text-[15px] text-gray-500`} style={{ fontWeight: 500 }}>
+              ยังไม่มี{viewMode === "quote" ? "ใบเสนอราคา" : "ใบสั่งซื้อ"}
+            </p>
+            <p className={`${font} text-[12px] text-gray-400 text-center max-w-[320px]`}>
+              {viewMode === "quote"
+                ? "เมื่อคุณส่งคำขอใบเสนอราคา (RFQ) จากตลาดสมุนไพร รายการจะแสดงที่นี่"
+                : "เมื่อคุณยืนยันใบสั่งซื้อกับ Supplier รายการจะแสดงที่นี่"}
+            </p>
+            <button onClick={() => navigate("/market")}
+              className={`${font} mt-2 inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-colors shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
+              style={{ fontWeight: 600 }}>
+              ไปที่ตลาดสมุนไพร <ChevronRight className="size-3.5" strokeWidth={2.4} />
+            </button>
+          </div>
+        )}
+
         {/* ======== Orders view (existing) ======== */}
         {viewMode === "orders" && (
         <>
         {/* Tabs — frosted glass pill with gradient active state */}
-        <div className="flex justify-center mb-5 sm:mb-7 relative z-10 -mx-4 sm:mx-0">
+        <div className="flex justify-start mb-5 sm:mb-7 relative z-10">
           <div className="backdrop-blur-[14px] rounded-full p-[6px] flex gap-1 overflow-x-auto max-w-full scrollbar-hide ring-1 ring-white/60"
             style={{
               background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.88) 100%)",
@@ -582,6 +590,7 @@ export function OrdersPage() {
         )}
         </>
         )}
+        </div>
       </div>
 
       {/* ======== PR Detail Modal ======== */}

@@ -27,16 +27,16 @@ export type TrialProduct = {
   concerns?: ConcernKey[];
 };
 
-export type ConcernKey = "sleep" | "focus" | "fitness" | "skin" | "general" | "elder";
+/** Product category keys — aligned with the AddTrialProduct form dropdown. */
+export type ConcernKey = "cosmetic" | "health" | "aroma" | "food" | "equipment";
 
 /** Sidebar filter — keep in sync with the chips on /trials */
 export const TRIAL_CONCERNS: { key: ConcernKey; emoji: string; label: string }[] = [
-  { key: "sleep",   emoji: "🌙", label: "การนอนหลับ" },
-  { key: "focus",   emoji: "☕", label: "สมาธิและการทำงาน" },
-  { key: "fitness", emoji: "💪", label: "การออกกำลังกาย" },
-  { key: "skin",    emoji: "🌸", label: "ผิวพรรณ" },
-  { key: "general", emoji: "🍵", label: "สุขภาพทั่วไป" },
-  { key: "elder",   emoji: "🧓", label: "ผู้สูงอายุ" },
+  { key: "cosmetic",  emoji: "💄", label: "เครื่องสำอาง" },
+  { key: "health",    emoji: "💊", label: "สุขภาพ / อาหารเสริม" },
+  { key: "aroma",     emoji: "🌸", label: "อโรมา / เครื่องหอม" },
+  { key: "food",      emoji: "🍵", label: "อาหาร / เครื่องดื่ม" },
+  { key: "equipment", emoji: "🛠️", label: "อุปกรณ์ / เครื่องมือ" },
 ];
 
 /** Extended fields for the trial detail page — every section is rendered only if data exists. */
@@ -124,6 +124,9 @@ export type Evaluation = {
   wouldRecommend: boolean;
 };
 
+export type Gender = "male" | "female" | "lgbtq";
+export type AgeRange = "15-24" | "25-34" | "35-44" | "45-54" | "55+";
+
 export type Registration = {
   trialId: string;
   name: string;
@@ -139,6 +142,9 @@ export type Registration = {
   evaluatedAt?: number;
   /** Filled when user submits the evaluation form. */
   evaluation?: Evaluation;
+  /** Tester demographics — used to power the trial detail dashboard. */
+  gender?: Gender;
+  ageRange?: AgeRange;
 };
 
 export type RegistrationStatus = "pending_approval" | "approved" | "evaluated" | "rejected";
@@ -181,8 +187,89 @@ export function saveTesterProfile(profile: TesterProfile) {
   localStorage.setItem(TESTER_PROFILE_STORAGE_KEY, JSON.stringify(profile));
 }
 
+/** Seed registrations used on first load so /my-trials has content out of the box.
+ *  Stamped relative to load time so dates always look recent. */
+function buildSeedRegistrations(): Registration[] {
+  const now = Date.now();
+  const days = (n: number) => 1000 * 60 * 60 * 24 * n;
+  return [
+    // Active (still testing — approved but no evaluation submitted)
+    {
+      trialId: "trial-1",
+      name: "Wanwisa T.",
+      phone: "081-234-5678",
+      address: "459/153 ถ.สุขสวัสดิ์ ราษฎร์บูรณะ กรุงเทพฯ 10140",
+      motivation: "ใช้สกินแคร์สมุนไพรประจำ อยากลองสูตรใหม่",
+      submittedAt: now - days(5),
+      approvedAt: now - days(4),
+      gender: "female",
+      ageRange: "25-34",
+    },
+    {
+      trialId: "trial-3",
+      name: "Wanwisa T.",
+      phone: "081-234-5678",
+      address: "459/153 ถ.สุขสวัสดิ์ ราษฎร์บูรณะ กรุงเทพฯ 10140",
+      motivation: "ผู้ปกครองอายุ 65+ ปวดเข่าบ่อย อยากลองช่วยบรรเทา",
+      submittedAt: now - days(2),
+      approvedAt: now - days(1),
+      gender: "female",
+      ageRange: "25-34",
+    },
+    // Completed (evaluated → earned reward points)
+    {
+      trialId: "trial-7",
+      name: "Wanwisa T.",
+      phone: "081-234-5678",
+      address: "459/153 ถ.สุขสวัสดิ์ ราษฎร์บูรณะ กรุงเทพฯ 10140",
+      motivation: "ผิวบอบบางแพ้ง่าย อยากลองสครับธรรมชาติ",
+      submittedAt: now - days(20),
+      approvedAt: now - days(19),
+      evaluatedAt: now - days(5),
+      gender: "female",
+      ageRange: "25-34",
+      evaluation: {
+        overall: 5,
+        criteria: { "ความหยาบของเม็ดสครับ": 5, "ความนุ่มของผิวหลังใช้": 5 },
+        comment: "เม็ดสครับนุ่มดี ไม่ระคายเคือง ผิวเรียบเนียนชัดเจน",
+        wouldRecommend: true,
+      },
+    },
+    {
+      trialId: "trial-4",
+      name: "Wanwisa T.",
+      phone: "081-234-5678",
+      address: "459/153 ถ.สุขสวัสดิ์ ราษฎร์บูรณะ กรุงเทพฯ 10140",
+      motivation: "เป็นหวัดบ่อยช่วงเปลี่ยนฤดู ลองหาวิธีธรรมชาติ",
+      submittedAt: now - days(30),
+      approvedAt: now - days(28),
+      evaluatedAt: now - days(10),
+      gender: "female",
+      ageRange: "25-34",
+      evaluation: {
+        overall: 4,
+        criteria: { "ความถี่ของอาการ": 4, "ผลข้างเคียง": 5 },
+        comment: "ใช้แล้วหวัดหายเร็วขึ้น ไม่มีผลข้างเคียงรบกวน",
+        wouldRecommend: true,
+      },
+    },
+  ];
+}
+
 export function loadRegistrations(): Registration[] {
-  try { return JSON.parse(localStorage.getItem(REGISTRATIONS_STORAGE_KEY) || "[]"); }
+  try {
+    const raw = localStorage.getItem(REGISTRATIONS_STORAGE_KEY);
+    if (raw === null) {
+      // First load — seed with sample data so the demo doesn't look empty
+      const seed = buildSeedRegistrations();
+      localStorage.setItem(REGISTRATIONS_STORAGE_KEY, JSON.stringify(seed));
+      return seed;
+    }
+    const list: Registration[] = JSON.parse(raw);
+    // Drop any malformed entries (missing name or phone) — these are no longer accepted at submit time,
+    // but historical localStorage may still contain them from earlier app versions.
+    return list.filter((r) => (r.name?.trim() || "").length > 0 && (r.phone?.trim() || "").length > 0);
+  }
   catch { return []; }
 }
 export function saveRegistrations(list: Registration[]) {
@@ -200,7 +287,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     images: [imgTrialCream1, imgTrialCream2],
     spotsTotal: 50, spotsTaken: 32, endsInDays: 12, rewardPoints: 200,
     whatToTest: ["กลิ่นและเนื้อสัมผัส", "ผลลัพธ์ใน 14 วัน", "การระคายเคือง"],
-    concerns: ["skin"],
+    concerns: ["cosmetic"],
     studioName: "Herbal Lab Co.", prevAvgRating: 4.7, prevRatingCount: 32,
     detail: {
       developerName: "ดร. วรรณา สุขสม",
@@ -290,7 +377,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1610643625267-aee6dae3ca22?w=800&q=80",
     spotsTotal: 100, spotsTaken: 78, endsInDays: 7, rewardPoints: 150,
     whatToTest: ["ผลต่อการนอน 7 คืน", "รสชาติ", "ความสะดวกในการชง"],
-    concerns: ["sleep", "general"],
+    concerns: ["food"],
     studioName: "Sleep Co Studio", prevAvgRating: 4.2, prevRatingCount: 28,
   },
   {
@@ -301,7 +388,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: imgTrialCream2,
     spotsTotal: 30, spotsTaken: 11, endsInDays: 18, rewardPoints: 300,
     whatToTest: ["บรรเทาปวดข้อ", "ความเหนียวเหนอะ", "กลิ่น"],
-    concerns: ["elder", "fitness"],
+    concerns: ["cosmetic"],
     studioName: "Botanic Lab", prevAvgRating: 4.5, prevRatingCount: 22,
   },
   {
@@ -312,7 +399,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: imgTrialCapsule1,
     spotsTotal: 40, spotsTaken: 40, endsInDays: 0, rewardPoints: 250,
     whatToTest: ["ความถี่ของอาการ", "ผลข้างเคียง"],
-    concerns: ["general"],
+    concerns: ["health"],
     studioName: "MetaHerb Lab", prevAvgRating: 4.6, prevRatingCount: 41,
   },
   {
@@ -323,7 +410,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1591282017732-207fbba7dfd4?w=800&q=80",
     spotsTotal: 60, spotsTaken: 24, endsInDays: 25, rewardPoints: 200,
     whatToTest: ["รสชาติ", "การดูดซึมบนผิว", "ความคงตัวที่อุณหภูมิห้อง"],
-    concerns: ["skin", "general"],
+    concerns: ["cosmetic"],
     studioName: "Pure Oils Studio", prevAvgRating: 4.8, prevRatingCount: 18,
   },
   {
@@ -334,7 +421,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1645693091199-77a764e1ea16?w=800&q=80",
     spotsTotal: 25, spotsTaken: 9, endsInDays: 30, rewardPoints: 350,
     whatToTest: ["ความสะดวก", "กลิ่นและความร้อน", "เปรียบเทียบกับลูกประคบเดิม"],
-    concerns: ["fitness", "focus"],
+    concerns: ["aroma"],
     studioName: "Wellness Lab",
   },
   {
@@ -345,7 +432,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: imgTrialCapsule2,
     spotsTotal: 40, spotsTaken: 18, endsInDays: 21, rewardPoints: 200,
     whatToTest: ["ความหยาบของเม็ดสครับ", "ความนุ่มของผิวหลังใช้"],
-    concerns: ["skin"],
+    concerns: ["cosmetic"],
     studioName: "Moru Naturals", prevAvgRating: 4.4, prevRatingCount: 20,
   },
   {
@@ -356,7 +443,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1559591935-c6c92c6dfbd2?w=800&q=80",
     spotsTotal: 80, spotsTaken: 45, endsInDays: 15, rewardPoints: 150,
     whatToTest: ["รสชาติ", "ความสะอาด", "ผลต่อเหงือก"],
-    concerns: ["general"],
+    concerns: ["health"],
     studioName: "Smile Lab", prevAvgRating: 4.1, prevRatingCount: 30,
   },
   {
@@ -367,7 +454,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1559599101-f09722fb4948?w=800&q=80",
     spotsTotal: 50, spotsTaken: 47, endsInDays: 5, rewardPoints: 400,
     whatToTest: ["ความถี่ผมร่วงใน 30 วัน", "ความหนาของเส้นผม"],
-    concerns: ["skin"],
+    concerns: ["cosmetic"],
     studioName: "NaturaSkin Studio", prevAvgRating: 3.8, prevRatingCount: 18,
   },
   {
@@ -378,7 +465,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80",
     spotsTotal: 35, spotsTaken: 22, endsInDays: 14, rewardPoints: 350,
     whatToTest: ["พลังงานในตอนเช้า", "ระบบขับถ่าย", "ค่าตับก่อน/หลัง"],
-    concerns: ["general"],
+    concerns: ["health"],
     studioName: "MetaHerb Lab",
   },
   {
@@ -389,7 +476,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&q=80",
     spotsTotal: 60, spotsTaken: 14, endsInDays: 28, rewardPoints: 250,
     whatToTest: ["กลิ่นและความฉุน", "ผลต่ออาการคัดจมูก", "ความระคาย"],
-    concerns: ["general", "elder"],
+    concerns: ["cosmetic"],
     studioName: "Botanic Lab", prevAvgRating: 4.3, prevRatingCount: 14,
   },
   {
@@ -400,7 +487,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&q=80",
     spotsTotal: 120, spotsTaken: 96, endsInDays: 10, rewardPoints: 200,
     whatToTest: ["น้ำหนักก่อน/หลัง", "อาการข้างเคียง", "รสชาติ"],
-    concerns: ["fitness", "general"],
+    concerns: ["food"],
     studioName: "Slim Studio", prevAvgRating: 3.6, prevRatingCount: 24,
   },
   {
@@ -411,7 +498,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1556228852-80b6e5eeff06?w=800&q=80",
     spotsTotal: 75, spotsTaken: 31, endsInDays: 20, rewardPoints: 300,
     whatToTest: ["คราบขาว", "ความรู้สึกหลังทา", "ผลต่อสิว"],
-    concerns: ["skin"],
+    concerns: ["cosmetic"],
     studioName: "Sun Care Co.", prevAvgRating: 4.5, prevRatingCount: 19,
   },
   {
@@ -422,7 +509,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&q=80",
     spotsTotal: 45, spotsTaken: 12, endsInDays: 32, rewardPoints: 250,
     whatToTest: ["รสชาติ", "กลิ่น", "ความรู้สึกหลังบริโภค"],
-    concerns: ["general", "elder"],
+    concerns: ["cosmetic"],
     studioName: "Pure Oils Studio", prevAvgRating: 4.7, prevRatingCount: 15,
   },
   {
@@ -433,7 +520,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=800&q=80",
     spotsTotal: 55, spotsTaken: 38, endsInDays: 9, rewardPoints: 200,
     whatToTest: ["ฟองและการล้างออก", "ความตึงของผิว", "สิว"],
-    concerns: ["skin"],
+    concerns: ["cosmetic"],
     studioName: "Herbal Lab Co.", prevAvgRating: 4.0, prevRatingCount: 25,
   },
   {
@@ -444,7 +531,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=800&q=80",
     spotsTotal: 80, spotsTaken: 80, endsInDays: 0, rewardPoints: 300,
     whatToTest: ["ความจำระยะสั้น", "สมาธิ", "การนอน"],
-    concerns: ["focus", "elder"],
+    concerns: ["health"],
     studioName: "Memory Lab",
   },
   {
@@ -455,7 +542,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=800&q=80",
     spotsTotal: 40, spotsTaken: 8, endsInDays: 35, rewardPoints: 350,
     whatToTest: ["ความมันบนหนังศีรษะ", "ความเหนียว", "กลิ่น"],
-    concerns: ["skin"],
+    concerns: ["cosmetic"],
     studioName: "NaturaSkin Studio", prevAvgRating: 4.6, prevRatingCount: 12,
   },
   {
@@ -466,7 +553,7 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     image: "https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=800&q=80",
     spotsTotal: 90, spotsTaken: 51, endsInDays: 17, rewardPoints: 250,
     whatToTest: ["รสชาติ", "ความถี่ของหวัดใน 30 วัน", "การละลาย"],
-    concerns: ["general"],
+    concerns: ["food"],
     studioName: "MetaHerb Lab", prevAvgRating: 4.4, prevRatingCount: 35,
   },
 ];

@@ -5,6 +5,7 @@ import { useAuth } from "../store/AuthContext";
 import { useLanguage } from "../store/LanguageContext";
 import { useProducts } from "../store/ProductsContext";
 import { Heart, ShoppingCart, Star, Trash2 } from "lucide-react";
+import { AccountSidebar } from "../components/AccountSidebar";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { toast } from "sonner";
 import { getProductImage } from "../data/productImages";
@@ -37,13 +38,10 @@ export function WishlistPage() {
 
   return (
     <div>
-      <div className="bg-[#eaf3ee] -mt-[64px] md:-mt-[116px] pt-[80px] md:pt-[136px] pb-5 md:pb-6 text-center px-4">
-        <h1 className={`${font} text-[20px] sm:text-[24px] text-[#319754]`} style={{ fontWeight: 500 }}>
-          <Heart className="size-5 sm:size-6 inline mr-2 fill-[#319754]" />{t("wishlist_title")}
-        </h1>
-      </div>
-
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+      <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
+        <AccountSidebar />
+        <div className="flex-1 min-w-0">
+          <h2 className={`${font} text-[24px] mb-6`} style={{ fontWeight: 500 }}>{t("wishlist_title")}</h2>
         {wishlistProducts.length === 0 ? (
           <div className="text-center py-16">
             <Heart className="size-16 text-gray-200 mx-auto" />
@@ -96,6 +94,7 @@ export function WishlistPage() {
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );
