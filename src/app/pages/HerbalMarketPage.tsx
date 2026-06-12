@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { Star, RotateCcw, BadgeCheck, MapPin, Package, Beaker, ShieldCheck, Store, ArrowRight, ChevronDown } from "lucide-react";
+import { Star, RotateCcw, BadgeCheck, MapPin, Package, Beaker, ShieldCheck, ChevronDown } from "lucide-react";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useLanguage } from "../store/LanguageContext";
 import { useAuth } from "../store/AuthContext";
 import { toast } from "sonner";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { MATERIALS, CATEGORIES, GRADES, GRADE_STYLE, type MaterialCategory, type MaterialGrade } from "../data/herbalMaterials";
+import imgSupplierCta from "../../assets/supplier-cta-farmers.png";
+import { ChevronRight } from "lucide-react";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
@@ -28,9 +30,6 @@ export function HerbalMarketPage() {
     }
     navigate("/supplier/register");
   };
-
-  const supplierBtnLabel =
-    isAuthenticated && user?.role === "owner" ? "ไปหน้าร้านของฉัน" : "มาเป็น Supplier กับเรา";
 
   const [selectedCategory, setSelectedCategory] = useState<"ทั้งหมด" | MaterialCategory>("ทั้งหมด");
   const [selectedGrade, setSelectedGrade] = useState<"ทั้งหมด" | MaterialGrade>("ทั้งหมด");
@@ -80,7 +79,8 @@ export function HerbalMarketPage() {
       <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
         {/* Sidebar filters */}
         <aside className="hidden lg:block w-[218px] shrink-0">
-          <div className="bg-white rounded-2xl p-4 flex flex-col gap-4 sticky top-[140px]">
+          <div className="sticky top-[140px]">
+          <div className="bg-white rounded-2xl p-4 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <span className={`${font} text-[18px] text-black`} style={{ fontWeight: 500 }}>{t("products_filter")}</span>
               <button onClick={() => {
@@ -153,17 +153,25 @@ export function HerbalMarketPage() {
               </div>
             </div>
 
-            {/* Supplier CTA — at the bottom */}
-            <div className="w-full h-px bg-gray-200" />
-            <button onClick={handleBecomeSupplier}
-              className={`${font} group w-full inline-flex items-center gap-2 h-11 pl-2 pr-3 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-all shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
-              style={{ fontWeight: 600 }}>
-              <span className="size-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                <Store className="size-3.5" strokeWidth={2.4} />
+          </div>
+
+          {/* Supplier CTA card — Figma 7747:11626 (green gradient + farmers art) */}
+          <button onClick={handleBecomeSupplier}
+            className="group/cta relative w-full overflow-hidden rounded-2xl p-4 mt-4 flex flex-col items-start gap-2 cursor-pointer text-left transition-shadow hover:shadow-[0_8px_24px_-6px_rgba(43,132,74,0.45)]"
+            style={{ background: "linear-gradient(90deg, #309550 0%, #2c864b 50%, #2b844a 100%)" }}>
+            {/* Farmers artwork — sits flush to the card's right + bottom edges */}
+            <img src={imgSupplierCta} alt="" aria-hidden
+              className="absolute right-0 bottom-0 h-[72px] w-auto object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover/cta:scale-105" />
+            <p className={`${font} relative z-10 text-[12px] text-[#fafafa] leading-snug w-[110px]`}>
+              ขยายร้านของคุณสู่<br />ตลาดวัตถุดิบ B2B
+            </p>
+            <span className="relative z-10 inline-flex items-center gap-1.5 bg-white rounded-full pl-3 pr-2 py-1">
+              <span className={`${font} text-[11px] text-[#2b844a]`} style={{ fontWeight: 500 }}>
+                {isAuthenticated && user?.role === "owner" ? "ไปหน้าร้านของฉัน" : "สมัคร Supplier"}
               </span>
-              <span className="flex-1 text-left whitespace-nowrap truncate">{supplierBtnLabel}</span>
-              <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform shrink-0" strokeWidth={2.4} />
-            </button>
+              <ChevronRight className="size-3.5 text-[#2b844a] group-hover/cta:translate-x-0.5 transition-transform" strokeWidth={2.6} />
+            </span>
+          </button>
           </div>
         </aside>
 
