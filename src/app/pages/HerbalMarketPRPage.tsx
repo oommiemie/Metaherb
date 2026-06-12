@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { ChevronLeft, ChevronDown, ClipboardList, CheckCircle2, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronDown, ClipboardList, CheckCircle2, AlertCircle, Info } from "lucide-react";
 import { useAuth } from "../store/AuthContext";
 import { useCart } from "../store/CartContext";
 import { toast } from "sonner";
@@ -271,7 +271,28 @@ export default function HerbalMarketPRPage() {
               <thead>
                 <tr className="border-y border-gray-200 bg-gray-50">
                   <th className={`${font} text-[12px] text-gray-600 text-left px-3 py-2`} style={{ fontWeight: 600 }}>Item Code</th>
-                  <th className={`${font} text-[12px] text-gray-600 text-left px-3 py-2 w-[150px]`} style={{ fontWeight: 600 }}>Item Code ERP</th>
+                  <th className={`${font} text-[12px] text-gray-600 text-left px-3 py-2 w-[150px]`} style={{ fontWeight: 600 }}>
+                    <span className="inline-flex items-center gap-1">
+                      Item Code ERP
+                      <span className="relative group/erp-info inline-flex items-center cursor-help">
+                        <Info className="size-3.5 text-gray-400 hover:text-[#319754] transition-colors" strokeWidth={2.2} aria-label="ข้อมูล Item Code ERP" />
+                        {/* Tooltip popup on hover */}
+                        <span
+                          role="tooltip"
+                          className={`${font} pointer-events-none absolute left-0 top-full mt-2 z-30 w-[280px] rounded-xl bg-white border border-gray-100 shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)] p-3 opacity-0 translate-y-1 invisible group-hover/erp-info:opacity-100 group-hover/erp-info:translate-y-0 group-hover/erp-info:visible transition-all duration-150`}>
+                          <p className="text-[12.5px] text-[#1a1a1a] mb-1.5" style={{ fontWeight: 700 }}>
+                            Item Code ERP คืออะไร?
+                          </p>
+                          <p className="text-[11.5px] text-gray-600 leading-relaxed" style={{ fontWeight: 400 }}>
+                            รหัสสินค้าในระบบ ERP ภายในของบริษัทคุณ (เช่น <span className="text-[#319754] tabular-nums" style={{ fontWeight: 600 }}>ERP-12345</span>) — กรอกเพื่อให้ฝ่ายจัดซื้อเชื่อมโยงสินค้านี้กับสต็อก/บัญชีภายในได้ทันทีหลังอนุมัติ
+                          </p>
+                          <p className="text-[10.5px] text-gray-400 mt-2 italic" style={{ fontWeight: 500 }}>
+                            ไม่บังคับกรอก — เว้นว่างได้ถ้ายังไม่มีรหัสในระบบ
+                          </p>
+                        </span>
+                      </span>
+                    </span>
+                  </th>
                   <th className={`${font} text-[12px] text-gray-600 text-left px-3 py-2`} style={{ fontWeight: 600 }}>Description</th>
                   <th className={`${font} text-[12px] text-gray-600 text-right px-3 py-2 w-[80px]`} style={{ fontWeight: 600 }}>Qty</th>
                   <th className={`${font} text-[12px] text-gray-600 text-left px-3 py-2 w-[90px]`} style={{ fontWeight: 600 }}>UoM</th>
