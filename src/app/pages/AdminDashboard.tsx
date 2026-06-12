@@ -8,6 +8,15 @@ import { useBanners } from "../store/BannersContext";
 import { useCategories, type Category as CtxCategory } from "../store/CategoriesContext";
 import { useAuth, type DisplayRole, type RegistryStatus } from "../store/AuthContext";
 import {
+  getRegistrationStatus,
+  type TrialProduct, type Registration,
+} from "../data/trialProducts";
+import { useAllTrialProducts, useAllRegistrations } from "./owner/OwnerTrialTabs";
+import {
+  MATERIALS,
+  type HerbalMaterial,
+} from "../data/herbalMaterials";
+import {
   BarChart3, Users, ShoppingCart, Package, Settings, Image as ImageIcon, TrendingUp,
   Shield, DollarSign, Megaphone, UserCog, BarChart2, ShoppingBag,
   Plus, Minus, Pencil, Trash2, MoreHorizontal, Eye, EyeOff, Search, ChevronLeft, ChevronRight, ChevronDown, Menu,
@@ -36,6 +45,7 @@ import {
   Bike, Tent, Footprints, Mountain, Sunrise, Sunset,
   Trophy, Medal, Crown, Flame, Bookmark, Shirt, BookOpen, Book, Music, Gamepad2,
   Download, FileSpreadsheet, PieChart as PieIcon,
+  Building2, CreditCard, IdCard, Briefcase, Paperclip,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend, ComposedChart, Area } from "recharts";
 import { motion, AnimatePresence } from "motion/react";
@@ -140,6 +150,8 @@ const sectionMenus: Record<AdminSection, AdminItem[]> = {
     ]},
     { id: "products",   label: "สินค้า",          icon: Package, children: [
       { id: "products_manage",    label: "จัดการสินค้า",          icon: Package },
+      { id: "products_trials",    label: "สินค้าทดลอง",            icon: FlaskConical },
+      { id: "products_herbal",    label: "เฮอร์บัลมาร์เก็ต",       icon: Beaker },
       { id: "products_categories", label: "หมวดหมู่สินค้า", icon: Folder },
       { id: "products_promotions", label: "จัดการโปรโมชั่น",       icon: Megaphone },
       { id: "products_flash",     label: "Flash Sale Events",      icon: Zap },
@@ -437,11 +449,13 @@ function DashboardContent({ onNavigate }: { onNavigate?: (item: ItemId) => void 
   ];
 
   const pendingActions: { label: string; count: number; sub: string; color: string; urgent?: boolean; Icon: any; to?: ItemId }[] = [
-    { label: "รออนุมัติใบ PO (B2B)", count: poPendingApproval, sub: "PO จาก Herbal ERP ก่อนส่ง Supplier", color: "#ef4444", urgent: true,  Icon: Beaker,      to: "po_approval_queue" },
-    { label: "ร้องเรียนใหม่",       count: 7, sub: "รอตรวจสอบ ≤ 24 ชม.",     color: "#ef4444", urgent: true,  Icon: AlertCircle, to: "complaints_list" },
-    { label: "คำขอยกเลิก PO",       count: poCancelRequests, sub: "Supplier ขอยกเลิก — รออนุมัติ",    color: "#f59e0b",                Icon: PackageX,    to: "po_cancel_requests" },
-    { label: "ร้านค้ารอตรวจสอบ",  count: 4, sub: "เอกสารพร้อมอนุมัติ",   color: "#f59e0b",                Icon: Store,       to: "shops_list" },
-    { label: "คูปองรอเปิดใช้",      count: 5, sub: "กำหนดเริ่มภายใน 3 วัน", color: "#3b82f6",                Icon: Ticket,      to: "products_coupons" },
+    { label: "รออนุมัติใบ PO (B2B)", count: poPendingApproval, sub: "PO จาก Herbal ERP ก่อนส่ง Supplier", color: "#ef4444", urgent: true, Icon: Beaker,      to: "po_approval_queue" },
+    { label: "ร้องเรียนใหม่",        count: 7,                 sub: "รอตรวจสอบ ≤ 24 ชม.",                  color: "#ef4444", urgent: true, Icon: AlertCircle, to: "complaints_list"   },
+    { label: "คำขอยกเลิก PO",        count: poCancelRequests,  sub: "Supplier ขอยกเลิก — รออนุมัติ",       color: "#f59e0b",               Icon: PackageX,    to: "po_cancel_requests" },
+    { label: "ร้านค้ารอตรวจสอบ",   count: 4,                 sub: "เอกสารพร้อมอนุมัติ",                  color: "#f59e0b",               Icon: Store,       to: "shops_list"        },
+    { label: "คูปองรอเปิดใช้",       count: 5,                 sub: "กำหนดเริ่มภายใน 3 วัน",                color: "#3b82f6",               Icon: Ticket,      to: "products_coupons"  },
+    { label: "รีพอร์ตจากผู้ใช้",    count: 3,                 sub: "สินค้า/รีวิวต้องสงสัย",                color: "#f59e0b",               Icon: Shield,      to: "reviews"           },
+    { label: "Banner รอเผยแพร่",    count: 2,                 sub: "ตรวจสอบรูปและลิงก์",                  color: "#9747ff",               Icon: ImageIcon,   to: "content_banner"    },
   ];
   const pendingTotal = pendingActions.reduce((s, p) => s + p.count, 0);
 
@@ -481,6 +495,7 @@ function DashboardContent({ onNavigate }: { onNavigate?: (item: ItemId) => void 
         <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-2 shrink-0">
           {quickActions.map((q) => (
             <button key={q.label}
+              onClick={() => onNavigate?.(q.to)}
               className={`${font} inline-flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white cursor-pointer transition-colors min-w-[88px]`}>
               <q.Icon className="size-4" strokeWidth={2.4} />
               <span className="text-[11px]" style={{ fontWeight: 600 }}>{q.label}</span>
@@ -5370,9 +5385,11 @@ function FilterTabPills({ tabs, active, onChange, pillId, singleRow }: {
                     </span>
                     <span className={`${font} text-[13px] truncate`} style={{ fontWeight: isAct ? 700 : 500, color: isAct ? "#319754" : "#171717" }}>{tab.label}</span>
                   </div>
-                  <span className={`${font} text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 ${isAct ? "bg-[#319754] text-white" : "bg-[#ff3b30] text-white"}`} style={{ fontWeight: 600 }}>
-                    {tab.count}
-                  </span>
+                  {tab.count > 0 && (
+                    <span className={`${font} text-[10px] tabular-nums px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 ${isAct ? "bg-[#319754] text-white" : "bg-[#ff3b30] text-white"}`} style={{ fontWeight: 600 }}>
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -13887,6 +13904,1222 @@ function seedCategories(): CategoryRow[] {
   });
 }
 
+/* ============================================================
+ * ADMIN TRIAL PRODUCTS — cross-shop trial product registry.
+ * Mirrors the structure of ProductsManageContent but scoped to
+ * trial products (studio-owned). Admin can browse across every
+ * brand, filter by status / brand, drill into a product, and
+ * remove/suspend a problem product.
+ * ========================================================== */
+type TrialAdminStatus = "active" | "ending_soon" | "closed";
+
+function AdminTrialProductsContent() {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | TrialAdminStatus>("all");
+  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [detail, setDetail] = useState<TrialProduct | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [suspended, setSuspended] = useState<Set<string>>(new Set());
+
+  // Shared with owner side — overrides + hidden + custom products, MOCK + localStorage registrations
+  const { all: products } = useAllTrialProducts();
+  const { regs } = useAllRegistrations();
+
+  // Helpers
+  const seatsTaken = (p: TrialProduct) => regs.filter((r) => r.trialId === p.id && !r.rejectedAt).length;
+  const isClosed = (p: TrialProduct) => p.endsInDays <= 0 || p.spotsTotal - seatsTaken(p) <= 0;
+  const isEndingSoon = (p: TrialProduct) => !isClosed(p) && (p.spotsTotal - seatsTaken(p) <= 10 || p.endsInDays <= 7);
+  const statusOf = (p: TrialProduct): TrialAdminStatus =>
+    isClosed(p) ? "closed" : isEndingSoon(p) ? "ending_soon" : "active";
+
+  // Brand list (unique studio names) — now includes custom products
+  const brands = useMemo(
+    () => Array.from(new Set(products.map((p) => p.studioName).filter((s): s is string => !!s))).sort(),
+    [products],
+  );
+
+  // Counts (KPI strip)
+  const totalProducts = products.length;
+  const activeCount   = products.filter((p) => !isClosed(p)).length;
+  const closedCount   = products.filter(isClosed).length;
+  const endingCount   = products.filter(isEndingSoon).length;
+  const totalTesters  = regs.length;
+  const evaluatedCnt  = regs.filter((r) => getRegistrationStatus(r) === "evaluated").length;
+
+  // Filter
+  const filtered = products.filter((p) => {
+    if (filter !== "all" && statusOf(p) !== filter) return false;
+    if (brandFilter !== "all" && p.studioName !== brandFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      if (![p.name, p.category, p.studioName ?? ""].some((s) => s.toLowerCase().includes(q))) return false;
+    }
+    return true;
+  });
+
+  // Selection helpers (matches ProductsManageContent pattern)
+  const allSelected = filtered.length > 0 && filtered.every((p) => selectedIds.has(p.id));
+  const someSelected = selectedIds.size > 0 && !allSelected;
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) filtered.forEach((p) => next.delete(p.id));
+      else filtered.forEach((p) => next.add(p.id));
+      return next;
+    });
+  };
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+  const bulkApply = (kind: "suspend" | "unsuspend" | "contact") => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (kind === "suspend")   setSuspended((prev) => new Set([...prev, ...ids]));
+    if (kind === "unsuspend") setSuspended((prev) => { const n = new Set(prev); ids.forEach((id) => n.delete(id)); return n; });
+    const labelMap = { suspend: "ระงับ", unsuspend: "ปลดระงับ", contact: "ส่งข้อความถึงแบรนด์" } as const;
+    toast.success(`${labelMap[kind]} ${ids.length} รายการแล้ว`);
+    clearSelection();
+  };
+
+  const tabs: { id: "all" | TrialAdminStatus; label: string; count: number; Icon: any }[] = [
+    { id: "all",         label: "ทั้งหมด",     count: totalProducts, Icon: FlaskConical },
+    { id: "active",      label: "เปิดรับ",     count: activeCount,   Icon: Check },
+    { id: "ending_soon", label: "เกือบเต็ม",   count: endingCount,   Icon: Clock },
+    { id: "closed",      label: "ปิดรับ",      count: closedCount,   Icon: Ban },
+  ];
+
+  const STATUS_META: Record<TrialAdminStatus, { label: string; color: string; bg: string; dot: string; rail: string }> = {
+    active:      { label: "เปิดรับ",    color: "#287745", bg: "#dcfce7", dot: "#16a34a", rail: "#319754" },
+    ending_soon: { label: "เกือบเต็ม",  color: "#b45309", bg: "#fef3c7", dot: "#f59e0b", rail: "#f59e0b" },
+    closed:      { label: "ปิดรับ",    color: "#6b7280", bg: "#f3f4f6", dot: "#9ca3af", rail: "#e5e7eb" },
+  };
+
+  // KPI cards — same pattern as ProductsManageContent (decorative bg icon + percentage chip)
+  const kpiCards = [
+    { label: "สินค้าทดลองทั้งหมด", value: totalProducts, sub: `${brands.length} แบรนด์`, color: "#319754", Icon: FlaskConical },
+    { label: "เปิดรับสมัคร",        value: activeCount,   sub: "พร้อมรับ Tester",        color: "#0088ff", Icon: Check },
+    { label: "เกือบเต็ม / ใกล้หมดเวลา", value: endingCount,   sub: "ต้องติดตาม",              color: "#f59e0b", Icon: Clock },
+    { label: "ประเมินสำเร็จ",        value: evaluatedCnt,  sub: `จาก ${totalTesters} ทดลอง`, color: "#9747ff", Icon: Check },
+  ];
+
+  if (detail) {
+    return <AdminTrialProductDetail product={detail} onBack={() => setDetail(null)} regs={regs} />;
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>สินค้าทดลอง</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>รายการสินค้าทดลองทั้งระบบจากทุกแบรนด์</p>
+        </div>
+        <motion.button
+          onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
+          whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
+          <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
+            <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
+          </span>
+          <span style={{ fontWeight: 600 }}>ส่งออก</span>
+        </motion.button>
+      </div>
+
+      <div className="flex flex-col gap-5">
+        {/* KPI cards — decorative bg icon + percentage chip */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {kpiCards.map((c) => (
+            <div key={c.label}
+              className="group bg-white border border-[#e8e8e8] rounded-2xl p-5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow relative overflow-hidden">
+              <c.Icon
+                className="absolute -bottom-3 -right-3 size-[110px] pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                style={{
+                  color: c.color,
+                  opacity: 0.1,
+                  maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                }}
+                strokeWidth={1.6}
+                aria-hidden
+              />
+              <div className="relative z-10">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${c.color}1a` }}>
+                    <c.Icon className="size-4" style={{ color: c.color }} strokeWidth={2} />
+                  </div>
+                  <p className={`${font} text-[13px] text-gray-500 truncate`}>{c.label}</p>
+                </div>
+                <p className={`${font} text-[28px] mt-3 tracking-tight tabular-nums leading-none`} style={{ fontWeight: 700, color: c.color }}>
+                  {c.value.toLocaleString()}
+                </p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md tabular-nums`}
+                    style={{ backgroundColor: `${c.color}15`, color: c.color, fontWeight: 600 }}>
+                    {c.sub}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bulk action bar — animated, appears when any product selected */}
+        <AnimatePresence>
+          {selectedIds.size > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden">
+              <div className="bg-[#319754] rounded-2xl shadow-[0_8px_24px_-8px_rgba(49,151,84,0.45)] flex items-center justify-between gap-3 px-4 py-2.5 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="size-9 rounded-full bg-white/15 flex items-center justify-center">
+                    <Check className="size-4 text-white" strokeWidth={2.6} />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className={`${font} text-white text-[14px]`} style={{ fontWeight: 600 }}>เลือก {selectedIds.size} รายการ</p>
+                    <p className={`${font} text-white/70 text-[11px]`}>เลือกการดำเนินการเพื่อจัดการพร้อมกัน</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button onClick={() => bulkApply("contact")} className={`${font} inline-flex items-center gap-1.5 h-[32px] px-3 rounded-full bg-white/15 hover:bg-white/25 text-white text-[12px] cursor-pointer transition-colors`} style={{ fontWeight: 500 }}>
+                    <Mail className="size-3.5" strokeWidth={2.2} /> ส่งข้อความ
+                  </button>
+                  <button onClick={() => bulkApply("suspend")} className={`${font} inline-flex items-center gap-1.5 h-[32px] px-3 rounded-full bg-white/15 hover:bg-white/25 text-white text-[12px] cursor-pointer transition-colors`} style={{ fontWeight: 500 }}>
+                    <Ban className="size-3.5" strokeWidth={2.2} /> ระงับ
+                  </button>
+                  <button onClick={() => bulkApply("unsuspend")} className={`${font} inline-flex items-center gap-1.5 h-[32px] px-3 rounded-full bg-white/15 hover:bg-white/25 text-white text-[12px] cursor-pointer transition-colors`} style={{ fontWeight: 500 }}>
+                    <Check className="size-3.5" strokeWidth={2.2} /> ปลดระงับ
+                  </button>
+                  <button onClick={clearSelection}
+                    className={`${font} inline-flex items-center justify-center size-[32px] rounded-full bg-white/15 hover:bg-white/25 text-white cursor-pointer transition-colors`}
+                    title="ยกเลิกการเลือก">
+                    <X className="size-3.5" strokeWidth={2.2} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Filter pills + brand Popover + search */}
+        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 flex items-center gap-2">
+          <FilterTabPills tabs={tabs} active={filter} onChange={setFilter} pillId="adminTrialsFilterPill" />
+          {/* Brand Popover (matches ProductsManageContent shop selector) */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={`${font} inline-flex items-center gap-2 h-[36px] pl-3 pr-2 bg-[#f5f5f5] hover:bg-gray-200 rounded-full text-[13px] cursor-pointer transition-colors shrink-0`}>
+                <Filter className="size-[14px] text-[#319754]" />
+                <span className="truncate max-w-[140px]">{brandFilter === "all" ? "ทุกแบรนด์" : brandFilter}</span>
+                <ChevronDown className="size-[14px] text-gray-500" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-56 p-1 max-h-[320px] overflow-y-auto">
+              <button onClick={() => setBrandFilter("all")}
+                className={`${font} text-[13px] w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer ${brandFilter === "all" ? "text-[#319754]" : "text-black"}`}>
+                <Store className="size-3.5" />
+                <span className="flex-1 text-left">ทุกแบรนด์</span>
+                {brandFilter === "all" && <Check className="size-3.5" />}
+              </button>
+              {brands.map((b) => (
+                <button key={b} onClick={() => setBrandFilter(b)}
+                  className={`${font} text-[13px] w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer ${brandFilter === b ? "text-[#319754]" : "text-black"}`}>
+                  <Store className="size-3.5" />
+                  <span className="flex-1 text-left truncate">{b}</span>
+                  {brandFilter === b && <Check className="size-3.5 shrink-0" />}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหาชื่อสินค้า แบรนด์ หมวด"
+              className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+            <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+              <Search className="size-4 text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col style={{ width: "4%" }} />{/* checkbox */}
+              <col style={{ width: "26%" }} />{/* สินค้า */}
+              <col style={{ width: "13%" }} />{/* แบรนด์ */}
+              <col style={{ width: "11%" }} />{/* หมวด */}
+              <col style={{ width: "12%" }} />{/* สถานะ */}
+              <col style={{ width: "16%" }} />{/* ที่นั่ง */}
+              <col style={{ width: "10%" }} />{/* เหลือเวลา */}
+              <col style={{ width: "8%" }} />{/* จัดการ */}
+            </colgroup>
+            <thead>
+              <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+                <th className="text-center pb-3 pr-2" style={{ fontWeight: 500 }}>
+                  <input
+                    type="checkbox"
+                    aria-label="เลือกทั้งหมด"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={toggleSelectAll}
+                    className="size-4 rounded border-gray-300 text-[#319754] focus:ring-[#319754] cursor-pointer accent-[#319754]"
+                  />
+                </th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>สินค้า</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>แบรนด์</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>หมวดหมู่</th>
+                <th className="text-center pb-3 pr-4" style={{ fontWeight: 500 }}>สถานะ</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ที่นั่ง</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>เหลือเวลา</th>
+                <th className="text-center pb-3" style={{ fontWeight: 500 }}>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={8} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>ไม่พบสินค้าทดลองที่ตรงเงื่อนไข</td></tr>
+              ) : filtered.map((p) => {
+                const taken = seatsTaken(p);
+                const left  = Math.max(0, p.spotsTotal - taken);
+                const pct   = (taken / p.spotsTotal) * 100;
+                const st    = statusOf(p);
+                const meta  = STATUS_META[st];
+                const closed = st === "closed";
+                const isSus = suspended.has(p.id);
+                const isSel = selectedIds.has(p.id);
+                // Trial-specific badges
+                const hasReviews = regs.filter((r) => r.trialId === p.id && r.evaluatedAt).length;
+                const avgRating = hasReviews > 0
+                  ? regs.filter((r) => r.trialId === p.id && r.evaluation).reduce((s, r) => s + (r.evaluation?.overall ?? 0), 0) / hasReviews
+                  : 0;
+                const isHighRated = avgRating >= 4.5 && hasReviews >= 3;
+                const isHot = pct >= 80 && !closed;
+                return (
+                  <tr key={p.id}
+                    onClick={() => setDetail(p)}
+                    className={`group/row border-b border-gray-50 last:border-0 transition-colors cursor-pointer ${isSel ? "bg-[#319754]/5" : "hover:bg-gray-50/60"}`}>
+                    {/* Checkbox */}
+                    <td className="py-3 pr-2 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        aria-label={`เลือก ${p.name}`}
+                        checked={isSel}
+                        onChange={() => toggleSelect(p.id)}
+                        className="size-4 rounded border-gray-300 text-[#319754] focus:ring-[#319754] cursor-pointer accent-[#319754]"
+                      />
+                    </td>
+                    {/* Product — bigger thumbnail (64px) + badges */}
+                    <td className="py-3 pr-4 align-middle">
+                      <div className="flex items-center gap-3">
+                        <div className="relative size-[64px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] group-hover/row:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow shrink-0">
+                          <ImageWithFallback src={p.image} alt={p.name}
+                            className={`w-full h-full object-cover transition-transform duration-500 ease-out group-hover/row:scale-110 ${isSus || closed ? "grayscale opacity-60" : ""}`} />
+                          {isSus && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 pointer-events-none">
+                              <Ban className="size-5 text-white" strokeWidth={2.4} />
+                            </div>
+                          )}
+                          {isHot && !isSus && (
+                            <div className="absolute top-1 left-1 size-5 bg-[#f59e0b] rounded-full flex items-center justify-center shadow-[0_1px_3px_rgba(245,158,11,0.4)]">
+                              <Flame className="size-3 text-white fill-white" strokeWidth={2.4} />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0 gap-0.5">
+                          <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 500 }} title={p.name}>{p.name}</p>
+                          <p className={`${font} text-[11px] text-gray-500 truncate`} title={p.tagline}>{p.tagline}</p>
+                          <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                            {isHighRated && (
+                              <span className={`${font} inline-flex items-center gap-1 bg-[#f59e0b] text-white pl-1.5 pr-2 py-0.5 rounded-full text-[10px]`} style={{ fontWeight: 500 }}>
+                                <Star className="size-2.5 fill-white" strokeWidth={0} /> {avgRating.toFixed(1)} · {hasReviews} รีวิว
+                              </span>
+                            )}
+                            {isHot && (
+                              <span className={`${font} inline-flex items-center gap-1 bg-[#e62e05] text-white pl-1.5 pr-2 py-0.5 rounded-full text-[10px]`} style={{ fontWeight: 500 }}>
+                                <Flame className="size-2.5 fill-white" strokeWidth={0} /> ฮอต
+                              </span>
+                            )}
+                            {p.rewardPoints > 0 && (
+                              <span className={`${font} inline-flex items-center gap-1 bg-[#d97706] text-white pl-1.5 pr-2 py-0.5 rounded-full text-[10px]`} style={{ fontWeight: 500 }}>
+                                +{p.rewardPoints.toLocaleString()} pts
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    {/* Brand */}
+                    <td className="py-3 pr-4 align-middle">
+                      <span className={`${font} text-[12px] text-[#555] inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-100 truncate max-w-full`} title={p.studioName ?? "—"}>
+                        <Store className="size-3 text-gray-500 shrink-0" />
+                        <span className="truncate">{p.studioName ?? "—"}</span>
+                      </span>
+                    </td>
+                    {/* Category */}
+                    <td className="py-3 pr-4 align-middle">
+                      <span className={`${font} text-[12px] text-[#555] inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100`}>
+                        {p.category}
+                      </span>
+                    </td>
+                    {/* Status */}
+                    <td className="py-3 pr-4 text-center align-middle">
+                      <span className={`${font} inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] tabular-nums whitespace-nowrap`}
+                        style={{ backgroundColor: meta.bg, color: meta.color, fontWeight: 600 }}>
+                        <span className="size-1.5 rounded-full" style={{ backgroundColor: meta.dot }} />
+                        {meta.label}
+                      </span>
+                    </td>
+                    {/* Seats — taken/total + ratio bar */}
+                    <td className="py-3 pr-4 align-middle">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className={`${font} text-[12px] text-[#1a1a1a] tabular-nums`} style={{ fontWeight: 700 }}>
+                            {taken}<span className="text-gray-400 font-normal">/</span>{p.spotsTotal}
+                          </span>
+                          <span className={`${font} text-[10px] tabular-nums`} style={{ fontWeight: 700, color: pct >= 90 ? "#dc2626" : pct >= 60 ? "#b45309" : "#287745" }}>
+                            {left > 0 ? `เหลือ ${left}` : "เต็ม"}
+                          </span>
+                        </div>
+                        <div className="h-[5px] rounded-full bg-gray-100 overflow-hidden">
+                          <div className="h-full rounded-full transition-[width] duration-700" style={{
+                            width: `${Math.min(100, pct)}%`,
+                            background: pct >= 90
+                              ? "linear-gradient(90deg, #fca5a5 0%, #dc2626 100%)"
+                              : pct >= 60
+                                ? "linear-gradient(90deg, #fcd34d 0%, #f59e0b 100%)"
+                                : "linear-gradient(90deg, #86efac 0%, #319754 100%)",
+                          }} />
+                        </div>
+                      </div>
+                    </td>
+                    {/* Days left */}
+                    <td className="py-3 pr-4 align-middle">
+                      <span className={`${font} text-[12px] inline-flex items-center gap-1 ${p.endsInDays <= 0 ? "text-red-600" : p.endsInDays <= 7 ? "text-amber-600" : "text-gray-700"}`} style={{ fontWeight: 500 }}>
+                        <Clock className="size-3.5" strokeWidth={2.2} />
+                        {p.endsInDays <= 0 ? "หมดเวลา" : `${p.endsInDays} วัน`}
+                      </span>
+                    </td>
+                    {/* Actions */}
+                    <td className="py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                            <MoreHorizontal className="size-4" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" sideOffset={6} className="w-[220px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                          <button onClick={() => setDetail(p)}
+                            className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                            <Eye className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                            <span style={{ fontWeight: 500 }}>ดูรายละเอียด</span>
+                          </button>
+                          <button onClick={() => toast.info(`ติดต่อแบรนด์ ${p.studioName ?? p.name}`)}
+                            className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                            <Mail className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                            <span style={{ fontWeight: 500 }}>ติดต่อแบรนด์</span>
+                          </button>
+                          <div className="h-px bg-gray-100 my-1" />
+                          {isSus ? (
+                            <button onClick={() => { setSuspended((prev) => { const n = new Set(prev); n.delete(p.id); return n; }); toast.success(`ปลดระงับ ${p.name} แล้ว`); }}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#319754]/10 cursor-pointer text-left text-[13px] text-[#287745]`}>
+                              <Check className="size-3.5" strokeWidth={2.4} />
+                              <span style={{ fontWeight: 500 }}>ปลดระงับ</span>
+                            </button>
+                          ) : (
+                            <button onClick={() => { setSuspended((prev) => new Set([...prev, p.id])); toast.success(`ระงับ ${p.name} แล้ว`); }}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/10 cursor-pointer text-left text-[13px] text-[#dc2626]`}>
+                              <Ban className="size-3.5" strokeWidth={2.4} />
+                              <span style={{ fontWeight: 500 }}>ระงับสินค้า</span>
+                            </button>
+                          )}
+                        </PopoverContent>
+                      </Popover>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <p className={`${font} text-[11px] text-gray-400 mt-3`}>
+            แสดง <span style={{ fontWeight: 600 }} className="text-[#319754]">{filtered.length}</span> จาก {products.length} รายการ
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===== Admin trial product detail — read-only summary + the same approve/reject flow
+ *  admin needs to keep an eye on brand-side trials. Mirrors the shop application detail
+ *  page pattern (green gradient hero + KPI strip + section grid). ===== */
+function AdminTrialProductDetail({ product, onBack, regs }: {
+  product: TrialProduct;
+  onBack: () => void;
+  regs: Registration[];
+}) {
+  const trialRegs = regs.filter((r) => r.trialId === product.id);
+  const seatsTaken = trialRegs.filter((r) => !r.rejectedAt).length;
+  const seatsLeft = Math.max(0, product.spotsTotal - seatsTaken);
+  const pending = trialRegs.filter((r) => getRegistrationStatus(r) === "pending_approval").length;
+  const approved = trialRegs.filter((r) => getRegistrationStatus(r) === "approved").length;
+  const evaluated = trialRegs.filter((r) => getRegistrationStatus(r) === "evaluated").length;
+  const evaluations = trialRegs.filter((r) => !!r.evaluatedAt && r.evaluation);
+  const avgOverall = evaluations.length > 0
+    ? evaluations.reduce((s, r) => s + (r.evaluation?.overall ?? 0), 0) / evaluations.length
+    : 0;
+  const recommendCount = evaluations.filter((r) => r.evaluation?.wouldRecommend).length;
+  const recommendPct = evaluations.length > 0 ? Math.round((recommendCount / evaluations.length) * 100) : 0;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={() => toast.info(`ติดต่อแบรนด์ ${product.studioName ?? product.name}`)}
+            className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#319754] hover:text-[#319754] text-gray-700 text-[13px] cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            <Mail className="size-4" strokeWidth={2.4} /> ติดต่อแบรนด์
+          </button>
+          <button onClick={() => toast.info(`ฟีเจอร์ระงับสินค้ายังไม่พร้อม — ${product.name}`)}
+            className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#dc2626] hover:text-[#dc2626] hover:bg-red-50/50 text-gray-700 text-[13px] cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            <Ban className="size-4" strokeWidth={2.4} /> ระงับสินค้า
+          </button>
+        </div>
+      </div>
+
+      {/* HERO CARD — green gradient (matches trial detail style) */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden mb-5">
+        <div className="relative bg-gradient-to-br from-[#319754] via-[#287745] to-[#1d5b32] p-5 overflow-hidden">
+          <Sparkles className="absolute -top-4 -right-4 size-32 text-white/5" strokeWidth={1.5} />
+          <div className="relative flex items-start gap-4">
+            <div className="size-20 rounded-2xl overflow-hidden bg-white/20 backdrop-blur-sm border border-white/30 shrink-0">
+              <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 pr-2">
+              <p className={`${font} text-[10.5px] text-white/75 uppercase tracking-wider mb-1`} style={{ fontWeight: 600 }}>
+                {product.category}
+              </p>
+              <h2 className={`${font} text-[20px] text-white leading-tight`} style={{ fontWeight: 700 }}>{product.name}</h2>
+              <p className={`${font} text-[12.5px] text-white/85 mt-1 leading-snug`}>{product.tagline}</p>
+              {product.studioName && (
+                <p className={`${font} text-[11px] text-white/70 mt-2 inline-flex items-center gap-1`}>
+                  <span className="size-1.5 rounded-full bg-white/70" />
+                  {product.studioName}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* KPI strip */}
+          <div className="relative flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
+            {[
+              { label: "ที่นั่ง",       value: `${seatsTaken}/${product.spotsTotal}`, sub: `เหลือ ${seatsLeft}` },
+              { label: "เวลาเหลือ",     value: `${product.endsInDays}`, sub: "วัน" },
+              { label: "คะแนนสะสม",     value: `${product.rewardPoints}`, sub: "pts" },
+              { label: "ความพึงพอใจ",   value: avgOverall > 0 ? avgOverall.toFixed(1) : "—", sub: evaluations.length > 0 ? `${evaluations.length} รีวิว` : "ยังไม่มี" },
+            ].map((k, i, arr) => (
+              <Fragment key={k.label}>
+                <div className="inline-flex items-baseline gap-1.5">
+                  <span className={`${font} text-[10px] text-white/65`} style={{ fontWeight: 500 }}>{k.label}</span>
+                  <span className={`${font} text-[14px] text-white tabular-nums leading-none`} style={{ fontWeight: 700 }}>{k.value}</span>
+                  <span className={`${font} text-[10px] text-white/65`}>{k.sub}</span>
+                </div>
+                {i < arr.length - 1 && <span className="h-3 w-px bg-white/20" aria-hidden />}
+              </Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Body — grid of admin-relevant sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+        {/* Left: profile cards */}
+        <div className="lg:col-span-2 space-y-5">
+          <ShopAppSection icon={FlaskConical} title="ข้อมูลสินค้า">
+            <ShopAppField label="ชื่อสินค้า" value={product.name} fullWidth />
+            <ShopAppField label="หมวดหมู่" value={product.category} />
+            <ShopAppField label="แบรนด์" value={product.studioName ?? "—"} />
+            <ShopAppField label="คะแนนสะสม" value={`${product.rewardPoints} pts`} tabular />
+            <ShopAppField label="วันประเมิน" value={product.evaluationDays ? `${product.evaluationDays} วัน` : "—"} tabular />
+          </ShopAppSection>
+
+          {product.whatToTest && product.whatToTest.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <ClipboardList className="size-4 text-[#319754]" strokeWidth={2.2} />
+                <h4 className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>สิ่งที่ทดลอง</h4>
+              </div>
+              <ul className="space-y-1.5">
+                {product.whatToTest.map((w, i) => (
+                  <li key={i} className={`${font} text-[12.5px] text-gray-700 flex items-start gap-2`}>
+                    <span className="size-1.5 rounded-full bg-[#319754] mt-1.5 shrink-0" />
+                    {w}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Right: applicants summary + brand actions */}
+        <div className="lg:col-span-1 space-y-5">
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Users className="size-4 text-[#319754]" strokeWidth={2.2} />
+              <h4 className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>สถานะผู้ทดลอง</h4>
+            </div>
+            <div className="space-y-3">
+              {[
+                { label: "รออนุมัติ",   value: pending,   color: "#f59e0b" },
+                { label: "กำลังทดลอง",  value: approved,  color: "#0088ff" },
+                { label: "ประเมินแล้ว", value: evaluated, color: "#319754" },
+                { label: "ปฏิเสธ",      value: trialRegs.filter((r) => !!r.rejectedAt).length, color: "#dc2626" },
+              ].map((row, i) => (
+                <div key={row.label}
+                  className={`flex items-center justify-between gap-3 pb-2 ${i < 3 ? "border-b border-gray-50" : ""}`}>
+                  <div className="flex items-center gap-2">
+                    <span className="size-2 rounded-full" style={{ background: row.color }} />
+                    <p className={`${font} text-[12.5px] text-gray-700`}>{row.label}</p>
+                  </div>
+                  <p className={`${font} text-[13px] tabular-nums`} style={{ fontWeight: 700, color: row.color }}>{row.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {evaluations.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Star className="size-4 text-[#f59e0b]" strokeWidth={2.2} />
+                <h4 className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>ผลการประเมิน</h4>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-baseline gap-2">
+                  <span className={`${font} text-[28px] tabular-nums leading-none`} style={{ fontWeight: 800, color: "#f59e0b" }}>
+                    {avgOverall.toFixed(1)}
+                  </span>
+                  <span className={`${font} text-[11px] text-gray-500`}>เฉลี่ย · {evaluations.length} รีวิว</span>
+                </div>
+                <div className="pt-3 border-t border-gray-50">
+                  <p className={`${font} text-[11.5px] text-gray-500`}>แนะนำต่อ</p>
+                  <p className={`${font} text-[18px] tabular-nums leading-tight`} style={{ fontWeight: 800, color: "#319754" }}>
+                    {recommendPct}%
+                    <span className={`${font} text-[11px] text-gray-500 ml-1.5 tabular-nums`} style={{ fontWeight: 500 }}>({recommendCount}/{evaluations.length} คน)</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+ * ADMIN HERBAL MARKET — cross-supplier B2B raw-material registry.
+ * Mirrors ProductsManageContent / AdminTrialProductsContent: KPI
+ * tiles, filter pills, bulk action bar, supplier popover, table
+ * with checkboxes + thumbnails + grade badges.
+ * ========================================================== */
+type HerbalAdminStatus = "in_stock" | "low_stock" | "out_of_stock";
+
+
+function AdminHerbalMarketContent() {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | HerbalAdminStatus>("all");
+  const [supplierFilter, setSupplierFilter] = useState<string>("all");
+  const [detail, setDetail] = useState<HerbalMaterial | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [suspended, setSuspended] = useState<Set<string>>(new Set());
+
+  // Suppliers — Thai-aware sort
+  const suppliers = useMemo(
+    () => Array.from(new Set(MATERIALS.map((m) => m.supplier))).sort((a, b) => a.localeCompare(b, "th")),
+    [],
+  );
+  const statusOf = (m: HerbalMaterial): HerbalAdminStatus =>
+    m.stock === 0 ? "out_of_stock" : m.stock < 200 ? "low_stock" : "in_stock";
+  const STATUS_META: Record<HerbalAdminStatus, { label: string; color: string; bg: string; dot: string }> = {
+    in_stock:     { label: "ปกติ",       color: "#287745", bg: "#dcfce7", dot: "#16a34a" },
+    low_stock:    { label: "สต็อกต่ำ",   color: "#b45309", bg: "#fef3c7", dot: "#f59e0b" },
+    out_of_stock: { label: "หมดสต็อก",   color: "#dc2626", bg: "#fee2e2", dot: "#dc2626" },
+  };
+
+  // Filter
+  const filtered = useMemo(() => MATERIALS.filter((m) => {
+    if (statusFilter !== "all" && statusOf(m) !== statusFilter) return false;
+    if (supplierFilter !== "all" && m.supplier !== supplierFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const haystack = [m.name, m.scientificName, m.supplier, m.category, m.location, ...m.certifications];
+      if (!haystack.some((s) => s.toLowerCase().includes(q))) return false;
+    }
+    return true;
+  }), [statusFilter, supplierFilter, search]);
+
+  // Counts (KPI)
+  const totalMaterials = MATERIALS.length;
+  const lowStockCount  = MATERIALS.filter((m) => m.stock > 0 && m.stock < 200).length;
+  const outOfStockCnt  = MATERIALS.filter((m) => m.stock === 0).length;
+  const totalStockKg   = MATERIALS.reduce((s, m) => s + m.stock, 0);
+  const inStockCount   = totalMaterials - lowStockCount - outOfStockCnt;
+
+  // Selection helpers
+  const allSelected  = filtered.length > 0 && filtered.every((m) => selectedIds.has(m.id));
+  const someSelected = selectedIds.size > 0 && !allSelected;
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) filtered.forEach((m) => next.delete(m.id));
+      else filtered.forEach((m) => next.add(m.id));
+      return next;
+    });
+  };
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+  const bulkApply = (kind: "suspend" | "unsuspend" | "contact") => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    // Compute delta first so toast reports newly-changed count (Set union/diff is idempotent)
+    let changed = ids.length;
+    if (kind === "suspend") {
+      changed = ids.filter((id) => !suspended.has(id)).length;
+      setSuspended((prev) => new Set([...prev, ...ids]));
+    } else if (kind === "unsuspend") {
+      changed = ids.filter((id) => suspended.has(id)).length;
+      setSuspended((prev) => { const n = new Set(prev); ids.forEach((id) => n.delete(id)); return n; });
+    }
+    const labelMap = { suspend: "ระงับ", unsuspend: "ปลดระงับ", contact: "ส่งข้อความถึงซัพพลายเออร์" } as const;
+    toast.success(`${labelMap[kind]} ${changed} รายการแล้ว`);
+    clearSelection();
+  };
+
+  // Status filter pills
+  const statusPills: { id: "all" | HerbalAdminStatus; label: string; count: number; Icon: any }[] = [
+    { id: "all",          label: "ทั้งหมด",   count: totalMaterials, Icon: Beaker },
+    { id: "in_stock",     label: "ปกติ",     count: inStockCount,   Icon: Check },
+    { id: "low_stock",    label: "สต็อกต่ำ", count: lowStockCount,  Icon: AlertTriangle },
+    { id: "out_of_stock", label: "หมดสต็อก", count: outOfStockCnt,  Icon: PackageX },
+  ];
+
+  // KPI cards — drop grade-specific tile, keep stock-centric metrics
+  const kpiCards = [
+    { label: "วัตถุดิบทั้งหมด",  value: totalMaterials, sub: `${suppliers.length} ซัพพลายเออร์`, color: "#319754", Icon: Beaker },
+    { label: "สต็อกปกติ",         value: inStockCount,    sub: `${totalMaterials > 0 ? Math.round((inStockCount / totalMaterials) * 100) : 0}% ของทั้งหมด`, color: "#9747ff", Icon: Check },
+    { label: "สต็อกต่ำ",           value: lowStockCount,   sub: "ต้องตรวจสอบ",                  color: "#f59e0b", Icon: AlertTriangle },
+    { label: "สต็อกรวม (kg)",    value: totalStockKg,    sub: "ทั่วทั้งระบบ",                   color: "#0088ff", Icon: Package },
+  ];
+
+  if (detail) {
+    return <AdminHerbalMarketDetail material={detail} onBack={() => setDetail(null)} />;
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>เฮอร์บัลมาร์เก็ต (B2B)</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>วัตถุดิบสมุนไพรทั้งหมดในระบบ จัดการตามเกรดและซัพพลายเออร์</p>
+        </div>
+        <motion.button
+          onClick={() => toast.success(`ส่งออก ${filtered.length} รายการ`)}
+          whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
+          <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
+            <Upload className="size-[14px] text-[#319754]" strokeWidth={2.6} />
+          </span>
+          <span style={{ fontWeight: 600 }}>ส่งออก</span>
+        </motion.button>
+      </div>
+
+      <div className="flex flex-col gap-5">
+        {/* KPI cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {kpiCards.map((c) => (
+            <div key={c.label}
+              className="group bg-white border border-[#e8e8e8] rounded-2xl p-5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-shadow relative overflow-hidden">
+              <c.Icon
+                className="absolute -bottom-3 -right-3 size-[110px] pointer-events-none select-none transition-transform duration-500 ease-out group-hover:scale-110 group-hover:-rotate-3"
+                style={{
+                  color: c.color, opacity: 0.1,
+                  maskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                  WebkitMaskImage: "linear-gradient(to bottom, black 45%, rgba(0,0,0,0.35) 80%, transparent 100%)",
+                }}
+                strokeWidth={1.6} aria-hidden />
+              <div className="relative z-10">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${c.color}1a` }}>
+                    <c.Icon className="size-4" style={{ color: c.color }} strokeWidth={2} />
+                  </div>
+                  <p className={`${font} text-[13px] text-gray-500 truncate`}>{c.label}</p>
+                </div>
+                <p className={`${font} text-[28px] mt-3 tracking-tight tabular-nums leading-none`} style={{ fontWeight: 700, color: c.color }}>
+                  {c.value.toLocaleString()}
+                </p>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md tabular-nums`}
+                    style={{ backgroundColor: `${c.color}15`, color: c.color, fontWeight: 600 }}>
+                    {c.sub}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bulk action bar */}
+        <AnimatePresence>
+          {selectedIds.size > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden">
+              <div className="bg-[#319754] rounded-2xl shadow-[0_8px_24px_-8px_rgba(49,151,84,0.45)] flex items-center justify-between gap-3 px-4 py-2.5 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="size-9 rounded-full bg-white/15 flex items-center justify-center">
+                    <Check className="size-4 text-white" strokeWidth={2.6} />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className={`${font} text-white text-[14px]`} style={{ fontWeight: 600 }}>เลือก {selectedIds.size} รายการ</p>
+                    <p className={`${font} text-white/70 text-[11px]`}>เลือกการดำเนินการเพื่อจัดการพร้อมกัน</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button onClick={() => bulkApply("contact")} className={`${font} inline-flex items-center gap-1.5 h-[32px] px-3 rounded-full bg-white/15 hover:bg-white/25 text-white text-[12px] cursor-pointer transition-colors`} style={{ fontWeight: 500 }}>
+                    <Mail className="size-3.5" strokeWidth={2.2} /> ส่งข้อความ
+                  </button>
+                  <button onClick={() => bulkApply("suspend")} className={`${font} inline-flex items-center gap-1.5 h-[32px] px-3 rounded-full bg-white/15 hover:bg-white/25 text-white text-[12px] cursor-pointer transition-colors`} style={{ fontWeight: 500 }}>
+                    <Ban className="size-3.5" strokeWidth={2.2} /> ระงับ
+                  </button>
+                  <button onClick={() => bulkApply("unsuspend")} className={`${font} inline-flex items-center gap-1.5 h-[32px] px-3 rounded-full bg-white/15 hover:bg-white/25 text-white text-[12px] cursor-pointer transition-colors`} style={{ fontWeight: 500 }}>
+                    <Check className="size-3.5" strokeWidth={2.2} /> ปลดระงับ
+                  </button>
+                  <button onClick={clearSelection}
+                    className={`${font} inline-flex items-center justify-center size-[32px] rounded-full bg-white/15 hover:bg-white/25 text-white cursor-pointer transition-colors`}
+                    title="ยกเลิกการเลือก">
+                    <X className="size-3.5" strokeWidth={2.2} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Filter pills + supplier Popover + search */}
+        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 flex items-center gap-2">
+          <FilterTabPills tabs={statusPills} active={statusFilter} onChange={setStatusFilter} pillId="adminHerbalPill" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className={`${font} inline-flex items-center gap-2 h-[36px] pl-3 pr-2 bg-[#f5f5f5] hover:bg-gray-200 rounded-full text-[13px] cursor-pointer transition-colors shrink-0`}>
+                <Filter className="size-[14px] text-[#319754]" />
+                <span className="truncate max-w-[140px]">{supplierFilter === "all" ? "ทุกซัพพลายเออร์" : supplierFilter}</span>
+                <ChevronDown className="size-[14px] text-gray-500" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64 p-1 max-h-[320px] overflow-y-auto">
+              <button onClick={() => setSupplierFilter("all")}
+                className={`${font} text-[13px] w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer ${supplierFilter === "all" ? "text-[#319754]" : "text-black"}`}>
+                <Store className="size-3.5" />
+                <span className="flex-1 text-left">ทุกซัพพลายเออร์</span>
+                {supplierFilter === "all" && <Check className="size-3.5" />}
+              </button>
+              {suppliers.map((s) => (
+                <button key={s} onClick={() => setSupplierFilter(s)}
+                  className={`${font} text-[13px] w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-50 cursor-pointer ${supplierFilter === s ? "text-[#319754]" : "text-black"}`}>
+                  <Store className="size-3.5" />
+                  <span className="flex-1 text-left truncate">{s}</span>
+                  {supplierFilter === s && <Check className="size-3.5 shrink-0" />}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[260px] lg:ml-auto">
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหาชื่อ ชื่อวิทย์ ซัพพลายเออร์ จังหวัด"
+              className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+            <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+              <Search className="size-4 text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col style={{ width: "4%" }} />{/* checkbox */}
+              <col style={{ width: "32%" }} />{/* วัตถุดิบ */}
+              <col style={{ width: "18%" }} />{/* ซัพพลายเออร์ */}
+              <col style={{ width: "12%" }} />{/* หมวด */}
+              <col style={{ width: "12%" }} />{/* ราคา/kg */}
+              <col style={{ width: "14%" }} />{/* สต็อก / สถานะ */}
+              <col style={{ width: "8%" }} />{/* จัดการ */}
+            </colgroup>
+            <thead>
+              <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+                <th className="text-center pb-3 pr-2" style={{ fontWeight: 500 }}>
+                  <input
+                    type="checkbox"
+                    aria-label="เลือกทั้งหมด"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={toggleSelectAll}
+                    className="size-4 rounded border-gray-300 text-[#319754] focus:ring-[#319754] cursor-pointer accent-[#319754]"
+                  />
+                </th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>วัตถุดิบ</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>ซัพพลายเออร์</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>หมวด</th>
+                <th className="text-right pb-3 pr-4" style={{ fontWeight: 500 }}>ราคา/kg</th>
+                <th className="text-left pb-3 pr-4" style={{ fontWeight: 500 }}>สต็อก / สถานะ</th>
+                <th className="text-center pb-3" style={{ fontWeight: 500 }}>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={7} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>ไม่พบวัตถุดิบที่ตรงเงื่อนไข</td></tr>
+              ) : filtered.map((m) => {
+                const st = statusOf(m);
+                const stMeta = STATUS_META[st];
+                const isSus = suspended.has(m.id);
+                const isSel = selectedIds.has(m.id);
+                const isOut = st === "out_of_stock";
+                return (
+                  <tr key={m.id}
+                    onClick={() => setDetail(m)}
+                    className={`group/row border-b border-gray-50 last:border-0 transition-colors cursor-pointer ${isSel ? "bg-[#319754]/5" : "hover:bg-gray-50/60"}`}>
+                    {/* Checkbox */}
+                    <td className="py-3 pr-2 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        aria-label={`เลือก ${m.name}`}
+                        checked={isSel}
+                        onChange={() => toggleSelect(m.id)}
+                        className="size-4 rounded border-gray-300 text-[#319754] focus:ring-[#319754] cursor-pointer accent-[#319754]"
+                      />
+                    </td>
+                    {/* Material */}
+                    <td className="py-3 pr-4 align-middle">
+                      <div className="flex items-center gap-3">
+                        <div className="relative size-[64px] bg-gray-100 rounded-2xl overflow-hidden border border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] group-hover/row:shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow shrink-0">
+                          <ImageWithFallback src={m.image} alt={m.name}
+                            className={`w-full h-full object-cover transition-transform duration-500 ease-out group-hover/row:scale-110 ${isSus || isOut ? "grayscale opacity-60" : ""}`} />
+                          {isSus && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/40 pointer-events-none">
+                              <Ban className="size-5 text-white" strokeWidth={2.4} />
+                            </div>
+                          )}
+                          {m.supplierVerified && !isSus && (
+                            <div className="absolute top-1 left-1 size-5 bg-[#319754] rounded-full flex items-center justify-center shadow-[0_1px_3px_rgba(49,151,84,0.4)]">
+                              <BadgeCheck className="size-3 text-white" strokeWidth={2.4} fill="#319754" stroke="#fff" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col min-w-0 gap-0.5">
+                          <p className={`${font} text-[13px] text-black truncate`} style={{ fontWeight: 600 }} title={m.name}>{m.name}</p>
+                          <p className={`${font} text-[11px] text-gray-500 italic truncate`} title={m.scientificName}>{m.scientificName}</p>
+                          <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                            <span className={`${font} inline-flex items-center gap-0.5 text-[10px] text-gray-500`}>
+                              <MapPin className="size-2.5" strokeWidth={2.4} /> {m.location}
+                            </span>
+                            <span className={`${font} inline-flex items-center gap-0.5 text-[10px]`} style={{ color: "#f59e0b" }}>
+                              <Star className="size-2.5 fill-current" strokeWidth={0} /> {m.rating.toFixed(1)}
+                            </span>
+                            {m.certifications.length > 0 && (
+                              <span className={`${font} inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full text-[9.5px]`} style={{ fontWeight: 600 }}>
+                                <ShieldCheck className="size-2.5" strokeWidth={2.4} /> {m.certifications.length} cert
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    {/* Supplier */}
+                    <td className="py-3 pr-4 align-middle">
+                      <span className={`${font} text-[12px] text-[#555] inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-100 truncate max-w-full`} title={m.supplier}>
+                        <Store className="size-3 text-gray-500 shrink-0" />
+                        <span className="truncate">{m.supplier}</span>
+                      </span>
+                    </td>
+                    {/* Category */}
+                    <td className="py-3 pr-4 align-middle">
+                      <span className={`${font} text-[11.5px] text-gray-700`}>{m.category}</span>
+                    </td>
+                    {/* Price */}
+                    <td className="py-3 pr-4 text-right align-middle">
+                      <p className={`${font} text-[13px] tabular-nums`} style={{ fontWeight: 700, color: "#287745" }}>
+                        ฿{m.pricePerKg.toLocaleString()}
+                      </p>
+                      <p className={`${font} text-[10px] text-gray-500 tabular-nums mt-0.5`}>MOQ {m.moq} kg</p>
+                    </td>
+                    {/* Stock + status */}
+                    <td className="py-3 pr-4 align-middle">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className={`${font} text-[13px] tabular-nums`} style={{ fontWeight: 700, color: isOut ? "#dc2626" : st === "low_stock" ? "#b45309" : "#1a1a1a" }}>
+                            {m.stock.toLocaleString()}
+                          </span>
+                          <span className={`${font} text-[10.5px] text-gray-500`}>kg</span>
+                        </div>
+                        <span className={`${font} inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap w-fit`}
+                          style={{ backgroundColor: stMeta.bg, color: stMeta.color, fontWeight: 600 }}>
+                          <span className="size-1 rounded-full" style={{ background: stMeta.dot }} />
+                          {stMeta.label}
+                        </span>
+                      </div>
+                    </td>
+                    {/* Actions */}
+                    <td className="py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                            <MoreHorizontal className="size-4" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" sideOffset={6} className="w-[220px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                          <button onClick={() => setDetail(m)}
+                            className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                            <Eye className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                            <span style={{ fontWeight: 500 }}>ดูรายละเอียด</span>
+                          </button>
+                          <button onClick={() => toast.info(`ติดต่อ ${m.supplier}`)}
+                            className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                            <Mail className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                            <span style={{ fontWeight: 500 }}>ติดต่อซัพพลายเออร์</span>
+                          </button>
+                          <div className="h-px bg-gray-100 my-1" />
+                          {isSus ? (
+                            <button onClick={() => { setSuspended((prev) => { const n = new Set(prev); n.delete(m.id); return n; }); toast.success(`ปลดระงับ ${m.name} แล้ว`); }}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#319754]/10 cursor-pointer text-left text-[13px] text-[#287745]`}>
+                              <Check className="size-3.5" strokeWidth={2.4} />
+                              <span style={{ fontWeight: 500 }}>ปลดระงับ</span>
+                            </button>
+                          ) : (
+                            <button onClick={() => { setSuspended((prev) => new Set([...prev, m.id])); toast.success(`ระงับ ${m.name} แล้ว`); }}
+                              className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/10 cursor-pointer text-left text-[13px] text-[#dc2626]`}>
+                              <Ban className="size-3.5" strokeWidth={2.4} />
+                              <span style={{ fontWeight: 500 }}>ระงับวัตถุดิบ</span>
+                            </button>
+                          )}
+                        </PopoverContent>
+                      </Popover>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <p className={`${font} text-[11px] text-gray-400 mt-3`}>
+            แสดง <span style={{ fontWeight: 600 }} className="text-[#319754]">{filtered.length}</span> จาก {MATERIALS.length} รายการ
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===== Admin herbal market detail — supplier + material spec sheet ===== */
+function AdminHerbalMarketDetail({ material, onBack }: { material: HerbalMaterial; onBack: () => void }) {
+  const m = material;
+  const stockStatus = m.stock === 0 ? "หมดสต็อก" : m.stock < 200 ? "สต็อกต่ำ" : "ปกติ";
+  const stockColor = m.stock === 0 ? "#dc2626" : m.stock < 200 ? "#b45309" : "#287745";
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} /> กลับ
+        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={() => toast.info(`ติดต่อ ${m.supplier}`)}
+            className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#319754] hover:text-[#319754] text-gray-700 text-[13px] cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            <Mail className="size-4" strokeWidth={2.4} /> ติดต่อซัพพลายเออร์
+          </button>
+          <button onClick={() => toast.info(`ฟีเจอร์ระงับยังไม่พร้อม — ${m.name}`)}
+            className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#dc2626] hover:text-[#dc2626] hover:bg-red-50/50 text-gray-700 text-[13px] cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            <Ban className="size-4" strokeWidth={2.4} /> ระงับวัตถุดิบ
+          </button>
+        </div>
+      </div>
+
+      {/* HERO CARD */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden mb-5">
+        <div className="relative bg-gradient-to-br from-[#319754] via-[#287745] to-[#1d5b32] p-5 overflow-hidden">
+          <Sparkles className="absolute -top-4 -right-4 size-32 text-white/5" strokeWidth={1.5} />
+          <div className="relative flex items-start gap-4">
+            <div className="size-20 rounded-2xl overflow-hidden bg-white/20 backdrop-blur-sm border border-white/30 shrink-0">
+              <ImageWithFallback src={m.image} alt={m.name} className="w-full h-full object-cover" />
+            </div>
+            <div className="flex-1 min-w-0 pr-2">
+              <p className={`${font} text-[10.5px] text-white/75 uppercase tracking-wider mb-1`} style={{ fontWeight: 600 }}>
+                {m.category}
+              </p>
+              <h2 className={`${font} text-[20px] text-white leading-tight inline-flex items-center gap-2`} style={{ fontWeight: 700 }}>
+                {m.name}
+                {m.supplierVerified && <BadgeCheck className="size-4 text-white shrink-0" strokeWidth={2.4} fill="#319754" stroke="#fff" />}
+              </h2>
+              <p className={`${font} text-[12px] text-white/80 italic mt-0.5`}>{m.scientificName}</p>
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/95`} style={{ fontWeight: 500 }}>
+                  <Store className="size-3" strokeWidth={2.4} /> {m.supplier}
+                </span>
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/95`} style={{ fontWeight: 500 }}>
+                  <MapPin className="size-3" strokeWidth={2.4} /> {m.location}
+                </span>
+                {m.stock < 200 && (
+                  <span className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full backdrop-blur-sm`}
+                    style={{
+                      background: m.stock === 0 ? "rgba(239,68,68,0.95)" : "rgba(245,158,11,0.95)",
+                      color: "#ffffff", fontWeight: 700,
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+                    }}>
+                    <AlertTriangle className="size-3" strokeWidth={2.6} />
+                    {m.stock === 0 ? "หมดสต็อก" : "สต็อกต่ำ"}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* KPI strip */}
+          <div className="relative flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
+            {[
+              { label: "ราคา", value: `฿${m.pricePerKg.toLocaleString()}`, sub: "/kg" },
+              { label: "MOQ",  value: `${m.moq}`, sub: "kg" },
+              { label: "สต็อก", value: m.stock.toLocaleString(), sub: "kg" },
+              { label: "คะแนน", value: m.rating.toFixed(1), sub: "★" },
+            ].map((k, i, arr) => (
+              <Fragment key={k.label}>
+                <div className="inline-flex items-baseline gap-1.5">
+                  <span className={`${font} text-[10px] text-white/65`} style={{ fontWeight: 500 }}>{k.label}</span>
+                  <span className={`${font} text-[14px] text-white tabular-nums leading-none`} style={{ fontWeight: 700 }}>{k.value}</span>
+                  <span className={`${font} text-[10px] text-white/65`}>{k.sub}</span>
+                </div>
+                {i < arr.length - 1 && <span className="h-3 w-px bg-white/20" aria-hidden />}
+              </Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+        <div className="lg:col-span-2 space-y-5">
+          <ShopAppSection icon={Beaker} title="ข้อมูลวัตถุดิบ">
+            <ShopAppField label="ชื่อวัตถุดิบ" value={m.name} />
+            <ShopAppField label="ชื่อวิทยาศาสตร์" value={m.scientificName} />
+            <ShopAppField label="หมวด" value={m.category} />
+            <ShopAppField label="แหล่งที่มา" value={m.location} icon={MapPin} />
+            <ShopAppField label="คะแนน" value={`${m.rating.toFixed(1)} ★`} tabular />
+          </ShopAppSection>
+
+          <ShopAppSection icon={DollarSign} title="ราคา และเงื่อนไขการสั่งซื้อ">
+            <ShopAppField label="ราคาต่อกิโลกรัม" value={`฿${m.pricePerKg.toLocaleString()}`} tabular />
+            <ShopAppField label="ปริมาณสั่งซื้อขั้นต่ำ (MOQ)" value={`${m.moq} kg`} tabular />
+            <ShopAppField label="สต็อกในระบบ" value={`${m.stock.toLocaleString()} kg`} tabular />
+            <ShopAppField label="สถานะสต็อก" value={stockStatus} />
+          </ShopAppSection>
+
+          {m.certifications.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <ShieldCheck className="size-4 text-[#319754]" strokeWidth={2.2} />
+                <h4 className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>ใบรับรองมาตรฐาน</h4>
+                <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>{m.certifications.length} รายการ</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {m.certifications.map((c) => (
+                  <span key={c}
+                    className={`${font} inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] bg-emerald-50 text-emerald-700 border border-emerald-100`}
+                    style={{ fontWeight: 600 }}>
+                    <BadgeCheck className="size-3.5" strokeWidth={2.4} />
+                    {c}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right column — supplier card + stock status */}
+        <div className="lg:col-span-1 space-y-5">
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Store className="size-4 text-[#319754]" strokeWidth={2.2} />
+              <h4 className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>ซัพพลายเออร์</h4>
+            </div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="size-12 rounded-xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+                <span className={`${fontBold} text-[#319754] text-[18px]`} style={{ fontWeight: 800 }}>{m.supplier.charAt(0)}</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`${font} text-[13.5px] text-black inline-flex items-center gap-1`} style={{ fontWeight: 700 }}>
+                  {m.supplier}
+                  {m.supplierVerified && <BadgeCheck className="size-3.5 text-[#319754] shrink-0" strokeWidth={2.4} fill="#319754" stroke="#fff" />}
+                </p>
+                <p className={`${font} text-[11px] text-gray-500 mt-0.5 inline-flex items-center gap-1`}>
+                  <MapPin className="size-2.5" strokeWidth={2.4} /> {m.location}
+                </p>
+              </div>
+            </div>
+            <div className={`${font} text-[11px] px-3 py-2 rounded-lg ${m.supplierVerified ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`} style={{ fontWeight: 600 }}>
+              {m.supplierVerified ? "✓ ผ่านการตรวจสอบและรับรอง" : "⚠ ยังไม่ได้ตรวจสอบ"}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Package className="size-4 text-[#319754]" strokeWidth={2.2} />
+              <h4 className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>คลังสินค้า</h4>
+            </div>
+            <p className={`${font} text-[32px] tabular-nums leading-none`} style={{ fontWeight: 800, color: stockColor }}>
+              {m.stock.toLocaleString()}
+              <span className={`${font} text-[14px] ml-1`} style={{ fontWeight: 500, color: "#6b7280" }}>kg</span>
+            </p>
+            <p className={`${font} text-[12px] mt-2`} style={{ fontWeight: 600, color: stockColor }}>{stockStatus}</p>
+            <div className="mt-3 pt-3 border-t border-gray-50">
+              <p className={`${font} text-[11.5px] text-gray-500`}>ยอดขายเทียบกับสต็อก</p>
+              <p className={`${font} text-[11px] text-gray-400 mt-1`}>เพิ่ม sale velocity tracking ในเฟสถัดไป</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProductsCategoriesContent() {
   const { t } = useLanguage();
   // Wire to live CategoriesContext so admin add/edit/delete/toggle/reorder
@@ -20359,10 +21592,14 @@ function UserAvatar({ user, size = 36 }: { user: UserRecord; size?: number }) {
 
 function UsersListPage() {
   const { t } = useLanguage();
-  const { users, updateUserRole: ctxUpdateRole, removeUser: ctxRemoveUser } = useAuth();
+  const { users, updateUserRole: ctxUpdateRole, updateUserStatus: ctxUpdateStatus, removeUser: ctxRemoveUser } = useAuth();
   const [filter, setFilter] = useState<UserRecord["role"] | "all">("all");
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [detailUser, setDetailUser] = useState<UserRecord | null>(null);
+  // Persisted across detail-page open/close within the session — keyed by user.id
+  // so admin approve/reject decisions survive back-then-reopen.
+  const [subRolesById, setSubRolesById] = useState<Record<string, OwnerSubRoles>>({});
 
   const updateUserRole = (id: string, newRole: UserRecord["role"]) => {
     const u = users.find(x => x.id === id);
@@ -20418,8 +21655,32 @@ function UsersListPage() {
     { label: t("admin_users_tab_admin")       || "แอดมิน",        value: stats.admin.toLocaleString(),    subLabel: `${pct(stats.admin)}% ของผู้ใช้`,    accent: "#3b82f6", Icon: Shield },
   ];
 
+  if (detailUser) {
+    const live = users.find((u) => u.id === detailUser.id) ?? detailUser;
+    return <UserDetailPage
+      key={detailUser.id}
+      user={live}
+      subRolesOverride={subRolesById[detailUser.id]}
+      onSubRolesChange={(next) => setSubRolesById((prev) => ({ ...prev, [detailUser.id]: next }))}
+      onBack={() => setDetailUser(null)}
+      onDelete={() => { deleteUser(detailUser.id); setDetailUser(null); }}
+      onUpdateStatus={(s) => {
+        ctxUpdateStatus(detailUser.id, s as RegistryStatus);
+        toast.success(s === "banned" ? `ระงับบัญชี ${detailUser.username} แล้ว` : s === "active" ? `ปลดระงับบัญชี ${detailUser.username} แล้ว` : `อัปเดตสถานะแล้ว`);
+      }}
+      onUpdateRole={(r) => updateUserRole(detailUser.id, r as UserRecord["role"])}
+    />;
+  }
+
   return (
     <div>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_users_page_title") || "จัดการผู้ใช้งาน"}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("admin_users_page_subtitle") || "ดูและจัดการบัญชีผู้ใช้งานทั้งหมด"}</p>
+        </div>
+      </div>
+
       {/* KPI cards — same pattern as AdminOrdersContent */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         {kpiCards.map((s) => (
@@ -20493,8 +21754,9 @@ function UsersListPage() {
               const isEditing = editingId === u.id;
               return (
                 <tr key={u.id}
+                  onClick={() => { if (!isEditing) setDetailUser(u); }}
                   className={`group/row border-b border-gray-50 last:border-b-0 transition-colors ${
-                    isEditing ? "bg-[#fffbeb]" : "hover:bg-gray-50/50"
+                    isEditing ? "bg-[#fffbeb]" : "hover:bg-gray-50/50 cursor-pointer"
                   }`}
                   style={isEditing ? { boxShadow: "inset 3px 0 0 #f59e0b" } : {}}>
                   {/* ID */}
@@ -20525,7 +21787,7 @@ function UsersListPage() {
                     <span className={`${font} text-[12px] text-gray-700 truncate block`} style={{ fontWeight: 500 }} title={u.name}>{u.name}</span>
                   </td>
                   {/* Role */}
-                  <td className="py-3 pr-3 align-middle">
+                  <td className="py-3 pr-3 align-middle" onClick={(e) => { if (isEditing) e.stopPropagation(); }}>
                     {isEditing ? (
                       <Popover>
                         <PopoverTrigger asChild>
@@ -20572,7 +21834,7 @@ function UsersListPage() {
                     </span>
                   </td>
                   {/* Actions */}
-                  <td className="py-3 text-center align-middle">
+                  <td className="py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
                     <Popover>
                       <PopoverTrigger asChild>
                         <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
@@ -20580,6 +21842,11 @@ function UsersListPage() {
                         </button>
                       </PopoverTrigger>
                       <PopoverContent align="end" sideOffset={6} className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                        <button onClick={() => setDetailUser(u)}
+                          className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                          <Eye className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                          <span style={{ fontWeight: 500 }}>ดูรายละเอียด</span>
+                        </button>
                         <button onClick={() => setEditingId(isEditing ? null : u.id)}
                           className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
                           {isEditing
@@ -20615,8 +21882,739 @@ function UsersListPage() {
 }
 
 /* ============================================================
+ * USER DETAIL — full-page admin view of a single user's profile,
+ * recent activity, and security/access info. Mirrors the shop
+ * application detail page pattern (green gradient hero + KPI strip
+ * + grid body) but with role-aware fields/stats.
+ * ========================================================== */
+
+interface UserProfileMock {
+  avatar?: string;
+  phone: string;
+  province: string;
+  joinDate: string;     // human-readable
+  lastLogin: string;
+  twoFactor: boolean;
+  notes?: string;
+  // role-specific
+  loginCount: number;
+  // customer
+  orderCount?: number;
+  totalSpent?: number;
+  wishlistCount?: number;
+  reviewCount?: number;
+  loyaltyTier?: "Bronze" | "Silver" | "Gold" | "Platinum";
+  // owner
+  shopId?: string;
+  shopName?: string;
+  productCount?: number;
+  shopRevenue?: number;
+  shopRating?: number;
+  // admin
+  permissionGroup?: string;
+  lastAction?: string;
+}
+
+/** Synthesize a profile for a user. Deterministic from username so the same
+ *  user always shows the same numbers across reloads. */
+function mockUserProfile(u: UserRecord): UserProfileMock {
+  // Simple djb2-style hash → pseudo-random but stable per username
+  let h = 5381;
+  for (let i = 0; i < u.username.length; i++) h = ((h << 5) + h) ^ u.username.charCodeAt(i);
+  const n = (mod: number) => Math.abs(h % mod);
+  const provinces = ["กรุงเทพมหานคร", "เชียงใหม่", "ภูเก็ต", "ขอนแก่น", "นครราชสีมา", "พะเยา", "เชียงราย", "ลำพูน", "ปทุมธานี"];
+  const tiers: UserProfileMock["loyaltyTier"][] = ["Bronze", "Silver", "Gold", "Platinum"];
+
+  const base: UserProfileMock = {
+    phone: `0${(8 + n(2))}${String(n(99999999)).padStart(8, "0")}`.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3").slice(0, 12),
+    province: provinces[n(provinces.length)],
+    joinDate: `${1 + n(28)} ${["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][n(12)]} 256${7 + n(2)}`,
+    lastLogin: ["เมื่อวาน", "วันนี้", "2 วันก่อน", "3 วันก่อน", "1 สัปดาห์ก่อน", "12 ชม. ที่แล้ว"][n(6)],
+    twoFactor: n(3) === 0,
+    loginCount: 8 + n(400),
+  };
+
+  if (u.role === "customer") {
+    return {
+      ...base,
+      orderCount: 2 + n(48),
+      totalSpent: 1500 + n(85000),
+      wishlistCount: n(35),
+      reviewCount: n(22),
+      loyaltyTier: tiers[n(tiers.length)],
+    };
+  }
+  if (u.role === "owner") {
+    return {
+      ...base,
+      shopId: `s-${String(1 + n(8)).padStart(3, "0")}`,
+      shopName: u.name.includes("METAHERB") || u.name.toLowerCase().includes("metaherb") ? "เมต้าเฮิร์บ" : `ร้าน${u.name}`,
+      productCount: 5 + n(280),
+      shopRevenue: 8000 + n(2_000_000),
+      shopRating: 3.5 + (n(15) / 10),
+    };
+  }
+  // admin
+  const groups = ["Super Admin", "Content Editor", "Operations", "Finance Auditor"];
+  const actions = ["อนุมัติร้านค้า s-006", "ลบรีวิว #r-2384", "อัปเดต Banner 'ปีใหม่ 2568'", "ระงับบัญชี u-2294", "ย้ายสิทธิ์เป็น Operations"];
+  return {
+    ...base,
+    permissionGroup: groups[n(groups.length)],
+    lastAction: actions[n(actions.length)],
+  };
+}
+
+/* ===== Owner sub-roles ===== */
+type SpecialRoleStatus = "none" | "pending" | "approved" | "rejected" | "revoked";
+type SpecialRoleKey = "trial_brand" | "herbal_market";
+
+interface SpecialRoleApp {
+  status: SpecialRoleStatus;
+  submittedAt?: string;
+  approvedAt?: string;
+  rejectedReason?: string;
+  fields: { label: string; value: string; tabular?: boolean; fullWidth?: boolean }[];
+  documents: { label: string; status: "uploaded" | "missing" }[];
+}
+
+interface OwnerSubRoles {
+  trial_brand: SpecialRoleApp;
+  herbal_market: SpecialRoleApp;
+}
+
+const SPECIAL_ROLE_META: Record<SpecialRoleKey, { label: string; icon: any; color: string; accent: string; tagline: string }> = {
+  trial_brand:   { label: "แบรนด์ทดสอบ",     icon: FlaskConical, color: "#319754", accent: "#dcfce7", tagline: "ปลดล็อกระบบสินค้าทดลอง — ลงสินค้าให้ผู้ใช้จริงประเมินก่อนวางจำหน่าย" },
+  herbal_market: { label: "เฮอร์บัลมาร์เก็ต", icon: Beaker,       color: "#287745", accent: "#d1fae5", tagline: "ปลดล็อกตลาด B2B วัตถุดิบสมุนไพร — รับ RFQ และใบ PO จากระบบ Herbal ERP" },
+};
+
+const SPECIAL_STATUS_META: Record<SpecialRoleStatus, { label: string; bg: string; color: string; dot: string }> = {
+  none:     { label: "ยังไม่ได้สมัคร",  bg: "#f3f4f6", color: "#4b5563", dot: "#6b7280" },
+  pending:  { label: "รออนุมัติ",         bg: "#fef3c7", color: "#b45309", dot: "#f59e0b" },
+  approved: { label: "อนุมัติแล้ว",       bg: "#dcfce7", color: "#287745", dot: "#319754" },
+  rejected: { label: "ปฏิเสธ",           bg: "#fee2e2", color: "#dc2626", dot: "#ef4444" },
+  revoked:  { label: "ถูกเพิกถอน",       bg: "#fce7f3", color: "#9d174d", dot: "#be185d" },
+};
+
+/** Synthesize sub-role applications for an owner — deterministic from user.username
+ *  so reload + state mutations don't reshuffle the seed. Non-owners get null. */
+function mockOwnerSubRoles(u: UserRecord, baseProfile: UserProfileMock): OwnerSubRoles | null {
+  if (u.role !== "owner") return null;
+  let h = 5381;
+  for (let i = 0; i < u.username.length; i++) h = ((h << 5) + h) ^ u.username.charCodeAt(i);
+  const n = (mod: number) => Math.abs(h % mod);
+  const statuses: SpecialRoleStatus[] = ["none", "pending", "approved", "rejected"];
+
+  // Pinned demo statuses for seed owners — guarantees both queues display all 4
+  // statuses out of the box so admins can demo approve / reject / revoke flows.
+  const pinned: Record<string, { trial: SpecialRoleStatus; market: SpecialRoleStatus }> = {
+    metaherb_store: { trial: "approved", market: "approved" },
+    organicthai:    { trial: "approved", market: "approved" },
+    doithaihoney:   { trial: "pending",  market: "approved" },
+    arunlab:        { trial: "approved", market: "pending"  },
+    lungjoy:        { trial: "pending",  market: "rejected" },
+    teahousebkk:    { trial: "rejected", market: "pending"  },
+    lungsomsak:     { trial: "none",     market: "none"     },
+  };
+  const pin = pinned[u.username];
+  const trialStatus: SpecialRoleStatus  = pin ? pin.trial  : statuses[n(statuses.length)];
+  const marketStatus: SpecialRoleStatus = pin ? pin.market : statuses[(n(statuses.length) + 1) % statuses.length];
+
+  const trialBrand: SpecialRoleApp = {
+    status: trialStatus,
+    submittedAt: trialStatus === "none" ? undefined : `${1 + n(28)} ${["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."][n(12)]} 2569`,
+    approvedAt: trialStatus === "approved" ? `${1 + n(28)} เม.ย. 2569` : undefined,
+    rejectedReason: trialStatus === "rejected" ? "เอกสารใบจดแจ้งเครื่องสำอางหมดอายุ — กรุณาส่งใบใหม่" : undefined,
+    fields: [
+      { label: "ชื่อแบรนด์", value: baseProfile.shopName ?? u.name },
+      { label: "เลขทะเบียนการค้า", value: `010556${String(n(1000000)).padStart(7, "0")}`, tabular: true },
+      { label: "ผู้ติดต่อหลัก", value: u.name },
+      { label: "อีเมล", value: u.email },
+      { label: "เบอร์โทร", value: baseProfile.phone, tabular: true },
+      { label: "เว็บไซต์", value: `https://${u.username}.brand.metaherb.co.th`, fullWidth: true },
+    ],
+    documents: [
+      { label: "หนังสือรับรองบริษัท",     status: "uploaded" },
+      { label: "ภพ.20 (ภาษีมูลค่าเพิ่ม)",   status: trialStatus === "pending" || trialStatus === "rejected" ? "missing" : "uploaded" },
+      { label: "บัตรประชาชนผู้มีอำนาจ",    status: "uploaded" },
+      { label: "หน้าสมุดบัญชีธนาคาร",       status: "uploaded" },
+    ],
+  };
+
+  const marketCategories = ["ราก/หัว","ใบ","ดอก","เปลือก","ผล/เมล็ด","สมุนไพรรวม","น้ำมันสกัด","สารสกัดเข้มข้น"];
+  const businessTypes = ["เกษตรกร / ฟาร์ม", "โรงสกัด", "โรงอบ / แปรรูป", "พ่อค้าส่ง / Trader", "OEM"];
+  const herbalMarket: SpecialRoleApp = {
+    status: marketStatus,
+    submittedAt: marketStatus === "none" ? undefined : `${1 + n(28)} ${["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."][n(12)]} 2569`,
+    approvedAt: marketStatus === "approved" ? `${1 + n(28)} พ.ค. 2569` : undefined,
+    rejectedReason: marketStatus === "rejected" ? "ใบรับรอง อย. ยังไม่ครบ — ต้องส่งเอกสารเพิ่มเติม" : undefined,
+    fields: [
+      { label: "ประเภทธุรกิจ", value: businessTypes[n(businessTypes.length)] },
+      { label: "ชื่อบริษัท / แบรนด์", value: baseProfile.shopName ?? u.name },
+      { label: "หมวดวัตถุดิบ", value: marketCategories[n(marketCategories.length)] + ", " + marketCategories[(n(marketCategories.length) + 1) % marketCategories.length] },
+      { label: "MOQ (kg)", value: `${5 + n(50)}`, tabular: true },
+      { label: "กำลังการผลิต/เดือน", value: `${100 + n(900)} kg`, tabular: true },
+      { label: "พื้นที่จัดส่ง", value: "ทั่วประเทศไทย", fullWidth: true },
+    ],
+    documents: [
+      { label: "หนังสือรับรองบริษัท",           status: "uploaded" },
+      { label: "ใบรับรอง อย. (FDA)",            status: marketStatus === "rejected" ? "missing" : "uploaded" },
+      { label: "GAP / Organic certification",   status: marketStatus === "pending" || marketStatus === "rejected" ? "missing" : "uploaded" },
+      { label: "ใบรับรอง GMP / HACCP",          status: "uploaded" },
+      { label: "หน้าสมุดบัญชีธนาคาร",            status: "uploaded" },
+    ],
+  };
+
+  return { trial_brand: trialBrand, herbal_market: herbalMarket };
+}
+
+function UserDetailPage({ user, subRolesOverride, onSubRolesChange, onBack, onDelete, onUpdateStatus, onUpdateRole, initialTab = "general" }: {
+  user: UserRecord;
+  subRolesOverride?: OwnerSubRoles;
+  onSubRolesChange: (next: OwnerSubRoles) => void;
+  onBack: () => void;
+  onDelete: () => void;
+  onUpdateStatus: (status: UserRecord["status"]) => void;
+  onUpdateRole: (role: UserRecord["role"]) => void;
+  initialTab?: "general" | SpecialRoleKey;
+}) {
+  const role = ROLE_META[user.role];
+  const status = STATUS_META[user.status];
+  // Stable profile — only re-derive when the user IDENTITY changes.
+  const p = useMemo(() => mockUserProfile(user), [user.id, user.username, user.role, user.status]);
+
+  // Sub-role apps (owner only) — seeded once, persisted upstream by UsersListPage.
+  // If the parent has a saved override (from a previous detail open), use it;
+  // otherwise seed deterministically from mockOwnerSubRoles.
+  const subRoles: OwnerSubRoles | null = useMemo(() => {
+    if (user.role !== "owner") return null;
+    return subRolesOverride ?? mockOwnerSubRoles(user, p) ?? null;
+  }, [user.role, subRolesOverride, user, p]);
+
+  const [tab, setTab] = useState<"general" | SpecialRoleKey>(initialTab);
+  useEffect(() => { if (user.role !== "owner") setTab("general"); }, [user.role]);
+
+  const mutateSubRole = (key: SpecialRoleKey, patch: Partial<SpecialRoleApp>) => {
+    if (!subRoles) return;
+    const next: OwnerSubRoles = { ...subRoles, [key]: { ...subRoles[key], ...patch } };
+    onSubRolesChange(next);
+  };
+
+  // KPI strip — role-aware
+  const fmt = (n: number) => n >= 1_000_000 ? `฿${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `฿${(n / 1000).toFixed(1)}K` : `฿${n}`;
+  const kpiItems = user.role === "customer" ? [
+    { label: "ออเดอร์",   value: `${p.orderCount}`,     sub: "รวม" },
+    { label: "ใช้จ่าย",   value: fmt(p.totalSpent ?? 0), sub: "" },
+    { label: "Wishlist", value: `${p.wishlistCount}`,   sub: "ชิ้น" },
+    { label: "รีวิว",     value: `${p.reviewCount}`,    sub: "ครั้ง" },
+  ] : user.role === "owner" ? [
+    { label: "สินค้า",    value: `${p.productCount}`,      sub: "รายการ" },
+    { label: "รายได้",    value: fmt(p.shopRevenue ?? 0), sub: "รวม" },
+    { label: "คะแนน",    value: p.shopRating !== undefined ? p.shopRating.toFixed(1) : "—", sub: "★" },
+    { label: "ล็อกอิน",   value: `${p.loginCount}`,        sub: "ครั้ง" },
+  ] : [
+    { label: "ล็อกอิน",      value: `${p.loginCount}`, sub: "ครั้ง" },
+    { label: "สิทธิ์",       value: p.permissionGroup ?? "—", sub: "" },
+    { label: "2FA",         value: p.twoFactor ? "เปิด" : "ปิด", sub: "" },
+    { label: "สมัครเมื่อ",   value: p.joinDate, sub: "" },
+  ];
+
+  return (
+    <div>
+      {/* Top row: back + action buttons */}
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+
+        {/* Header actions — labeled pills, status-aware primary CTA */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {/* Banned users → primary green "ปลดระงับ" CTA (parity with shop's เปิดร้านอีกครั้ง) */}
+          {user.status === "banned" && (
+            <button onClick={onUpdateStatus.bind(null, "active")}
+              className={`${font} inline-flex items-center gap-2 h-10 px-5 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-shadow shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+              style={{ fontWeight: 600 }}>
+              <RotateCcw className="size-4" strokeWidth={2.4} />
+              ปลดระงับบัญชี
+            </button>
+          )}
+
+          <button onClick={() => toast.success(`รีเซตรหัสผ่าน ${user.username} เรียบร้อย`)}
+            className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#f59e0b] hover:text-[#b45309] text-gray-700 text-[13px] cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            <RotateCcw className="size-4" strokeWidth={2.4} />
+            รีเซ็ตรหัสผ่าน
+          </button>
+          <button onClick={() => toast.success(`ส่งอีเมลถึง ${user.email}`)}
+            className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#319754] hover:text-[#319754] text-gray-700 text-[13px] cursor-pointer transition-colors`}
+            style={{ fontWeight: 500 }}>
+            <Mail className="size-4" strokeWidth={2.4} />
+            ส่งอีเมล
+          </button>
+
+          {/* Active users → ระงับบัญชี shown as red-tinted secondary pill */}
+          {user.status === "active" && (
+            <button onClick={() => { onUpdateStatus("banned"); }}
+              className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#dc2626] hover:text-[#dc2626] hover:bg-red-50/50 text-gray-700 text-[13px] cursor-pointer transition-colors`}
+              style={{ fontWeight: 500 }}>
+              <Ban className="size-4" strokeWidth={2.4} />
+              ระงับบัญชี
+            </button>
+          )}
+
+          {/* Kebab menu — overflow actions */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button title="การกระทำเพิ่มเติม"
+                className="size-10 rounded-full inline-flex items-center justify-center bg-white border border-gray-200 hover:border-[#319754] hover:text-[#319754] text-gray-600 transition-colors cursor-pointer data-[state=open]:bg-[#319754] data-[state=open]:text-white data-[state=open]:border-[#319754]"
+                aria-label="การกระทำเพิ่มเติม">
+                <MoreHorizontal className="size-4" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" sideOffset={6} className="w-[260px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+              <p className={`${font} text-[10px] text-gray-400 uppercase tracking-wide px-2 pt-1 pb-2`} style={{ fontWeight: 600 }}>
+                เปลี่ยนบทบาท
+              </p>
+              {(["customer", "owner", "admin"] as const).map((r) => {
+                const meta = ROLE_META[r];
+                const active = user.role === r;
+                return (
+                  <button key={r} onClick={() => onUpdateRole(r)}
+                    className={`${font} w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl cursor-pointer transition-colors text-left ${active ? "bg-gray-50" : "hover:bg-gray-50"}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="size-2 rounded-full" style={{ backgroundColor: meta.color }} />
+                      <span className={`${font} text-[13px] text-black`} style={{ fontWeight: active ? 600 : 500 }}>{meta.label}</span>
+                    </div>
+                    {active && <Check className="size-4 text-[#319754]" strokeWidth={2.5} />}
+                  </button>
+                );
+              })}
+              <div className="h-px bg-gray-100 my-1 mx-2" />
+              <button onClick={() => { if (confirm(`ลบผู้ใช้ ${user.username} ถาวร?`)) { onDelete(); } }}
+                className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/10 cursor-pointer text-left text-[13px] text-[#dc2626]`}>
+                <Trash2 className="size-3.5" strokeWidth={2.4} />
+                <span style={{ fontWeight: 500 }}>ลบผู้ใช้ถาวร</span>
+              </button>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {/* ===== HERO CARD ===== */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden mb-5">
+        <div className="relative bg-gradient-to-br from-[#319754] via-[#287745] to-[#1d5b32] p-5 overflow-hidden">
+          <Sparkles className="absolute -top-4 -right-4 size-32 text-white/5" strokeWidth={1.5} />
+          <div className="relative flex items-start gap-4">
+            {/* Avatar — circular, role-tinted (matches UserAvatar role coding) */}
+            <div className="size-20 rounded-full shrink-0 flex items-center justify-center text-white border-2 border-white/30 shadow-[inset_0_-3px_8px_rgba(0,0,0,0.18)]"
+              style={{ fontSize: 32, backgroundColor: role.color }}>
+              <span className={`${fontBold}`} style={{ fontWeight: 800 }}>{user.name.charAt(0) || "?"}</span>
+            </div>
+            <div className="flex-1 min-w-0 pr-2">
+              <p className={`${font} text-[10.5px] text-white/75 uppercase tracking-wider mb-1`} style={{ fontWeight: 600 }}>
+                @{user.username} · {role.label}
+              </p>
+              <h2 className={`${font} text-[20px] text-white leading-tight`} style={{ fontWeight: 700 }}>
+                {user.name}
+              </h2>
+              <p className={`${font} text-[12px] text-white/85 mt-1 leading-snug`}>
+                เลขที่บัญชี {user.id.toUpperCase()} · สมัครเมื่อ {p.joinDate} · เข้าสู่ระบบล่าสุด {p.lastLogin}
+              </p>
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <span className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white`} style={{ fontWeight: 600 }}>
+                  <span className="size-1.5 rounded-full bg-white" />
+                  {status.label}
+                </span>
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/95 max-w-[240px] min-w-0`} style={{ fontWeight: 500 }}>
+                  <Mail className="size-3 shrink-0" strokeWidth={2.4} />
+                  <span className="truncate">{user.email}</span>
+                </span>
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/95`} style={{ fontWeight: 500 }}>
+                  <Phone className="size-3" strokeWidth={2.4} /> {p.phone}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* KPI strip */}
+          <div className="relative flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
+            {kpiItems.map((k, i, arr) => (
+              <Fragment key={k.label}>
+                <div className="inline-flex items-baseline gap-1.5">
+                  <span className={`${font} text-[10px] text-white/65`} style={{ fontWeight: 500 }}>{k.label}</span>
+                  <span className={`${font} text-[14px] text-white tabular-nums leading-none`} style={{ fontWeight: 700 }}>{k.value}</span>
+                  {k.sub && <span className={`${font} text-[10px] text-white/65`}>{k.sub}</span>}
+                </div>
+                {i < arr.length - 1 && <span className="h-3 w-px bg-white/20" aria-hidden />}
+              </Fragment>
+            ))}
+          </div>
+
+          {/* Owner sub-role tabs — only render when role === "owner" */}
+          {subRoles && (
+            <div className="relative mt-4">
+              <div className="inline-flex items-center gap-1 bg-white rounded-full p-1 shadow-[0_2px_8px_rgba(0,0,0,0.08)] max-w-full overflow-x-auto">
+                {([
+                  { key: "general" as const,        label: "ข้อมูลทั่วไป",   icon: UserCog },
+                  { key: "trial_brand" as const,    label: SPECIAL_ROLE_META.trial_brand.label,    icon: SPECIAL_ROLE_META.trial_brand.icon,    statusKey: subRoles.trial_brand.status },
+                  { key: "herbal_market" as const,  label: SPECIAL_ROLE_META.herbal_market.label,  icon: SPECIAL_ROLE_META.herbal_market.icon,  statusKey: subRoles.herbal_market.status },
+                ]).map((t) => {
+                  const isActive = tab === t.key;
+                  const statusMeta = "statusKey" in t ? SPECIAL_STATUS_META[t.statusKey as SpecialRoleStatus] : undefined;
+                  return (
+                    <button key={t.key} onClick={() => setTab(t.key)}
+                      className={`${font} relative inline-flex items-center gap-1.5 px-4 h-[34px] rounded-full text-[12.5px] cursor-pointer transition-colors whitespace-nowrap ${
+                        isActive ? "text-white" : "text-gray-600 hover:text-gray-900"
+                      }`}
+                      style={{ fontWeight: isActive ? 700 : 500 }}>
+                      {isActive && (
+                        <motion.span layoutId="user-detail-tab"
+                          className="absolute inset-0 rounded-full bg-gradient-to-br from-[#3fb56b] to-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.35)]"
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                      )}
+                      <t.icon className="size-3.5 relative z-10" strokeWidth={2.2} />
+                      <span className="relative z-10">{t.label}</span>
+                      {statusMeta && (
+                        <span
+                          className={`${font} relative z-10 size-2 rounded-full ${isActive ? "ring-1.5 ring-white" : ""}`}
+                          style={{ backgroundColor: statusMeta.dot, boxShadow: isActive ? "0 0 0 1.5px #ffffff" : undefined }}
+                          aria-label={statusMeta.label}
+                          title={statusMeta.label}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Body — tab-aware */}
+      {subRoles && tab !== "general" ? (
+        <SpecialRoleTabBody
+          user={user}
+          roleKey={tab}
+          app={subRoles[tab]}
+          onMutate={(patch) => mutateSubRole(tab, patch)}
+        />
+      ) : (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+        {/* Left/main — profile sections */}
+        <div className="lg:col-span-2 space-y-5">
+          <ShopAppSection icon={UserCog} title="ข้อมูลบัญชี">
+            <ShopAppField label="ชื่อ-นามสกุล" value={user.name} />
+            <ShopAppField label="ชื่อผู้ใช้" value={`@${user.username}`} />
+            <ShopAppField label="อีเมล" value={user.email} icon={Mail} fullWidth />
+            <ShopAppField label="เบอร์โทร" value={p.phone} icon={Phone} tabular />
+            <ShopAppField label="จังหวัด" value={p.province} icon={MapPin} />
+          </ShopAppSection>
+
+          {/* Role-specific section */}
+          {user.role === "customer" && (
+            <ShopAppSection icon={ShoppingCart} title="พฤติกรรมการซื้อ">
+              <ShopAppField label="ออเดอร์รวม" value={`${p.orderCount} ออเดอร์`} tabular />
+              <ShopAppField label="ใช้จ่ายสะสม" value={fmt(p.totalSpent ?? 0)} tabular />
+              <ShopAppField label="Wishlist" value={`${p.wishlistCount} รายการ`} tabular />
+              <ShopAppField label="รีวิวที่เขียน" value={`${p.reviewCount} ครั้ง`} tabular />
+              <ShopAppField label="ระดับสมาชิก" value={p.loyaltyTier ?? "Bronze"} />
+            </ShopAppSection>
+          )}
+
+          {user.role === "owner" && (
+            <ShopAppSection icon={Store} title="ข้อมูลร้านค้า">
+              <ShopAppField label="ชื่อร้าน" value={p.shopName ?? "—"} />
+              <ShopAppField label="รหัสร้าน" value={p.shopId?.toUpperCase() ?? "—"} />
+              <ShopAppField label="จำนวนสินค้า" value={`${p.productCount} รายการ`} tabular />
+              <ShopAppField label="รายได้รวม" value={fmt(p.shopRevenue ?? 0)} tabular />
+              <ShopAppField label="คะแนนเฉลี่ย" value={p.shopRating !== undefined ? `${p.shopRating.toFixed(1)} ★` : "—"} tabular />
+            </ShopAppSection>
+          )}
+
+          {user.role === "admin" && (
+            <ShopAppSection icon={Shield} title="สิทธิ์และบทบาท">
+              <ShopAppField label="กลุ่มสิทธิ์" value={p.permissionGroup ?? "—"} />
+              <ShopAppField label="2FA" value={p.twoFactor ? "เปิดใช้งาน" : "ปิด"} />
+              <ShopAppField label="กิจกรรมล่าสุด" value={p.lastAction ?? "—"} fullWidth />
+            </ShopAppSection>
+          )}
+
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <History className="size-4 text-[#319754]" strokeWidth={2.2} />
+              <h4 className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>กิจกรรมล่าสุด</h4>
+            </div>
+            <div className="space-y-3">
+              <ActivityRow time={p.lastLogin} text={`เข้าสู่ระบบจาก ${p.province}`} icon={Activity} color="#319754" />
+              <ActivityRow time="3 วันก่อน" text={user.role === "customer" ? "ทำรายการสั่งซื้อ #ORD-20260204-03521" : user.role === "owner" ? "อัปเดตข้อมูลร้านค้า" : (p.lastAction ?? "เข้าระบบหลังบ้าน")} icon={Pencil} color="#3b82f6" />
+              <ActivityRow time="2 สัปดาห์ก่อน" text="ยอมรับข้อกำหนดและเงื่อนไขฉบับปรับปรุง" icon={ShieldCheck} color="#9747ff" />
+            </div>
+          </div>
+        </div>
+
+        {/* Right column — security + quick actions */}
+        <div className="lg:col-span-1 space-y-5">
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Lock className="size-4 text-[#319754]" strokeWidth={2.2} />
+              <h4 className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>ความปลอดภัย</h4>
+            </div>
+            <div className="space-y-3">
+              <SecurityRow label="การยืนยัน 2 ขั้นตอน" value={p.twoFactor ? "เปิดใช้งาน" : "ยังไม่ได้เปิด"} ok={p.twoFactor} />
+              <SecurityRow label="อีเมลยืนยัน" value="ยืนยันแล้ว" ok={true} />
+              <SecurityRow label="รหัสผ่านล่าสุด" value="เปลี่ยน 47 วันก่อน" ok={true} />
+              <SecurityRow label="จำนวนล็อกอิน" value={`${p.loginCount} ครั้ง`} ok={true} />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-[#319754]/[0.04] to-transparent border border-[#319754]/15 rounded-2xl p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <Info className="size-4 text-[#319754]" strokeWidth={2.2} />
+              <h4 className={`${font} text-[13px] text-[#1d5b32]`} style={{ fontWeight: 600 }}>หมายเหตุ</h4>
+            </div>
+            <p className={`${font} text-[12px] text-gray-600 leading-relaxed`}>
+              บัญชีนี้สมัครเมื่อ {p.joinDate} · เคยล็อกอินทั้งหมด {p.loginCount} ครั้ง · ครั้งล่าสุด {p.lastLogin}
+            </p>
+          </div>
+        </div>
+      </div>
+      )}
+    </div>
+  );
+}
+
+/* ===== SpecialRoleTabBody — view of a single sub-role application
+ *  (trial brand or herbal market). Includes approve / reject / revoke / re-evaluate
+ *  controls and a summary of the submitted form. */
+function SpecialRoleTabBody({ user, roleKey, app, onMutate }: {
+  user: UserRecord;
+  roleKey: SpecialRoleKey;
+  app: SpecialRoleApp;
+  onMutate: (patch: Partial<SpecialRoleApp>) => void;
+}) {
+  const meta = SPECIAL_ROLE_META[roleKey];
+  const statusMeta = SPECIAL_STATUS_META[app.status];
+  const docsTotal = app.documents.length;
+  const docsUploaded = app.documents.filter((d) => d.status === "uploaded").length;
+  const docsMissing = docsTotal - docsUploaded;
+  const RoleIcon = meta.icon;
+
+  const todayTH = new Date().toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
+
+  const handleApprove = () => {
+    onMutate({ status: "approved", approvedAt: todayTH, rejectedReason: undefined });
+    toast.success(`อนุมัติ${meta.label}ของ ${user.username} แล้ว`);
+  };
+  const handleReject = () => {
+    const reason = prompt("เหตุผลที่ปฏิเสธ (จะส่งไปยังผู้สมัคร):", app.rejectedReason ?? "");
+    if (reason === null) return;
+    const trimmed = reason.trim();
+    if (!trimmed) {
+      toast.error("กรุณาระบุเหตุผลที่ปฏิเสธ");
+      return;
+    }
+    onMutate({ status: "rejected", rejectedReason: trimmed });
+    toast.error(`ปฏิเสธ${meta.label}ของ ${user.username}`);
+  };
+  const handleRevoke = () => {
+    if (!confirm(`เพิกถอนสิทธิ์ ${meta.label} ของ ${user.username}?\nสิทธิ์การใช้งานเมนู ${meta.label} จะถูกปิดทันที (ไม่กระทบบัญชีร้านค้าหลัก)`)) return;
+    onMutate({ status: "revoked", rejectedReason: "ถูกเพิกถอนโดยแอดมิน" });
+    toast.success(`เพิกถอนสิทธิ์ ${meta.label} แล้ว`);
+  };
+  const handleReevaluate = () => {
+    onMutate({ status: "pending", rejectedReason: undefined });
+    toast.success(`เปิดพิจารณา${meta.label}อีกครั้ง`);
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+      {/* Main column — status banner + actions + form summary */}
+      <div className="lg:col-span-2 space-y-5">
+        {/* Status banner */}
+        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+          <div className="flex items-start gap-4 flex-wrap">
+            <div className="size-12 rounded-2xl flex items-center justify-center shrink-0" style={{ backgroundColor: meta.accent }}>
+              <RoleIcon className="size-6" style={{ color: meta.color }} strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className={`${font} text-[17px] text-black`} style={{ fontWeight: 700 }}>{meta.label}</h3>
+                <span className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full`}
+                  style={{ backgroundColor: statusMeta.bg, color: statusMeta.color, fontWeight: 600 }}>
+                  <span className="size-1.5 rounded-full" style={{ backgroundColor: statusMeta.dot }} />
+                  {statusMeta.label}
+                </span>
+              </div>
+              <p className={`${font} text-[12.5px] text-gray-600 leading-relaxed mt-1`}>{meta.tagline}</p>
+              {app.submittedAt && (
+                <p className={`${font} text-[11px] text-gray-500 mt-2`}>ยื่นใบสมัครเมื่อ {app.submittedAt}{app.approvedAt ? ` · อนุมัติเมื่อ ${app.approvedAt}` : ""}</p>
+              )}
+              {app.rejectedReason && (
+                <div className={`${font} mt-3 text-[12px] bg-red-50 border border-red-100 text-[#dc2626] rounded-xl px-3 py-2 inline-flex items-start gap-2`}>
+                  <AlertCircle className="size-3.5 mt-0.5 shrink-0" strokeWidth={2.4} />
+                  <span><span style={{ fontWeight: 600 }}>เหตุผล: </span>{app.rejectedReason}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Status-aware actions */}
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {app.status === "pending" && (
+                <>
+                  <button onClick={handleReject}
+                    className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#dc2626] hover:text-[#dc2626] hover:bg-red-50/50 text-gray-700 text-[13px] cursor-pointer transition-colors`}
+                    style={{ fontWeight: 500 }}>
+                    <X className="size-4" strokeWidth={2.4} /> ปฏิเสธ
+                  </button>
+                  <button onClick={handleApprove}
+                    className={`${font} inline-flex items-center gap-2 h-10 px-5 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-shadow shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+                    style={{ fontWeight: 600 }}>
+                    <Check className="size-4" strokeWidth={2.4} /> อนุมัติ
+                  </button>
+                </>
+              )}
+              {app.status === "approved" && (
+                <button onClick={handleRevoke}
+                  className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#dc2626] hover:text-[#dc2626] hover:bg-red-50/50 text-gray-700 text-[13px] cursor-pointer transition-colors`}
+                  style={{ fontWeight: 500 }}>
+                  <Ban className="size-4" strokeWidth={2.4} /> เพิกถอน
+                </button>
+              )}
+              {(app.status === "rejected" || app.status === "revoked") && (
+                <button onClick={handleReevaluate}
+                  className={`${font} inline-flex items-center gap-2 h-10 px-5 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-shadow shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+                  style={{ fontWeight: 600 }}>
+                  <RotateCcw className="size-4" strokeWidth={2.4} /> เปิดพิจารณาใหม่
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Form summary */}
+        {app.status !== "none" && (
+          <ShopAppSection icon={FileText} title="ข้อมูลในใบสมัคร">
+            {app.fields.map((f) => (
+              <ShopAppField key={f.label} label={f.label} value={f.value} tabular={f.tabular} fullWidth={f.fullWidth} />
+            ))}
+          </ShopAppSection>
+        )}
+      </div>
+
+      {/* Right column — documents (only if applied) */}
+      <div className="lg:col-span-1 space-y-5">
+        {app.status !== "none" ? (
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Paperclip className="size-4 text-[#319754]" strokeWidth={2.2} />
+              <h4 className={`${font} text-[15px] text-black flex-1`} style={{ fontWeight: 600 }}>เอกสารแนบ</h4>
+              <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>{docsUploaded}/{docsTotal} ไฟล์</span>
+            </div>
+            {docsMissing > 0 && (
+              <div className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 mb-3`} style={{ fontWeight: 600 }}>
+                <AlertCircle className="size-3" strokeWidth={2.4} /> ขาด {docsMissing} ไฟล์
+              </div>
+            )}
+            <div className="space-y-2">
+              {app.documents.map((d) => (
+                <div key={d.label}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border ${
+                    d.status === "uploaded" ? "border-gray-100 bg-white" : "border-amber-100 bg-amber-50/40"
+                  }`}>
+                  <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    d.status === "uploaded" ? "bg-[#319754]/10" : "bg-amber-100"
+                  }`}>
+                    {d.status === "uploaded" ? (
+                      <FileText className="size-4 text-[#319754]" strokeWidth={2.2} />
+                    ) : (
+                      <AlertCircle className="size-4 text-amber-700" strokeWidth={2.2} />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className={`${font} text-[12.5px] text-black truncate`} style={{ fontWeight: 500 }}>{d.label}</p>
+                    <p className={`${font} text-[10px] ${d.status === "uploaded" ? "text-[#319754]" : "text-amber-700"}`} style={{ fontWeight: 600 }}>
+                      {d.status === "uploaded" ? "แนบมาแล้ว" : "ยังไม่ได้แนบ"}
+                    </p>
+                  </div>
+                  {d.status === "uploaded" && (
+                    <button onClick={() => toast.info(`ดาวน์โหลด ${d.label}`)}
+                      className="size-7 rounded-full inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer transition-colors">
+                      <Download className="size-3.5" strokeWidth={2.4} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6 text-center">
+            <div className="size-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+              <RoleIcon className="size-5 text-gray-400" strokeWidth={2.2} />
+            </div>
+            <p className={`${font} text-[13px] text-gray-600`} style={{ fontWeight: 500 }}>ผู้ใช้ยังไม่ได้สมัคร{meta.label}</p>
+            <p className={`${font} text-[11px] text-gray-400 mt-1`}>เมื่อยื่นใบสมัครแล้ว แอดมินจะเห็นข้อมูลและกดอนุมัติได้ที่นี่</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ActivityRow({ time, text, icon: Icon, color }: { time: string; text: string; icon: any; color: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="size-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${color}15` }}>
+        <Icon className="size-4" style={{ color }} strokeWidth={2.2} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`${font} text-[12.5px] text-black`} style={{ fontWeight: 500 }}>{text}</p>
+        <p className={`${font} text-[10.5px] text-gray-500 mt-0.5`}>{time}</p>
+      </div>
+    </div>
+  );
+}
+
+function SecurityRow({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 pb-2 border-b border-gray-50 last:border-b-0 last:pb-0">
+      <div className="flex items-center gap-2">
+        {ok ? <ShieldCheck className="size-3.5 text-[#319754]" strokeWidth={2.4} /> : <AlertCircle className="size-3.5 text-amber-600" strokeWidth={2.4} />}
+        <p className={`${font} text-[12px] text-gray-600`}>{label}</p>
+      </div>
+      <p className={`${font} text-[12px]`} style={{ fontWeight: 600, color: ok ? "#287745" : "#b45309" }}>{value}</p>
+    </div>
+  );
+}
+
+/* ============================================================
  * SHOP REGISTRY PAGE
  * ========================================================== */
+interface ShopApplicationDoc {
+  label: string;
+  status: "uploaded" | "missing";
+}
+interface ShopApplication {
+  /** "บุคคลธรรมดา" or "นิติบุคคล" */
+  businessType: "บุคคลธรรมดา" | "นิติบุคคล";
+  registeredName: string;
+  taxId: string;            // 13 digits
+  email: string;
+  phone: string;
+  website?: string;
+  address: string;
+  province: string;
+  postalCode: string;
+  bankName: string;
+  bankAccountName: string;
+  bankAccountNo: string;
+  expectedSkuCount: number;
+  pitch: string;
+  documents: ShopApplicationDoc[];
+}
+
 interface ShopRecord {
   id: string;
   name: string;
@@ -20629,18 +22627,213 @@ interface ShopRecord {
   orderCount: number;
   revenue: number;
   rating: number;
+  image?: string;
+  application: ShopApplication;
 }
 
-const MOCK_SHOPS: ShopRecord[] = [
-  { id: "s-001", name: "เมต้าเฮิร์บ",          owner: "จิราภา ศรีสวัสดิ์", category: "สมุนไพร",   status: "active",    verified: true,  registeredAt: "1 ม.ค. 2568",  productCount: 248, orderCount: 1432, revenue: 1845000, rating: 4.8 },
-  { id: "s-002", name: "ชาเขียวออร์แกนิคไทย", owner: "วิชัย เทพประสิทธิ์",  category: "เครื่องดื่ม", status: "active",    verified: true,  registeredAt: "18 ก.พ. 2568", productCount: 56,  orderCount: 320,  revenue: 285000,  rating: 4.6 },
-  { id: "s-003", name: "น้ำผึ้งดอยไทย",       owner: "ภาคภูมิ ใจดี",       category: "อาหาร",      status: "active",    verified: true,  registeredAt: "22 ม.ค. 2568", productCount: 18,  orderCount: 156,  revenue: 124000,  rating: 4.9 },
-  { id: "s-004", name: "เครื่องสำอางสมุนไพรอรุณ", owner: "วิภาวี เกษมสุข",  category: "ความงาม",    status: "active",    verified: false, registeredAt: "28 ม.ค. 2568", productCount: 42,  orderCount: 87,   revenue: 64000,   rating: 4.4 },
-  { id: "s-005", name: "ของขวัญสุขภาพ Premium", owner: "วิภาวี เกษมสุข",   category: "ของขวัญ",   status: "active",    verified: false, registeredAt: "5 ก.พ. 2568",  productCount: 24,  orderCount: 42,   revenue: 38000,   rating: 4.2 },
-  { id: "s-006", name: "ร้านสมุนไพรลุงจ้อย",    owner: "ปนัดดา ใจกล้า",    category: "สมุนไพร",   status: "pending",   verified: false, registeredAt: "เมื่อวาน",         productCount: 0,   orderCount: 0,    revenue: 0,        rating: 0 },
-  { id: "s-007", name: "Tea House Bangkok",      owner: "ธารา วงศ์ทอง",     category: "เครื่องดื่ม", status: "pending",   verified: false, registeredAt: "วันนี้",            productCount: 0,   orderCount: 0,    revenue: 0,        rating: 0 },
-  { id: "s-008", name: "ร้านยาโบราณป๋าสมศักดิ์", owner: "สมศักดิ์ ตำราดี",  category: "สมุนไพร",   status: "suspended", verified: false, registeredAt: "12 ธ.ค. 2567", productCount: 8,   orderCount: 2,    revenue: 1500,     rating: 2.1 },
-];
+/** Storefront hero images — reused from customer-side CartPage logo mapping
+ *  so admin sees the same visual identity tester sees. */
+const SHOP_IMAGES: Record<string, string> = {
+  "s-001": imgLogo,
+  "s-002": "https://images.unsplash.com/photo-1593701635836-7fd2cd40a35f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvcmdhbmljJTIwZmFybSUyMGdyZWVuJTIwZmllbGR8ZW58MXx8fHwxNzczODg1NDQ1fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  "s-003": "https://images.unsplash.com/photo-1713724782271-6670d50322ac?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaXN0eSUyMGZvcmVzdCUyMG1vdW50YWluJTIwc2hvcHxlbnwxfHx8fDE3NzM4ODU0NDR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  "s-004": "https://images.unsplash.com/photo-1770361515842-cc592571bbd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYXR1cmFsJTIwcHJlbWl1bSUyMGJvdGFuaWNhbHxlbnwxfHx8fDE3NzM4ODU0NDV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  "s-005": "https://images.unsplash.com/photo-1770361515842-cc592571bbd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYXR1cmFsJTIwcHJlbWl1bSUyMGJvdGFuaWNhbHxlbnwxfHx8fDE3NzM4ODU0NDV8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  "s-006": "https://images.unsplash.com/photo-1762644085409-305634b2123e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiJTIwZ2FyZGVuJTIwY290dGFnZSUyMHNob3B8ZW58MXx8fHwxNzczODg1NDQ0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  "s-007": "https://images.unsplash.com/photo-1593701635836-7fd2cd40a35f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxvcmdhbmljJTIwZmFybSUyMGdyZWVuJTIwZmllbGR8ZW58MXx8fHwxNzczODg1NDQ1fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  "s-008": "https://images.unsplash.com/photo-1762644085409-305634b2123e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxoZXJiJTIwZ2FyZGVuJTIwY290dGFnZSUyMHNob3B8ZW58MXx8fHwxNzczODg1NDQ0fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+};
+
+const MOCK_SHOPS: ShopRecord[] = ([
+  { id: "s-001", name: "เมต้าเฮิร์บ",          owner: "จิราภา ศรีสวัสดิ์", category: "สมุนไพร",   status: "active",    verified: true,  registeredAt: "1 ม.ค. 2568",  productCount: 248, orderCount: 1432, revenue: 1845000, rating: 4.8,
+    application: {
+      businessType: "นิติบุคคล", registeredName: "บริษัท เมต้าเฮิร์บ จำกัด", taxId: "0105566012345",
+      email: "contact@metaherb.co.th", phone: "02-555-0188", website: "https://metaherb.co.th",
+      address: "199/45 อาคาร MetaHerb ชั้น 8 ซ.พหลโยธิน 11 ถ.พหลโยธิน แขวงสามเสนใน เขตพญาไท", province: "กรุงเทพมหานคร", postalCode: "10400",
+      bankName: "กสิกรไทย", bankAccountName: "บริษัท เมต้าเฮิร์บ จำกัด", bankAccountNo: "078-2-45678-9",
+      expectedSkuCount: 250,
+      pitch: "ผู้นำเข้าและจัดจำหน่ายสมุนไพรไทยพรีเมียม คัดสรรจากเกษตรกร 38 จังหวัด — ตั้งเป้าขยายกลุ่มผลิตภัณฑ์สุขภาพและเครื่องดื่มสมุนไพรในไตรมาส 2",
+      documents: [
+        { label: "หนังสือรับรองบริษัท",        status: "uploaded" },
+        { label: "ภพ.20 (ภาษีมูลค่าเพิ่ม)",      status: "uploaded" },
+        { label: "บัตรประชาชนผู้มีอำนาจ",       status: "uploaded" },
+        { label: "หน้าสมุดบัญชีธนาคาร",          status: "uploaded" },
+      ],
+    },
+  },
+  { id: "s-002", name: "ชาเขียวออร์แกนิคไทย", owner: "วิชัย เทพประสิทธิ์",  category: "เครื่องดื่ม", status: "active",    verified: true,  registeredAt: "18 ก.พ. 2568", productCount: 56,  orderCount: 320,  revenue: 285000,  rating: 4.6,
+    application: {
+      businessType: "นิติบุคคล", registeredName: "บริษัท ออร์แกนิคที จำกัด", taxId: "0505567088123",
+      email: "wichai@organicthai.co.th", phone: "053-789-4500", website: "https://organicthai.co.th",
+      address: "88 หมู่ 4 ต.สันกำแพง อ.สันกำแพง", province: "เชียงใหม่", postalCode: "50130",
+      bankName: "ไทยพาณิชย์", bankAccountName: "บริษัท ออร์แกนิคที จำกัด", bankAccountNo: "404-3-12389-5",
+      expectedSkuCount: 60,
+      pitch: "ฟาร์มชาเขียวออร์แกนิคในเชียงใหม่ ผ่านมาตรฐาน USDA Organic และ EU Organic — ต้องการขยายช่องทางออนไลน์",
+      documents: [
+        { label: "หนังสือรับรองบริษัท",        status: "uploaded" },
+        { label: "ใบรับรอง USDA Organic",      status: "uploaded" },
+        { label: "บัตรประชาชนผู้มีอำนาจ",       status: "uploaded" },
+        { label: "หน้าสมุดบัญชีธนาคาร",          status: "uploaded" },
+      ],
+    },
+  },
+  { id: "s-003", name: "น้ำผึ้งดอยไทย",       owner: "ภาคภูมิ ใจดี",       category: "อาหาร",      status: "active",    verified: true,  registeredAt: "22 ม.ค. 2568", productCount: 18,  orderCount: 156,  revenue: 124000,  rating: 4.9,
+    application: {
+      businessType: "บุคคลธรรมดา", registeredName: "ภาคภูมิ ใจดี (วิสาหกิจชุมชน)", taxId: "3501123456789",
+      email: "doithonghoney@gmail.com", phone: "081-234-5678",
+      address: "55 หมู่ 9 ต.แม่นาเรือ อ.เมือง", province: "พะเยา", postalCode: "56000",
+      bankName: "ออมสิน", bankAccountName: "ภาคภูมิ ใจดี", bankAccountNo: "020-2-34567-8",
+      expectedSkuCount: 20,
+      pitch: "น้ำผึ้งป่าจากดอยพะเยา เลี้ยงผึ้งโพรง 200 รัง — มีน้ำผึ้งดอกลำไย ดอกลิ้นจี่ และน้ำผึ้งป่า",
+      documents: [
+        { label: "บัตรประชาชน",                 status: "uploaded" },
+        { label: "ใบรับรอง อย.",                status: "uploaded" },
+        { label: "หน้าสมุดบัญชีธนาคาร",          status: "uploaded" },
+      ],
+    },
+  },
+  { id: "s-004", name: "เครื่องสำอางสมุนไพรอรุณ", owner: "วิภาวี เกษมสุข",  category: "ความงาม",    status: "active",    verified: false, registeredAt: "28 ม.ค. 2568", productCount: 42,  orderCount: 87,   revenue: 64000,   rating: 4.4,
+    application: {
+      businessType: "บุคคลธรรมดา", registeredName: "วิภาวี เกษมสุข", taxId: "1102200334455",
+      email: "arunlab.cosmetic@gmail.com", phone: "089-145-6789",
+      address: "12/3 ซ.ลาดพร้าว 71 ถ.ลาดพร้าว แขวงวังทองหลาง", province: "กรุงเทพมหานคร", postalCode: "10310",
+      bankName: "กรุงไทย", bankAccountName: "วิภาวี เกษมสุข", bankAccountNo: "144-5-67890-1",
+      expectedSkuCount: 45,
+      pitch: "เครื่องสำอางสมุนไพรทำมือ เน้นสูตรไม่มีพาราเบน ใช้สารสกัดจากดอกอัญชัน ขมิ้น มะหาด",
+      documents: [
+        { label: "บัตรประชาชน",                 status: "uploaded" },
+        { label: "ใบจดแจ้งเครื่องสำอาง",         status: "uploaded" },
+        { label: "หน้าสมุดบัญชีธนาคาร",          status: "uploaded" },
+      ],
+    },
+  },
+  { id: "s-005", name: "ของขวัญสุขภาพ Premium", owner: "วิภาวี เกษมสุข",   category: "ของขวัญ",   status: "active",    verified: false, registeredAt: "5 ก.พ. 2568",  productCount: 24,  orderCount: 42,   revenue: 38000,   rating: 4.2,
+    application: {
+      businessType: "บุคคลธรรมดา", registeredName: "วิภาวี เกษมสุข", taxId: "1102200334455",
+      email: "premiumgift.health@gmail.com", phone: "089-145-6789",
+      address: "12/3 ซ.ลาดพร้าว 71 ถ.ลาดพร้าว แขวงวังทองหลาง", province: "กรุงเทพมหานคร", postalCode: "10310",
+      bankName: "กรุงไทย", bankAccountName: "วิภาวี เกษมสุข", bankAccountNo: "144-5-67890-1",
+      expectedSkuCount: 25,
+      pitch: "ของขวัญสุขภาพในรูปแบบกิ๊ฟต์เซ็ต รวมสินค้าสมุนไพรและเครื่องสำอางจากแบรนด์ในเครือ",
+      documents: [
+        { label: "บัตรประชาชน",                 status: "uploaded" },
+        { label: "หน้าสมุดบัญชีธนาคาร",          status: "uploaded" },
+      ],
+    },
+  },
+  { id: "s-006", name: "ร้านสมุนไพรลุงจ้อย",    owner: "ปนัดดา ใจกล้า",    category: "สมุนไพร",   status: "pending",   verified: false, registeredAt: "เมื่อวาน",         productCount: 0,   orderCount: 0,    revenue: 0,        rating: 0,
+    application: {
+      businessType: "บุคคลธรรมดา", registeredName: "ปนัดดา ใจกล้า", taxId: "5401200778899",
+      email: "panadda.lungjoy@gmail.com", phone: "065-555-1234",
+      address: "78 หมู่ 2 ต.บ้านโฮ่ง อ.บ้านโฮ่ง", province: "ลำพูน", postalCode: "51130",
+      bankName: "กสิกรไทย", bankAccountName: "ปนัดดา ใจกล้า", bankAccountNo: "078-4-78901-2",
+      expectedSkuCount: 15,
+      pitch: "สมุนไพรไทยอบแห้งจากภูมิปัญญาท้องถิ่นล้านนา ตั้งใจสานต่อสูตรของลุงจ้อย ผู้ก่อตั้งร้าน — เน้นวัตถุดิบเดี่ยว เช่น ขมิ้นชัน มะขามป้อม รางจืด",
+      documents: [
+        { label: "บัตรประชาชน",                 status: "uploaded" },
+        { label: "ใบรับรอง อย.",                status: "missing" },
+        { label: "หน้าสมุดบัญชีธนาคาร",          status: "uploaded" },
+      ],
+    },
+  },
+  { id: "s-007", name: "Tea House Bangkok",      owner: "ธารา วงศ์ทอง",     category: "เครื่องดื่ม", status: "pending",   verified: false, registeredAt: "วันนี้",            productCount: 0,   orderCount: 0,    revenue: 0,        rating: 0,
+    application: {
+      businessType: "นิติบุคคล", registeredName: "บริษัท ที เฮ้าส์ แบงค็อก จำกัด", taxId: "0105568099887",
+      email: "hello@teahouse.bkk", phone: "02-126-7788", website: "https://teahouse.bkk",
+      address: "33 ซ.ทองหล่อ 13 แขวงคลองตันเหนือ เขตวัฒนา", province: "กรุงเทพมหานคร", postalCode: "10110",
+      bankName: "ไทยพาณิชย์", bankAccountName: "บริษัท ที เฮ้าส์ แบงค็อก จำกัด", bankAccountNo: "404-9-11223-4",
+      expectedSkuCount: 35,
+      pitch: "Specialty tea จากใบชาคัดเกรด — เน้นการเล่าเรื่องไร่ชาแต่ละแหล่ง พร้อมเซ็ตอุปกรณ์ชงชาแบบ minimal",
+      documents: [
+        { label: "หนังสือรับรองบริษัท",        status: "uploaded" },
+        { label: "ภพ.20 (ภาษีมูลค่าเพิ่ม)",      status: "missing" },
+        { label: "บัตรประชาชนผู้มีอำนาจ",       status: "uploaded" },
+        { label: "หน้าสมุดบัญชีธนาคาร",          status: "missing" },
+      ],
+    },
+  },
+  { id: "s-008", name: "ร้านยาโบราณป๋าสมศักดิ์", owner: "สมศักดิ์ ตำราดี",  category: "สมุนไพร",   status: "suspended", verified: false, registeredAt: "12 ธ.ค. 2567", productCount: 8,   orderCount: 2,    revenue: 1500,     rating: 2.1,
+    application: {
+      businessType: "บุคคลธรรมดา", registeredName: "สมศักดิ์ ตำราดี", taxId: "3201100445566",
+      email: "lungsomsak.herb@hotmail.com", phone: "086-998-7777",
+      address: "9/1 ตลาดสี่มุมเมือง ถ.พหลโยธิน ต.คลองหนึ่ง อ.คลองหลวง", province: "ปทุมธานี", postalCode: "12120",
+      bankName: "กรุงเทพ", bankAccountName: "สมศักดิ์ ตำราดี", bankAccountNo: "112-3-44556-7",
+      expectedSkuCount: 12,
+      pitch: "ยาสมุนไพรตำรับโบราณ ตั้งใจอนุรักษ์ตำรับยาของครอบครัวที่สืบทอดมา 3 รุ่น",
+      documents: [
+        { label: "บัตรประชาชน",                 status: "uploaded" },
+        { label: "ใบรับรอง อย.",                status: "missing" },
+        { label: "หน้าสมุดบัญชีธนาคาร",          status: "uploaded" },
+      ],
+    },
+  },
+] as ShopRecord[]).map((s) => ({ ...s, image: SHOP_IMAGES[s.id] }));
+
+/** Per-shop sub-role applications. Trial Brand + Herbal Market both require
+ *  the shop to be approved first. Pending shops therefore have status "none"
+ *  by default — they haven't been able to apply yet. */
+function buildShopSubRoles(shop: ShopRecord): OwnerSubRoles {
+  // Pinned demo statuses — covers all 4 statuses across the 8 mock shops
+  const pinned: Record<string, { trial: SpecialRoleStatus; market: SpecialRoleStatus }> = {
+    "s-001": { trial: "approved", market: "approved" }, // เมต้าเฮิร์บ — fully unlocked
+    "s-002": { trial: "approved", market: "approved" }, // ชาเขียวออร์แกนิคไทย
+    "s-003": { trial: "pending",  market: "approved" }, // น้ำผึ้งดอยไทย
+    "s-004": { trial: "approved", market: "pending"  }, // เครื่องสำอางอรุณ
+    "s-005": { trial: "none",     market: "none"     }, // ของขวัญสุขภาพ Premium
+    "s-006": { trial: "none",     market: "none"     }, // ลุงจ้อย (pending shop)
+    "s-007": { trial: "none",     market: "none"     }, // Tea House Bangkok (pending shop)
+    "s-008": { trial: "rejected", market: "none"     }, // ป๋าสมศักดิ์ (suspended shop)
+  };
+  const status = pinned[shop.id] ?? { trial: "none" as SpecialRoleStatus, market: "none" as SpecialRoleStatus };
+
+  const trialBrand: SpecialRoleApp = {
+    status: status.trial,
+    submittedAt: status.trial === "none" ? undefined : "15 ก.พ. 2569",
+    approvedAt: status.trial === "approved" ? "22 ก.พ. 2569" : undefined,
+    rejectedReason: status.trial === "rejected" ? "ใบจดแจ้งเครื่องสำอางหมดอายุ — กรุณาส่งใบใหม่" : undefined,
+    fields: [
+      { label: "ชื่อแบรนด์", value: shop.name },
+      { label: "เลขทะเบียนการค้า", value: shop.application.taxId, tabular: true },
+      { label: "ผู้ติดต่อหลัก", value: shop.owner },
+      { label: "อีเมล", value: shop.application.email },
+      { label: "เบอร์โทร", value: shop.application.phone, tabular: true },
+      { label: "เว็บไซต์", value: shop.application.website ?? "—", fullWidth: true },
+    ],
+    documents: [
+      { label: "หนังสือรับรองบริษัท",        status: "uploaded" },
+      { label: "ภพ.20 (ภาษีมูลค่าเพิ่ม)",      status: status.trial === "rejected" ? "missing" : "uploaded" },
+      { label: "บัตรประชาชนผู้มีอำนาจ",       status: "uploaded" },
+      { label: "หน้าสมุดบัญชีธนาคาร",          status: "uploaded" },
+    ],
+  };
+
+  const businessTypes = ["เกษตรกร / ฟาร์ม", "โรงสกัด", "โรงอบ / แปรรูป", "พ่อค้าส่ง / Trader", "OEM"];
+  const marketCategories = ["ราก/หัว", "ใบ", "ดอก", "เปลือก", "ผล/เมล็ด", "สมุนไพรรวม"];
+  const idx = Number(shop.id.split("-")[1] ?? 1);
+  const herbalMarket: SpecialRoleApp = {
+    status: status.market,
+    submittedAt: status.market === "none" ? undefined : "20 มี.ค. 2569",
+    approvedAt: status.market === "approved" ? "1 เม.ย. 2569" : undefined,
+    rejectedReason: status.market === "rejected" ? "ใบรับรอง อย. ยังไม่ครบ" : undefined,
+    fields: [
+      { label: "ประเภทธุรกิจ", value: businessTypes[idx % businessTypes.length] },
+      { label: "ชื่อบริษัท / แบรนด์", value: shop.name },
+      { label: "หมวดวัตถุดิบ", value: `${marketCategories[idx % marketCategories.length]}, ${marketCategories[(idx + 1) % marketCategories.length]}` },
+      { label: "MOQ (kg)", value: `${5 + (idx * 7) % 50}`, tabular: true },
+      { label: "กำลังการผลิต/เดือน", value: `${100 + (idx * 137) % 900} kg`, tabular: true },
+      { label: "พื้นที่จัดส่ง", value: "ทั่วประเทศไทย", fullWidth: true },
+    ],
+    documents: [
+      { label: "หนังสือรับรองบริษัท",           status: "uploaded" },
+      { label: "ใบรับรอง อย. (FDA)",            status: status.market === "rejected" ? "missing" : "uploaded" },
+      { label: "GAP / Organic certification",   status: status.market === "pending" ? "missing" : "uploaded" },
+      { label: "ใบรับรอง GMP / HACCP",          status: "uploaded" },
+      { label: "หน้าสมุดบัญชีธนาคาร",            status: "uploaded" },
+    ],
+  };
+
+  return { trial_brand: trialBrand, herbal_market: herbalMarket };
+}
 
 const SHOP_STATUS_META: Record<ShopRecord["status"], { label: string; color: string; bg: string }> = {
   active:    { label: "ใช้งาน",     color: "#287745", bg: "#319754" + "1a" },
@@ -20652,8 +22845,16 @@ function ShopLogo({ shop, size = 44 }: { shop: ShopRecord; size?: number }) {
   const palette = ["#319754", "#3b82f6", "#f59e0b", "#9747ff", "#ec4899", "#06b6d4"];
   const idx = shop.id.split("-")[1] ? Number(shop.id.split("-")[1]) % palette.length : 0;
   const bg = palette[idx];
+  if (shop.image) {
+    return (
+      <div className="rounded-full overflow-hidden shrink-0 bg-white ring-1 ring-black/5"
+        style={{ width: size, height: size }}>
+        <img src={shop.image} alt={shop.name} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
   return (
-    <div className="rounded-xl flex items-center justify-center shrink-0 text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)]"
+    <div className="rounded-full flex items-center justify-center shrink-0 text-white shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)]"
       style={{ width: size, height: size, backgroundColor: bg, fontSize: size * 0.4 }}>
       <span className={`${fontBold}`} style={{ fontWeight: 800 }}>{shop.name.charAt(0)}</span>
     </div>
@@ -20664,6 +22865,7 @@ function ShopsListPage() {
   const { t } = useLanguage();
   const [filter, setFilter] = useState<ShopRecord["status"] | "all">("all");
   const [search, setSearch] = useState("");
+  const [detailShop, setDetailShop] = useState<ShopRecord | null>(null);
 
   const stats = useMemo(() => ({
     total:     MOCK_SHOPS.length,
@@ -20698,8 +22900,19 @@ function ShopsListPage() {
     { label: t("admin_shops_tab_suspended")  || "ถูกระงับ",        value: stats.suspended.toLocaleString(), subLabel: "ต้องติดตาม",                                accent: "#ff3b30", Icon: AlertCircle },
   ];
 
+  if (detailShop) {
+    return <ShopApplicationDetailPage shop={detailShop} onBack={() => setDetailShop(null)} />;
+  }
+
   return (
     <div>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_shops_page_title") || "จัดการร้านค้า"}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("admin_shops_page_subtitle") || "ตรวจสอบ อนุมัติ และจัดการร้านค้า ทั้งบทบาทพิเศษ (แบรนด์ทดสอบ / เฮอร์บัลมาร์เก็ต) ในที่เดียว"}</p>
+        </div>
+      </div>
+
       {/* KPI cards — same pattern as AdminOrdersContent */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         {kpiCards.map((s) => (
@@ -20744,13 +22957,14 @@ function ShopsListPage() {
       <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
         <table className="w-full table-fixed">
           <colgroup>
-            <col style={{ width: "26%" }} />
-            <col style={{ width: "11%" }} />
-            <col style={{ width: "11%" }} />
+            <col style={{ width: "24%" }} />
             <col style={{ width: "10%" }} />
             <col style={{ width: "10%" }} />
-            <col style={{ width: "11%" }} />
             <col style={{ width: "9%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "11%" }} />
+            <col style={{ width: "13%" }} />
+            <col style={{ width: "8%" }} />
             <col style={{ width: "6%" }} />
           </colgroup>
           <thead>
@@ -20760,19 +22974,21 @@ function ShopsListPage() {
               <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_status") || "สถานะ"}</th>
               <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_products") || "จำนวนสินค้า"}</th>
               <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_orders") || "ออเดอร์"}</th>
-              <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_revenue") || "รายได้"}</th>
-              <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{t("admin_shops_col_rating") || "คะแนน"}</th>
+              <th className="text-right pb-3 pr-6" style={{ fontWeight: 500 }}>{t("admin_shops_col_revenue") || "รายได้"}</th>
+              <th className="text-left pb-3 pr-3 pl-1" style={{ fontWeight: 500 }}>บทบาทพิเศษ</th>
+              <th className="text-left pb-3 pr-3 pl-2" style={{ fontWeight: 500 }}>{t("admin_shops_col_rating") || "คะแนน"}</th>
               <th className="text-center pb-3" style={{ fontWeight: 500 }}></th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={8} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>{t("admin_shops_no_shops") || "ไม่พบร้านค้า"}</td></tr>
+              <tr><td colSpan={9} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>{t("admin_shops_no_shops") || "ไม่พบร้านค้า"}</td></tr>
             )}
             {filtered.map((s) => {
               const status = SHOP_STATUS_META[s.status];
               return (
-                <tr key={s.id} className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+                <tr key={s.id} onClick={() => setDetailShop(s)}
+                  className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 cursor-pointer transition-colors">
                   {/* Shop */}
                   <td className="py-3 pr-3 align-top">
                     <div className="flex items-center gap-3 min-w-0">
@@ -20815,11 +23031,37 @@ function ShopsListPage() {
                     <p className={`${font} text-[13px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{s.orderCount.toLocaleString()}</p>
                   </td>
                   {/* Revenue */}
-                  <td className="py-3 pr-3 text-right align-middle">
+                  <td className="py-3 pr-6 text-right align-middle">
                     <p className={`${font} text-[14px] tabular-nums`} style={{ fontWeight: 700, color: "#319754" }}>฿{formatCurrency(s.revenue)}</p>
                   </td>
+                  {/* Special roles — compact stacked pills for trial brand + herbal market */}
+                  <td className="py-3 pr-3 pl-1 align-middle">
+                    {(() => {
+                      const sr = buildShopSubRoles(s);
+                      const items = [
+                        { key: "trial",  meta: SPECIAL_ROLE_META.trial_brand,   app: sr.trial_brand   },
+                        { key: "market", meta: SPECIAL_ROLE_META.herbal_market, app: sr.herbal_market },
+                      ];
+                      return (
+                        <div className="flex flex-col items-start gap-1">
+                          {items.map((it) => {
+                            const sm = SPECIAL_STATUS_META[it.app.status];
+                            return (
+                              <span key={it.key}
+                                className={`${font} inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap w-fit`}
+                                style={{ backgroundColor: sm.bg, color: sm.color, fontWeight: 600 }}
+                                title={`${it.meta.label}: ${sm.label}`}>
+                                <span className="size-1 rounded-full shrink-0" style={{ backgroundColor: sm.dot }} />
+                                {sm.label}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </td>
                   {/* Rating */}
-                  <td className="py-3 pr-3 align-middle">
+                  <td className="py-3 pr-3 pl-2 align-middle">
                     {s.rating > 0 ? (
                       <div className="inline-flex items-center gap-1">
                         <Star className="size-3.5 text-[#f59e0b]" fill="#f59e0b" strokeWidth={0} />
@@ -20830,7 +23072,7 @@ function ShopsListPage() {
                     )}
                   </td>
                   {/* Actions */}
-                  <td className="py-3 text-center align-middle">
+                  <td className="py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
                     <Popover>
                       <PopoverTrigger asChild>
                         <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
@@ -20838,10 +23080,10 @@ function ShopsListPage() {
                         </button>
                       </PopoverTrigger>
                       <PopoverContent align="end" sideOffset={6} className="w-[220px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
-                        <button onClick={() => toast.info(`ดูร้าน ${s.name}`)}
+                        <button onClick={() => setDetailShop(s)}
                           className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
                           <Eye className="size-3.5 text-[#319754]" strokeWidth={2.2} />
-                          <span style={{ fontWeight: 500 }}>{t("admin_shops_view") || "ดูร้านค้า"}</span>
+                          <span style={{ fontWeight: 500 }}>{t("admin_shops_view") || "ดูข้อมูลร้านค้า"}</span>
                         </button>
                         {s.status === "pending" && (
                           <>
@@ -20889,6 +23131,378 @@ function ShopsListPage() {
 }
 
 /* ============================================================
+ * SHOP APPLICATION DETAIL — full-page admin view of the seller's
+ * registration form (read-only, with approve / reject CTA for
+ * pending applications). Rendered in place of the list when a row
+ * is selected; "กลับ" returns to the list.
+ * ========================================================== */
+function ShopApplicationDetailPage({ shop, onBack }: { shop: ShopRecord; onBack: () => void }) {
+  const a = shop.application;
+  const status = SHOP_STATUS_META[shop.status];
+  const docsTotal = a.documents.length;
+  const docsUploaded = a.documents.filter((d) => d.status === "uploaded").length;
+  const docsMissing = docsTotal - docsUploaded;
+
+  // Sub-role applications attached to this shop + tab state
+  const [subRoles, setSubRoles] = useState<OwnerSubRoles>(() => buildShopSubRoles(shop));
+  const [tab, setTab] = useState<"general" | SpecialRoleKey>("general");
+  const mutateSubRole = (key: SpecialRoleKey, patch: Partial<SpecialRoleApp>) => {
+    setSubRoles((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
+  };
+
+  // KPI strip — switches between pending-app and active-shop stats
+  const kpiItems = shop.status === "pending" ? [
+    { label: "เลขที่ใบสมัคร", value: shop.id.toUpperCase(), sub: "" },
+    { label: "คาดการณ์", value: `${a.expectedSkuCount}`, sub: "SKU" },
+    { label: "เอกสาร", value: `${docsUploaded}/${docsTotal}`, sub: "ไฟล์" },
+    { label: "ผู้เสียภาษี", value: a.taxId.slice(0, 4) + "…" + a.taxId.slice(-4), sub: "" },
+  ] : [
+    { label: "สินค้า",  value: `${shop.productCount.toLocaleString()}`, sub: "รายการ" },
+    { label: "ออเดอร์", value: `${shop.orderCount.toLocaleString()}`, sub: "รวม" },
+    { label: "รายได้",  value: shop.revenue >= 1_000_000 ? `฿${(shop.revenue / 1_000_000).toFixed(2)}M` : `฿${(shop.revenue / 1000).toFixed(1)}K`, sub: "" },
+    { label: "คะแนน",  value: shop.rating > 0 ? shop.rating.toFixed(1) : "—", sub: shop.rating > 0 ? "★" : "" },
+  ];
+
+  return (
+    <div>
+      {/* Top row: back button | action buttons (mirrors TrialDetailPage layout) */}
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          กลับ
+        </button>
+
+        {/* Header actions — labeled pills for primary, icon-only for overflow */}
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {shop.status === "pending" && (
+              <>
+                <button onClick={() => { toast.error(`ปฏิเสธ ${shop.name}`); onBack(); }}
+                  className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#dc2626] hover:text-[#dc2626] hover:bg-red-50/50 text-gray-700 text-[13px] cursor-pointer transition-colors`}
+                  style={{ fontWeight: 500 }}>
+                  <X className="size-4" strokeWidth={2.4} />
+                  ปฏิเสธ
+                </button>
+                <button onClick={() => { toast.success(`อนุมัติ ${shop.name} แล้ว`); onBack(); }}
+                  className={`${font} inline-flex items-center gap-2 h-10 px-5 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-shadow shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+                  style={{ fontWeight: 600 }}>
+                  <Check className="size-4" strokeWidth={2.4} />
+                  อนุมัติร้านค้า
+                </button>
+              </>
+            )}
+
+            {shop.status === "active" && (
+              <>
+                <button onClick={() => toast.info(`เปิดหน้าร้าน ${shop.name}`)}
+                  className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#319754] hover:text-[#319754] text-gray-700 text-[13px] cursor-pointer transition-colors`}
+                  style={{ fontWeight: 500 }}>
+                  <Eye className="size-4" strokeWidth={2.4} />
+                  เยี่ยมชมหน้าร้าน
+                </button>
+                <button onClick={() => { toast.success(`ระงับ ${shop.name} แล้ว`); onBack(); }}
+                  className={`${font} inline-flex items-center gap-2 h-10 px-4 rounded-full bg-white border border-gray-200 hover:border-[#dc2626] hover:text-[#dc2626] hover:bg-red-50/50 text-gray-700 text-[13px] cursor-pointer transition-colors`}
+                  style={{ fontWeight: 500 }}>
+                  <Ban className="size-4" strokeWidth={2.4} />
+                  ระงับร้านค้า
+                </button>
+              </>
+            )}
+
+            {shop.status === "suspended" && (
+              <button onClick={() => { toast.success(`เปิดร้าน ${shop.name} อีกครั้ง`); onBack(); }}
+                className={`${font} inline-flex items-center gap-2 h-10 px-5 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-shadow shadow-[0_2px_8px_rgba(49,151,84,0.25)] hover:shadow-[0_4px_14px_rgba(49,151,84,0.35)]`}
+                style={{ fontWeight: 600 }}>
+                <RotateCcw className="size-4" strokeWidth={2.4} />
+                เปิดร้านอีกครั้ง
+              </button>
+            )}
+
+            {/* Kebab menu — icon-only, overflow actions */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  title="การกระทำเพิ่มเติม"
+                  className="size-10 rounded-full inline-flex items-center justify-center bg-white border border-gray-200 hover:border-[#319754] hover:text-[#319754] text-gray-600 transition-colors cursor-pointer data-[state=open]:bg-[#319754] data-[state=open]:text-white data-[state=open]:border-[#319754]"
+                  aria-label="การกระทำเพิ่มเติม">
+                  <MoreHorizontal className="size-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={6} className="w-[240px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                <button onClick={() => toast.success(`ส่งอีเมลถึง ${a.email}`)}
+                  className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                  <Mail className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                  <span style={{ fontWeight: 500 }}>ส่งอีเมลถึงร้านค้า</span>
+                </button>
+                <button onClick={() => toast.info(`โทรหา ${a.phone}`)}
+                  className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                  <Phone className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                  <span style={{ fontWeight: 500 }}>โทรหาผู้ติดต่อ</span>
+                </button>
+                <button onClick={() => toast.info(`ดาวน์โหลดใบสมัคร ${shop.id.toUpperCase()}.pdf`)}
+                  className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                  <Download className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                  <span style={{ fontWeight: 500 }}>ดาวน์โหลดใบสมัคร (PDF)</span>
+                </button>
+                {shop.status === "active" && !shop.verified && (
+                  <button onClick={() => toast.success(`ตั้ง ${shop.name} เป็น Verified`)}
+                    className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#319754]/10 cursor-pointer text-left text-[13px] text-[#287745]`}>
+                    <BadgeCheck className="size-3.5" strokeWidth={2.4} />
+                    <span style={{ fontWeight: 500 }}>ตั้งสถานะ Verified</span>
+                  </button>
+                )}
+                {shop.status === "active" && shop.verified && (
+                  <button onClick={() => toast.info(`ยกเลิก Verified ของ ${shop.name}`)}
+                    className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-gray-700`}>
+                    <BadgeCheck className="size-3.5 text-gray-400" strokeWidth={2.2} />
+                    <span style={{ fontWeight: 500 }}>ยกเลิกสถานะ Verified</span>
+                  </button>
+                )}
+                <button onClick={() => toast.info(`บันทึกหมายเหตุภายในของ ${shop.name}`)}
+                  className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                  <Pencil className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                  <span style={{ fontWeight: 500 }}>เพิ่มหมายเหตุภายใน</span>
+                </button>
+                {shop.status === "suspended" && (
+                  <>
+                    <div className="h-px bg-gray-100 my-1 mx-2" />
+                    <button onClick={() => { if (confirm(`ลบร้าน ${shop.name} ถาวร?`)) { toast.success(`ลบ ${shop.name} แล้ว`); onBack(); } }}
+                      className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/10 cursor-pointer text-left text-[13px] text-[#dc2626]`}>
+                      <Trash2 className="size-3.5" strokeWidth={2.4} />
+                      <span style={{ fontWeight: 500 }}>ลบร้านค้าถาวร</span>
+                    </button>
+                  </>
+                )}
+              </PopoverContent>
+            </Popover>
+          </div>
+      </div>
+
+      {/* ===== HERO CARD — green gradient (mirrors TrialDetailPage hero) ===== */}
+      <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] overflow-hidden mb-5">
+        <div className="relative bg-gradient-to-br from-[#319754] via-[#287745] to-[#1d5b32] p-5 overflow-hidden">
+          <Sparkles className="absolute -top-4 -right-4 size-32 text-white/5" strokeWidth={1.5} />
+          <div className="relative flex items-start gap-4">
+            {/* Shop logo — circular, white frosted frame */}
+            <div className="size-20 rounded-full overflow-hidden bg-white/20 backdrop-blur-sm border border-white/30 shrink-0 flex items-center justify-center text-white"
+              style={{ fontSize: 32 }}>
+              {shop.image ? (
+                <img src={shop.image} alt={shop.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className={`${fontBold}`} style={{ fontWeight: 800 }}>{shop.name.charAt(0)}</span>
+              )}
+            </div>
+            {/* Text info */}
+            <div className="flex-1 min-w-0 pr-2">
+              <p className={`${font} text-[10.5px] text-white/75 uppercase tracking-wider mb-1`} style={{ fontWeight: 600 }}>
+                {shop.category} · {a.businessType}
+              </p>
+              <h2 className={`${font} text-[20px] text-white leading-tight inline-flex items-center gap-2`} style={{ fontWeight: 700 }}>
+                {shop.name}
+                {shop.verified && (
+                  <BadgeCheck className="size-4.5 text-white shrink-0" strokeWidth={2.4} fill="#319754" stroke="#fff" />
+                )}
+              </h2>
+              <p className={`${font} text-[12px] text-white/85 mt-1 leading-snug`}>
+                ใบสมัครเปิดร้านค้า · เลขที่ {shop.id.toUpperCase()} · ยื่นเมื่อ {shop.registeredAt}
+              </p>
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <span className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white`} style={{ fontWeight: 600 }}>
+                  <span className="size-1.5 rounded-full bg-white" />
+                  {status.label}
+                </span>
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/95`} style={{ fontWeight: 500 }}>
+                  <Mail className="size-3" strokeWidth={2.4} /> {a.email}
+                </span>
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-white/15 backdrop-blur-sm text-white/95`} style={{ fontWeight: 500 }}>
+                  <Phone className="size-3" strokeWidth={2.4} /> {a.phone}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* KPI strip — minimal inline labels with thin dividers */}
+          <div className="relative flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
+            {kpiItems.map((k, i, arr) => (
+              <Fragment key={k.label}>
+                <div className="inline-flex items-baseline gap-1.5">
+                  <span className={`${font} text-[10px] text-white/65`} style={{ fontWeight: 500 }}>{k.label}</span>
+                  <span className={`${font} text-[14px] text-white tabular-nums leading-none`} style={{ fontWeight: 700 }}>{k.value}</span>
+                  {k.sub && <span className={`${font} text-[10px] text-white/65`}>{k.sub}</span>}
+                </div>
+                {i < arr.length - 1 && <span className="h-3 w-px bg-white/20" aria-hidden />}
+              </Fragment>
+            ))}
+          </div>
+
+          {/* Tab nav — switch between general shop info and sub-role apps */}
+          <div className="relative mt-4">
+            <div className="inline-flex items-center gap-1 bg-white rounded-full p-1 shadow-[0_2px_8px_rgba(0,0,0,0.08)] max-w-full overflow-x-auto">
+              {([
+                { key: "general" as const,       label: "ข้อมูลร้านค้า", icon: Store },
+                { key: "trial_brand" as const,   label: SPECIAL_ROLE_META.trial_brand.label,   icon: SPECIAL_ROLE_META.trial_brand.icon,   statusKey: subRoles.trial_brand.status },
+                { key: "herbal_market" as const, label: SPECIAL_ROLE_META.herbal_market.label, icon: SPECIAL_ROLE_META.herbal_market.icon, statusKey: subRoles.herbal_market.status },
+              ]).map((t) => {
+                const isActive = tab === t.key;
+                const sm = "statusKey" in t ? SPECIAL_STATUS_META[t.statusKey as SpecialRoleStatus] : undefined;
+                return (
+                  <button key={t.key} onClick={() => setTab(t.key)}
+                    className={`${font} relative inline-flex items-center gap-1.5 px-4 h-[34px] rounded-full text-[12.5px] cursor-pointer transition-colors whitespace-nowrap ${
+                      isActive ? "text-white" : "text-gray-600 hover:text-gray-900"
+                    }`}
+                    style={{ fontWeight: isActive ? 700 : 500 }}>
+                    {isActive && (
+                      <motion.span layoutId="shop-detail-tab"
+                        className="absolute inset-0 rounded-full bg-gradient-to-br from-[#3fb56b] to-[#267a43] shadow-[0_2px_8px_rgba(49,151,84,0.35)]"
+                        transition={{ type: "spring", stiffness: 380, damping: 30 }} />
+                    )}
+                    <t.icon className="size-3.5 relative z-10" strokeWidth={2.2} />
+                    <span className="relative z-10">{t.label}</span>
+                    {sm && (
+                      <span className={`${font} relative z-10 size-2 rounded-full`}
+                        style={{ backgroundColor: sm.dot, boxShadow: isActive ? "0 0 0 1.5px #ffffff" : undefined }}
+                        title={sm.label} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Body — tab-aware */}
+      {tab !== "general" ? (
+        <SpecialRoleTabBody
+          user={{ id: shop.id, username: shop.id, email: a.email, name: shop.owner, role: "owner", status: shop.status === "active" ? "active" : shop.status === "pending" ? "pending" : "banned" }}
+          roleKey={tab}
+          app={subRoles[tab]}
+          onMutate={(patch) => mutateSubRole(tab, patch)}
+        />
+      ) : (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+        {/* Left/main column — sections */}
+        <div className="lg:col-span-2 space-y-5">
+          <ShopAppSection icon={Building2} title="ข้อมูลธุรกิจ">
+            <ShopAppField label="ชื่อตามใบจดทะเบียน" value={a.registeredName} />
+            <ShopAppField label="เลขประจำตัวผู้เสียภาษี" value={a.taxId} tabular />
+            <ShopAppField label="ผู้ขอยื่นใบสมัคร" value={shop.owner} />
+            <ShopAppField label="คาดการณ์จำนวน SKU" value={`${a.expectedSkuCount} รายการ`} tabular />
+          </ShopAppSection>
+
+          <ShopAppSection icon={Phone} title="ผู้ติดต่อ">
+            <ShopAppField label="อีเมล" value={a.email} icon={Mail} />
+            <ShopAppField label="เบอร์โทร" value={a.phone} icon={Phone} tabular />
+            {a.website && <ShopAppField label="เว็บไซต์" value={a.website} icon={Globe} fullWidth />}
+          </ShopAppSection>
+
+          <ShopAppSection icon={MapPin} title="ที่อยู่ตามใบสมัคร">
+            <ShopAppField label="ที่อยู่" value={a.address} fullWidth />
+            <ShopAppField label="จังหวัด" value={a.province} />
+            <ShopAppField label="รหัสไปรษณีย์" value={a.postalCode} tabular />
+          </ShopAppSection>
+
+          <ShopAppSection icon={CreditCard} title="บัญชีธนาคารสำหรับโอนเงิน">
+            <ShopAppField label="ธนาคาร" value={a.bankName} />
+            <ShopAppField label="ชื่อบัญชี" value={a.bankAccountName} />
+            <ShopAppField label="เลขที่บัญชี" value={a.bankAccountNo} tabular fullWidth />
+          </ShopAppSection>
+
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <FileText className="size-4 text-[#319754]" strokeWidth={2.2} />
+              <h4 className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>แนวคิดร้านค้า</h4>
+            </div>
+            <p className={`${font} text-[13.5px] text-gray-700 leading-relaxed`}>{a.pitch}</p>
+          </div>
+        </div>
+
+        {/* Right column — docs + quick stats */}
+        <div className="lg:col-span-1 space-y-5">
+          {/* Documents */}
+          <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Paperclip className="size-4 text-[#319754]" strokeWidth={2.2} />
+              <h4 className={`${font} text-[15px] text-black flex-1`} style={{ fontWeight: 600 }}>เอกสารแนบ</h4>
+              <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>{docsUploaded}/{docsTotal} ไฟล์</span>
+            </div>
+            {docsMissing > 0 && (
+              <div className={`${font} inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 mb-3`} style={{ fontWeight: 600 }}>
+                <AlertCircle className="size-3" strokeWidth={2.4} /> ขาด {docsMissing} ไฟล์
+              </div>
+            )}
+            <div className="space-y-2">
+              {a.documents.map((d) => (
+                <div key={d.label}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border ${
+                    d.status === "uploaded" ? "border-gray-100 bg-white" : "border-amber-100 bg-amber-50/40"
+                  }`}>
+                  <div className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
+                    d.status === "uploaded" ? "bg-[#319754]/10" : "bg-amber-100"
+                  }`}>
+                    {d.status === "uploaded" ? (
+                      <FileText className="size-4 text-[#319754]" strokeWidth={2.2} />
+                    ) : (
+                      <AlertCircle className="size-4 text-amber-700" strokeWidth={2.2} />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className={`${font} text-[12.5px] text-black truncate`} style={{ fontWeight: 500 }}>{d.label}</p>
+                    <p className={`${font} text-[10px] ${d.status === "uploaded" ? "text-[#319754]" : "text-amber-700"}`} style={{ fontWeight: 600 }}>
+                      {d.status === "uploaded" ? "แนบมาแล้ว" : "ยังไม่ได้แนบ"}
+                    </p>
+                  </div>
+                  {d.status === "uploaded" && (
+                    <button onClick={() => toast.info(`ดาวน์โหลด ${d.label}`)}
+                      className="size-7 rounded-full inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer transition-colors">
+                      <Download className="size-3.5" strokeWidth={2.4} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick stats (only meaningful for non-pending shops) */}
+        </div>
+      </div>
+      )}
+    </div>
+  );
+}
+
+
+function ShopAppSection({ icon: Icon, title, children }: { icon: any; title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Icon className="size-4 text-[#319754]" strokeWidth={2.2} />
+        <h4 className={`${font} text-[15px] text-black`} style={{ fontWeight: 600 }}>{title}</h4>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ShopAppField({ label, value, icon: Icon, tabular, fullWidth }: {
+  label: string; value: string; icon?: any; tabular?: boolean; fullWidth?: boolean;
+}) {
+  return (
+    <div className={fullWidth ? "sm:col-span-2" : ""}>
+      <p className={`${font} text-[10.5px] uppercase tracking-wider text-gray-500 mb-1`} style={{ fontWeight: 600 }}>{label}</p>
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="size-3.5 text-gray-400 shrink-0" strokeWidth={2.2} />}
+        <p className={`${font} text-[13.5px] text-black break-words ${tabular ? "tabular-nums" : ""}`} style={{ fontWeight: 500 }}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+
+/* ============================================================
  * PERMISSIONS PAGE — group list + combined editor view
  * ========================================================== */
 
@@ -20925,6 +23539,14 @@ const ALL_PERMISSIONS: SystemPermission[] = [
   { id: "shops_suspend",        label: "ระงับร้านค้า",             desc: "ระงับการขายของร้านชั่วคราว",                  category: "ร้านค้า" },
   { id: "shops_delete",         label: "ลบร้านค้า",                desc: "ลบทะเบียนร้านออกจากระบบ",                     category: "ร้านค้า" },
   { id: "shops_view_revenue",   label: "ดูรายได้ของร้านค้า",       desc: "เข้าถึงข้อมูลรายได้และยอดขายของร้าน",          category: "ร้านค้า" },
+
+  // ===== บทบาทพิเศษของร้านค้า =====
+  { id: "subrole_trial_view",     label: "ดูใบสมัครแบรนด์ทดสอบ",      desc: "เข้าดูคำขอสมัครเป็นแบรนด์ทดสอบของร้านค้า",            category: "บทบาทพิเศษของร้านค้า" },
+  { id: "subrole_trial_approve",  label: "อนุมัติ / ปฏิเสธแบรนด์ทดสอบ", desc: "พิจารณาคำขอสมัครเป็นแบรนด์ทดสอบ",                     category: "บทบาทพิเศษของร้านค้า" },
+  { id: "subrole_trial_revoke",   label: "เพิกถอนสิทธิ์แบรนด์ทดสอบ",   desc: "ถอนสิทธิ์การเป็นแบรนด์ทดสอบของร้านค้าที่อนุมัติแล้ว",   category: "บทบาทพิเศษของร้านค้า" },
+  { id: "subrole_market_view",    label: "ดูใบสมัครเฮอร์บัลมาร์เก็ต",  desc: "เข้าดูคำขอสมัครเป็นซัพพลายเออร์ B2B",                   category: "บทบาทพิเศษของร้านค้า" },
+  { id: "subrole_market_approve", label: "อนุมัติ / ปฏิเสธเฮอร์บัลมาร์เก็ต", desc: "พิจารณาคำขอสมัครเป็นซัพพลายเออร์ B2B",            category: "บทบาทพิเศษของร้านค้า" },
+  { id: "subrole_market_revoke",  label: "เพิกถอนสิทธิ์เฮอร์บัลมาร์เก็ต",  desc: "ถอนสิทธิ์การเป็นซัพพลายเออร์ B2B ของร้านค้าที่อนุมัติแล้ว", category: "บทบาทพิเศษของร้านค้า" },
 
   // ===== คำสั่งซื้อ =====
   { id: "orders_view_all",      label: "ดูออเดอร์ทั้งหมด",         desc: "เข้าดูออเดอร์ข้ามทุกร้าน",                    category: "คำสั่งซื้อ" },
@@ -21055,6 +23677,8 @@ const INITIAL_PERM_GROUPS: PermGroup[] = [
     permissions: [
       "users_view", "users_edit", "users_ban", "users_reset_password",
       "shops_view", "shops_approve", "shops_edit", "shops_suspend",
+      "subrole_trial_view", "subrole_trial_approve", "subrole_trial_revoke",
+      "subrole_market_view", "subrole_market_approve", "subrole_market_revoke",
     ],
   },
   {
@@ -26873,6 +29497,8 @@ export function AdminDashboard() {
     if (activeItem === "complaints_list")    return <ComplaintListContent />;
     if (activeItem === "complaints_appeals") return <ComplaintAppealsContent />;
     if (activeItem === "products_manage")    return <ProductsManageContent onNavigateToComplaints={() => setActiveItem("complaints_list")} />;
+    if (activeItem === "products_trials")    return <AdminTrialProductsContent />;
+    if (activeItem === "products_herbal")    return <AdminHerbalMarketContent />;
     if (activeItem === "products_categories") return <ProductsCategoriesContent />;
     if (activeItem === "products_promotions") return <AdminPromotionsContent />;
     if (activeItem === "products_flash")      return <AdminFlashSaleEventsContent />;
@@ -26941,7 +29567,7 @@ export function AdminDashboard() {
 
       <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">
         {/* BannerContent + BlogContent + VideoContent + PopupContent + LegalContent + ComplaintListContent render their own headers — skip default */}
-        {activeItem !== "dashboard" && activeItem !== "content_banner" && activeItem !== "content_blog" && activeItem !== "content_video" && activeItem !== "content_index" && activeItem !== "content_terms" && activeItem !== "content_privacy" && activeItem !== "complaints_list" && activeItem !== "complaints_appeals" && activeItem !== "products_manage" && activeItem !== "products_categories" && activeItem !== "products_promotions" && activeItem !== "products_flash" && activeItem !== "products_coupons" && activeItem !== "report_sales" && activeItem !== "report_customers" && activeItem !== "report_products" && activeItem !== "report_marketing" && activeItem !== "orders" && activeItem !== "po_approval_queue" && activeItem !== "po_cancel_requests" && activeItem !== "reviews" && activeItem !== "page_home" && activeItem !== "page_products" && activeItem !== "page_blog" && activeItem !== "page_about" && activeItem !== "users_permissions" && (
+        {activeItem !== "dashboard" && activeItem !== "content_banner" && activeItem !== "content_blog" && activeItem !== "content_video" && activeItem !== "content_index" && activeItem !== "content_terms" && activeItem !== "content_privacy" && activeItem !== "complaints_list" && activeItem !== "complaints_appeals" && activeItem !== "products_manage" && activeItem !== "products_categories" && activeItem !== "products_promotions" && activeItem !== "products_flash" && activeItem !== "products_coupons" && activeItem !== "report_sales" && activeItem !== "report_customers" && activeItem !== "report_products" && activeItem !== "report_marketing" && activeItem !== "orders" && activeItem !== "po_approval_queue" && activeItem !== "po_cancel_requests" && activeItem !== "reviews" && activeItem !== "page_home" && activeItem !== "page_products" && activeItem !== "page_blog" && activeItem !== "page_about" && activeItem !== "users_permissions" && activeItem !== "shops_list" && activeItem !== "users_list" && activeItem !== "products_trials" && activeItem !== "products_herbal" && (
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div>
               <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{meta.title}</h2>

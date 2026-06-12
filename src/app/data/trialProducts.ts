@@ -15,6 +15,15 @@ export type TrialProduct = {
   endsInDays: number;
   rewardPoints: number;
   whatToTest: string[];
+  /** Test objectives selected when the form was generated — drives the actual question
+   *  set + types in the preview (must match the keys in QUESTION_LIBRARY). */
+  testObjectives?: ("efficacy" | "sensory" | "packaging" | "market" | "formula_ab")[];
+  /** Phases the owner enabled when generating the form. Drives which generated questions
+   *  show up in the preview and dashboard. Defaults to all three when absent. */
+  activePhases?: ("baseline" | "first_use" | "after_full")[];
+  /** Days after registration when the "after use" evaluation form becomes available.
+   *  Only relevant if the trial uses the "after_full" phase. */
+  evaluationDays?: number;
   /** Brand / studio that owns this trial (shown beneath product name) */
   studioName?: string;
   /** Average satisfaction rating from PRIOR test batches (1–5). Omit for first-batch products. */
@@ -113,15 +122,35 @@ export function getTrialImages(p: TrialProduct): string[] {
   return [p.image, ...extras];
 }
 
+/** Yes/No response for conditional questions (side effects, allergies). */
+export type ConditionalAnswer = { has: boolean; note?: string };
+
 export type Evaluation = {
-  /** Overall 1-5 rating */
+  /** Overall 1-5 rating — populated from the always-on `core_overall` (stars_1_5) question. */
   overall: number;
-  /** Per-criterion 1-5 ratings, keyed by the criterion label (matches whatToTest items). */
+  /** Per-criterion 1-5 ratings.
+   *  Legacy data keys by criterion LABEL (matches whatToTest items).
+   *  New code prefers `scoreById` below; readers should fall back to this map. */
   criteria: Record<string, number>;
-  /** Free-form comment from the tester. */
+  /** Free-form comment from the tester — populated from `core_text` (always-on). */
   comment: string;
-  /** Would the tester recommend the product to a friend? */
+  /** Would the tester recommend the product to a friend? Derived from NPS >= 7. */
   wouldRecommend: boolean;
+  /** Per-question 1-5 scale ratings keyed by stable question ID (e.g. "skin_moist_b").
+   *  Use this in preference to `criteria` when present — IDs are stable across label edits. */
+  scoreById?: Record<string, number>;
+  /** NPS 0-10 scores keyed by question ID (the always-on `core_nps` lives at id "core_nps"). */
+  npsScores?: Record<string, number>;
+  /** Multiple-choice selections — single chosen option string per question ID. */
+  mcAnswers?: Record<string, string>;
+  /** Multi-select tag arrays per question ID. */
+  tagAnswers?: Record<string, string[]>;
+  /** A/B preference per question ID (the value is the literal "A" or "B"). */
+  abChoices?: Record<string, "A" | "B">;
+  /** Free-text answers for non-core_text text questions (e.g. price ceiling, A/B difference). */
+  textAnswers?: Record<string, string>;
+  /** Yes/No + note responses for conditional questions (e.g. side effects). */
+  conditionalAnswers?: Record<string, ConditionalAnswer>;
 };
 
 export type Gender = "male" | "female" | "lgbtq";
@@ -282,11 +311,34 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     id: "trial-1",
     name: "เซรั่มขมิ้นชัน Brightening v2",
     tagline: "เพิ่มความกระจ่างใส ลดรอยด่างดำ สูตรสารสกัดขมิ้นชัน 5% เหมาะสำหรับทุกสภาพผิว",
-    category: "บำรุงผิว",
+    category: "เครื่องสำอาง",
     image: imgTrialCream1,
     images: [imgTrialCream1, imgTrialCream2],
     spotsTotal: 50, spotsTaken: 32, endsInDays: 12, rewardPoints: 200,
-    whatToTest: ["กลิ่นและเนื้อสัมผัส", "ผลลัพธ์ใน 14 วัน", "การระคายเคือง"],
+    whatToTest: [
+      "ระดับความชุ่มชื้นผิวตอนนี้",
+      "ความกระจ่างใสของผิวตอนนี้",
+      "ปัญหาผิวที่ต้องการแก้ไข",
+      "ความพึงพอใจสภาพผิวโดยรวมตอนนี้",
+      "ผิวชุ่มชื้นขึ้นเทียบกับก่อนใช้",
+      "ผิวกระจ่างใสขึ้น",
+      "ปัญหาผิวที่เลือกไว้ดีขึ้นแค่ไหน",
+      "ผลข้างเคียง / อาการแพ้",
+      "ดีไซน์ / ความสวยงาม",
+      "ฟังก์ชันการใช้งาน (เปิด/ปิด/พกพา)",
+      "First Impression",
+      "Purchase Intent — คุณจะซื้อจริงไหม",
+      "ราคาสูงสุดที่ยอมจ่าย",
+      "เหมาะกับกลุ่มเป้าหมายแบบใด",
+      "ชอบสูตรไหนมากกว่า",
+      "ความแตกต่างที่สังเกตได้",
+      "ความพึงพอใจโดยรวม",
+      "แนะนำให้คนอื่น (NPS)",
+      "คำแนะนำเพิ่มเติม",
+    ],
+    evaluationDays: 14,
+    testObjectives: ["efficacy", "packaging", "market", "formula_ab"],
+    activePhases: ["baseline", "after_full"],
     concerns: ["cosmetic"],
     studioName: "Herbal Lab Co.", prevAvgRating: 4.7, prevRatingCount: 32,
     detail: {
@@ -373,187 +425,115 @@ export const TRIAL_PRODUCTS: TrialProduct[] = [
     id: "trial-2",
     name: "ชาสมุนไพรช่วยนอน Sleep+",
     tagline: "เบลนด์ใหม่จากคาโมมายล์ + วาเลอเรียน — ทดลองก่อนเปิดตัว",
-    category: "เครื่องดื่ม",
+    category: "อาหาร / เครื่องดื่ม",
     image: "https://images.unsplash.com/photo-1610643625267-aee6dae3ca22?w=800&q=80",
     spotsTotal: 100, spotsTaken: 78, endsInDays: 7, rewardPoints: 150,
-    whatToTest: ["ผลต่อการนอน 7 คืน", "รสชาติ", "ความสะดวกในการชง"],
+    whatToTest: [
+      "รสชาติเครื่องดื่มที่ดื่มเป็นประจำ",
+      "ผลที่รู้สึกได้หลังดื่ม",
+      "ดีไซน์ / ความสวยงาม",
+      "ฟังก์ชันการใช้งาน (เปิด/ปิด/พกพา)",
+      "First Impression",
+      "Purchase Intent — คุณจะซื้อจริงไหม",
+      "ราคาสูงสุดที่ยอมจ่าย",
+      "เหมาะกับกลุ่มเป้าหมายแบบใด",
+      "ชอบสูตรไหนมากกว่า",
+      "ความแตกต่างที่สังเกตได้",
+      "ความพึงพอใจโดยรวม",
+      "แนะนำให้คนอื่น (NPS)",
+      "คำแนะนำเพิ่มเติม",
+    ],
+    evaluationDays: 7,
+    testObjectives: ["efficacy", "packaging", "market", "formula_ab"],
+    activePhases: ["baseline", "after_full"],
     concerns: ["food"],
     studioName: "Sleep Co Studio", prevAvgRating: 4.2, prevRatingCount: 28,
-  },
-  {
-    id: "trial-3",
-    name: "ครีมว่านหางจระเข้ x ไพล",
-    tagline: "ลดอาการปวดเมื่อย — กำลังหา tester ผู้สูงวัย 60+",
-    category: "ดูแลร่างกาย",
-    image: imgTrialCream2,
-    spotsTotal: 30, spotsTaken: 11, endsInDays: 18, rewardPoints: 300,
-    whatToTest: ["บรรเทาปวดข้อ", "ความเหนียวเหนอะ", "กลิ่น"],
-    concerns: ["cosmetic"],
-    studioName: "Botanic Lab", prevAvgRating: 4.5, prevRatingCount: 22,
   },
   {
     id: "trial-4",
     name: "แคปซูลฟ้าทะลายโจร Daily",
     tagline: "ปริมาณ andrographolide สูง — รับสมัครเฉพาะคนเป็นหวัดบ่อย",
-    category: "อาหารเสริม",
+    category: "สุขภาพ / อาหารเสริม",
     image: imgTrialCapsule1,
     spotsTotal: 40, spotsTaken: 40, endsInDays: 0, rewardPoints: 250,
-    whatToTest: ["ความถี่ของอาการ", "ผลข้างเคียง"],
+    whatToTest: [
+      "ปัญหาสุขภาพที่ต้องการแก้",
+      "ผลที่รู้สึกได้หลังใช้ครบกำหนด",
+      "ผลข้างเคียง / อาการไม่พึงประสงค์",
+      "ดีไซน์ / ความสวยงาม",
+      "ฟังก์ชันการใช้งาน (เปิด/ปิด/พกพา)",
+      "First Impression",
+      "Purchase Intent — คุณจะซื้อจริงไหม",
+      "ราคาสูงสุดที่ยอมจ่าย",
+      "เหมาะกับกลุ่มเป้าหมายแบบใด",
+      "ชอบสูตรไหนมากกว่า",
+      "ความแตกต่างที่สังเกตได้",
+      "ความพึงพอใจโดยรวม",
+      "แนะนำให้คนอื่น (NPS)",
+      "คำแนะนำเพิ่มเติม",
+    ],
+    evaluationDays: 30,
+    testObjectives: ["efficacy", "packaging", "market", "formula_ab"],
+    activePhases: ["baseline", "after_full"],
     concerns: ["health"],
     studioName: "MetaHerb Lab", prevAvgRating: 4.6, prevRatingCount: 41,
-  },
-  {
-    id: "trial-5",
-    name: "น้ำมันมะพร้าวสกัดเย็น Pure",
-    tagline: "ไม่ผ่านความร้อน — ทดลองใช้ทำอาหาร + ทาผิว",
-    category: "น้ำมันสกัด",
-    image: "https://images.unsplash.com/photo-1591282017732-207fbba7dfd4?w=800&q=80",
-    spotsTotal: 60, spotsTaken: 24, endsInDays: 25, rewardPoints: 200,
-    whatToTest: ["รสชาติ", "การดูดซึมบนผิว", "ความคงตัวที่อุณหภูมิห้อง"],
-    concerns: ["cosmetic"],
-    studioName: "Pure Oils Studio", prevAvgRating: 4.8, prevRatingCount: 18,
   },
   {
     id: "trial-6",
     name: "ลูกประคบสมุนไพรสเปรย์",
     tagline: "ใหม่: รูปแบบสเปรย์แทนถุงประคบเดิม — หา tester คนทำงานออฟฟิศ",
-    category: "ผ่อนคลาย",
+    category: "อโรมา / เครื่องหอม",
     image: "https://images.unsplash.com/photo-1645693091199-77a764e1ea16?w=800&q=80",
     spotsTotal: 25, spotsTaken: 9, endsInDays: 30, rewardPoints: 350,
-    whatToTest: ["ความสะดวก", "กลิ่นและความร้อน", "เปรียบเทียบกับลูกประคบเดิม"],
+    whatToTest: [
+      "ระดับปัญหาที่ต้องการแก้ตอนนี้",
+      "ปัญหาดีขึ้นหลังใช้สินค้าครบกำหนด",
+      "ผลข้างเคียง / อาการไม่พึงประสงค์",
+      "ดีไซน์ / ความสวยงาม",
+      "ฟังก์ชันการใช้งาน (เปิด/ปิด/พกพา)",
+      "First Impression",
+      "Purchase Intent — คุณจะซื้อจริงไหม",
+      "ราคาสูงสุดที่ยอมจ่าย",
+      "เหมาะกับกลุ่มเป้าหมายแบบใด",
+      "ชอบสูตรไหนมากกว่า",
+      "ความแตกต่างที่สังเกตได้",
+      "ความพึงพอใจโดยรวม",
+      "แนะนำให้คนอื่น (NPS)",
+      "คำแนะนำเพิ่มเติม",
+    ],
+    evaluationDays: 7,
+    testObjectives: ["efficacy", "packaging", "market", "formula_ab"],
+    activePhases: ["baseline", "after_full"],
     concerns: ["aroma"],
     studioName: "Wellness Lab",
   },
   {
-    id: "trial-7",
-    name: "สครับน้ำตาลมะรุม Glow",
-    tagline: "เม็ดสครับธรรมชาติ — ขอ tester ผิวบอบบาง",
-    category: "บำรุงผิว",
-    image: imgTrialCapsule2,
-    spotsTotal: 40, spotsTaken: 18, endsInDays: 21, rewardPoints: 200,
-    whatToTest: ["ความหยาบของเม็ดสครับ", "ความนุ่มของผิวหลังใช้"],
-    concerns: ["cosmetic"],
-    studioName: "Moru Naturals", prevAvgRating: 4.4, prevRatingCount: 20,
-  },
-  {
-    id: "trial-8",
-    name: "ยาสีฟันสมุนไพรขมิ้น-เกลือ",
-    tagline: "ลดคราบหินปูน — ขอ tester ใช้ติดต่อกัน 30 วัน",
-    category: "ดูแลช่องปาก",
-    image: "https://images.unsplash.com/photo-1559591935-c6c92c6dfbd2?w=800&q=80",
-    spotsTotal: 80, spotsTaken: 45, endsInDays: 15, rewardPoints: 150,
-    whatToTest: ["รสชาติ", "ความสะอาด", "ผลต่อเหงือก"],
-    concerns: ["health"],
-    studioName: "Smile Lab", prevAvgRating: 4.1, prevRatingCount: 30,
-  },
-  {
-    id: "trial-9",
-    name: "เซรั่มบำรุงผม รากแมงลัก",
-    tagline: "ลดผมร่วง — กำลังรับ tester ที่มีอาการชัดเจน",
-    category: "บำรุงผม",
-    image: "https://images.unsplash.com/photo-1559599101-f09722fb4948?w=800&q=80",
-    spotsTotal: 50, spotsTaken: 47, endsInDays: 5, rewardPoints: 400,
-    whatToTest: ["ความถี่ผมร่วงใน 30 วัน", "ความหนาของเส้นผม"],
-    concerns: ["cosmetic"],
-    studioName: "NaturaSkin Studio", prevAvgRating: 3.8, prevRatingCount: 18,
-  },
-  {
-    id: "trial-10",
-    name: "ดีท็อกซ์ตับกระเจี๊ยบ + ขมิ้น",
-    tagline: "สูตรชง 7 วัน — ขอ tester ที่ดื่มแอลกอฮอล์เป็นประจำ",
-    category: "อาหารเสริม",
-    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80",
-    spotsTotal: 35, spotsTaken: 22, endsInDays: 14, rewardPoints: 350,
-    whatToTest: ["พลังงานในตอนเช้า", "ระบบขับถ่าย", "ค่าตับก่อน/หลัง"],
-    concerns: ["health"],
-    studioName: "MetaHerb Lab",
-  },
-  {
-    id: "trial-11",
-    name: "บาล์มกะเพรา ลดอาการคัดจมูก",
-    tagline: "สูตรไม่มีเมนทอล — กำลังหา tester เด็ก 6+ และผู้ใหญ่",
-    category: "ดูแลร่างกาย",
-    image: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=800&q=80",
-    spotsTotal: 60, spotsTaken: 14, endsInDays: 28, rewardPoints: 250,
-    whatToTest: ["กลิ่นและความฉุน", "ผลต่ออาการคัดจมูก", "ความระคาย"],
-    concerns: ["cosmetic"],
-    studioName: "Botanic Lab", prevAvgRating: 4.3, prevRatingCount: 14,
-  },
-  {
-    id: "trial-12",
-    name: "ชาลดน้ำหนัก Slim 14",
-    tagline: "สูตร 14 วัน — รับ tester ที่ต้องการลด 1-3 กก.",
-    category: "เครื่องดื่ม",
-    image: "https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=800&q=80",
-    spotsTotal: 120, spotsTaken: 96, endsInDays: 10, rewardPoints: 200,
-    whatToTest: ["น้ำหนักก่อน/หลัง", "อาการข้างเคียง", "รสชาติ"],
-    concerns: ["food"],
-    studioName: "Slim Studio", prevAvgRating: 3.6, prevRatingCount: 24,
-  },
-  {
-    id: "trial-13",
-    name: "ครีมกันแดด สารสกัดบัวบก SPF50",
-    tagline: "ไม่มีสารเคมีกันแดด — ขอ tester ทุกประเภทผิว",
-    category: "บำรุงผิว",
-    image: "https://images.unsplash.com/photo-1556228852-80b6e5eeff06?w=800&q=80",
-    spotsTotal: 75, spotsTaken: 31, endsInDays: 20, rewardPoints: 300,
-    whatToTest: ["คราบขาว", "ความรู้สึกหลังทา", "ผลต่อสิว"],
-    concerns: ["cosmetic"],
-    studioName: "Sun Care Co.", prevAvgRating: 4.5, prevRatingCount: 19,
-  },
-  {
-    id: "trial-14",
-    name: "น้ำมันงาดำสกัดเย็น Premium",
-    tagline: "บีบเย็นรอบเดียว — ขอ tester ทำอาหาร + ดื่ม",
-    category: "น้ำมันสกัด",
-    image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&q=80",
-    spotsTotal: 45, spotsTaken: 12, endsInDays: 32, rewardPoints: 250,
-    whatToTest: ["รสชาติ", "กลิ่น", "ความรู้สึกหลังบริโภค"],
-    concerns: ["cosmetic"],
-    studioName: "Pure Oils Studio", prevAvgRating: 4.7, prevRatingCount: 15,
-  },
-  {
-    id: "trial-15",
-    name: "เจลล้างหน้าทาบาว",
-    tagline: "ใหม่: ฟอง creamy — สำหรับผิวมัน/ผสม",
-    category: "บำรุงผิว",
-    image: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=800&q=80",
-    spotsTotal: 55, spotsTaken: 38, endsInDays: 9, rewardPoints: 200,
-    whatToTest: ["ฟองและการล้างออก", "ความตึงของผิว", "สิว"],
-    concerns: ["cosmetic"],
-    studioName: "Herbal Lab Co.", prevAvgRating: 4.0, prevRatingCount: 25,
-  },
-  {
-    id: "trial-16",
-    name: "แคปซูลใบบัวบก เสริมความจำ",
-    tagline: "สำหรับวัยทำงาน — ขอ tester อายุ 30-50",
-    category: "อาหารเสริม",
-    image: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=800&q=80",
-    spotsTotal: 80, spotsTaken: 80, endsInDays: 0, rewardPoints: 300,
-    whatToTest: ["ความจำระยะสั้น", "สมาธิ", "การนอน"],
-    concerns: ["health"],
-    studioName: "Memory Lab",
-  },
-  {
-    id: "trial-17",
-    name: "สเปรย์ฉีดผม สารสกัดอัญชัน",
-    tagline: "กระตุ้นรากผม — ขอ tester ที่ผมบางบริเวณกระหม่อม",
-    category: "บำรุงผม",
-    image: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=800&q=80",
-    spotsTotal: 40, spotsTaken: 8, endsInDays: 35, rewardPoints: 350,
-    whatToTest: ["ความมันบนหนังศีรษะ", "ความเหนียว", "กลิ่น"],
-    concerns: ["cosmetic"],
-    studioName: "NaturaSkin Studio", prevAvgRating: 4.6, prevRatingCount: 12,
-  },
-  {
-    id: "trial-18",
-    name: "เครื่องดื่มชง วิตามินซีอะเซโรลา",
-    tagline: "วิตซีจากผลไม้ — ขอ tester ที่ป่วยง่ายช่วงเปลี่ยนฤดู",
-    category: "เครื่องดื่ม",
-    image: "https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=800&q=80",
-    spotsTotal: 90, spotsTaken: 51, endsInDays: 17, rewardPoints: 250,
-    whatToTest: ["รสชาติ", "ความถี่ของหวัดใน 30 วัน", "การละลาย"],
-    concerns: ["food"],
-    studioName: "MetaHerb Lab", prevAvgRating: 4.4, prevRatingCount: 35,
+    id: "trial-eq",
+    name: "เครื่องดิฟฟิวเซอร์น้ำมันหอม Mist Pro",
+    tagline: "ดิฟฟิวเซอร์อัลตราโซนิก พ่นละอองน้ำมันหอมระเหย — ทดลองก่อนวางจำหน่าย",
+    category: "อุปกรณ์ / เครื่องมือ",
+    image: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80",
+    spotsTotal: 20, spotsTaken: 12, endsInDays: 21, rewardPoints: 450,
+    whatToTest: [
+      "ระดับปัญหาที่ต้องการแก้ตอนนี้",
+      "ปัญหาดีขึ้นหลังใช้สินค้าครบกำหนด",
+      "ผลข้างเคียง / อาการไม่พึงประสงค์",
+      "ดีไซน์ / ความสวยงาม",
+      "ฟังก์ชันการใช้งาน (เปิด/ปิด/พกพา)",
+      "First Impression",
+      "Purchase Intent — คุณจะซื้อจริงไหม",
+      "ราคาสูงสุดที่ยอมจ่าย",
+      "เหมาะกับกลุ่มเป้าหมายแบบใด",
+      "ชอบสูตรไหนมากกว่า",
+      "ความแตกต่างที่สังเกตได้",
+      "ความพึงพอใจโดยรวม",
+      "แนะนำให้คนอื่น (NPS)",
+      "คำแนะนำเพิ่มเติม",
+    ],
+    evaluationDays: 14,
+    testObjectives: ["efficacy", "packaging", "market", "formula_ab"],
+    activePhases: ["baseline", "after_full"],
+    concerns: ["equipment"],
+    studioName: "Aroma Tech Lab", prevAvgRating: 4.5, prevRatingCount: 8,
   },
 ];

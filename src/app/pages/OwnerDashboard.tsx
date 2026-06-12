@@ -24,6 +24,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import imgCoin from "../../assets/cion.png";
 import imgRegisSupplier from "../../assets/regissupplier.png";
+import imgRegisBrand from "../../assets/test product.png";
 import imgBox from "../../assets/box-in-caer.png";
 import imgCoinUp from "../../assets/cion-up.png";
 import imgCost from "../../assets/cost.png";
@@ -99,7 +100,7 @@ const orderTabSvgs = {
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 const fontBold = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
-type OwnerTab = "overview" | "orders" | "order_detail" | "po_detail" | "pr_detail" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "finance_transactions" | "complaints" | "complaint_detail" | "reports" | "report_sales" | "report_customers" | "report_products" | "report_market" | "trials_overview" | "trials_tracking" | "trials_products" | "trials_add_product" | "herbal_market" | "herbal_market_intro" | "quotations_issued" | "po_list" | "pr_list";
+type OwnerTab = "overview" | "orders" | "order_detail" | "po_detail" | "pr_detail" | "products" | "flash_sale" | "flash_event" | "promotions" | "coupons" | "bank_settings" | "shop_info" | "add_product" | "finance" | "finance_transactions" | "complaints" | "complaint_detail" | "reports" | "report_sales" | "report_customers" | "report_products" | "report_market" | "trials_overview" | "trials_tracking" | "trials_products" | "trials_add_product" | "trials_intro" | "herbal_market" | "herbal_market_intro" | "quotations_issued" | "po_list" | "pr_list";
 type OrderFilterTab = "all" | "pending_payment" | "pending_verify" | "ready_ship" | "shipping" | "shipped" | "cancelled";
 
 interface SidebarItem {
@@ -107,13 +108,14 @@ interface SidebarItem {
   label: string;
   icon: any;
   children?: { id: OwnerTab; label: string }[];
+  badge?: string;
 }
 
 const ALL_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "overview", label: "Dashboard", icon: BarChart3 },
   { id: "orders", label: "คำสั่งซื้อ", icon: ShoppingCart },
   // Herbal Market — supplier-only when isSupplier=true; CTA-only otherwise
-  { id: "herbal_market", label: "Herbal Market", icon: Beaker, children: [
+  { id: "herbal_market", label: "เฮอร์บัลมาร์เก็ต", icon: Beaker, children: [
     { id: "quotations_issued", label: "ใบเสนอราคา" },
     { id: "pr_list", label: "ใบ PR" },
     { id: "po_list", label: "ใบ PO" },
@@ -125,9 +127,8 @@ const ALL_SIDEBAR_ITEMS: SidebarItem[] = [
     { id: "coupons", label: "คูปอง" },
   ]},
   { id: "trials_overview", label: "สินค้าทดลอง", icon: FlaskConical, children: [
-    { id: "trials_overview", label: "ภาพรวม" },
-    { id: "trials_tracking", label: "ติดตามสินค้าทดลอง" },
     { id: "trials_products", label: "สินค้าทดลอง" },
+    { id: "trials_tracking", label: "ติดตามสินค้าทดลอง" },
   ]},
   { id: "reports", label: "Report", icon: FileText, children: [
     { id: "report_sales", label: "รายงานผลยอดขาย" },
@@ -141,14 +142,20 @@ const ALL_SIDEBAR_ITEMS: SidebarItem[] = [
   ]},
 ];
 
-// Build sidebar based on supplier status:
-//   isSupplier=true  → Herbal Market expands with full sub-menus
-//   isSupplier=false → Herbal Market collapses into a single CTA button that
-//                       routes to the supplier-invitation intro page
-function buildSidebarItems(isSupplier: boolean): SidebarItem[] {
+// Build sidebar based on supplier / trial-brand status:
+//   isSupplier=true   → Herbal Market expands with full sub-menus
+//   isSupplier=false  → Herbal Market collapses into a single CTA button that
+//                        routes to the supplier-invitation intro page
+//   isTrialBrand=true → Trial Products expands with full sub-menus
+//   isTrialBrand=false→ Trial Products collapses into a single CTA button that
+//                        routes to the brand-registration intro page
+function buildSidebarItems(isSupplier: boolean, isTrialBrand: boolean): SidebarItem[] {
   return ALL_SIDEBAR_ITEMS.map((item) => {
     if (item.id === "herbal_market" && !isSupplier) {
-      return { id: "herbal_market_intro" as OwnerTab, label: "Herbal Market", icon: Beaker };
+      return { id: "herbal_market_intro" as OwnerTab, label: "เฮอร์บัลมาร์เก็ต", icon: Beaker, badge: "สมัคร" };
+    }
+    if (item.id === "trials_overview" && !isTrialBrand) {
+      return { id: "trials_intro" as OwnerTab, label: "สินค้าทดลอง", icon: FlaskConical, badge: "สมัคร" };
     }
     return item;
   });
@@ -892,7 +899,7 @@ const childIconMap: Record<string, any> = {
 
 const sidebarActiveStyle = { backgroundImage: "linear-gradient(90deg, rgba(49,151,84,0.1) 0%, rgba(49,151,84,0.1) 100%), linear-gradient(90deg, #fff 0%, #fff 100%)" };
 
-function MenuBtn({ isActive, icon: Icon, label, onClick, hasArrow, expanded, collapsed }: any) {
+function MenuBtn({ isActive, icon: Icon, label, onClick, hasArrow, expanded, collapsed, badge }: any) {
   return (
     <motion.button
       onClick={onClick}
@@ -924,6 +931,16 @@ function MenuBtn({ isActive, icon: Icon, label, onClick, hasArrow, expanded, col
             </motion.span>
           )}
         </AnimatePresence>
+        {!collapsed && badge && (
+          <motion.span
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2, delay: 0.05 }}
+            className={`${font} ml-auto shrink-0 inline-flex items-center px-2 py-[2px] rounded-full text-[10px] bg-[#319754]/10 text-[#319754] whitespace-nowrap`}
+            style={{ fontWeight: 500 }}>
+            {badge}
+          </motion.span>
+        )}
       </div>
       {hasArrow && !collapsed && (
         <motion.div animate={{ rotate: expanded ? 0 : -90 }} transition={{ type: "spring", stiffness: 380, damping: 28 }} className="shrink-0">
@@ -939,7 +956,7 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { user } = useAuth();
-  const sidebarItems = buildSidebarItems(!!user?.isSupplier);
+  const sidebarItems = buildSidebarItems(!!user?.isSupplier, !!user?.isTrialBrand);
   const toggle = (id: string) => setExpandedMenus((p) => ({ ...p, [id]: !p[id] }));
 
   // Translate sidebar labels based on tab id
@@ -959,10 +976,11 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
     finance_transactions: "ธุรกรรม",
     complaints: t("owner_sidebar_complaints"),
     trials_overview: "สินค้าทดลอง",
+    trials_intro: "สินค้าทดลอง",
     trials_tracking: "ติดตามสินค้าทดลอง",
     trials_products: "ทะเบียนสินค้าทดลอง",
-    herbal_market: "Herbal Market",
-    herbal_market_intro: "Herbal Market",
+    herbal_market: "เฮอร์บัลมาร์เก็ต",
+    herbal_market_intro: "เฮอร์บัลมาร์เก็ต",
     quotations_issued: "ใบเสนอราคา",
     pr_list: "ใบ PR",
     po_list: "ใบ PO",
@@ -1029,7 +1047,7 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
             return !item.children ? (
               <motion.div key={item.id} variants={{ hidden: { opacity: 0, x: -12 }, show: { opacity: 1, x: 0 } }} transition={{ duration: 0.25 }}>
                 {withTooltip(itemLabel,
-                  <MenuBtn isActive={active === item.id} icon={item.icon} label={itemLabel} onClick={() => onSelect(item.id)} collapsed={collapsed} />
+                  <MenuBtn isActive={active === item.id} icon={item.icon} label={itemLabel} onClick={() => onSelect(item.id)} collapsed={collapsed} badge={item.badge} />
                 )}
               </motion.div>
             ) : (
@@ -15224,7 +15242,7 @@ function OwnerMobileDrawer({ active, currentTab, onSelect, onClose }: {
 }) {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const sidebarItems = buildSidebarItems(!!user?.isSupplier);
+  const sidebarItems = buildSidebarItems(!!user?.isSupplier, !!user?.isTrialBrand);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ products: true, reports: false });
   const toggle = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
 
@@ -15452,6 +15470,7 @@ export function OwnerDashboard() {
         {activeTab === "pr_list" && <PRListTab purchaseRequisitions={purchaseRequisitions} onOpenDetail={openPRDetail} onOpenPoDetail={openPODetail} />}
         {activeTab === "pr_detail" && <PRDetailTab pr={purchaseRequisitions.find((p) => p.id === selectedPrId) || null} onBack={() => setActiveTab("pr_list")} onOpenPo={openPODetail} />}
         {activeTab === "herbal_market_intro" && <HerbalMarketIntroTab />}
+        {activeTab === "trials_intro" && <TrialBrandIntroTab />}
         {activeTab === "products" && <ProductsTab onAddProduct={(mode) => { setAddProductMode(mode); setActiveTab("add_product"); }} />}
         {activeTab === "flash_sale" && <FlashSaleTab onViewEvent={(event, opts) => { setSelectedFlashEvent(event); setFlashEventIsNewJoin(!!opts?.isNewJoin); setActiveTab("flash_event"); }} />}
         {activeTab === "flash_event" && <FlashEventDetail event={selectedFlashEvent} isNewJoin={flashEventIsNewJoin} onBack={() => setActiveTab("flash_sale")} />}
@@ -15618,7 +15637,7 @@ function HerbalMarketIntroTab() {
 
   return (
     <div>
-      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>Herbal Market</h2>
+      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>เฮอร์บัลมาร์เก็ต</h2>
 
       {/* Hero invitation card */}
       <div className="bg-gradient-to-br from-[#319754] to-[#287745] rounded-2xl p-8 mb-6 text-white relative overflow-hidden">
@@ -15641,6 +15660,67 @@ function HerbalMarketIntroTab() {
             className={`${font} bg-white text-[#319754] hover:bg-gray-50 h-11 px-6 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center gap-2 shadow-[0_4px_14px_rgba(0,0,0,0.15)]`}
             style={{ fontWeight: 600 }}>
             สมัครเป็น Supplier
+            <ArrowRightCircle className="size-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Benefits grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        {benefits.map((b) => (
+          <div key={b.title} className="bg-white rounded-2xl border border-gray-100 p-5 flex gap-3">
+            <div className="size-11 rounded-2xl bg-[#319754]/10 flex items-center justify-center shrink-0">
+              <b.Icon className="size-5 text-[#319754]" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className={`${font} text-[15px] text-black mb-1`} style={{ fontWeight: 600 }}>{b.title}</h4>
+              <p className={`${font} text-[12px] text-gray-600 leading-relaxed`}>{b.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+    </div>
+  );
+}
+
+/* ========== TRIAL BRAND INTRO — invitation page shown when owner has not registered as a Trial Brand ========== */
+function TrialBrandIntroTab() {
+  const navigate = useNavigate();
+
+  const benefits = [
+    { Icon: FlaskConical,  title: "ลงสินค้าทดลองได้ฟรี",    desc: "สร้างโปรแกรมให้ผู้ใช้สมัครเข้ามาทดลองสินค้าก่อนวางขายจริง" },
+    { Icon: Users,         title: "เข้าถึง tester จริง",     desc: "คัดเลือกผู้ทดสอบจากฐานสมาชิก MetaHerb ตรงกลุ่มเป้าหมาย" },
+    { Icon: Star,          title: "เก็บ feedback คุณภาพ",    desc: "แบบประเมินรายเฟส (ก่อน/ระหว่าง/หลัง) พร้อมคะแนน NPS และคอมเมนต์" },
+    { Icon: TrendingUp,    title: "ปรับสูตรก่อนเปิดตัว",     desc: "วิเคราะห์ผลทดลองในแดชบอร์ดเพื่อปรับสินค้าและกลยุทธ์การตลาด" },
+  ];
+
+  return (
+    <div>
+      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>สินค้าทดลอง</h2>
+
+      {/* Hero invitation card */}
+      <div className="bg-gradient-to-br from-[#319754] to-[#287745] rounded-2xl p-8 mb-6 text-white relative overflow-hidden">
+        <div className="absolute -bottom-16 -left-10 size-[240px] rounded-full bg-white/5" />
+        <img src={imgRegisBrand} alt=""
+          className="hidden md:block absolute right-6 -bottom-2 h-[85%] object-contain pointer-events-none select-none"
+          aria-hidden />
+        <div className="relative z-10 max-w-[600px]">
+          <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur px-3 py-1 rounded-full mb-4">
+            <FlaskConical className="size-3.5" strokeWidth={2.4} />
+            <span className={`${font} text-[12px]`} style={{ fontWeight: 600 }}>Trial Program</span>
+          </div>
+          <h3 className={`${font} text-[28px] leading-tight mb-3`} style={{ fontWeight: 700 }}>
+            ทดสอบสินค้าก่อนวางจำหน่ายจริง
+          </h3>
+          <p className={`${font} text-[14px] text-white/90 leading-relaxed mb-6`}>
+            สมัครเป็นแบรนด์ทดสอบเพื่อปลดล็อกระบบสินค้าทดลอง — ลงสินค้าให้ผู้ใช้จริงประเมินก่อนเปิดตัว
+            พร้อมรับ feedback เชิงลึกในแดชบอร์ดเดียว
+          </p>
+          <button onClick={() => navigate("/brand/register")}
+            className={`${font} bg-white text-[#319754] hover:bg-gray-50 h-11 px-6 rounded-full text-[14px] cursor-pointer transition-colors inline-flex items-center gap-2 shadow-[0_4px_14px_rgba(0,0,0,0.15)]`}
+            style={{ fontWeight: 600 }}>
+            สมัครเป็นแบรนด์ทดสอบ
             <ArrowRightCircle className="size-4" />
           </button>
         </div>

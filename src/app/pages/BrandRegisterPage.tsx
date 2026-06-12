@@ -44,7 +44,7 @@ function saveApplication(app: BrandApplication) {
 
 export function BrandRegisterPage() {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, setTrialBrandStatus } = useAuth();
   const existing = user ? loadApplication(user.id) : null;
   // Pre-fill from the user's saved seller profile (set at /register when role=owner)
   const seller = user ? loadSellerProfile(user.username) : null;
@@ -102,6 +102,7 @@ export function BrandRegisterPage() {
     };
     saveApplication(app);
     setSubmitted(app);
+    setTrialBrandStatus(true);  // unlock trial-brand sections in owner dashboard
     toast.success("ส่งใบสมัครสำเร็จ", { description: "ทีมงานจะพิจารณาภายใน 3-5 วันทำการ" });
   };
 

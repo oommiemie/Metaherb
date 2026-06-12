@@ -48,12 +48,11 @@ export function SellerRegisterPage() {
   };
 
   const handleSubmit = () => {
-    if (!auth.username || !auth.password || !auth.email || !auth.phone) { setError("กรุณากรอกข้อมูลบัญชีให้ครบ"); return; }
+    if (!auth.username || !auth.password || !auth.email) { setError("กรุณากรอกข้อมูลบัญชีให้ครบ"); return; }
     if (auth.password.length < 8) { setError("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"); return; }
-    if (!seller.shopName || !seller.ownerName || !seller.taxId || !seller.registeredAddress) {
+    if (!seller.shopName || !seller.ownerName) {
       setError("กรุณากรอกข้อมูลร้านค้าให้ครบ"); return;
     }
-    if (!seller.docName) { setError("กรุณาแนบเอกสารยืนยัน"); return; }
     if (!accepted) { setError("กรุณายอมรับข้อกำหนดและนโยบาย"); return; }
 
     register({ ...auth, role: "owner", name: seller.ownerName });
@@ -107,7 +106,7 @@ export function SellerRegisterPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="อีเมล" required type="email" value={auth.email} onChange={(v) => updAuth("email", v)} placeholder="example@email.com" />
-              <Field label="เบอร์โทร" required value={auth.phone} onChange={(v) => updAuth("phone", v)} placeholder="08X-XXX-XXXX" tabular />
+              <Field label="เบอร์โทร" value={auth.phone} onChange={(v) => updAuth("phone", v)} placeholder="08X-XXX-XXXX" tabular />
             </div>
           </div>
 
@@ -140,7 +139,7 @@ export function SellerRegisterPage() {
 
             <Field label="ชื่อร้าน" required value={seller.shopName} onChange={(v) => updSeller("shopName", v)} placeholder="เช่น เมต้าเฮิร์บ สโตร์" />
             <Field label="ชื่อเจ้าของ / ผู้ติดต่อ" required value={seller.ownerName} onChange={(v) => updSeller("ownerName", v)} placeholder="ชื่อ-นามสกุล" />
-            <Field label="เลขประจำตัวผู้เสียภาษี" required value={seller.taxId} onChange={(v) => updSeller("taxId", v)} placeholder="13 หลัก" maxLength={13} tabular />
+            <Field label="เลขประจำตัวผู้เสียภาษี" value={seller.taxId} onChange={(v) => updSeller("taxId", v)} placeholder="13 หลัก" maxLength={13} tabular />
 
             {/* Business type */}
             <div className="flex flex-col gap-2">
@@ -164,14 +163,14 @@ export function SellerRegisterPage() {
 
             {/* Address */}
             <div className="flex flex-col gap-2">
-              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ที่อยู่จดทะเบียน <span className="text-[#ff3b30]">*</span></label>
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>ที่อยู่จดทะเบียน</label>
               <textarea value={seller.registeredAddress} onChange={(e) => updSeller("registeredAddress", e.target.value)} placeholder="บ้านเลขที่ ถนน แขวง/ตำบล เขต/อำเภอ จังหวัด รหัสไปรษณีย์" rows={3}
                 className={`bg-[#fafafa] rounded-[16px] px-5 py-3 text-[14px] ${font} outline-none text-gray-700 placeholder:text-[#a3a3a3] focus:ring-2 focus:ring-[#319754]/30 transition-shadow resize-none leading-relaxed`} />
             </div>
 
             {/* Doc */}
             <div className="flex flex-col gap-2">
-              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>เอกสารยืนยัน <span className="text-[#ff3b30]">*</span></label>
+              <label className={`${font} text-[14px]`} style={{ fontWeight: 500 }}>เอกสารยืนยัน</label>
               <p className={`${font} text-[11.5px] text-gray-500 -mt-1`}>{seller.businessType === "personal" ? "สำเนาบัตรประชาชน" : "หนังสือรับรองบริษัท"} (PDF / JPG / PNG)</p>
               <button type="button" onClick={() => docInputRef.current?.click()}
                 className={`flex items-center gap-3 h-[48px] px-5 rounded-[16px] border-2 border-dashed cursor-pointer transition-colors text-left ${seller.docName ? "border-[#319754] bg-[#319754]/5" : "border-gray-300 hover:border-[#319754]/60 bg-[#fafafa]"}`}>

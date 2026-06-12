@@ -322,7 +322,7 @@ function ProfileHoverPreview({ user, onNavigate }: { user: any; onNavigate: (pat
 
 /* ========== PROFILE DIALOG ========== */
 function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigate: (path: string) => void }) {
-  const { user, logout, switchRole, setSupplierStatus } = useAuth();
+  const { user, logout, switchRole, setSupplierStatus, setTrialBrandStatus } = useAuth();
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -544,6 +544,25 @@ function ProfileDialog({ onClose, onNavigate }: { onClose: () => void; onNavigat
             </div>
             <div className={`relative w-9 h-5 rounded-full transition-colors ${user?.isSupplier ? "bg-[#319754]" : "bg-gray-300"}`}>
               <div className={`absolute top-0.5 size-4 bg-white rounded-full shadow transition-transform ${user?.isSupplier ? "translate-x-[18px]" : "translate-x-0.5"}`} />
+            </div>
+          </button>
+        )}
+
+        {/* Trial-brand toggle — owners only, lets the tester flip Trial Brand mode without going through the registration flow */}
+        {user?.role === "owner" && (
+          <button onClick={() => setTrialBrandStatus(!user?.isTrialBrand)}
+            className="mt-1 group/tb flex items-center gap-2.5 cursor-pointer w-full text-left px-2 py-1.5 rounded-[8px] hover:bg-white hover:shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition-all">
+            <div className="size-[28px] rounded-full flex items-center justify-center shrink-0 transition-colors" style={{ backgroundColor: user?.isTrialBrand ? "#3197541a" : "#9ca3af1a" }}>
+              <FlaskConical className="size-[13px]" style={{ color: user?.isTrialBrand ? "#319754" : "#6b7280" }} strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`${font} text-[13px] text-gray-700`} style={{ fontWeight: 500 }}>โหมดแบรนด์ทดสอบ</p>
+              <p className={`${font} text-[10px]`} style={{ color: user?.isTrialBrand ? "#319754" : "#9ca3af", fontWeight: 600 }}>
+                {user?.isTrialBrand ? "เปิดใช้งาน — เห็นสินค้าทดลอง" : "ปิดอยู่ — แตะเพื่อทดสอบ"}
+              </p>
+            </div>
+            <div className={`relative w-9 h-5 rounded-full transition-colors ${user?.isTrialBrand ? "bg-[#319754]" : "bg-gray-300"}`}>
+              <div className={`absolute top-0.5 size-4 bg-white rounded-full shadow transition-transform ${user?.isTrialBrand ? "translate-x-[18px]" : "translate-x-0.5"}`} />
             </div>
           </button>
         )}

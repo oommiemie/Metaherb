@@ -14,6 +14,9 @@ export interface User {
   /** True when the owner has gone through the Supplier registration flow.
    * Unlocks B2B-only sections of the owner dashboard (e.g. quotations). */
   isSupplier?: boolean;
+  /** True when the owner has gone through the Trial Brand registration flow.
+   * Unlocks Trial Products sections of the owner dashboard. */
+  isTrialBrand?: boolean;
 }
 
 /** Admin-facing display role — admin UI says "ลูกค้า" instead of "user". */
@@ -38,6 +41,7 @@ export interface RegistryUser {
   avatar?: string;
   shopName?: string;
   isSupplier?: boolean;
+  isTrialBrand?: boolean;
 }
 
 interface AuthContextType {
@@ -51,6 +55,9 @@ interface AuthContextType {
   /** Toggle the current user's supplier flag (called after successful
    * supplier registration). */
   setSupplierStatus: (isSupplier: boolean) => void;
+  /** Toggle the current user's trial-brand flag (called after successful
+   * trial-brand registration). */
+  setTrialBrandStatus: (isTrialBrand: boolean) => void;
 
   // Admin-facing mutations
   updateUserRole: (id: string, role: DisplayRole) => void;
@@ -79,6 +86,13 @@ const INITIAL_USERS: RegistryUser[] = [
   { id: "u-9",  username: "pakjira5245",    email: "namepjk2002@gmail.com",     phone: "",             password: "12345678", role: "customer", name: "ภัคจิรา ชัยฮะ",           status: "active" },
   { id: "u-10", username: "Adthapon.u",     email: "adthapon.u@gmail.com",      phone: "",             password: "12345678", role: "customer", name: "อรรถพล อุทัยเรือง",      status: "active" },
   { id: "u-11", username: "torlarp99",      email: "torlarp999@hotmail.co.th",  phone: "",             password: "12345678", role: "customer", name: "ต่อลาภ นาคทอง",           status: "active" },
+  // ===== Seed owners — show variety of trial-brand / herbal-market application statuses on the admin queue pages =====
+  { id: "o2", username: "organicthai",      email: "wichai@organicthai.co.th",  phone: "053-789-4500", password: "12345678", role: "owner",    name: "วิชัย เทพประสิทธิ์",     status: "active", shopName: "ชาเขียวออร์แกนิคไทย",   isSupplier: true,  isTrialBrand: true  },
+  { id: "o3", username: "doithaihoney",     email: "doithonghoney@gmail.com",    phone: "081-234-5678", password: "12345678", role: "owner",    name: "ภาคภูมิ ใจดี",            status: "active", shopName: "น้ำผึ้งดอยไทย",         isSupplier: false, isTrialBrand: true  },
+  { id: "o4", username: "arunlab",          email: "arunlab.cosmetic@gmail.com", phone: "089-145-6789", password: "12345678", role: "owner",    name: "วิภาวี เกษมสุข",          status: "active", shopName: "เครื่องสำอางสมุนไพรอรุณ", isSupplier: false, isTrialBrand: false },
+  { id: "o5", username: "lungjoy",          email: "panadda.lungjoy@gmail.com",  phone: "065-555-1234", password: "12345678", role: "owner",    name: "ปนัดดา ใจกล้า",          status: "pending", shopName: "ร้านสมุนไพรลุงจ้อย",     isSupplier: false, isTrialBrand: false },
+  { id: "o6", username: "teahousebkk",      email: "hello@teahouse.bkk",         phone: "02-126-7788", password: "12345678", role: "owner",    name: "ธารา วงศ์ทอง",          status: "pending", shopName: "Tea House Bangkok",       isSupplier: false, isTrialBrand: false },
+  { id: "o7", username: "lungsomsak",       email: "lungsomsak.herb@hotmail.com",phone: "086-998-7777", password: "12345678", role: "owner",    name: "สมศักดิ์ ตำราดี",        status: "active", shopName: "ร้านยาโบราณป๋าสมศักดิ์",  isSupplier: false, isTrialBrand: false },
 ];
 
 const toUser = (r: RegistryUser): User => ({
@@ -90,11 +104,14 @@ const toUser = (r: RegistryUser): User => ({
   avatar: r.avatar,
   shopName: r.shopName,
   isSupplier: r.isSupplier,
+  isTrialBrand: r.isTrialBrand,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = usePersistentState<User | null>("metaherb:auth", null);
-  const [users, setUsers] = usePersistentState<RegistryUser[]>("metaherb:users", INITIAL_USERS);
+  // Bumped key on 2026-06-12 when 6 seed owners (o2-o7) were added so existing
+  // localStorage sessions actually see the new seeds instead of stale data.
+  const [users, setUsers] = usePersistentState<RegistryUser[]>("metaherb:users:v2", INITIAL_USERS);
 
   const login = useCallback((email: string, password: string) => {
     const found = users.find((u) =>
@@ -154,12 +171,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, isSupplier } : u)));
   }, [user, setUser, setUsers]);
 
+  const setTrialBrandStatus = useCallback((isTrialBrand: boolean) => {
+    if (!user) return;
+    setUser({ ...user, isTrialBrand });
+    setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, isTrialBrand } : u)));
+  }, [user, setUser, setUsers]);
+
   const value = useMemo<AuthContextType>(() => ({
     user, users,
-    login, register, logout, switchRole, setSupplierStatus,
+    login, register, logout, switchRole, setSupplierStatus, setTrialBrandStatus,
     isAuthenticated: !!user,
     updateUserRole, updateUserStatus, removeUser,
-  }), [user, users, login, register, logout, switchRole, setSupplierStatus, updateUserRole, updateUserStatus, removeUser]);
+  }), [user, users, login, register, logout, switchRole, setSupplierStatus, setTrialBrandStatus, updateUserRole, updateUserStatus, removeUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
