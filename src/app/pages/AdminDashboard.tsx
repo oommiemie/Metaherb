@@ -24,7 +24,7 @@ import {
   Home, Info, LayoutPanelTop, PanelBottom, Bell, Truck, MapPin, Globe, Tag, Zap, Ticket, Folder,
   GripVertical, RotateCcw, Save, Image as ImageIcon2, Film, Monitor, Smartphone, Tablet, Upload,
   Leaf, UtensilsCrossed, Pill, Sparkles, Flower2, Gift, Coffee, FlaskConical, Droplets, Heart, ArrowRight, Send,
-  Clock, ShieldCheck, Award, Sprout, Sun,
+  Clock, ShieldCheck, Award, Sprout, Sun, CheckCircle2,
   Calendar as CalendarIcon, Link as LinkIcon, MousePointer2,
   Bold, Italic, Underline, Strikethrough, Heading1, Heading2, Heading3,
   AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Quote,
@@ -27933,202 +27933,460 @@ const SEED_ADMIN_POS: AdminPORecord[] = [
   },
 ];
 
-const ADMIN_PO_STATUS_CFG: Record<AdminPOStatus, { label: string; color: string; bg: string }> = {
-  pending_approval: { label: "รออนุมัติ",       color: "#d97706", bg: "#f59e0b1a" },
-  approved:         { label: "อนุมัติแล้ว",     color: "#15803d", bg: "#10b9811a" },
-  rejected:         { label: "ไม่อนุมัติ",      color: "#dc2626", bg: "#ef44441a" },
-  cancel_requested: { label: "รออนุมัติยกเลิก", color: "#d97706", bg: "#f59e0b1a" },
-  cancel_approved:  { label: "ยกเลิกแล้ว",      color: "#dc2626", bg: "#ef44441a" },
-  cancel_rejected:  { label: "ปฏิเสธยกเลิก",    color: "#6b7280", bg: "#6b72801a" },
+const ADMIN_PO_STATUS_CFG: Record<AdminPOStatus, { label: string; color: string; bg: string; Icon: any }> = {
+  pending_approval: { label: "รออนุมัติ",       color: "#d97706", bg: "#f59e0b1a", Icon: Clock        },
+  approved:         { label: "อนุมัติแล้ว",     color: "#15803d", bg: "#10b9811a", Icon: CheckCircle2 },
+  rejected:         { label: "ไม่อนุมัติ",      color: "#dc2626", bg: "#ef44441a", Icon: X            },
+  cancel_requested: { label: "รออนุมัติยกเลิก", color: "#d97706", bg: "#f59e0b1a", Icon: Clock        },
+  cancel_approved:  { label: "ยกเลิกแล้ว",      color: "#dc2626", bg: "#ef44441a", Icon: Ban          },
+  cancel_rejected:  { label: "ปฏิเสธยกเลิก",    color: "#6b7280", bg: "#6b72801a", Icon: X            },
 };
 
+/** Centralized mode config — single source of truth for all approval-vs-cancel divergence.
+ *  Uses `satisfies` so `as const` literal types propagate (cfg.approveTo is "approved" / "cancel_approved",
+ *  not the widened AdminPOStatus union). */
+const PO_MODE_CONFIG = {
+  approval: {
+    title: "อนุมัติใบ PO (B2B)",
+    subtitle: "ตรวจสอบและอนุมัติใบ PO จาก Herbal ERP ก่อนส่งให้ Supplier",
+    scope: ["pending_approval", "approved", "rejected"],
+    pendingStatus: "pending_approval",
+    approveTo:     "approved",
+    rejectTo:      "rejected",
+    approveLabel:  "อนุมัติ",
+    rejectLabel:   "ไม่อนุมัติ",
+    approveMsg:    (id: string) => `อนุมัติ ${id} — ส่งให้ Supplier แล้ว`,
+    rejectMsg:     (id: string) => `ไม่อนุมัติ ${id}`,
+    kpiLabels:     ["รอตรวจสอบ", "อนุมัติแล้ว", "ไม่อนุมัติ", "มูลค่ารอตรวจ"] as readonly [string, string, string, string],
+    kpiApprovedSub:"ส่งต่อ Supplier",
+    kpiStatuses:   ["pending_approval", "approved", "rejected"] as readonly [AdminPOStatus, AdminPOStatus, AdminPOStatus],
+    tabLabels:     { all: "ทั้งหมด", pending: "รอตรวจสอบ", approved: "อนุมัติ", rejected: "ไม่อนุมัติ" },
+    partnerColLabel: "โรงงาน → Supplier",
+    emptyText:     "ไม่มี PO ที่ตรงกับเงื่อนไข",
+  },
+  cancel: {
+    title: "คำขอยกเลิก PO",
+    subtitle: "อนุมัติคำขอยกเลิกใบ PO ที่ Supplier ส่งเข้ามา",
+    scope: ["cancel_requested", "cancel_approved", "cancel_rejected"],
+    pendingStatus: "cancel_requested",
+    approveTo:     "cancel_approved",
+    rejectTo:      "cancel_rejected",
+    approveLabel:  "อนุมัติยกเลิก",
+    rejectLabel:   "ปฏิเสธคำขอ",
+    approveMsg:    (id: string) => `อนุมัติยกเลิก ${id} — แจ้งโรงงาน + ERP แล้ว`,
+    rejectMsg:     (id: string) => `ปฏิเสธคำขอยกเลิก ${id}`,
+    kpiLabels:     ["รอยืนยันยกเลิก", "อนุมัติยกเลิก", "ปฏิเสธยกเลิก", "มูลค่าที่ขอยกเลิก"] as readonly [string, string, string, string],
+    kpiApprovedSub:"ยกเลิกแล้ว",
+    kpiStatuses:   ["cancel_requested", "cancel_approved", "cancel_rejected"] as readonly [AdminPOStatus, AdminPOStatus, AdminPOStatus],
+    tabLabels:     { all: "ทั้งหมด", pending: "รอยืนยัน", approved: "อนุมัติยกเลิก", rejected: "ปฏิเสธยกเลิก" },
+    partnerColLabel: "Supplier (ขอยกเลิก)",
+    emptyText:     "ไม่มีคำขอยกเลิกที่ตรงกับเงื่อนไข",
+  },
+} as const satisfies Record<string, {
+  title: string; subtitle: string;
+  scope: readonly AdminPOStatus[];
+  pendingStatus: AdminPOStatus;
+  approveTo: AdminPOStatus; rejectTo: AdminPOStatus;
+  approveLabel: string; rejectLabel: string;
+  approveMsg: (id: string) => string; rejectMsg: (id: string) => string;
+  kpiLabels: readonly [string, string, string, string];
+  kpiApprovedSub: string;
+  kpiStatuses: readonly [AdminPOStatus, AdminPOStatus, AdminPOStatus];
+  tabLabels: { all: string; pending: string; approved: string; rejected: string };
+  partnerColLabel: string;
+  emptyText: string;
+}>;
+
 function AdminPOApprovalContent({ mode }: { mode: "approval" | "cancel" }) {
+  const cfg = PO_MODE_CONFIG[mode];
   const [pos, setPos] = useState<AdminPORecord[]>(() => SEED_ADMIN_POS);
   const [search, setSearch] = useState("");
+  type FilterTab = "all" | "pending" | "approved" | "rejected";
+  const [filter, setFilter] = useState<FilterTab>("all");
+  const [selectedPO, setSelectedPO] = useState<string | null>(null);
 
-  // Approval queue: normal PO lifecycle. Cancel queue: cancel-related statuses.
-  const inApprovalScope = (s: AdminPOStatus) => s === "pending_approval" || s === "approved" || s === "rejected";
-  const inCancelScope   = (s: AdminPOStatus) => s === "cancel_requested" || s === "cancel_approved" || s === "cancel_rejected";
+  const scoped = useMemo(() => pos.filter((p) => cfg.scope.includes(p.status)), [pos, cfg.scope]);
 
-  const scoped = pos.filter((p) => (mode === "approval" ? inApprovalScope(p.status) : inCancelScope(p.status)));
-  const q = search.trim().toLowerCase();
-  const visible = scoped.filter((p) =>
-    !q || p.id.toLowerCase().includes(q) || p.factory.toLowerCase().includes(q) || p.items.some((it) => it.name.toLowerCase().includes(q))
-  );
+  const visible = useMemo(() => scoped.filter((p) => {
+    if (filter !== "all") {
+      const want = filter === "pending" ? cfg.kpiStatuses[0] : filter === "approved" ? cfg.kpiStatuses[1] : cfg.kpiStatuses[2];
+      if (p.status !== want) return false;
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      if (!p.id.toLowerCase().includes(q) && !p.factory.toLowerCase().includes(q) && !p.supplier.toLowerCase().includes(q) && !p.items.some((it) => it.name.toLowerCase().includes(q))) return false;
+    }
+    return true;
+  }), [scoped, filter, search, cfg.kpiStatuses]);
 
-  const pendingCount = scoped.filter((p) => p.status === (mode === "approval" ? "pending_approval" : "cancel_requested")).length;
+  // KPI counts
+  const pendingCount  = scoped.filter((p) => p.status === cfg.kpiStatuses[0]).length;
+  const approvedCount = scoped.filter((p) => p.status === cfg.kpiStatuses[1]).length;
+  const rejectedCount = scoped.filter((p) => p.status === cfg.kpiStatuses[2]).length;
+  const pendingAmount = scoped.filter((p) => p.status === cfg.kpiStatuses[0]).reduce((s, p) => s + p.total, 0);
 
   const updateStatus = (id: string, status: AdminPOStatus, okMsg: string) => {
     setPos((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
     toast.success(okMsg);
   };
 
+  const fmtMoney = (n: number) => n >= 1_000_000 ? `฿${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `฿${(n / 1000).toFixed(1)}K` : `฿${n.toLocaleString()}`;
+
+  const filterTabs = useMemo(() => ([
+    { id: "all"      as FilterTab, label: cfg.tabLabels.all,      count: scoped.length, Icon: ClipboardList },
+    { id: "pending"  as FilterTab, label: cfg.tabLabels.pending,  count: pendingCount,  Icon: Clock },
+    { id: "approved" as FilterTab, label: cfg.tabLabels.approved, count: approvedCount, Icon: CheckCircle2 },
+    { id: "rejected" as FilterTab, label: cfg.tabLabels.rejected, count: rejectedCount, Icon: X },
+  ]), [cfg, scoped.length, pendingCount, approvedCount, rejectedCount]);
+
+  const kpiCards = useMemo(() => ([
+    { label: cfg.kpiLabels[0], value: pendingCount.toLocaleString(),  subLabel: "ต้องดำเนินการ",         accent: "#f59e0b", Icon: Clock },
+    { label: cfg.kpiLabels[1], value: approvedCount.toLocaleString(), subLabel: cfg.kpiApprovedSub,      accent: "#319754", Icon: CheckCircle2 },
+    { label: cfg.kpiLabels[2], value: rejectedCount.toLocaleString(), subLabel: "ปฏิเสธ",                accent: "#ef4444", Icon: X },
+    { label: cfg.kpiLabels[3], value: fmtMoney(pendingAmount),        subLabel: `รวม ${pendingCount} รายการ`, accent: "#0ea5e9", Icon: Wallet },
+  ]), [cfg, pendingCount, approvedCount, rejectedCount, pendingAmount]);
+
+  // Detail view — same component used for both modes
+  if (selectedPO) {
+    const po = pos.find((p) => p.id === selectedPO);
+    if (po) {
+      return <AdminPODetailView po={po} mode={mode} cfg={cfg} onBack={() => setSelectedPO(null)}
+        onApprove={() => { updateStatus(po.id, cfg.approveTo, cfg.approveMsg(po.id)); setSelectedPO(null); }}
+        onReject={() => { updateStatus(po.id, cfg.rejectTo, cfg.rejectMsg(po.id)); setSelectedPO(null); }} />;
+    }
+    // PO disappeared (e.g. moved out of scope from another tab) — silently dropping to list is confusing.
+    // Reset state + notify, then render list below.
+    setSelectedPO(null);
+    toast.info("รายการนี้ไม่อยู่ในคิวนี้แล้ว");
+  }
+
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 700 }}>
-            {mode === "approval" ? "อนุมัติใบ PO (B2B)" : "คำขอยกเลิก PO"}
-          </h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>
-            {mode === "approval"
-              ? "ตรวจสอบและอนุมัติใบ PO จาก Herbal ERP ก่อนส่งให้ Supplier"
-              : "อนุมัติคำขอยกเลิกใบ PO ที่ Supplier ส่งเข้ามา"}
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{cfg.title}</h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{cfg.subtitle}</p>
+        </div>
+        <motion.button
+          onClick={() => toast.success(`ส่งออก ${visible.length} รายการ`)}
+          whileTap={{ scale: 0.96 }} whileHover={{ y: -1 }}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className={`group flex items-center gap-2 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 pl-1.5 pr-1.5 sm:pr-4 h-[38px] rounded-full text-[13px] ${font} cursor-pointer transition-colors`}>
+          <span className="size-[26px] bg-[#319754]/10 rounded-full flex items-center justify-center">
+            <Download className="size-[14px] text-[#319754]" strokeWidth={2.6} />
+          </span>
+          <span style={{ fontWeight: 600 }}>ส่งออก</span>
+        </motion.button>
+      </div>
+
+      {/* KPI cards — matches AdminOrdersContent shell (tinted bg, no Lucide background art) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        {kpiCards.map((s) => (
+          <div key={s.label}
+            className="group rounded-2xl p-5 transition-shadow hover:shadow-[0px_2px_12px_rgba(0,0,0,0.04)] relative overflow-hidden"
+            style={{ backgroundColor: `${s.accent}0d` }}>
+            <div className="relative">
+              <div className="flex items-center justify-between">
+                <p className={`${font} text-[12px] text-gray-500`}>{s.label}</p>
+                <div className="size-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${s.accent}1a` }}>
+                  <s.Icon className="size-4" style={{ color: s.accent }} strokeWidth={2.4} />
+                </div>
+              </div>
+              <p className={`${font} text-[26px] mt-3 tracking-tight tabular-nums`} style={{ fontWeight: 700, color: s.accent }}>
+                <AnimatedValue value={s.value} />
+              </p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className={`${font} inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md`}
+                  style={{ backgroundColor: `${s.accent}15`, color: s.accent, fontWeight: 600 }}>
+                  {s.subLabel}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-5">
+        {/* Filter pills + search */}
+        <div className="bg-white rounded-full shadow-[0px_0px_6px_0px_rgba(0,0,0,0.08)] p-1 mb-3 flex items-center gap-2">
+          <FilterTabPills tabs={filterTabs} active={filter} onChange={setFilter} pillId={`adminPO_${mode}_pill`} />
+          <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[36px] flex-1 min-w-0 lg:flex-none lg:w-[280px] lg:ml-auto">
+            <input value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหา PO, โรงงาน, ซัพพลายเออร์ หรือสินค้า"
+              className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+            <button className="bg-[#319754] size-[28px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+              <Search className="size-4 text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-2xl shadow-[0_1px_4px_rgba(0,0,0,0.04)] p-5">
+          <table className="w-full table-fixed">
+            <colgroup>
+              <col style={{ width: "12%" }} />{/* PO ID */}
+              <col style={{ width: "10%" }} />{/* Date */}
+              <col style={{ width: "20%" }} />{/* คู่ค้า */}
+              <col style={{ width: "20%" }} />{/* รายการ */}
+              <col style={{ width: "10%" }} />{/* Qty */}
+              <col style={{ width: "12%" }} />{/* มูลค่า */}
+              <col style={{ width: "10%" }} />{/* สถานะ */}
+              <col style={{ width: "6%" }} />{/* actions */}
+            </colgroup>
+            <thead>
+              <tr className={`${font} text-[12px] text-gray-500 border-b border-gray-100`}>
+                <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>PO ID</th>
+                <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>วันที่</th>
+                <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>{cfg.partnerColLabel}</th>
+                <th className="text-left pb-3 pr-3" style={{ fontWeight: 500 }}>รายการ</th>
+                <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>จำนวน</th>
+                <th className="text-right pb-3 pr-3" style={{ fontWeight: 500 }}>มูลค่า</th>
+                <th className="text-center pb-3 pr-3" style={{ fontWeight: 500 }}>สถานะ</th>
+                <th className="text-center pb-3" style={{ fontWeight: 500 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.length === 0 ? (
+                <tr><td colSpan={8} className={`py-12 text-center ${font} text-[13px] text-gray-400`}>{cfg.emptyText}</td></tr>
+              ) : visible.map((po) => {
+                const sMeta = ADMIN_PO_STATUS_CFG[po.status];
+                const isPending = po.status === cfg.pendingStatus;
+                const totalQty = po.items.reduce((s, it) => s + it.qty, 0);
+                return (
+                  <tr key={po.id}
+                    onClick={() => setSelectedPO(po.id)}
+                    className="group/row border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors cursor-pointer">
+                    {/* PO ID */}
+                    <td className="py-3 pr-3 align-top">
+                      <p className={`${font} text-[12.5px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{po.id}</p>
+                      <p className={`${font} text-[10.5px] text-gray-500 mt-0.5`}>{po.paymentTerms}</p>
+                    </td>
+                    {/* Date */}
+                    <td className="py-3 pr-3 align-top">
+                      <span className={`${font} text-[12px] text-gray-700`}>{po.poDate}</span>
+                    </td>
+                    {/* Buyer / Supplier */}
+                    <td className="py-3 pr-3 align-top">
+                      {mode === "approval" ? (
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className={`${font} text-[12px] text-[#1a1a1a] truncate`} style={{ fontWeight: 500 }} title={po.factory}>{po.factory}</span>
+                          <span className={`${font} text-[10.5px] text-gray-500 inline-flex items-center gap-1`}>
+                            <ArrowRight className="size-2.5" strokeWidth={2.4} /> {po.supplier}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className={`${font} text-[12px] text-[#1a1a1a] truncate inline-flex items-center gap-1`} style={{ fontWeight: 500 }}>
+                            <Beaker className="size-3 text-[#319754] shrink-0" strokeWidth={2.4} /> {po.supplier}
+                          </span>
+                          <span className={`${font} text-[10.5px] text-gray-500 truncate`} title={po.factory}>PO ของ {po.factory}</span>
+                        </div>
+                      )}
+                    </td>
+                    {/* Items — count only */}
+                    <td className="py-3 pr-3 align-top">
+                      <span className={`${font} inline-flex items-center gap-1.5 text-[12px] px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 tabular-nums`}
+                        style={{ fontWeight: 600 }}
+                        title={po.items.map((it) => it.name).join(", ")}>
+                        <Boxes className="size-3 text-gray-500" strokeWidth={2.4} />
+                        {po.items.length} รายการ
+                      </span>
+                    </td>
+                    {/* Total qty */}
+                    <td className="py-3 pr-3 text-right align-top">
+                      <p className={`${font} text-[12px] text-gray-700 tabular-nums`} style={{ fontWeight: 600 }}>{totalQty.toLocaleString()}</p>
+                      <p className={`${font} text-[10px] text-gray-500`}>{po.items[0].unit}</p>
+                    </td>
+                    {/* Amount */}
+                    <td className="py-3 pr-3 text-right align-top">
+                      <p className={`${font} text-[13px] tabular-nums`} style={{ fontWeight: 700, color: "#287745" }}>฿{po.total.toLocaleString()}</p>
+                    </td>
+                    {/* Status — matches Orders pill (gap-1 px-2 py-0.5 + Icon) */}
+                    <td className="py-3 pr-3 text-center align-top">
+                      <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap`}
+                        style={{ backgroundColor: sMeta.bg, color: sMeta.color, fontWeight: 600 }}>
+                        <sMeta.Icon className="size-2.5" strokeWidth={2.4} />
+                        {sMeta.label}
+                      </span>
+                    </td>
+                    {/* Actions */}
+                    <td className="py-3 text-center align-top" onClick={(e) => e.stopPropagation()}>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="size-7 rounded-full inline-flex items-center justify-center bg-[#787880]/15 hover:bg-[#787880]/25 text-gray-700 transition-colors cursor-pointer mx-auto data-[state=open]:bg-[#319754] data-[state=open]:text-white">
+                            <MoreHorizontal className="size-4" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" sideOffset={6} className="w-[200px] p-1.5 rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_-8px_rgba(0,0,0,0.18)]">
+                          <button onClick={() => setSelectedPO(po.id)}
+                            className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer text-left text-[13px] text-black`}>
+                            <Eye className="size-3.5 text-[#319754]" strokeWidth={2.2} />
+                            <span style={{ fontWeight: 500 }}>ดูรายละเอียด</span>
+                          </button>
+                          {isPending && (
+                            <>
+                              <button onClick={() => updateStatus(po.id, cfg.approveTo, cfg.approveMsg(po.id))}
+                                className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#319754]/10 cursor-pointer text-left text-[13px] text-[#287745]`}>
+                                <Check className="size-3.5" strokeWidth={2.4} />
+                                <span style={{ fontWeight: 500 }}>{cfg.approveLabel}</span>
+                              </button>
+                              <div className="h-px bg-gray-100 my-1" />
+                              <button onClick={() => updateStatus(po.id, cfg.rejectTo, cfg.rejectMsg(po.id))}
+                                className={`${font} w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#ff3b30]/10 cursor-pointer text-left text-[13px] text-[#dc2626]`}>
+                                <X className="size-3.5" strokeWidth={2.4} />
+                                <span style={{ fontWeight: 500 }}>{cfg.rejectLabel}</span>
+                              </button>
+                            </>
+                          )}
+                        </PopoverContent>
+                      </Popover>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <p className={`${font} text-[11px] text-gray-400 mt-3`}>
+            แสดง <span style={{ fontWeight: 600 }} className="text-[#319754]">{visible.length}</span> จาก {scoped.length} รายการ
           </p>
         </div>
-        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[40px] w-full sm:w-[300px]">
-          <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="ค้นหา PO, โรงงาน หรือสินค้า"
-            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
-          <button className="bg-[#319754] size-[30px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
-            <Search className="size-4 text-white" />
-          </button>
+      </div>
+    </div>
+  );
+}
+
+/* ===== PO detail page (cross-mode) — re-uses the existing card body
+ *  but with a proper page header + back action + footer action bar. ===== */
+function AdminPODetailView({ po, mode, cfg, onBack, onApprove, onReject }: {
+  po: AdminPORecord;
+  mode: "approval" | "cancel";
+  cfg: typeof PO_MODE_CONFIG[keyof typeof PO_MODE_CONFIG];
+  onBack: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+}) {
+  const sMeta = ADMIN_PO_STATUS_CFG[po.status];
+  const isPending = po.status === cfg.pendingStatus;
+
+  return (
+    <div>
+      {/* Top row */}
+      <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
+        <button onClick={onBack}
+          className={`${font} inline-flex items-center gap-2 text-[12px] text-[#319754] bg-[#319754]/10 hover:bg-[#319754]/20 px-4 py-1.5 rounded-full cursor-pointer transition-colors`}
+          style={{ fontWeight: 500 }}>
+          <ChevronLeft className="size-3.5" strokeWidth={2.5} /> กลับ
+        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`${font} text-[12px] text-gray-500`}>{po.poDate}</span>
+          <span className={`${font} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap`}
+            style={{ backgroundColor: sMeta.bg, color: sMeta.color, fontWeight: 600 }}>
+            <sMeta.Icon className="size-2.5" strokeWidth={2.4} />
+            {sMeta.label}
+          </span>
         </div>
       </div>
 
-      {/* Pending banner */}
-      {pendingCount > 0 && (
-        <div className="bg-[#f59e0b]/10 border border-[#f59e0b]/25 rounded-2xl px-4 py-3 mb-5 flex items-center gap-2.5">
-          <AlertCircle className="size-4 text-[#d97706] shrink-0" strokeWidth={2.4} />
-          <p className={`${font} text-[13px] text-[#92400e]`}>
-            มี <span style={{ fontWeight: 700 }}>{pendingCount}</span> รายการ{mode === "approval" ? "รออนุมัติ" : "รอตัดสินใจคำขอยกเลิก"}
-          </p>
+      {/* Title row */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        <h2 className={`${font} text-[20px] text-black leading-[30px] tabular-nums`} style={{ fontWeight: 600 }}>{po.id}</h2>
+        <span className={`${font} text-[12px] text-[#d97706] bg-[#f59e0b]/10 px-3 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>{po.paymentTerms}</span>
+      </div>
+
+      {/* Flow chips */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+        <div className="flex items-center gap-2 flex-wrap text-[12px]">
+          {mode === "approval" ? (
+            <>
+              <span className={`${font} inline-flex items-center gap-1.5 bg-[#3b82f6]/10 text-[#2563eb] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                <Store className="size-3" strokeWidth={2.4} /> {po.factory}
+                <span className="text-[#2563eb]/60">· ERP</span>
+              </span>
+              <ArrowRight className="size-3.5 text-gray-400" strokeWidth={2.4} />
+              <span className={`${font} inline-flex items-center gap-1.5 bg-[#a855f7]/10 text-[#9333ea] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                <ShieldCheck className="size-3" strokeWidth={2.4} /> Admin
+              </span>
+              <ArrowRight className="size-3.5 text-gray-400" strokeWidth={2.4} />
+              <span className={`${font} inline-flex items-center gap-1.5 bg-[#319754]/10 text-[#319754] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                <Beaker className="size-3" strokeWidth={2.4} /> {po.supplier}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className={`${font} inline-flex items-center gap-1.5 bg-[#319754]/10 text-[#319754] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                <Beaker className="size-3" strokeWidth={2.4} /> {po.supplier}
+              </span>
+              <span className={`${font} text-[10px] text-[#dc2626]`} style={{ fontWeight: 600 }}>ขอยกเลิก</span>
+              <ArrowRight className="size-3.5 text-gray-400" strokeWidth={2.4} />
+              <span className={`${font} inline-flex items-center gap-1.5 bg-[#a855f7]/10 text-[#9333ea] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                <ShieldCheck className="size-3" strokeWidth={2.4} /> Admin
+              </span>
+              <span className={`${font} text-[10px] text-gray-400`}>· PO ของ {po.factory}</span>
+            </>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* List */}
-      {visible.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 py-16 flex flex-col items-center justify-center gap-2">
-          <Beaker className="size-10 text-gray-300" strokeWidth={1.5} />
-          <p className={`${font} text-[14px] text-gray-400`}>ไม่มีรายการ</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {visible.map((po) => {
-            const cfg = ADMIN_PO_STATUS_CFG[po.status];
-            const isPendingApproval = po.status === "pending_approval";
-            const isCancelReq = po.status === "cancel_requested";
-            return (
-              <div key={po.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-                {/* Card header */}
-                <div className="flex items-center justify-between flex-wrap gap-2 px-4 pt-4">
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{po.id}</span>
-                    <span className={`${font} text-[11px] px-3 py-1 rounded-full`} style={{ backgroundColor: cfg.bg, color: cfg.color, fontWeight: 600 }}>{cfg.label}</span>
-                  </div>
-                  <span className={`${font} text-[12px] text-gray-400`}>{po.poDate}</span>
-                </div>
-                <div className="h-px bg-gray-100 mx-4 my-3" />
-
-                {/* Direction — approval: โรงงาน(ERP) → Admin → Supplier · cancel: Supplier → Admin */}
-                <div className="px-4 flex items-center gap-2 flex-wrap text-[12px]">
-                  {mode === "approval" ? (
-                    <>
-                      <span className={`${font} inline-flex items-center gap-1.5 bg-[#3b82f6]/10 text-[#2563eb] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
-                        <Store className="size-3" strokeWidth={2.4} /> {po.factory}
-                        <span className="text-[#2563eb]/60">· ERP</span>
-                      </span>
-                      <ArrowRight className="size-3.5 text-gray-400" strokeWidth={2.4} />
-                      <span className={`${font} inline-flex items-center gap-1.5 bg-[#a855f7]/10 text-[#9333ea] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
-                        <ShieldCheck className="size-3" strokeWidth={2.4} /> Admin
-                      </span>
-                      <ArrowRight className="size-3.5 text-gray-400" strokeWidth={2.4} />
-                      <span className={`${font} inline-flex items-center gap-1.5 bg-[#319754]/10 text-[#319754] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
-                        <Beaker className="size-3" strokeWidth={2.4} /> {po.supplier}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className={`${font} inline-flex items-center gap-1.5 bg-[#319754]/10 text-[#319754] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
-                        <Beaker className="size-3" strokeWidth={2.4} /> {po.supplier}
-                      </span>
-                      <span className={`${font} text-[10px] text-[#dc2626]`} style={{ fontWeight: 600 }}>ขอยกเลิก</span>
-                      <ArrowRight className="size-3.5 text-gray-400" strokeWidth={2.4} />
-                      <span className={`${font} inline-flex items-center gap-1.5 bg-[#a855f7]/10 text-[#9333ea] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
-                        <ShieldCheck className="size-3" strokeWidth={2.4} /> Admin
-                      </span>
-                      <span className={`${font} text-[10px] text-gray-400`}>· PO ของ {po.factory}</span>
-                    </>
-                  )}
-                </div>
-
-                {/* Items */}
-                <div className="flex flex-col gap-2.5 p-4">
-                  {po.items.map((it, i) => (
-                    <div key={i} className="flex items-start gap-2.5">
-                      <div className="size-[56px] rounded-xl overflow-hidden shrink-0 bg-gray-100">
-                        <img src={it.image} alt={it.name} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0 flex flex-col justify-center self-stretch">
-                        <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{it.name}</p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className={`${font} bg-[#319754]/10 text-[#319754] text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>เกรด {it.grade}</span>
-                          <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>{it.qty.toLocaleString()} {it.unit} × ฿{it.pricePerUnit.toLocaleString()}/{it.unit}</span>
-                        </div>
-                      </div>
-                      <span className={`${font} text-[14px] text-black tabular-nums self-center`} style={{ fontWeight: 600 }}>฿{(it.qty * it.pricePerUnit).toLocaleString()}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Cancel reason (cancel queue) */}
-                {po.cancelReason && (
-                  <div className="px-4 pb-3">
-                    <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 flex items-start gap-2">
-                      <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" strokeWidth={2.4} />
-                      <div>
-                        <p className={`${font} text-[11px] text-red-600`} style={{ fontWeight: 600 }}>เหตุผลที่ Supplier ขอยกเลิก</p>
-                        <p className={`${font} text-[12px] text-red-700 mt-0.5`}>{po.cancelReason}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Footer: total + actions */}
-                <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-3 border-t border-gray-100 bg-[#fafafa]">
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    <span className={`${font} text-[13px] text-gray-500`}>ยอดรวม:</span>
-                    <span className={`${font} text-[18px] text-[#319754] tabular-nums`} style={{ fontWeight: 700 }}>฿{po.total.toLocaleString()}</span>
-                    <span className={`${font} text-[11px] text-[#d97706] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>{po.paymentTerms}</span>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {isPendingApproval && (
-                      <>
-                        <button onClick={() => updateStatus(po.id, "rejected", `ไม่อนุมัติ ${po.id}`)}
-                          className={`${font} border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
-                          <X className="size-3.5" strokeWidth={2.4} /> ไม่อนุมัติ
-                        </button>
-                        <button onClick={() => updateStatus(po.id, "approved", `อนุมัติ ${po.id} — ส่งให้ Supplier แล้ว`)}
-                          className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
-                          <Check className="size-4" strokeWidth={2.4} /> อนุมัติ & ส่ง Supplier
-                        </button>
-                      </>
-                    )}
-                    {isCancelReq && (
-                      <>
-                        <button onClick={() => updateStatus(po.id, "cancel_rejected", `ปฏิเสธคำขอยกเลิก ${po.id}`)}
-                          className={`${font} border border-gray-300 text-gray-700 hover:bg-gray-50 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
-                          <X className="size-3.5" strokeWidth={2.4} /> ปฏิเสธคำขอ
-                        </button>
-                        <button onClick={() => updateStatus(po.id, "cancel_approved", `อนุมัติยกเลิก ${po.id} — แจ้งโรงงาน + ERP แล้ว`)}
-                          className={`${font} bg-[#ff3b30] hover:bg-[#dc2626] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(255,59,48,0.25)]`}>
-                          <Check className="size-4" strokeWidth={2.4} /> อนุมัติยกเลิก
-                        </button>
-                      </>
-                    )}
-                    {!isPendingApproval && !isCancelReq && (
-                      <span className={`${font} text-[12px] text-gray-400 inline-flex items-center gap-1.5`}>
-                        <Check className="size-3.5" strokeWidth={2.4} /> ดำเนินการแล้ว
-                      </span>
-                    )}
-                  </div>
+      {/* Items table */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+        <h3 className={`${font} text-[14px] text-black mb-3`} style={{ fontWeight: 600 }}>รายการสินค้า</h3>
+        <div className="space-y-2.5">
+          {po.items.map((it, i) => (
+            <div key={i} className="flex items-start gap-2.5">
+              <div className="size-[56px] rounded-xl overflow-hidden shrink-0 bg-gray-100">
+                <ImageWithFallback src={it.image} alt={it.name} className="w-full h-full object-cover" />
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-center self-stretch">
+                <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{it.name}</p>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <span className={`${font} bg-[#319754]/10 text-[#319754] text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>เกรด {it.grade}</span>
+                  <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>{it.qty.toLocaleString()} {it.unit} × ฿{it.pricePerUnit.toLocaleString()}/{it.unit}</span>
                 </div>
               </div>
-            );
-          })}
+              <span className={`${font} text-[14px] text-black tabular-nums self-center`} style={{ fontWeight: 600 }}>฿{(it.qty * it.pricePerUnit).toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Cancel reason */}
+      {po.cancelReason && (
+        <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 mb-4 flex items-start gap-2">
+          <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" strokeWidth={2.4} />
+          <div>
+            <p className={`${font} text-[11px] text-red-600`} style={{ fontWeight: 600 }}>เหตุผลที่ Supplier ขอยกเลิก</p>
+            <p className={`${font} text-[12px] text-red-700 mt-0.5`}>{po.cancelReason}</p>
+          </div>
         </div>
       )}
+
+      {/* Footer: total + actions */}
+      <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center justify-between flex-wrap gap-3 sticky bottom-3 shadow-[0_-2px_12px_rgba(0,0,0,0.04)]">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <span className={`${font} text-[13px] text-gray-500`}>ยอดรวม:</span>
+          <span className={`${font} text-[20px] text-[#319754] tabular-nums`} style={{ fontWeight: 700 }}>฿{po.total.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {isPending ? (
+            <>
+              <button onClick={onReject}
+                className={`${font} border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-10 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
+                <X className="size-3.5" strokeWidth={2.4} /> {cfg.rejectLabel}
+              </button>
+              <button onClick={onApprove}
+                className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-10 px-5 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+                <Check className="size-4" strokeWidth={2.4} /> {cfg.approveLabel}
+              </button>
+            </>
+          ) : (
+            <span className={`${font} text-[12px] text-gray-400 inline-flex items-center gap-1.5`}>
+              <Check className="size-3.5" strokeWidth={2.4} /> ดำเนินการแล้ว
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
