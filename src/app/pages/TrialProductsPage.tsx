@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { Sparkles, Users, Clock, Check, FlaskConical, ShieldCheck, Coins, Pencil, ArrowRight, RotateCcw } from "lucide-react";
+import { Sparkles, Users, Clock, Check, ShieldCheck, Coins, Pencil, RotateCcw, ChevronRight } from "lucide-react";
+import imgTrialCta from "../../assets/supplier-cta-farmers.png";
 import { TrialCard } from "../components/TrialCard";
 import { TRIAL_PRODUCTS, TRIAL_CONCERNS, loadRegistrations, loadTesterProfile, REGISTRATIONS_STORAGE_KEY, TESTER_PROFILE_STORAGE_KEY, getRegistrationStatus, type ConcernKey } from "../data/trialProducts";
 
@@ -110,7 +111,8 @@ export function TrialProductsPage() {
         <div className="max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 sm:gap-6 px-4 sm:px-6 lg:px-12 py-4 sm:py-6">
           {/* Sidebar — mirrors ProductsPage filter structure */}
           <aside className="hidden lg:block w-[218px] shrink-0">
-            <div className="bg-white rounded-2xl p-4 flex flex-col gap-4 sticky top-[128px]">
+            <div className="sticky top-[128px] flex flex-col gap-4">
+            <div className="bg-white rounded-2xl p-4 flex flex-col gap-4">
               {/* Header + reset */}
               <div className="flex items-center justify-between">
                 <span className={`${font} text-[20px] text-black`} style={{ fontWeight: 500 }}>ตัวกรอง</span>
@@ -175,34 +177,40 @@ export function TrialProductsPage() {
                 })}
               </div>
 
-              {/* Tester registration — at the bottom */}
-              <div className="w-full h-px bg-gray-200" />
-              {testerProfile ? (
-                <div className="bg-[#319754]/8 border border-[#319754]/20 rounded-xl p-3 flex items-start gap-2">
-                  <Check className="size-4 text-[#319754] shrink-0 mt-0.5" strokeWidth={2.6} />
-                  <div className="flex-1 min-w-0">
-                    <p className={`${font} text-[12px] text-[#1d5b32] truncate`} style={{ fontWeight: 600 }}>
-                      ลงทะเบียนแล้ว{testerProfile.displayName ? ` · ${testerProfile.displayName}` : ""}
-                    </p>
-                    <button onClick={() => navigate("/trials/register")}
-                      className={`${font} text-[11px] text-[#319754] hover:underline mt-0.5 cursor-pointer flex items-center gap-1`}>
-                      <Pencil className="size-3" strokeWidth={2.2} />
-                      แก้ไขโปรไฟล์
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button onClick={() => navigate("/trials/register")}
-                  className={`${font} group w-full inline-flex items-center gap-2 h-11 pl-2 pr-3 rounded-full bg-[#319754] hover:bg-[#287745] text-white text-[13px] cursor-pointer transition-all shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}
-                  style={{ fontWeight: 600 }}>
-                  <span className="size-7 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                    <FlaskConical className="size-3.5" strokeWidth={2.4} />
-                  </span>
-                  <span className="flex-1 text-left whitespace-nowrap">ลงทะเบียนเข้าร่วม</span>
-                  <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" strokeWidth={2.4} />
-                </button>
-              )}
             </div>
+
+            {/* Tester registration — separate card below the filter panel */}
+            {testerProfile ? (
+              <div className="bg-[#319754]/8 border border-[#319754]/20 rounded-2xl p-3 flex items-start gap-2">
+                <Check className="size-4 text-[#319754] shrink-0 mt-0.5" strokeWidth={2.6} />
+                <div className="flex-1 min-w-0">
+                  <p className={`${font} text-[12px] text-[#1d5b32] truncate`} style={{ fontWeight: 600 }}>
+                    ลงทะเบียนแล้ว{testerProfile.displayName ? ` · ${testerProfile.displayName}` : ""}
+                  </p>
+                  <button onClick={() => navigate("/trials/register")}
+                    className={`${font} text-[11px] text-[#319754] hover:underline mt-0.5 cursor-pointer flex items-center gap-1`}>
+                    <Pencil className="size-3" strokeWidth={2.2} />
+                    แก้ไขโปรไฟล์
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Tester CTA card — same Figma green-gradient style as the Herbal Market supplier CTA */
+              <button onClick={() => navigate("/trials/register")}
+                className="group/cta relative w-full overflow-hidden rounded-2xl p-4 flex flex-col items-start gap-2 cursor-pointer text-left transition-shadow hover:shadow-[0_8px_24px_-6px_rgba(43,132,74,0.45)]"
+                style={{ background: "linear-gradient(90deg, #309550 0%, #2c864b 50%, #2b844a 100%)" }}>
+                <img src={imgTrialCta} alt="" aria-hidden
+                  className="absolute right-0 bottom-0 h-[72px] w-auto object-contain pointer-events-none select-none transition-transform duration-500 ease-out group-hover/cta:scale-105" />
+                <p className={`${font} relative z-10 text-[12px] text-[#fafafa] leading-snug w-[110px]`}>
+                  เข้าร่วมทดสอบ<br />ผลิตภัณฑ์
+                </p>
+                <span className="relative z-10 inline-flex items-center gap-1.5 bg-white rounded-full pl-3 pr-2 py-1">
+                  <span className={`${font} text-[11px] text-[#2b844a]`} style={{ fontWeight: 500 }}>เข้าร่วม</span>
+                  <ChevronRight className="size-3.5 text-[#2b844a] group-hover/cta:translate-x-0.5 transition-transform" strokeWidth={2.6} />
+                </span>
+              </button>
+            )}
+          </div>
           </aside>
 
           {/* Main column — same width treatment as /products */}
