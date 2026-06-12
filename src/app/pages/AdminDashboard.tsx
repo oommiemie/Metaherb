@@ -148,6 +148,10 @@ const sectionMenus: Record<AdminSection, AdminItem[]> = {
     ]},
     { id: "reviews",    label: "จัดการรีวิว",     icon: Star },
     { id: "orders",     label: "คำสั่งซื้อ",       icon: ShoppingCart },
+    { id: "po_approval", label: "อนุมัติใบ PO (B2B)", icon: Beaker, children: [
+      { id: "po_approval_queue",  label: "รออนุมัติ PO",   icon: ClipboardList },
+      { id: "po_cancel_requests", label: "คำขอยกเลิก",     icon: PackageX },
+    ]},
     { id: "ai_assistant", label: "AI Assistant",   icon: Sparkles },
   ],
   content: [
@@ -408,9 +412,12 @@ function AdminSidebar({ section, active, onSelect, collapsed, onToggle }: {
 }
 
 /* ========== DASHBOARD CONTENT ========== */
-function DashboardContent() {
+function DashboardContent({ onNavigate }: { onNavigate?: (item: ItemId) => void }) {
   const { t } = useLanguage();
   const now = new Date();
+  // B2B PO approval counts — sourced from the same seed the approval pages use
+  const poPendingApproval = SEED_ADMIN_POS.filter((p) => p.status === "pending_approval").length;
+  const poCancelRequests  = SEED_ADMIN_POS.filter((p) => p.status === "cancel_requested").length;
   const hour = now.getHours();
   const greeting = hour < 12 ? "สวัสดีตอนเช้า" : hour < 17 ? "สวัสดีตอนบ่าย" : "สวัสดีตอนเย็น";
   const dayLabel = now.toLocaleDateString("th-TH", { weekday: "long", day: "numeric", month: "long" }) + " " + (now.getFullYear() + 543);
@@ -429,12 +436,12 @@ function DashboardContent() {
     { label: "Flash Sale",                       Icon: Zap,           to: "products_flash",   color: "#e62e05" },
   ];
 
-  const pendingActions: { label: string; count: number; sub: string; color: string; urgent?: boolean; Icon: any }[] = [
-    { label: "ร้องเรียนใหม่",       count: 7, sub: "รอตรวจสอบ ≤ 24 ชม.",     color: "#ef4444", urgent: true,  Icon: AlertCircle },
-    { label: "ร้านค้ารอตรวจสอบ",  count: 4, sub: "เอกสารพร้อมอนุมัติ",   color: "#f59e0b",                Icon: Store        },
-    { label: "คูปองรอเปิดใช้",      count: 5, sub: "กำหนดเริ่มภายใน 3 วัน", color: "#3b82f6",                Icon: Ticket       },
-    { label: "รีพอร์ตจากผู้ใช้",   count: 3, sub: "สินค้า/รีวิวต้องสงสัย", color: "#f59e0b",                Icon: Shield       },
-    { label: "Banner รอเผยแพร่",   count: 2, sub: "ตรวจสอบรูปและลิงก์",   color: "#9747ff",                Icon: ImageIcon    },
+  const pendingActions: { label: string; count: number; sub: string; color: string; urgent?: boolean; Icon: any; to?: ItemId }[] = [
+    { label: "รออนุมัติใบ PO (B2B)", count: poPendingApproval, sub: "PO จาก Herbal ERP ก่อนส่ง Supplier", color: "#ef4444", urgent: true,  Icon: Beaker,      to: "po_approval_queue" },
+    { label: "ร้องเรียนใหม่",       count: 7, sub: "รอตรวจสอบ ≤ 24 ชม.",     color: "#ef4444", urgent: true,  Icon: AlertCircle, to: "complaints_list" },
+    { label: "คำขอยกเลิก PO",       count: poCancelRequests, sub: "Supplier ขอยกเลิก — รออนุมัติ",    color: "#f59e0b",                Icon: PackageX,    to: "po_cancel_requests" },
+    { label: "ร้านค้ารอตรวจสอบ",  count: 4, sub: "เอกสารพร้อมอนุมัติ",   color: "#f59e0b",                Icon: Store,       to: "shops_list" },
+    { label: "คูปองรอเปิดใช้",      count: 5, sub: "กำหนดเริ่มภายใน 3 วัน", color: "#3b82f6",                Icon: Ticket,      to: "products_coupons" },
   ];
   const pendingTotal = pendingActions.reduce((s, p) => s + p.count, 0);
 
@@ -594,7 +601,7 @@ function DashboardContent() {
                   initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
                   whileTap={{ scale: 0.98 }} whileHover={{ y: -2 }}
-                  onClick={() => toast.info(p.label)}
+                  onClick={() => p.to ? onNavigate?.(p.to) : toast.info(p.label)}
                   className={`${font} group/row relative flex items-stretch gap-3 rounded-xl cursor-pointer transition-all overflow-hidden border border-transparent hover:border-gray-100 hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)]`}
                   style={{ background: `linear-gradient(135deg, ${p.color}10, ${p.color}03)` }}>
                   {/* Content */}
@@ -12852,6 +12859,7 @@ const itemIconMap: Record<string, any> = {
   complaints: AlertCircle, complaints_stats: BarChart3, complaints_list: FileText, complaints_appeals: Gavel,
   products_manage: Package, products_categories: Folder, products_promotions: Megaphone,
   products_flash: Zap, products_coupons: Ticket, products_tags: Tag, reviews: Star, orders: ShoppingCart,
+  po_approval: Beaker, po_approval_queue: ClipboardList, po_cancel_requests: PackageX,
   content_banner: ImageIcon, content_blog: FileText, content_video: Video, content_index: Megaphone,
   page_home: Home, page_products: Package, page_blog: FileText, page_about: Info, page_appbar: LayoutPanelTop, page_footer: PanelBottom,
   content_terms: ScrollText, content_privacy: Lock,
@@ -25238,6 +25246,269 @@ function AdminOrderDetailView({ order, onBack }: { order: AdminOrder; onBack: ()
   );
 }
 
+/* ========== Admin PO Approval (B2B — Herbal ERP gateway) ==========
+ * The admin sits between the factory's Herbal ERP and the Supplier. Two queues:
+ *  - approval: POs synced from ERP awaiting admin approval before reaching Supplier
+ *  - cancel:   cancellation requests raised by the Supplier awaiting admin sign-off */
+type AdminPOStatus = "pending_approval" | "approved" | "rejected" | "cancel_requested" | "cancel_approved" | "cancel_rejected";
+interface AdminPOItem { name: string; grade: string; qty: number; unit: string; pricePerUnit: number; image: string }
+interface AdminPORecord {
+  id: string;
+  poDate: string;
+  factory: string;          // Herbal ERP factory (buyer)
+  supplier: string;         // target supplier
+  items: AdminPOItem[];
+  total: number;
+  paymentTerms: string;
+  status: AdminPOStatus;
+  cancelReason?: string;    // supplier-supplied reason when status involves cancel
+}
+
+const SEED_ADMIN_POS: AdminPORecord[] = [
+  {
+    id: "PO-2569-3012", poDate: "12 มี.ค. 2569", factory: "บริษัท สมุนไพรไทยพัฒนา จำกัด", supplier: "METAHERB Store",
+    items: [{ name: "ขมิ้นชันแห้ง (ผง)", grade: "พรีเมียม", qty: 200, unit: "กก.", pricePerUnit: 320, image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=200&q=80" }],
+    total: 68480, paymentTerms: "เครดิต 30 วัน", status: "pending_approval",
+  },
+  {
+    id: "PO-2569-3019", poDate: "10 มี.ค. 2569", factory: "บริษัท บ้านยาไทย คอมพานี จำกัด", supplier: "METAHERB Store",
+    items: [
+      { name: "ฟ้าทะลายโจร (ผง)", grade: "พรีเมียม", qty: 500, unit: "กก.", pricePerUnit: 240, image: "https://images.unsplash.com/photo-1583500178690-f7eb1664d873?w=200&q=80" },
+      { name: "ใบบัวบกแห้ง",       grade: "คัดสรร",   qty: 150, unit: "กก.", pricePerUnit: 180, image: "https://images.unsplash.com/photo-1597301518497-69c4d4d10e7a?w=200&q=80" },
+    ],
+    total: 203514, paymentTerms: "เครดิต 60 วัน", status: "pending_approval",
+  },
+  {
+    id: "PO-2569-3052", poDate: "9 มี.ค. 2569", factory: "ห้างหุ้นส่วนจำกัด เฮอร์บัลซัพพลาย", supplier: "METAHERB Store",
+    items: [{ name: "ขิงผงออร์แกนิก", grade: "พรีเมียม", qty: 300, unit: "กก.", pricePerUnit: 280, image: "https://images.unsplash.com/photo-1573821663912-6df460f9c684?w=200&q=80" }],
+    total: 89880, paymentTerms: "เครดิต 30 วัน", status: "approved",
+  },
+  {
+    id: "PO-2569-3028", poDate: "28 ก.พ. 2569", factory: "บริษัท ธรรมชาติเฮิร์บส์ จำกัด", supplier: "METAHERB Store",
+    items: [{ name: "เห็ดหลินจือสกัด", grade: "พรีเมียม", qty: 50, unit: "กก.", pricePerUnit: 2400, image: "https://images.unsplash.com/photo-1644061923948-f5b918b524c7?w=200&q=80" }],
+    total: 128400, paymentTerms: "เครดิต 60 วัน", status: "approved",
+  },
+  // Cancel queue
+  {
+    id: "PO-2569-3038", poDate: "18 ก.พ. 2569", factory: "บริษัท แพทย์แผนไทยร่วมสมัย จำกัด", supplier: "METAHERB Store",
+    items: [{ name: "ดอกอัญชันแห้ง", grade: "พรีเมียม", qty: 100, unit: "กก.", pricePerUnit: 520, image: "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=200&q=80" }],
+    total: 55640, paymentTerms: "เครดิต 30 วัน", status: "cancel_requested",
+    cancelReason: "Stock วัตถุดิบไม่เพียงพอ — ขอยกเลิกและเสนอแบ่งล็อตส่งภายหลัง",
+  },
+  {
+    id: "PO-2569-3009", poDate: "14 ก.พ. 2569", factory: "บริษัท เครื่องสำอางไทยเฮิร์บ จำกัด", supplier: "METAHERB Store",
+    items: [{ name: "ใบบัวบกแห้ง", grade: "พรีเมียม", qty: 80, unit: "กก.", pricePerUnit: 450, image: "https://images.unsplash.com/photo-1597301518497-69c4d4d10e7a?w=200&q=80" }],
+    total: 38520, paymentTerms: "เครดิต 30 วัน", status: "cancel_requested",
+    cancelReason: "ลูกค้าเปลี่ยนสูตรการผลิต — ไม่ต้องการวัตถุดิบล็อตนี้แล้ว",
+  },
+  {
+    id: "PO-2569-2998", poDate: "5 ก.พ. 2569", factory: "บริษัท สมุนไพรไทยพัฒนา จำกัด", supplier: "METAHERB Store",
+    items: [{ name: "ตะไคร้แห้ง (สับ)", grade: "คัดสรร", qty: 120, unit: "กก.", pricePerUnit: 180, image: "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=200&q=80" }],
+    total: 23112, paymentTerms: "ชำระทันที", status: "cancel_approved",
+    cancelReason: "ส่งของไม่ทันกำหนด",
+  },
+];
+
+const ADMIN_PO_STATUS_CFG: Record<AdminPOStatus, { label: string; color: string; bg: string }> = {
+  pending_approval: { label: "รออนุมัติ",       color: "#d97706", bg: "#f59e0b1a" },
+  approved:         { label: "อนุมัติแล้ว",     color: "#15803d", bg: "#10b9811a" },
+  rejected:         { label: "ไม่อนุมัติ",      color: "#dc2626", bg: "#ef44441a" },
+  cancel_requested: { label: "รออนุมัติยกเลิก", color: "#d97706", bg: "#f59e0b1a" },
+  cancel_approved:  { label: "ยกเลิกแล้ว",      color: "#dc2626", bg: "#ef44441a" },
+  cancel_rejected:  { label: "ปฏิเสธยกเลิก",    color: "#6b7280", bg: "#6b72801a" },
+};
+
+function AdminPOApprovalContent({ mode }: { mode: "approval" | "cancel" }) {
+  const [pos, setPos] = useState<AdminPORecord[]>(() => SEED_ADMIN_POS);
+  const [search, setSearch] = useState("");
+
+  // Approval queue: normal PO lifecycle. Cancel queue: cancel-related statuses.
+  const inApprovalScope = (s: AdminPOStatus) => s === "pending_approval" || s === "approved" || s === "rejected";
+  const inCancelScope   = (s: AdminPOStatus) => s === "cancel_requested" || s === "cancel_approved" || s === "cancel_rejected";
+
+  const scoped = pos.filter((p) => (mode === "approval" ? inApprovalScope(p.status) : inCancelScope(p.status)));
+  const q = search.trim().toLowerCase();
+  const visible = scoped.filter((p) =>
+    !q || p.id.toLowerCase().includes(q) || p.factory.toLowerCase().includes(q) || p.items.some((it) => it.name.toLowerCase().includes(q))
+  );
+
+  const pendingCount = scoped.filter((p) => p.status === (mode === "approval" ? "pending_approval" : "cancel_requested")).length;
+
+  const updateStatus = (id: string, status: AdminPOStatus, okMsg: string) => {
+    setPos((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+    toast.success(okMsg);
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
+        <div>
+          <h2 className={`${font} text-[20px] text-black`} style={{ fontWeight: 700 }}>
+            {mode === "approval" ? "อนุมัติใบ PO (B2B)" : "คำขอยกเลิก PO"}
+          </h2>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>
+            {mode === "approval"
+              ? "ตรวจสอบและอนุมัติใบ PO จาก Herbal ERP ก่อนส่งให้ Supplier"
+              : "อนุมัติคำขอยกเลิกใบ PO ที่ Supplier ส่งเข้ามา"}
+          </p>
+        </div>
+        <div className="flex items-center bg-[#f5f5f5] rounded-full pl-4 pr-1 h-[40px] w-full sm:w-[300px]">
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="ค้นหา PO, โรงงาน หรือสินค้า"
+            className={`${font} flex-1 text-[13px] outline-none bg-transparent min-w-0`} />
+          <button className="bg-[#319754] size-[30px] rounded-full cursor-pointer flex items-center justify-center shrink-0">
+            <Search className="size-4 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Pending banner */}
+      {pendingCount > 0 && (
+        <div className="bg-[#f59e0b]/10 border border-[#f59e0b]/25 rounded-2xl px-4 py-3 mb-5 flex items-center gap-2.5">
+          <AlertCircle className="size-4 text-[#d97706] shrink-0" strokeWidth={2.4} />
+          <p className={`${font} text-[13px] text-[#92400e]`}>
+            มี <span style={{ fontWeight: 700 }}>{pendingCount}</span> รายการ{mode === "approval" ? "รออนุมัติ" : "รอตัดสินใจคำขอยกเลิก"}
+          </p>
+        </div>
+      )}
+
+      {/* List */}
+      {visible.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-gray-100 py-16 flex flex-col items-center justify-center gap-2">
+          <Beaker className="size-10 text-gray-300" strokeWidth={1.5} />
+          <p className={`${font} text-[14px] text-gray-400`}>ไม่มีรายการ</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {visible.map((po) => {
+            const cfg = ADMIN_PO_STATUS_CFG[po.status];
+            const isPendingApproval = po.status === "pending_approval";
+            const isCancelReq = po.status === "cancel_requested";
+            return (
+              <div key={po.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+                {/* Card header */}
+                <div className="flex items-center justify-between flex-wrap gap-2 px-4 pt-4">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className={`${font} text-[14px] text-black tabular-nums`} style={{ fontWeight: 600 }}>{po.id}</span>
+                    <span className={`${font} text-[11px] px-3 py-1 rounded-full`} style={{ backgroundColor: cfg.bg, color: cfg.color, fontWeight: 600 }}>{cfg.label}</span>
+                  </div>
+                  <span className={`${font} text-[12px] text-gray-400`}>{po.poDate}</span>
+                </div>
+                <div className="h-px bg-gray-100 mx-4 my-3" />
+
+                {/* Direction — approval: โรงงาน(ERP) → Admin → Supplier · cancel: Supplier → Admin */}
+                <div className="px-4 flex items-center gap-2 flex-wrap text-[12px]">
+                  {mode === "approval" ? (
+                    <>
+                      <span className={`${font} inline-flex items-center gap-1.5 bg-[#3b82f6]/10 text-[#2563eb] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                        <Store className="size-3" strokeWidth={2.4} /> {po.factory}
+                        <span className="text-[#2563eb]/60">· ERP</span>
+                      </span>
+                      <ArrowRight className="size-3.5 text-gray-400" strokeWidth={2.4} />
+                      <span className={`${font} inline-flex items-center gap-1.5 bg-[#a855f7]/10 text-[#9333ea] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                        <ShieldCheck className="size-3" strokeWidth={2.4} /> Admin
+                      </span>
+                      <ArrowRight className="size-3.5 text-gray-400" strokeWidth={2.4} />
+                      <span className={`${font} inline-flex items-center gap-1.5 bg-[#319754]/10 text-[#319754] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                        <Beaker className="size-3" strokeWidth={2.4} /> {po.supplier}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className={`${font} inline-flex items-center gap-1.5 bg-[#319754]/10 text-[#319754] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                        <Beaker className="size-3" strokeWidth={2.4} /> {po.supplier}
+                      </span>
+                      <span className={`${font} text-[10px] text-[#dc2626]`} style={{ fontWeight: 600 }}>ขอยกเลิก</span>
+                      <ArrowRight className="size-3.5 text-gray-400" strokeWidth={2.4} />
+                      <span className={`${font} inline-flex items-center gap-1.5 bg-[#a855f7]/10 text-[#9333ea] px-2.5 py-1 rounded-full`} style={{ fontWeight: 600 }}>
+                        <ShieldCheck className="size-3" strokeWidth={2.4} /> Admin
+                      </span>
+                      <span className={`${font} text-[10px] text-gray-400`}>· PO ของ {po.factory}</span>
+                    </>
+                  )}
+                </div>
+
+                {/* Items */}
+                <div className="flex flex-col gap-2.5 p-4">
+                  {po.items.map((it, i) => (
+                    <div key={i} className="flex items-start gap-2.5">
+                      <div className="size-[56px] rounded-xl overflow-hidden shrink-0 bg-gray-100">
+                        <img src={it.image} alt={it.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center self-stretch">
+                        <p className={`${font} text-[13px] text-black`} style={{ fontWeight: 500 }}>{it.name}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className={`${font} bg-[#319754]/10 text-[#319754] text-[10px] px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>เกรด {it.grade}</span>
+                          <span className={`${font} text-[11px] text-gray-500 tabular-nums`}>{it.qty.toLocaleString()} {it.unit} × ฿{it.pricePerUnit.toLocaleString()}/{it.unit}</span>
+                        </div>
+                      </div>
+                      <span className={`${font} text-[14px] text-black tabular-nums self-center`} style={{ fontWeight: 600 }}>฿{(it.qty * it.pricePerUnit).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Cancel reason (cancel queue) */}
+                {po.cancelReason && (
+                  <div className="px-4 pb-3">
+                    <div className="bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 flex items-start gap-2">
+                      <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" strokeWidth={2.4} />
+                      <div>
+                        <p className={`${font} text-[11px] text-red-600`} style={{ fontWeight: 600 }}>เหตุผลที่ Supplier ขอยกเลิก</p>
+                        <p className={`${font} text-[12px] text-red-700 mt-0.5`}>{po.cancelReason}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer: total + actions */}
+                <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-3 border-t border-gray-100 bg-[#fafafa]">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className={`${font} text-[13px] text-gray-500`}>ยอดรวม:</span>
+                    <span className={`${font} text-[18px] text-[#319754] tabular-nums`} style={{ fontWeight: 700 }}>฿{po.total.toLocaleString()}</span>
+                    <span className={`${font} text-[11px] text-[#d97706] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full`} style={{ fontWeight: 600 }}>{po.paymentTerms}</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {isPendingApproval && (
+                      <>
+                        <button onClick={() => updateStatus(po.id, "rejected", `ไม่อนุมัติ ${po.id}`)}
+                          className={`${font} border border-[#ff3b30] text-[#ff3b30] hover:bg-[#ff3b30]/5 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
+                          <X className="size-3.5" strokeWidth={2.4} /> ไม่อนุมัติ
+                        </button>
+                        <button onClick={() => updateStatus(po.id, "approved", `อนุมัติ ${po.id} — ส่งให้ Supplier แล้ว`)}
+                          className={`${font} bg-[#319754] hover:bg-[#287745] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(49,151,84,0.25)]`}>
+                          <Check className="size-4" strokeWidth={2.4} /> อนุมัติ & ส่ง Supplier
+                        </button>
+                      </>
+                    )}
+                    {isCancelReq && (
+                      <>
+                        <button onClick={() => updateStatus(po.id, "cancel_rejected", `ปฏิเสธคำขอยกเลิก ${po.id}`)}
+                          className={`${font} border border-gray-300 text-gray-700 hover:bg-gray-50 h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5`}>
+                          <X className="size-3.5" strokeWidth={2.4} /> ปฏิเสธคำขอ
+                        </button>
+                        <button onClick={() => updateStatus(po.id, "cancel_approved", `อนุมัติยกเลิก ${po.id} — แจ้งโรงงาน + ERP แล้ว`)}
+                          className={`${font} bg-[#ff3b30] hover:bg-[#dc2626] text-white h-9 px-4 rounded-full text-[13px] cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_2px_8px_rgba(255,59,48,0.25)]`}>
+                          <Check className="size-4" strokeWidth={2.4} /> อนุมัติยกเลิก
+                        </button>
+                      </>
+                    )}
+                    {!isPendingApproval && !isCancelReq && (
+                      <span className={`${font} text-[12px] text-gray-400 inline-flex items-center gap-1.5`}>
+                        <Check className="size-3.5" strokeWidth={2.4} /> ดำเนินการแล้ว
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AdminOrdersContent() {
   const { t } = useLanguage();
   const [orders] = useState<AdminOrder[]>(() => seedAdminOrders());
@@ -26558,6 +26829,8 @@ export function AdminDashboard() {
     products_coupons:    { title: t("owner_coupon_title"),             subtitle: "" },
     reviews:             { title: t("admin_reviews_title"),            subtitle: t("admin_reviews_subtitle") },
     orders:              { title: t("admin_orders_title"),             subtitle: t("admin_orders_subtitle") },
+    po_approval_queue:   { title: "อนุมัติใบ PO (B2B)",                subtitle: "ตรวจสอบและอนุมัติใบ PO จาก Herbal ERP ก่อนส่งให้ Supplier" },
+    po_cancel_requests:  { title: "คำขอยกเลิก PO",                     subtitle: "อนุมัติคำขอยกเลิกใบ PO ที่ Supplier ส่งเข้ามา" },
     content_banner:      { title: t("admin_banners_title"),            subtitle: "" },
     content_blog:        { title: t("admin_blog_title"),               subtitle: "" },
     page_home:           { title: t("admin_pages_homepage_title"),     subtitle: t("admin_pages_homepage_sub") },
@@ -26585,7 +26858,7 @@ export function AdminDashboard() {
   const meta = i18nItem[activeItem] ?? itemLabels[activeItem] ?? { title: activeItem, subtitle: "" };
 
   const renderContent = () => {
-    if (activeItem === "dashboard") return <DashboardContent />;
+    if (activeItem === "dashboard") return <DashboardContent onNavigate={setActiveItem} />;
     if (activeItem === "report_sales")     return <AdminSalesReportContent />;
     if (activeItem === "report_customers") return <AdminCustomersReportContent />;
     if (activeItem === "report_products")  return <AdminProductsReportContent />;
@@ -26605,6 +26878,8 @@ export function AdminDashboard() {
     if (activeItem === "products_flash")      return <AdminFlashSaleEventsContent />;
     if (activeItem === "products_coupons")    return <AdminCouponsContent />;
     if (activeItem === "orders")              return <AdminOrdersContent />;
+    if (activeItem === "po_approval_queue")   return <AdminPOApprovalContent mode="approval" />;
+    if (activeItem === "po_cancel_requests")  return <AdminPOApprovalContent mode="cancel" />;
     if (activeItem === "reviews")             return <AdminReviewsContent />;
     if (activeItem === "ai_assistant")        return <AdminAIAssistantContent />;
     if (activeItem === "page_home")     return <PageHomeBuilder />;
@@ -26666,7 +26941,7 @@ export function AdminDashboard() {
 
       <main ref={mainRef} className="flex-1 p-4 sm:p-6 overflow-y-auto min-w-0 min-h-0">
         {/* BannerContent + BlogContent + VideoContent + PopupContent + LegalContent + ComplaintListContent render their own headers — skip default */}
-        {activeItem !== "dashboard" && activeItem !== "content_banner" && activeItem !== "content_blog" && activeItem !== "content_video" && activeItem !== "content_index" && activeItem !== "content_terms" && activeItem !== "content_privacy" && activeItem !== "complaints_list" && activeItem !== "complaints_appeals" && activeItem !== "products_manage" && activeItem !== "products_categories" && activeItem !== "products_promotions" && activeItem !== "products_flash" && activeItem !== "products_coupons" && activeItem !== "report_sales" && activeItem !== "report_customers" && activeItem !== "report_products" && activeItem !== "report_marketing" && activeItem !== "orders" && activeItem !== "reviews" && activeItem !== "page_home" && activeItem !== "page_products" && activeItem !== "page_blog" && activeItem !== "page_about" && activeItem !== "users_permissions" && (
+        {activeItem !== "dashboard" && activeItem !== "content_banner" && activeItem !== "content_blog" && activeItem !== "content_video" && activeItem !== "content_index" && activeItem !== "content_terms" && activeItem !== "content_privacy" && activeItem !== "complaints_list" && activeItem !== "complaints_appeals" && activeItem !== "products_manage" && activeItem !== "products_categories" && activeItem !== "products_promotions" && activeItem !== "products_flash" && activeItem !== "products_coupons" && activeItem !== "report_sales" && activeItem !== "report_customers" && activeItem !== "report_products" && activeItem !== "report_marketing" && activeItem !== "orders" && activeItem !== "po_approval_queue" && activeItem !== "po_cancel_requests" && activeItem !== "reviews" && activeItem !== "page_home" && activeItem !== "page_products" && activeItem !== "page_blog" && activeItem !== "page_about" && activeItem !== "users_permissions" && (
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div>
               <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{meta.title}</h2>

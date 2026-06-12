@@ -18,6 +18,7 @@ const PRIORITIES = [
 type LineItem = {
   id: string;
   itemCode: string;
+  erpItemCode: string;   // ERP-side SKU; the factory pastes their own code here
   description: string;
   qty: number;
   uom: string;
@@ -38,6 +39,27 @@ export default function HerbalMarketPRPage() {
 
   // Build initial line items
   const buildInitial = (): LineItem[] => {
+    // "Reorder from PO" — items are seeded from a previous PO via sessionStorage
+    // (see OrdersPage 'ซื้ออีกครั้ง' handler). Description / required date / etc.
+    // are intentionally left empty so the user re-enters them.
+    if (searchParams.get("from") === "po") {
+      try {
+        const raw = sessionStorage.getItem("metaherb:reorder-po-items");
+        if (raw) {
+          const items: { name: string; supplier?: string; qty: number; unit: string; price: number }[] = JSON.parse(raw);
+          return items.map((it, i) => ({
+            id: `reorder-${i}`,
+            itemCode: `RE-${String(i + 1).padStart(3, "0")}`,
+            erpItemCode: "",
+            description: it.name,
+            qty: it.qty,
+            uom: it.unit || "กก.",
+            unitPrice: it.price,
+            notes: it.supplier ? `Supplier: ${it.supplier}` : "",
+          }));
+        }
+      } catch {/* fall through to default */}
+    }
     if (isBulk) {
       const filtered = cartItems.filter((c) => bulkIds.length === 0 || bulkIds.includes(c.productId));
       return filtered.map((c, i) => {
@@ -45,6 +67,7 @@ export default function HerbalMarketPRPage() {
         return {
           id: `init-${i}-${c.productId}`,
           itemCode: c.productId.toUpperCase(),
+          erpItemCode: "",
           description: c.name,
           qty: c.quantity,
           uom: mat ? "กก." : "ชิ้น",
@@ -57,6 +80,7 @@ export default function HerbalMarketPRPage() {
       return [{
         id: `init-${singleMaterial.id}`,
         itemCode: singleMaterial.id.toUpperCase(),
+        erpItemCode: "",
         description: singleMaterial.name,
         qty: Number(searchParams.get("qty") || singleMaterial.moq || 100),
         uom: "กก.",
@@ -73,7 +97,9 @@ export default function HerbalMarketPRPage() {
   const [validityDays, setValidityDays] = useState("15");
   const [description, setDescription] = useState("");
   const [justification, setJustification] = useState("");
-  const [lineItems] = useState<LineItem[]>(buildInitial());
+  const [lineItems, setLineItems] = useState<LineItem[]>(buildInitial());
+  const updateErpCode = (id: string, value: string) =>
+    setLineItems((prev) => prev.map((li) => (li.id === id ? { ...li, erpItemCode: value } : li)));
 
   const totalAmount = lineItems.reduce((s, li) => s + li.qty * li.unitPrice, 0);
 
@@ -245,6 +271,7 @@ export default function HerbalMarketPRPage() {
               <thead>
                 <tr className="border-y border-gray-200 bg-gray-50">
                   <th className={`${font} text-[12px] text-gray-600 text-left px-3 py-2`} style={{ fontWeight: 600 }}>Item Code</th>
+                  <th className={`${font} text-[12px] text-gray-600 text-left px-3 py-2 w-[150px]`} style={{ fontWeight: 600 }}>Item Code ERP</th>
                   <th className={`${font} text-[12px] text-gray-600 text-left px-3 py-2`} style={{ fontWeight: 600 }}>Description</th>
                   <th className={`${font} text-[12px] text-gray-600 text-right px-3 py-2 w-[80px]`} style={{ fontWeight: 600 }}>Qty</th>
                   <th className={`${font} text-[12px] text-gray-600 text-left px-3 py-2 w-[90px]`} style={{ fontWeight: 600 }}>UoM</th>
@@ -256,12 +283,20 @@ export default function HerbalMarketPRPage() {
               <tbody>
                 {lineItems.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className={`${font} text-center text-[13px] text-gray-400 py-10`}>ไม่มีข้อมูล</td>
+                    <td colSpan={8} className={`${font} text-center text-[13px] text-gray-400 py-10`}>ไม่มีข้อมูล</td>
                   </tr>
                 ) : (
                   lineItems.map((li) => (
                     <tr key={li.id} className="border-b border-gray-100">
                       <td className={`${font} text-[13px] text-gray-700 px-3 py-3 tabular-nums`}>{li.itemCode || "—"}</td>
+                      <td className="px-3 py-2">
+                        <input
+                          value={li.erpItemCode}
+                          onChange={(e) => updateErpCode(li.id, e.target.value)}
+                          placeholder="เช่น ERP-12345"
+                          className={`${font} bg-[#fafafa] h-9 w-full rounded-full px-3 text-[13px] outline-none focus:ring-2 focus:ring-[#319754]/30 transition-shadow tabular-nums`}
+                        />
+                      </td>
                       <td className={`${font} text-[13px] text-black px-3 py-3`}>{li.description || "—"}</td>
                       <td className={`${font} text-[13px] text-right text-black px-3 py-3 tabular-nums`}>{li.qty.toLocaleString()}</td>
                       <td className={`${font} text-[13px] text-gray-700 px-3 py-3`}>{li.uom}</td>
@@ -278,7 +313,7 @@ export default function HerbalMarketPRPage() {
               </tbody>
               <tfoot>
                 <tr className="border-t-2 border-gray-200 bg-gray-50">
-                  <td colSpan={5} className={`${font} text-right text-[14px] text-gray-700 px-3 py-3`} style={{ fontWeight: 600 }}>Total:</td>
+                  <td colSpan={6} className={`${font} text-right text-[14px] text-gray-700 px-3 py-3`} style={{ fontWeight: 600 }}>Total:</td>
                   <td className={`${font} text-right text-[16px] text-[#319754] px-3 py-3 tabular-nums`} style={{ fontWeight: 700 }}>
                     {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
