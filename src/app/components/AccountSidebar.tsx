@@ -19,8 +19,8 @@ type Item = { path: string; label: string; Icon: LucideIcon };
 
 const ITEMS: Item[] = [
   { path: "/orders",         label: "คำสั่งซื้อของฉัน",  Icon: Package },
-  { path: "/pr-history",     label: "ใบขอสั่งซื้อ (PR)", Icon: FileText },
   { path: "/quote-history",  label: "ใบเสนอราคา (RFQ)", Icon: FileSpreadsheet },
+  { path: "/pr-history",     label: "ใบขอสั่งซื้อ (PR)", Icon: FileText },
   { path: "/po-history",     label: "ใบสั่งซื้อ (PO)",   Icon: FileCheck2 },
   { path: "/my-trials",      label: "สินค้าทดลองของฉัน", Icon: FlaskConical },
   { path: "/my-coupons",     label: "คูปองของฉัน",       Icon: Ticket },
