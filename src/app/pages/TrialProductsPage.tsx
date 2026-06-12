@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { Sparkles, Users, Clock, Check, ShieldCheck, Coins, Pencil, RotateCcw, ChevronRight } from "lucide-react";
-import imgTrialCta from "../../assets/supplier-cta-farmers.png";
+import imgTrialCta from "../../assets/test product.png";
 import { TrialCard } from "../components/TrialCard";
 import { TRIAL_PRODUCTS, TRIAL_CONCERNS, loadRegistrations, loadTesterProfile, REGISTRATIONS_STORAGE_KEY, TESTER_PROFILE_STORAGE_KEY, getRegistrationStatus, type ConcernKey } from "../data/trialProducts";
 
