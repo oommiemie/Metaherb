@@ -10,7 +10,7 @@ import { useChat } from "../store/ChatContext";
 import { useWishlist } from "../store/WishlistContext";
 import { useCart } from "../store/CartContext";
 import { toast } from "sonner";
-import { MATERIALS, MATERIAL_IMAGES, GRADE_STYLE, slugifySupplier } from "../data/herbalMaterials";
+import { MATERIALS, GRADE_STYLE, slugifySupplier } from "../data/herbalMaterials";
 
 const font = "font-['IBM_Plex_Sans_Thai_Looped',sans-serif]";
 
@@ -47,8 +47,11 @@ export default function HerbalMarketDetailPage() {
     );
   }
 
-  // Gallery — show main image first + a few others as thumbnails
-  const galleryImages = [material.image, ...MATERIAL_IMAGES.filter((img) => img !== material.image).slice(0, 4)];
+  // Gallery — show main image first + a few sibling materials' photos as thumbnails
+  const galleryImages = [
+    material.image,
+    ...MATERIALS.filter((m) => m.id !== material.id).slice(0, 4).map((m) => m.image),
+  ];
 
   const wishlisted = isWishlisted(material.id);
   const gradeStyle = GRADE_STYLE[material.grade];

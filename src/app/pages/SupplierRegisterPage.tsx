@@ -24,18 +24,12 @@ const BUSINESS_TYPES = [
 ];
 
 const CERT_OPTIONS = [
-  { id: "fda",       label: "อย. (FDA)",           desc: "บังคับสำหรับวัตถุดิบบริโภค", required: true },
-  { id: "gap",       label: "GAP",                 desc: "Good Agricultural Practices (ฟาร์ม)" },
-  { id: "gmp",       label: "GMP",                 desc: "Good Manufacturing Practice (โรงงาน)" },
-  { id: "organic-th",label: "Organic Thailand",    desc: "มาตรฐานเกษตรอินทรีย์ไทย" },
-  { id: "ecocert",   label: "ECOCERT",             desc: "มาตรฐานอินทรีย์สากล" },
-  { id: "usda",      label: "USDA Organic",        desc: "USA Organic" },
-  { id: "eu-organic",label: "EU Organic",          desc: "EU Organic" },
-  { id: "haccp",     label: "HACCP",               desc: "มาตรฐานความปลอดภัยอาหาร" },
-  { id: "iso-22000", label: "ISO 22000",           desc: "Food Safety Management" },
-  { id: "iso-9001",  label: "ISO 9001",            desc: "Quality Management" },
-  { id: "halal",     label: "Halal",               desc: "" },
-  { id: "kosher",    label: "Kosher",              desc: "" },
+  { id: "fda",         label: "อย. (FDA)",                        desc: "ใบอนุญาตจากสำนักงานคณะกรรมการอาหารและยา" },
+  { id: "gap",         label: "GAP — มาตรฐานเกษตรปลอดภัย",         desc: "Good Agricultural Practices — ใบรับรองการเพาะปลูก" },
+  { id: "gmp",         label: "GMP — มาตรฐานการผลิตที่ดี",          desc: "Good Manufacturing Practice — ใบรับรองโรงงานผลิต" },
+  { id: "organic-th",  label: "Organic Thailand",                  desc: "มาตรฐานเกษตรอินทรีย์ไทย (มกอช.)" },
+  { id: "irradiation", label: "ใบรับรองการฉายรังสี",              desc: "Certificate of Irradiation — รับรองการฆ่าเชื้อด้วยรังสี" },
+  { id: "coa",         label: "ผลทดสอบคุณภาพวัตถุดิบ (COA)",       desc: "Certificate of Analysis — รายงานผลตรวจวิเคราะห์คุณภาพ" },
 ];
 
 const CATEGORIES = ["ราก/หัว", "ใบ", "ดอก", "เปลือก", "ผล/เมล็ด", "สมุนไพรรวม", "น้ำมันสกัด", "สารสกัดเข้มข้น"];
@@ -464,8 +458,8 @@ export default function SupplierRegisterPage() {
 
               {/* Certifications */}
               <div>
-                <Label required>ใบรับรองมาตรฐาน</Label>
-                <p className={`${font} text-[12px] text-gray-500 mt-0.5 mb-3`}>เลือกใบรับรองที่มี + กรอกเลขที่ + วันหมดอายุ + อัปโหลดไฟล์ <span className="text-[#319754]" style={{ fontWeight: 600 }}>(อย. บังคับ)</span></p>
+                <Label>ใบรับรองมาตรฐาน</Label>
+                <p className={`${font} text-[12px] text-gray-500 mt-0.5 mb-3`}>เลือกเฉพาะใบรับรองที่มี + กรอกเลขที่ + วันหมดอายุ + อัปโหลดไฟล์ <span className="text-gray-400">(ไม่บังคับ)</span></p>
                 <div className="space-y-2">
                   {CERT_OPTIONS.map((c) => {
                     const v = certs[c.id];

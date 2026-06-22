@@ -151,7 +151,7 @@ const sectionMenus: Record<AdminSection, AdminItem[]> = {
     { id: "products",   label: "สินค้า",          icon: Package, children: [
       { id: "products_manage",    label: "จัดการสินค้า",          icon: Package },
       { id: "products_trials",    label: "สินค้าทดลอง",            icon: FlaskConical },
-      { id: "products_herbal",    label: "เฮอร์บัลมาร์เก็ต",       icon: Beaker },
+      { id: "products_herbal",    label: "Herbal Market",          icon: Beaker },
       { id: "products_categories", label: "หมวดหมู่สินค้า", icon: Folder },
       { id: "products_promotions", label: "จัดการโปรโมชั่น",       icon: Megaphone },
       { id: "products_flash",     label: "Flash Sale Events",      icon: Zap },
@@ -14642,7 +14642,7 @@ function AdminHerbalMarketContent() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>เฮอร์บัลมาร์เก็ต (B2B)</h2>
+          <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>Herbal Market (B2B)</h2>
           <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>วัตถุดิบสมุนไพรทั้งหมดในระบบ จัดการตามเกรดและซัพพลายเออร์</p>
         </div>
         <motion.button
@@ -21984,7 +21984,7 @@ interface OwnerSubRoles {
 
 const SPECIAL_ROLE_META: Record<SpecialRoleKey, { label: string; icon: any; color: string; accent: string; tagline: string }> = {
   trial_brand:   { label: "แบรนด์ทดสอบ",     icon: FlaskConical, color: "#319754", accent: "#dcfce7", tagline: "ปลดล็อกระบบสินค้าทดลอง — ลงสินค้าให้ผู้ใช้จริงประเมินก่อนวางจำหน่าย" },
-  herbal_market: { label: "เฮอร์บัลมาร์เก็ต", icon: Beaker,       color: "#287745", accent: "#d1fae5", tagline: "ปลดล็อกตลาด B2B วัตถุดิบสมุนไพร — รับ RFQ และใบ PO จากระบบ Herbal ERP" },
+  herbal_market: { label: "Herbal Market",    icon: Beaker,       color: "#287745", accent: "#d1fae5", tagline: "ปลดล็อกตลาด B2B วัตถุดิบสมุนไพร — รับ RFQ และใบ PO จากระบบ Herbal ERP" },
 };
 
 const SPECIAL_STATUS_META: Record<SpecialRoleStatus, { label: string; bg: string; color: string; dot: string }> = {
@@ -22909,7 +22909,7 @@ function ShopsListPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h2 className={`${font} text-[22px]`} style={{ fontWeight: 600 }}>{t("admin_shops_page_title") || "จัดการร้านค้า"}</h2>
-          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("admin_shops_page_subtitle") || "ตรวจสอบ อนุมัติ และจัดการร้านค้า ทั้งบทบาทพิเศษ (แบรนด์ทดสอบ / เฮอร์บัลมาร์เก็ต) ในที่เดียว"}</p>
+          <p className={`${font} text-[13px] text-gray-500 mt-0.5`}>{t("admin_shops_page_subtitle") || "ตรวจสอบ อนุมัติ และจัดการร้านค้า ทั้งบทบาทพิเศษ (แบรนด์ทดสอบ / Herbal Market) ในที่เดียว"}</p>
         </div>
       </div>
 
@@ -23544,9 +23544,9 @@ const ALL_PERMISSIONS: SystemPermission[] = [
   { id: "subrole_trial_view",     label: "ดูใบสมัครแบรนด์ทดสอบ",      desc: "เข้าดูคำขอสมัครเป็นแบรนด์ทดสอบของร้านค้า",            category: "บทบาทพิเศษของร้านค้า" },
   { id: "subrole_trial_approve",  label: "อนุมัติ / ปฏิเสธแบรนด์ทดสอบ", desc: "พิจารณาคำขอสมัครเป็นแบรนด์ทดสอบ",                     category: "บทบาทพิเศษของร้านค้า" },
   { id: "subrole_trial_revoke",   label: "เพิกถอนสิทธิ์แบรนด์ทดสอบ",   desc: "ถอนสิทธิ์การเป็นแบรนด์ทดสอบของร้านค้าที่อนุมัติแล้ว",   category: "บทบาทพิเศษของร้านค้า" },
-  { id: "subrole_market_view",    label: "ดูใบสมัครเฮอร์บัลมาร์เก็ต",  desc: "เข้าดูคำขอสมัครเป็นซัพพลายเออร์ B2B",                   category: "บทบาทพิเศษของร้านค้า" },
-  { id: "subrole_market_approve", label: "อนุมัติ / ปฏิเสธเฮอร์บัลมาร์เก็ต", desc: "พิจารณาคำขอสมัครเป็นซัพพลายเออร์ B2B",            category: "บทบาทพิเศษของร้านค้า" },
-  { id: "subrole_market_revoke",  label: "เพิกถอนสิทธิ์เฮอร์บัลมาร์เก็ต",  desc: "ถอนสิทธิ์การเป็นซัพพลายเออร์ B2B ของร้านค้าที่อนุมัติแล้ว", category: "บทบาทพิเศษของร้านค้า" },
+  { id: "subrole_market_view",    label: "ดูใบสมัคร Herbal Market",       desc: "เข้าดูคำขอสมัครเป็นซัพพลายเออร์ B2B",                   category: "บทบาทพิเศษของร้านค้า" },
+  { id: "subrole_market_approve", label: "อนุมัติ / ปฏิเสธ Herbal Market", desc: "พิจารณาคำขอสมัครเป็นซัพพลายเออร์ B2B",            category: "บทบาทพิเศษของร้านค้า" },
+  { id: "subrole_market_revoke",  label: "เพิกถอนสิทธิ์ Herbal Market",     desc: "ถอนสิทธิ์การเป็นซัพพลายเออร์ B2B ของร้านค้าที่อนุมัติแล้ว", category: "บทบาทพิเศษของร้านค้า" },
 
   // ===== คำสั่งซื้อ =====
   { id: "orders_view_all",      label: "ดูออเดอร์ทั้งหมด",         desc: "เข้าดูออเดอร์ข้ามทุกร้าน",                    category: "คำสั่งซื้อ" },

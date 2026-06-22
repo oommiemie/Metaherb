@@ -14,7 +14,7 @@ const translations = {
     menu_home:          "หน้าหลัก",
     menu_products:      "ผลิตภัณท์",
     menu_trials:        "ผลิตภัณฑ์ทดสอบ",
-    menu_market:        "เฮอร์บัลมาร์เก็ต",
+    menu_market:        "Herbal Market",
     menu_blog:          "สาระความรู้",
     menu_about:         "เกี่ยวกับเรา",
     button_login:       "เข้าสู่ระบบ",

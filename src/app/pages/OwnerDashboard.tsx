@@ -115,7 +115,7 @@ const ALL_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: "overview", label: "Dashboard", icon: BarChart3 },
   { id: "orders", label: "คำสั่งซื้อ", icon: ShoppingCart },
   // Herbal Market — supplier-only when isSupplier=true; CTA-only otherwise
-  { id: "herbal_market", label: "เฮอร์บัลมาร์เก็ต", icon: Beaker, children: [
+  { id: "herbal_market", label: "Herbal Market", icon: Beaker, children: [
     { id: "quotations_issued", label: "ใบเสนอราคา" },
     { id: "pr_list", label: "ใบ PR" },
     { id: "po_list", label: "ใบ PO" },
@@ -152,7 +152,7 @@ const ALL_SIDEBAR_ITEMS: SidebarItem[] = [
 function buildSidebarItems(isSupplier: boolean, isTrialBrand: boolean): SidebarItem[] {
   return ALL_SIDEBAR_ITEMS.map((item) => {
     if (item.id === "herbal_market" && !isSupplier) {
-      return { id: "herbal_market_intro" as OwnerTab, label: "เฮอร์บัลมาร์เก็ต", icon: Beaker, badge: "สมัคร" };
+      return { id: "herbal_market_intro" as OwnerTab, label: "Herbal Market", icon: Beaker, badge: "สมัคร" };
     }
     if (item.id === "trials_overview" && !isTrialBrand) {
       return { id: "trials_intro" as OwnerTab, label: "สินค้าทดลอง", icon: FlaskConical, badge: "สมัคร" };
@@ -979,8 +979,8 @@ function Sidebar({ active, onSelect, collapsed, onToggle }: { active: OwnerTab; 
     trials_intro: "สินค้าทดลอง",
     trials_tracking: "ติดตามสินค้าทดลอง",
     trials_products: "ทะเบียนสินค้าทดลอง",
-    herbal_market: "เฮอร์บัลมาร์เก็ต",
-    herbal_market_intro: "เฮอร์บัลมาร์เก็ต",
+    herbal_market: "Herbal Market",
+    herbal_market_intro: "Herbal Market",
     quotations_issued: "ใบเสนอราคา",
     pr_list: "ใบ PR",
     po_list: "ใบ PO",
@@ -15637,7 +15637,7 @@ function HerbalMarketIntroTab() {
 
   return (
     <div>
-      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>เฮอร์บัลมาร์เก็ต</h2>
+      <h2 className={`${font} text-[22px] mb-6`} style={{ fontWeight: 600 }}>Herbal Market</h2>
 
       {/* Hero invitation card */}
       <div className="bg-gradient-to-br from-[#319754] to-[#287745] rounded-2xl p-8 mb-6 text-white relative overflow-hidden">
